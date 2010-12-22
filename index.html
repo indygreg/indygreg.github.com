@@ -1,4 +1,11 @@
-<html>
-<head><title>indygreg.github.com</title></head>
-<body>Hello, world!</body>
-</html>
+---
+layout: default
+---
+
+{% for post in site.posts %}
+  <div class="post">
+    <h2>{{ post.date | date_to_string }}<a href="{{ post.url }}">{{ post.title }}</a></h2>
+    {{ post.content }}
+  </div>
+{% endfor %}
+
