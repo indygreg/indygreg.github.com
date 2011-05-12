@@ -1,11 +1,10 @@
----
-layout: default
----
-
-{% for post in site.posts %}
-  <div class="post">
-    <h2>{{ post.date | date_to_string }}<a href="{{ post.url }}">{{ post.title }}</a></h2>
-    {{ post.content }}
-  </div>
-{% endfor %}
-
+<html>
+<head><title>Gregory Szorc's Technical Home</title></head>
+<body>
+  <div><p>Welcome to my Github home. Please excuse the lack of design while I build this out.</p></div>
+  <ul>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a> (PDF)</li>
+  </ul>
+</body>
+</html>

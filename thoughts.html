@@ -1,0 +1,168 @@
+---
+layout: default
+---
+
+<h1>Thoughts</h1>
+
+<p>This page contains my thoughts on various technical topics. Some could probably be expanded into whole blog posts. We'll see if I ever get there.</p>
+
+<h2>Programming Languages</h2>
+
+<h3>PHP</h3>
+
+<i>Last updated 2011-05-12</i>
+
+<p>PHP was one of the first programming languages I used on personal projects
+(as opposed to classroom work). At the time I learned and used it, I only
+really new C++. And, coming from C++, PHP was just easier to use. And, when
+you are a student and want to get things done fast, the choice is easy.</p>
+
+<p>In my PHP days, I wrote a mountain of blog posts about PHP. I was excited
+about PHP 5 over PHP 4 because it meant increasing the liklihood of better
+organized code through OO. At the time (and I believe it is still the case),
+many PHP programs were glorified shell scripts. They include other files
+haphazzardly. They don't have a unified API or library design. They just felt
+hacked up. I always tried to be a "good" PHP programmer by
+utilizing classes, implementing tests through PHPUnit, making source code
+readable, etc.</p>
+
+<p>After learning other scripting languages (like Perl and Python), I quickly
+abandoned PHP in favor of them. They offer everything PHP does (and more) and
+they do it better. About the only thing PHP has/had going for it was its
+ubuiquity. You could run a PHP program nearly everywhere. But in the corporate
+world, where I had my own servers, I could do anything I wanted.</p>
+
+<p>My gripes about PHP will likely echo others':</p>
+
+<ul>
+  <li>Monolithic global namespace. There's a couple thousand functions in there!
+    And, they are often all available all the time. It's no wonder why there are
+    so few PHP interpreters out there.</li>
+  <li>Library community (PEAR) stinks. It can't touch CPAN or even PyPy.</li>
+  <li>Haphazzard versioning. Point releases would often include major version
+    bumps on bundled packages (like PCRE). Gah!</li>
+  <li>Many security problems. It is one thing for poorly-written PHP applications
+    to have security vulnerabilities. It is another for the core language
+    releases to be plagued by security vulnerabilities.</li>
+  <li>HTTP server integration. Back when the Apache HTTP Server ruled the
+    world, everybody and his sister ran Apache+mod_php. However, you could
+    hardly do any deep integration with the HTTP server internals from within
+    PHP. And, it appears you still can't (for better or worse). I often found
+    myself needing features that only mod_perl or mod_python could provide.</li>
+</ul>
+
+<h3>Perl</h3>
+
+<i>Last updated 2011-05-12</i>
+
+<p>I first ran into Perl when I was very young and my father thought I might
+enjoy learning how to program. He gave me a print out of a free book on how
+to learn Perl. My mind could not grok it at the time, so I moved on.</p>
+
+<p>My next encounter with Perl was at an internship in 2006 at Tellme Networks,
+where it was used extensively. I learned beginner Perl during the internship.
+And, when I started full-time in early 2007, I picked it up slowly over the
+course of a year. Of course, any time someone says they learn Perl, what they
+really mean is "they learned how to use Perl in the way that others at the
+organization use Perl." I was fortunate that "Tellme Perl" was very readable:
+lots of modules (as opposed to scripts), lots of tests, usage of Perl::Critic,
+and strict and warnings were used everywhere. Best of all, there were a lot of
+great Perl programmers and they loved imparting their knowledge via code
+reviews and demonstrations.</p>
+
+<p>My favorite aspect of Perl is CPAN. Hands down the best library collection
+of any programming language. I hate reinventing the wheel. And with CPAN, you
+often don't need to. Excellent resource. Other likes of Perl include:</p>
+
+<ul>
+  <li>Concise regular expressions. I know, "now you have two problems." But,
+    they get the job done with a little amount of code.</li>
+  <li>Features spectrum. Want to access low-level C functions and use them
+    almost directly? Yeah, you can do that. Want the benefits of a dynamic
+    language with reference counting, memory management, etc. You can do that
+    too. Not many (if any) languages give you such a wide variety of low- and
+    high-level functions from which to use.</li>
+  <li>Documentation. The man pages are excellent. You have to learn which
+    pages have what. But, they answer most debates authoritatively.</li>
+</ul>
+
+<p>Obviously I have technical gripes about Perl:</p>
+
+<ul>
+  <li>All the <a href="http://perldoc.perl.org/perlvar.html">pre-defined
+    variables</a>. They contribute to a bulk of Perl's line noise. I almost
+    always used the <a href="http://perldoc.perl.org/English.html">English</a>
+    module to increase readability.</li>
+  <li><a href="http://perldoc.perl.org/perldata.html#Context">Variable context.</a>
+    This has got to be one of the most confusing features of any programming
+    language ever conceived. Each variable has a distinct type (scalars, arrays,
+    and hashes). However, some types have different meaning depending on how
+    the variable is accessed. For example, an array is sometimes an array. But,
+    if accessed like a scalar, it is actually the length of the array. Huh?
+    Cool feature, but confusing beyond belief.</li>
+</ul>
+
+<h3>Lua</h3>
+
+<p>TODO</p>
+
+<h3>Python</h3>
+
+<p>TODO</p>
+
+<h3>Ruby</h3>
+
+<p>TODO</p>
+
+<h3>Erlang</h3>
+
+<p>TODO</p>
+
+<h2>Applications</h2>
+
+<h3>Cassandra</h3>
+
+<i>Last updated 2011-05-12</i>
+
+<p>Where do I begin with Cassandra? I dated Cassandra for a few months at Xobni,
+where she served as the sole data storage layer for Xobni Cloud, a cloud-based
+service for storing email, contact, and personal interaction data. She seemed
+to get the job done, but it was really rough.</p>
+
+<p>When I first started, Xobni was running Cassandra 0.6.2 or 0.6.3 in EC2
+utilizing the ephemeral (built-in) storage on instances (as opposed to EBS).
+Every time any sort of workload was incurred, disk I/O would spike through the
+roof and we'd see I/O queue and wait times reach alarming values. Furthermore,
+processes would OOM frequently.</p>
+
+<p>Over time, we made application improvements to reduce I/O, learned how to
+tune the JVM, applied Cassandra settings that were appropriate for us, etc.
+But, every time we made an improvement, Cassandra hit us with a new curveball
+that left us scratching our heads. It felt as if we were constantly "leveling
+up" to achieve the title of Cassandra Zen Master, only to have Cassandra fight
+back every step of the way.</p>
+
+<p>My latest experience with Cassandra was with 0.6.13. If someone were to ask,
+I would probably recommend not using it. The reasons are explained in the
+following paragraphs.</p>
+
+<p>My chief complaint against Cassandra stems from complications due to
+memory management. Cassandra blows through a JVM heap like you wouldn't believe.
+I once <a href="http://cassandra-user-incubator-apache-org.3065146.n2.nabble.com/Nodes-frozen-in-GC-td6092805i20.html#a6159468">witnessed</a>
+Cassandra allocating around 4GB/s! At that rate, you will incur many
+stop-the-world garbage collections (at least with the Sun/Oracle JVM). This
+can cause peer nodes to mark the paused node as down, which disrupts cluster
+efficiency. And, if two nodes in the same replication range pause at the same
+time (at least with replication factor 3), there goes your availability.</p>
+
+<p>While we're speaking of memory management, I don't care for Cassandra's
+treatment of memory within a garbage-collected language/environment (Java/JVM).
+There are many parts of Cassandra that iterate over massive amounts of data
+(via file handles), read the data to an in-memory buffer, do something with it,
+and disregard the buffer, leaving it up to the JVM to GC it. This leads to
+rapid heap exhaustion and frequent garbage collections. It would be much better
+if Cassandra just allocated a single large buffer and reused it. Yes, you incur
+the memory allocation overhead, but you've probably already done that anyway by
+defining a fixed JVM heap size. And, I'll trade a little hardware resources for
+a more consistent system almost always.</p>
+
