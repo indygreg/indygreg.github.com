@@ -1,0 +1,112 @@
+---
+layout: default
+---
+
+<h1>Body of Work</h1>
+
+<i>Last updated May 13, 2011</i>
+
+<p>This page contains information on my technical history. You can think of it
+as a very descriptive resume.</p>
+
+<h2>The College Years (2002-2006)</h2>
+
+<p>In my 4 years at Case Western Reserve University, I dabbled into a number
+of small projects and contributed to a few larger ones. Most of my efforts
+were primarily focused on projects related to the university, but some
+impacted people outside.</p>
+
+<h3>Case Wiki and Related Extensions</h3>
+
+<p>As a student employee of the university's IT team, I was responsible for
+rolling at the <a href="http://wiki.case.edu/">Case Wiki</a>, a central and
+unified wiki for the university. A designer prototyped the layout and I
+created a MediaWiki skin for it.</p>
+
+<p>While maintaining the wiki, I developed numerous MediaWiki extensions.
+These were all released as open source. These extensions include:</p>
+
+<ul>
+  <li>WikiFeeds - Provided enhanced ATOM and RSS feeds for MediaWiki. Provided
+    a secure feed for an individual's watchlist. Many of the features have
+    slowly been incorporated into the official MediaWiki code base. But, they
+    were exclusive to WikiFeeds for years.</li>
+  <li>OpenSearch - Provided OpenSearch support for MediaWiki. OpenSearch has
+    since been incorporated into MediaWiki.</li>
+  <li>Graph Data Structure and Visualization - Implemented a MediaWiki library
+    to create graph data structures from wiki content (e.g. articles are nodes,
+    links, etc are edges). Wrote an extension that turned this structure into
+    Graphviz markup and rendered it into pages. Also wrote an extension for
+    Touchgraph visualization of the same data.</li>
+  <li>AJAX Watcher - Exposed real-time wiki changes without page refreshing via
+    AJAX calls. I believe MediaWiki has since incorporated something similar.
+    </li>
+  <li>Farmer - Turns MediaWiki into a wiki farm from a single install.</li>
+</ul>
+
+<h3>University Single Sign-On</h3>
+
+<p>While working for the university, I deployed
+<a href="http://www.jasig.org/cas">CAS</a> as a single sign-on service for
+the entire university. Previous to its rollout, individual sites were taking
+login credentials from HTML forms, HTTP basic auth, etc and trying to log in
+to the university's LDAP server.</p>
+
+<p>Initially, very few services used CAS. Over time, more and more people
+got on board and I'm pretty sure that now almost every site at the university
+uses it.</p>
+
+<h3>opensource.case.edu</h3>
+
+<p>A few friends and I thought it would be a great idea for people at the
+university to have a central service that hosted projects. We deployed
+an instance of <a href="http://trac.edgewall.org/">Trac</a> at
+opensource.case.edu (which was initially hosted on my personal Linux desktop
+machine). Students, staff, and faculty slowly but surely added projects there.
+Keep in mind this was before Github, when SourceForge was king. But, with
+SourceForge, you couldn't integrate with the university's authentication
+system, easily show community involvement, etc.</p>
+
+<p>Unfortunately, after I left the university, the server opensource.case.edu
+was hosted on had a catastrophic hardware failure and data was lost and the
+service is no longer available. I had transitioned ownership of the site before
+that happened, so I like to think that the data loss was not my fault.</p>
+
+<h3>Undergraduate Student Government</h3>
+
+<p>I was part of a small team hired by Undergraduate Student Government to
+implement web site features for that group. This included an election
+voting system and a custom management system used by members of USG to help
+them organize bills, events, etc.</p>
+
+<h3>Course Review Statistics</h3>
+
+<p>At the time I was at the university, there was a very crude system in place
+for performing course and instructor evaluations. During class, students would
+fill out cards with a #2 pencil with rankings of various aspects of the course
+and instructor. These were compiled by the university and made available as
+text files on a central server. These were exposed through a web site with
+only a crude search interface.</p>
+
+<p>I wrote a tool that scraped all data (I believe it went back 10+ years),
+imported it into a database, then exposed the data, complete with pretty
+graphs, via a web site. This alone was a major improvement over the existing
+system. From there, I built out extra features, such as aggregation of an
+individual instructor's ratings over all courses, including all of time. This
+made it easier for students to determine which instructors were likely to
+teach better and thus what course offering to sign up for.</p>
+
+<p>Feedback was generally positive, especially from the students. However,
+some didn't care for the site because it exposed information they didn't want
+to see (the graph of average ratings per department apparently drew the
+attention of the administration). Some wanted me to take down the site. But,
+I argued that I was just using the data already available by the university in
+new and creative ways. With backing from USG, I won out.</p>
+
+<h2>Tellme / Microsoft (January 2007 - June 2010)</h3>
+
+<p>TODO</p>
+
+<h2>Xobni (July 2010 - May 2011)</h2>
+
+<p>TODO</p>
