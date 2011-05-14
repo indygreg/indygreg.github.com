@@ -323,4 +323,36 @@ to people who have used it!</p>
 
 <h2>Xobni (July 2010 - May 2011)</h2>
 
+<p>It is my understanding that Xobni hired me to bring experience to their
+at-the-time frail cloud system, Xobni One (now known as Xobni Cloud). When I
+joined, their operations procedures seemed like they were out of the wild west
+(at least this was my perspective come from Tellme/Microsoft). System
+monitoring for the product I was to beef up consisted of someone looking at
+some Graphite graphs, noticing a change in the pattern, and investigating.
+We could do better.</p>
+
+<h3>Better Monitoring</h3>
+
+<p>One of my first acts at Xobni was to deploy a real monitoring system. We
+decided on <a href="http://www.opsview.com/">Opsview</a> because it is built
+on top of Nagios, a popular and well-known monitoring system (although not
+one without its flaws) and offers a compelling front-end for managing Nagios,
+which is typically a real chore.</p>
+
+<p>I set up Opsview on a central host, deployed NRPE on all the hosts, and
+started monitoring. Email alerts were configured and all were happy we now
+knew in near real time when stuff was breaking. At one point, I even had a
+custom Nagios notification script that used the Twilio API to call people
+with alert info. But, we didn't pursue that further. Cool idea, though!</p>
+
+<h3>Better Metrics</h3>
+
+<p>TODO</p>
+
+<h3>Better Server Configuration</h3>
+
+<p>TODO</p>
+
+<h3>Xobni Cloud Scalability Improvements</h3>
+
 <p>TODO</p>
