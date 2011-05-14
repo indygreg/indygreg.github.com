@@ -347,12 +347,108 @@ with alert info. But, we didn't pursue that further. Cool idea, though!</p>
 
 <h3>Better Metrics</h3>
 
-<p>TODO</p>
+<p>When I arrived, only minimal server metrics were being collected. While
+they were being fed to <a href="http://graphite.wikidot.com/">Graphite</a>,
+a compelling replacement for RRDTool, they were being collected via an
+in-house Python daemon and any new collection required custom plugins. There
+exist many open source tools for metrics collections, so I swapped out the
+custom code for <a href="http://www.collectd.org/">Collectd</a>, which I think
+is an excellently-designed collection system. (I like Collectd because of
+its plugin system and ability to write plugins in C, Java, Perl, and Python.)
+</p>
 
-<h3>Better Server Configuration</h3>
+<p>The only drawback was Collectd used RRD out of the box. We used that for
+a little bit. But, we quickly missed Graphite, so I
+<a href="https://github.com/indygreg/collectd-carbon">wrote</a> a Collectd
+plugin that writes data to Graphite instead of RRD.</p>
 
-<p>TODO</p>
+<p>At the end of the day, we were recording more metrics with less effort
+and had much more data to back up our decisions.</p>
 
 <h3>Xobni Cloud Scalability Improvements</h3>
 
-<p>TODO</p>
+<p>When I joined Xobni, Xobni Cloud was still considered beta and was wrought
+with stability issues. The overall architecture of the service was fine, but
+things were rough around the edges. When I first started, I believe the
+service had around 500 users and was crashing daily. We could do better.</p>
+
+<p>One of my first contributions was to learn how Cassandra worked and how to
+make it run faster. A well-tuned Cassandra running on top of a properly
+configured JVM makes a world of difference. We saw tons of improvement by
+experimenting here.</p>
+
+<p>One of my first major code contributions to the product was to transition
+to <a href="https://code.google.com/p/protobuf/">Protocol Buffers</a> for data
+encoding. Previously, the system was storing JSON anywhere there was
+structed data. Switching to Protocol Buffers cut down on CPU (most of the CPU
+savings were because the JSON library was utilizing reflection). More
+importantly, it reduced our storage size dramatically. And, the less data
+stored means less work for the hard drives.</p>
+
+<p>On the failure resiliency side of the scaling problem, I replaced the
+<a href="http://kr.github.com/beanstalkd/">Beanstalk</a>-based queue system
+with jobs stored in Cassandra. I have nothing against Beanstalk. But, in our
+architecture, Beanstalk was a central point of failure. If the server died
+and we couldn't recover Beanstalk's binary log on disk, we would have lost
+user data. We did not want to lose user data, so we stored the queue in a
+highly-available data store, Cassandra. I also made a number of application
+changes that allowed us to upgrade the product without incurring any
+downtime. (When I joined, you had to turn the service off when upgrading
+the software.)</p>
+
+<p>Another change that saw significant performance gains was moving the
+Cassandra sstable store to <a href="https://btrfs.wiki.kernel.org/index.php/Main_Page">
+btrfs</a>, a modern Linux filesystem. The big performance win came not from
+the filesystem switch itself, but from enabling filesystem compression. At
+the expense of CPU (which we had plenty of on the Cassandra nodes), we cut
+down significantly on the number of sectors being accessed, which gave
+Cassandra more head room. I would have preferred using ZFS instead of btrfs
+because it is stable and has deduplication (which I theorize would help
+Cassandra because of its immutable sstables which carry data forward during
+compactions). But, we weren't willing to switch to OpenBSD or OpenSolaris to
+obtain decent ZFS performance.</p>
+
+<p>There were a number of smaller changes that all amounted to significant
+performance gains. But, they are difficult to explain without intimate
+knowledge of the system. I will say that at the end of the day, we went
+from crashing every day on 500 users to being stable for weeks on end and
+serving over 10,000 users on roughly the same hardware configuration.</p>
+
+<h2>Outside of Full-Time Job (Over All Time)</h2>
+
+<h2>Zippylog</h2>
+
+<p><a href="https://github.com/indygreg/zippylog">Zippylog</a> is a high
+performance stream processing platform. I started the project in late July
+2010 and hack on it when I have time.</p>
+
+<p>I started the project to solve what I thought was a gap in the market. I
+also wanted to start a personal project to assess what my skills were as an
+individual developer. And, since I was working behind Microsoft's walls, where
+open source contributions were difficult to swing, I wanted to do something
+in the open for all to see.</p>
+
+<h2>Lua Support for Protocol Buffers</h2>
+
+<p>My Github project,
+a href="https://github.com/indygreg/lua-protobuf">lua-protobuf</a>
+integrates the programming language Lua with Google's Protocol Buffer
+serialization format. Both are extremely fast, so it is a marriage that needed
+to happen.</p>
+
+<p>I started the project because I wanted to consume protocol buffers in Lua
+from within zippylog.</p>
+
+<p>Interestingly, lua-protobuf is a Python program that generates C/C++ code
+that provides Lua scripts access to protocol buffers. Yeah, that makes no
+sense to me either, but it works.</p>
+
+<h2>Graphite/Carbon Writer for Collectd</h2>
+
+<p><a href="http://www.collectd.org/">Collectd</a> is an excellent metrics
+collection and dispatching daemon.
+<a href="http://graphite.wikidot.com/">Graphite</a> is a great data recording
+and visualization tool. I decided to marry them by writing a Collectd plugin,
+<a href="https://github.com/indygreg/collectd-carbon">collectd-carbon</a>,
+which writes values to Graphite/Carbon. (Carbon is the name of the network
+service that receives values.)</p>
