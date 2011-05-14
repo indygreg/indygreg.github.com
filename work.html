@@ -103,9 +103,223 @@ attention of the administration). Some wanted me to take down the site. But,
 I argued that I was just using the data already available by the university in
 new and creative ways. With backing from USG, I won out.</p>
 
-<h2>Tellme / Microsoft (January 2007 - June 2010)</h3>
+<h2>Tellme / Microsoft (Summer 2006, January 2007 - June 2010)</h3>
 
-<p>TODO</p>
+<p>During my summer break senior year in college, I was an intern at Tellme
+Networks, which at the time was a successful startup in the speech recognition
+and telephone space. I loved every minute of it.</p>
+
+<h3>VoIP Telephone Provisioning</h3>
+
+<p>My summer internship project was to design and implement a provisioning
+system for VoIP telephones. The system consisted of a dynamic TFTP server
+(I rolled my own TFTP server because no TFTP servers had dynamic hooks and
+the protocol is very simple to implement), dynamic HTTP server to process
+requests from telephones, a backend store, and a web administration interface.
+</p>
+
+<p>When completed, one could simply plug in any supported Cisco or Polycom
+VoIP telephone into the ethernet network and the phone would download the
+latest firmware and bootstrap with a suitable configuration. For phones that
+weren't provisioned, their initial configuration was configured to dial a
+VXML application hosted on Tellme's platform when the receiver was lifted.
+This application talked to the company LDAP server, prompted the person for
+his or her name, looked up information in the directory, and updated the phone
+provisioning system with the information. The phone would then reboot, picking
+up the user's configuration, complete with saved dialing preferences, etc.</p>
+
+<p>By far the coolest feature of the system was the ability via the admin
+interface to remotely reboot all connected phones. Combined with a custom
+bootup chime and an open office space, it was quite amusing listening to 20+
+phones play simple jingles simultaneously!</p>
+
+<p>I must have done a good job with the project and generally impressed people,
+because I was given a full-time offer at the end of my internship. I accepted,
+finished my senior year at college, and started full-time at Tellme in January
+2007.</p>
+
+<h3>www.tellme.com and m.tellme.com</h3>
+
+<p>At one time, I was maintaining www.tellme.com and m.tellme.com. These were
+both written in PHP and were utilizing the <a href="http://framework.zend.com/">
+Zend Framework</a>. Although, since 90%+ of the content on www.tellme.com was
+static, there was aggressive caching in place such that most page views did
+not involve much PHP, keeping server load down. As part of this role, I worked
+closely with the creative team for designs and graphics and with marketing to
+manage content.</p>
+
+<p>At one time m.tellme.com hosted a download component for Tellme's mobile
+application, which ran on most BlackBerry devices and other misc phones. One
+of the most frustrating experiences I have had to date was verifying that the
+site worked on all these devices. Each device had different support for
+rendering web sites. On top of that, you were dealing with different
+resolutions. Keep in mind this was before modern browsers came to mobile
+devices. Supporting these all concurrently was a real chore. Even the
+identification part was a nightmare, as phones could only usually be identified
+by the User-Agent HTTP request header or by the presence of some other
+non-standard header. And, this wasn't always consistent across carriers or
+guaranteed. What a nightmare! I'm glad I don't have to worry about this
+any more.</p>
+
+<p>Since the assimilation of Tellme by Microsoft, www.tellme.com and
+m.tellme.com are no longer available. Fortunately, the Internet Archive
+<a href="http://replay.web.archive.org/20100523111225/http://www.tellme.com/">
+contains</a> a semi-working snapshot.</p>
+
+<h3>Deployment of Subversion</h3>
+
+<p>When I started at Tellme, CVS was the lone version control system for
+engineering. (I even think one group was still on RCS!) I asked around
+about why a more modern version control system wasn't in use, and nobody
+seemed to have a good answer (I think the common answer was "because nobody
+has set one up").</p>
+
+<p>After consulting a lot of peers, it was decided that Subversion was the
+best fit for a new, supported VCS. It wasn't that Subversion was the best
+of breed (I believe Perforce arguably was at the time). It was chosen because
+it was very similar to CVS (their motto at the time was <i>a compelling
+replacement for CVS</i>), it was free and open source, and had a great hooks
+system.</p>
+
+<p>I worked with the operations team to deploy Subversion and announced it to
+the company. Slowly but surely, people started using it. Usage increased
+dramtically after I did a brownbag presentation on Subversion and its merits
+over CVS and I started to roll out custom hooks to supplement functionality.
+Teams loved the ability to receive emails on commits, close bugs (via a
+special syntax in the commit messages), require buddies on commit (also via
+special syntax in commit messages). This all required special commit hooks,
+of course. Unfortunately, those were developed after Tellme became Microsoft,
+so they will likely never see light outside company walls.</p>
+
+<p>At some point, I lobbied someone in the engineering org to splurge for a new
+server for hosting the source code services. I worked with the operations team
+to get that installed. And, I received a lot of hacker cred for making the
+version control systems 5x faster (which was a big deal for some of the teams,
+with their large trees that took a couple of minutes to switch branches with
+CVS).</p>
+
+<h3>Weekly Brownbags</h3>
+
+<p>At some point in my time at Tellme/Microsoft, I organized a weekly brown
+bag series. Every Wednesday, individuals or small groups would present topics
+to whoever was in attendence. These were often engineer-centric, but anyone
+could and did present.</p>
+
+<p>I seeded the sessions with presentations by myself and a few select people.
+After that, I either had people contact me to be added to the calendar or I
+sought out and encouraged people to present. Every week, I also recorded
+the sessions and made them available on the intranet.</p>
+
+<h3>Web-Based Code Review System</h3>
+
+<p>I believe sometime in 2009, I grew frustrated with the way we were doing
+code reviews. The act of looking at plain text diffs and recording comments
+in email or similar just felt out-dated. When others felt the same, I started
+researching solutions. I heard Google had a pretty nifty one, but it was only
+partially available to the public. I decided on <a href="http://www.reviewboard.org/">
+Review Board</a> and deployed it. It became an overnight success with almost
+immediate adoption by every team. Great tool.</p>
+
+<h3>Go-To Person</h3>
+
+<p>In my time at Tellme/Microsoft, I became a go-to person in the org for
+questions on Perl, mod_perl, Apache HTTP Server, compiling packages, and
+other misc topics. The first two sort of scared me at the time because when I
+started at Tellme, I knew almost nothing about Perl. Somehow, I became good
+enough that I could dole out advice and answers and know what I was doing in
+code reviews.</p>
+
+<p>For the Apache HTTP Server, I was very familiar with the internals, since I
+wrote a couple of C modules while at Tellme. As such, all the weird bugs or
+questions about server behavior seemed to always come my way. When a team was
+deploying a new site or service, I would often be the one reviewing the
+configs or lending advice on how to configure it.</p>
+
+<p>For compiling packages, I always took satisfaction out of wrangling things
+to compile on Solaris x86 (although, we ran a typical GNU toolchain as opposed
+to the Sun stack, so it wasn't as bad as it sounds). I was also pretty adamant
+about packages being built properly (e.g. considering which libraries were
+statically and dynamically linked, defining proper linker flags to foster
+easier linking in the future, getting an optimized binary, etc). So, people
+would often come to me and ask me to review the compilation procedure.</p>
+
+<h3>Server Management</h3>
+
+<p>For most of my time at Tellme, I was a member of an about 15 person team
+which wrote and maintained many of the Tellme/Microsoft-branded VXML
+applications and the services they directly required. (VXML applications often
+consist of static VXML documents and dynamic web services with which they
+talk at run-time.) One of my major roles on the team was managing the servers
+these resided on.</p>
+
+<p>This role involved numerous responsibilities. First, I needed to be
+familiar with all aspects of the dynamic services so I would know how to
+triage them, make informed decisions about scalability, etc. I was often
+developing these services myself. When I wasn't, I typically became informed
+by being part of the code reviews. I would often address concerns around
+scalability and failure, such as timeouts to remote services, expected
+latency, ensuring adequate monitors were present and tested, etc.</p>
+
+<p>Once the services were in my court, I needed to figure out where to host
+them. We had a number of different server pools from which to choose. Or,
+there was always the option of buying new hardware, but you want to keep
+costs down whenever possible, of course. I had to take into consideration the
+expected load, security requirements, network ACL connectivity requirements,
+technology requirements, etc. This was always a complicated juggling act. But,
+people knew that I would get it done and things would just work.</p>
+
+<p>As part of this role, I interacted closely with the operations team and
+the NOC. The operations team would be involved whenever new servers were
+needed, new ACLs were to be deployed, etc. At a large company, this was often
+a formal process, which required working with various project and product
+managers, navigating political waters, etc. I could talk the lingo with the
+operations people, so having me always act as the go-between was effective at
+gettings things done. As for the NOC, they were involved any time we changed
+anything. The operations mindset is to achieve 99.999% uptime on
+everything. As part of that, any change is communicated and planned well in
+advance along with the exact procedure to be performed. I knew most of the
+individuals in the NOC and they knew me.</p>
+
+<h3>Logging System Improvements</h3>
+
+<p>Sometime in 2009, I set out to make improvements to Tellme's proprietary
+event logging and transport infrastructure. The first part of this involved
+writing a new C library that performed writing. When I started, there existed
+the initial C++ implementation and feature-minimal implementations in Perl
+and a few other languages. However, the C++ implementation required a sizeable
+number of external dependencies (on the order of 40MB) and interop with C
+was difficult. People in C land found themselves in dependency hell and were
+cursing the computer gods.</p>
+
+<p>I implemented a C library from scratch, using the C++ code as a guide, but
+only for the low-level details of the protocol, which weren't documented
+well outside of the code. The initial version only supported writing. It
+was free of external dependencies, compiled on both Solaris and Windows, and
+weighed in at a svelt 50kB.</p>
+
+<p>A few months later, an individual came to me and said something along the
+lines of, "I really love the simplicity of your library. But, I need to perform
+reading. Can you help me?" So, I implemented reading support in the library.
+It turned out that the reading library was much more efficient than the C++
+one. And, for what my colleague was using it for (iterating over hundreds of
+gigabytes of data), this made a huge difference! What followed was a lot of
+low-level performance optimization to maximize the reading throughput of the
+library. A stack instead of dynamic allocation here, a register variable
+there, all contributed to significant performance improvements to the already
+insanely fast library. Towards the end, we were in the territory of the x86
+calling convention hurting us more than any other part.</p>
+
+<p>I achieved great satisfaction on this project. And, a lot of it was after
+it was complete (and I had even left the company). People were using the
+library in ways I had not foreseen (like in C# or on non-server devices). There
+was even talk of shipping the library as part of an external release, which
+never would have been possible with the C++ version because it linked to open
+source software and Microsoft is very sensitive to that (sadly). A few months
+after I left the company, somebody emailed me and said something along the
+lines of, "your XXX library is the best C library I have ever seen. I wish
+all C libraries were this easy to use and would 'just work.'" Sadly, the
+library is Microsoft IP, so I can't share it with you. But, I can refer you
+to people who have used it!</p>
 
 <h2>Xobni (July 2010 - May 2011)</h2>
 
