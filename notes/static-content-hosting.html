@@ -50,57 +50,91 @@ href="/blog/feed/atom" />
                 
 <div class="note">
   <h1>Static Content Hosting</h1>
-<p>Static content hosting is a very common practice. As simple as it is
-(compared to the more complicated dynamic content hosting), most people
-don't do it right.</p>
-<p>I will define static content hosting as hosting/serving content that
-does not change ever, changes infrequently (the periods between changes
-are much longer than the periods between requests), and can be copied
-directly from a filesystem, database, or similar backing store. For the
-purpose of this page, I will assume HTTP is being used as the transport.</p>
-<h2>Putting Things in Perspective</h2>
-<p>A properly configured modern computer is more than capable of saturating a
-1Gbps link using a fraction of the available CPU and memory. Assuming
-you are serving from a local hard drive, you will likely saturate your
-hard drive. However, if the set of served static content is cumulatively
-less than system memory, you may not saturate your hard drive due to
-utilization of the page cache, which caches I/O in memory.</p>
-<h2>Starting Simple</h2>
-<p>The easiest way to perform static hosting is by pointing an HTTP server
-(like Apache or nginx) at a directory on your file system, let's call it
-<em>/docroot/</em>. Your fictional server at http://example.com/ has <em>/</em> mapped
-to <em>/docroot/</em> so a <em>GET http://example.com/foo.txt HTTP/1.1</em> retrieves
-<em>/docroot/foo.txt</em> from the filesystem.</p>
-<p>Unless you have caching configured in your HTTP server, on every initial
-request by a client, your server will map the request to a filename then
-stat() that file. The stat() result may be cached by the OS. If not, it
-goes out to disk to get data. This could be expensive, but it shouldn't
-be too bad. The server likes takes the file's mtime and puts that in a
-Last-Modified header. The headers are sent and the file is copied from
-the filesystem to the HTTP response body unmodified.</p>
-<p>On subsequent requests, the client sends an HTTP request with the
-If-Modified-Since (IMS) header set to the value from the Last-Modified
-header.  When the server sees this, it does a stat() on the file like
-before. However, it compares the mtime with that from the IMS header. If
-the mtime is the same or older than the IMS header value, the server
-returns a 304 Not Modified, effectively saying "nothing changed since
-the last request: use your cached copy."</p>
-<p>This is a good start. Unfortunately, it is far from perfect. It is also
-where a number of people stop.</p>
-<h2>Use Compression</h2>
-<p>Compression (likely) reduces the encoding size of entities. It does take
-CPU to perform compression, but the results are often worth it. Even on
-a local network, the time it takes to transmit a large resource over the
-wire could be significantly longer when uncompressed, even if you factor
-in the overhead for performing the compression on both ends (which
-likely isn't too high).</p>
-<p>I could say more, but Google has <a href="https://code.google.com/speed/articles/use-compression.html">made a case</a>
-in their <em>Let's Make the Web Faster</em> resource.</p>
-<p>The only time you shouldn't use compression is if you absolutely can't
-afford the additional CPU, you are transferring resources that are
-generally uncompressible (e.g. binaries or media), or are on a local,
-high capacity network, and don't aren't that sensitive to increased load
-times.</p>
+<p>Most people host static content (HTML, JavaScript, images, etc)
+inefficiently. This page documents best practices for hosting static
+content.</p>
+<h2>The Ideal Method</h2>
+<p>The file hierarchy resembles:</p>
+<pre><code>/
+/version-1
+/version-1/foo
+/version-1/bar
+/version-2
+/version-2/foo
+/version-2/baz
+/latest -&gt; version-2
+</code></pre>
+<p>These translate to URLs like http://example.com/version-1/foo</p>
+<p>Each time you change content, you create a new URL space for that
+version of the content set. Content in a set is idempotent for all of
+time. i.e. the contents of a file inside a versioned directory never
+change, ever. The only operations you can do are create and delete.</p>
+<p>Content out of versioned directories is served with a caching policy
+that effectively allows caching for all of time. e.g.</p>
+<pre><code>GET /version-1/foo HTTP/1.1
+Host: example.com
+
+200 OK
+Last-Modified: Mon, 9 Jan 2012 13:37:07 GMT
+Cache-Control: max-age=31546000
+ETag: 16d7a4fca7442dda3ad93c9a726597e4
+</code></pre>
+<p>When clients connect to your service, you need to send them to the
+preferred/current version of the hosted content. You can do this at the
+application layer by coding the latest version in the response and have
+the client parse that. Or, you can address it via HTTP:</p>
+<pre><code>GET /latest HTTP/1.1
+Host: example.com
+
+307 See Other
+Location: http://example.com/version-1/
+Cache-Control: max-age=60
+</code></pre>
+<p>There are a number of advantages to this hosting stategy:</p>
+<ul>
+<li>If the client has the latest version cached, it doesn't need to hit
+  your server at all because of Cache-Control: max-age. Instead, it
+  pulls it from the local cache and ignores validation
+  (If-Modified-Since, If-None-Match).</li>
+<li>HTTP caches in front of your server will absorb almost all load.</li>
+<li>Clients never see mixed versions of content</li>
+<li>HTTP server load is significantly reduced (fewer overall HTTP requests
+  due to cache hit rate)</li>
+<li>Faster client responsiveness. Clients can typically load content from
+  local cache without going to network for validation.</li>
+</ul>
+<p>Some caveats include:</p>
+<ul>
+<li>Isn't as suitable for highly-dynamic content. If your generated/static
+  content changes with great frequency (seconds to minutes), you won't
+  see as pronounced a boost from this strategy.</li>
+<li>Version management. You'll have multiple versions floating around on
+  your server. You'll need to manage which ones need to be active and
+  which can be deleted.</li>
+<li>URLs aren't as friendly. People won't notice for CSS, JS, or images.
+  But, it might be annoying noise in your browser's URL bar.</li>
+</ul>
+<p>When you have a cluster of machines serving content, there are some
+things to watch out for:</p>
+<ul>
+<li>ETag must be consistent across all machines. Some HTTP servers like to
+  use the filesystem identifier for the ETag. This isn't consistent
+  across different filesystem instances. If you can't provide consistent
+  ETag efficiently, turn it off: you don't need it for this strategy to
+  work.</li>
+<li>You must deploy new versions to all servers before switching over the
+  <em>latest</em> pointer. If you don't, a client could read the pointer from a
+  <em>ready</em> host and then attempt to fetch data from a host that doesn't
+  have the new version yet.</li>
+</ul>
+<p>Additional Improvements:</p>
+<ul>
+<li>Use compression on HTTP responses. Hopefully your HTTP stack does this
+  automatically. It will likely cut down on wire transfer time at the
+  small expense of increased CPU utilization. Some HTTP servers might
+  even cache the compressed entity to save redundant work.</li>
+<li>Date strings are good version identifiers. e.g. <em>0/20120109T2130/foo</em></li>
+</ul>
 </div>
 
               </div>

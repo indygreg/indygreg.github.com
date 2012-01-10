@@ -49,26 +49,21 @@ href="/blog/feed/atom" />
               <div id="content-wide">
                 
 <div class="note">
-  <h1>Personal Notes</h1>
-<p>This section of the site contains my public personal notes. They are
-effectively a personal wiki. But, it isn't technically a wiki, so I'm
-not calling it that.</p>
-<p>Content is meant to be my personal resource. So, I'm authoring with me
-and only me as the intended audience. If explanations are sparse, that
-is why. More developed thoughts can be found on my <a href="/blog/">blog</a>.</p>
-<h2>Tools, Tips, and Tricks</h2>
+  <h1>Perl</h1>
+<h2>Best Practices</h2>
+<p>Write modules, not scripts. This follows my aphorism of <em>everything is a
+library</em>.</p>
+<p>Read <a href="http://shop.oreilly.com/product/9780596001735.do">Perl Best Practices</a>.
+Heed them all almost always.</p>
+<p>Modules you should use:</p>
 <ul>
-<li><a href="http.html">HTTP</a></li>
-<li><a href="perl.html">Perl</a></li>
-<li><a href="python.html">Python</a></li>
-<li><a href="ssh.html">SSH</a></li>
-<li><a href="static-content-hosting.html">Static Content Hosting</a></li>
-<li><a href="tech-aphorisms.html">Tech Aphorisms</a></li>
-</ul>
-<h2>Opinions</h2>
-<ul>
-<li><a href="android-complaints.html">Android Complaints</a></li>
-<li><a href="annoyances.html">List of Annoying Things and Practices</a></li>
+<li>strict - Always</li>
+<li>warnings - Always. Make all fatal if possible.</li>
+<li><a href="http://search.cpan.org/~thaljef/Perl-Critic-1.117/lib/Perl/Critic.pm">Perl::Critic</a> -
+  Crank up the reporting to brutal. Only diverge from practices when you
+  absolutely need to. This policy produces remarkably readable Perl.</li>
+<li>English - Replace the built-in line noise variables with long forms
+  for readability.</li>
 </ul>
 </div>
 
