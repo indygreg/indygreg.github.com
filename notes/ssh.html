@@ -48,13 +48,58 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content-wide">
                 
+<div class="note">
+  <h1>SSH</h1>
+<h2>Tunnels</h2>
+<h3>Syntax</h3>
+<pre><code>-L [bind_address:]port:host:hostport]
 
-<h1>Welcome</h1>
+# Forward local :8000 to :80 on the host connected to
+$ ssh -L 8000:localhost:80 host
 
-<p>Welcome to my personal home on the web. I'm still working on the
-layout and content, so stay tuned!</p>
+# Forward local :9000 to :9000 on a host the connected to host can reach
+$ ssh -L 9000:foo.example.com:9000 host
 
-<h1>Recent Posts</h1>
+-R [bind_address:]port:host:hostport]
+
+# Have :8000 on the remote host forward all connections to localhost:80
+$ ssh -R 8000:localhost:80 host
+
+# Have :8000 on the remote host forward all connections to Google
+# (useful for testing)
+$ ssh -R 8000:www.google.com:80 host
+
+-D [bind_address:]port
+
+# Set up SOCKS proxy listening on localhost:5000. Configure
+# FoxyProxy for SOCKSv4 or SOCKSv5 on localhost:5000 and you have an
+# instant HTTP proxy server! Be sure to enable remote resolution so
+# DNS happens on the remote host.
+$ ssh -D 5000 host
+</code></pre>
+<h3>MyEnTunnel</h3>
+<p><a href="http://nemesis2.qx.net/pages/MyEnTunnel">MyEnTunnel</a> is a Windows
+application that maintains persistent SSH tunnels. Install it as a
+startup application and watch as your tunnels always stay connected.</p>
+<h2>SSH Server Configuration</h2>
+<p>When configuring an SSH server on a new machine, ensure that it has the
+following items in the config file (typically /etc/sshd_config):</p>
+<pre><code>PermitRootLogin no
+
+# disable passwords and only allow more secure authn, like pubkey
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+
+# whitelist specific users
+AllowUsers gps
+
+# whitelist groups
+AllowGroups foo
+</code></pre>
+<p>For personal (and possibly production machines):</p>
+<pre><code>X11Forwarding yes
+</code></pre>
+</div>
 
               </div>
           </div>

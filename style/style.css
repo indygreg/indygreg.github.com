@@ -205,12 +205,22 @@ img.aligncenter {
 	padding: 20px 30px 0px 30px;
 }
 
+#page h1, h2, h3, h4, h5 {
+  margin: 0 0 10px 0;
+}
+
 /* Content */
 
 #content {
 	float: left;
 	width: 540px;
 	padding: 0px 20px 0px 0px;
+}
+
+#content-wide {
+  float: left;
+  width: 800px;
+  padding: 0px 20px 0px 0px;
 }
 
 .post {

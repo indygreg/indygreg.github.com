@@ -1,0 +1,124 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc'c Blog</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content-wide">
+                
+<div class="note">
+  <h1>Static Content Hosting</h1>
+<p>Static content hosting is a very common practice. As simple as it is
+(compared to the more complicated dynamic content hosting), most people
+don't do it right.</p>
+<p>I will define static content hosting as hosting/serving content that
+does not change ever, changes infrequently (the periods between changes
+are much longer than the periods between requests), and can be copied
+directly from a filesystem, database, or similar backing store. For the
+purpose of this page, I will assume HTTP is being used as the transport.</p>
+<h2>Putting Things in Perspective</h2>
+<p>A properly configured modern computer is more than capable of saturating a
+1Gbps link using a fraction of the available CPU and memory. Assuming
+you are serving from a local hard drive, you will likely saturate your
+hard drive. However, if the set of served static content is cumulatively
+less than system memory, you may not saturate your hard drive due to
+utilization of the page cache, which caches I/O in memory.</p>
+<h2>Starting Simple</h2>
+<p>The easiest way to perform static hosting is by pointing an HTTP server
+(like Apache or nginx) at a directory on your file system, let's call it
+<em>/docroot/</em>. Your fictional server at http://example.com/ has <em>/</em> mapped
+to <em>/docroot/</em> so a <em>GET http://example.com/foo.txt HTTP/1.1</em> retrieves
+<em>/docroot/foo.txt</em> from the filesystem.</p>
+<p>Unless you have caching configured in your HTTP server, on every initial
+request by a client, your server will map the request to a filename then
+stat() that file. The stat() result may be cached by the OS. If not, it
+goes out to disk to get data. This could be expensive, but it shouldn't
+be too bad. The server likes takes the file's mtime and puts that in a
+Last-Modified header. The headers are sent and the file is copied from
+the filesystem to the HTTP response body unmodified.</p>
+<p>On subsequent requests, the client sends an HTTP request with the
+If-Modified-Since (IMS) header set to the value from the Last-Modified
+header.  When the server sees this, it does a stat() on the file like
+before. However, it compares the mtime with that from the IMS header. If
+the mtime is the same or older than the IMS header value, the server
+returns a 304 Not Modified, effectively saying "nothing changed since
+the last request: use your cached copy."</p>
+<p>This is a good start. Unfortunately, it is far from perfect. It is also
+where a number of people stop.</p>
+<h2>Use Compression</h2>
+<p>Compression (likely) reduces the encoding size of entities. It does take
+CPU to perform compression, but the results are often worth it. Even on
+a local network, the time it takes to transmit a large resource over the
+wire could be significantly longer when uncompressed, even if you factor
+in the overhead for performing the compression on both ends (which
+likely isn't too high).</p>
+<p>I could say more, but Google has <a href="https://code.google.com/speed/articles/use-compression.html">made a case</a>
+in their <em>Let's Make the Web Faster</em> resource.</p>
+<p>The only time you shouldn't use compression is if you absolutely can't
+afford the additional CPU, you are transferring resources that are
+generally uncompressible (e.g. binaries or media), or are on a local,
+high capacity network, and don't aren't that sensitive to increased load
+times.</p>
+</div>
+
+              </div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2011 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

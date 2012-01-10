@@ -23,6 +23,7 @@ Released   : 20101114
 <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
 href="/blog/feed/atom" />
 <link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
 
 
   </head>
@@ -32,7 +33,8 @@ href="/blog/feed/atom" />
   <div id="menu">
   <ul>
     <li><a href="/">Home</a></li>
-    <!--<li><a href="/blog/">Blog</a></li>-->
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
     <li><a href="/work.html">Work</a></li>
     <li><a href="/skills.html">Skills</a></li>
     <li><a href="/thoughts.html">Thoughts</a></li>
@@ -44,8 +46,8 @@ href="/blog/feed/atom" />
       <div id="page">
         <div id="page-bgtop">
           <div id="page-bgbtm">
-            <div id="content">
-              
+              <div id="content-wide">
+                
 
 <h1>Body of Work</h1>
 
@@ -459,6 +461,30 @@ knowledge of the system. I will say that at the end of the day, we went
 from crashing every day on 500 users to being stable for weeks on end and
 serving over 10,000 users on roughly the same hardware configuration.</p>
 
+<h2>Mozilla (July 2011 - Present)</h2>
+
+<p>I started working for Mozilla on July 18, 2011 as part of the Services
+team. The Services team is responsible for writing and maintaining a
+number of Mozilla's hosted services. When I started, the main servie was
+Firefox Sync, but a number of other services were in the pipeline.
+
+I started out with the Firefox Sync client team, which is charged with
+maintaining the Sync client shipped as part of Firefox. The Sync client
+in Firefox is authored in JavaScript and XUL, two technologies I wasn't
+too familiar with going in.
+
+My first major contribution to Sync/Firefox was add-on sync, which
+shipped as part of Firefox 11. This was a heavily requested feature, so
+I felt quite good about shipping it.
+
+In my early days at Mozilla, I grew frustrated with the build system (as
+most Mozilla people do). So, I set out to make improvements to the build
+system. At the time I wrote this, the work was ongoing. Check back
+later.
+
+My story at Mozilla is an unfinished book. I'll try to keep this section
+updated. But, please excuse me if it lags behind a bit.
+
 <h2>Outside of Full-Time Job (Over All Time)</h2>
 
 <h3>Zippylog</h3>
@@ -498,21 +524,7 @@ and visualization tool. I decided to marry them by writing a Collectd plugin,
 which writes values to Graphite/Carbon. (Carbon is the name of the network
 service that receives values.)</p>
 
-            </div>
-            <!--
-          <div id="sidebar">
-          <ul>
-            <li>
-              <h2>Categories</h2>
-              <ul>
-              </ul>
-            </li>
-          </ul>
-        </div>
-
-
--->
-            <div style="clear: both;">&nbsp;</div>
+              </div>
           </div>
         </div>
       </div>

@@ -1,0 +1,477 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc'c Blog</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content-wide">
+                
+<div class="note">
+  <h1>HTTP</h1>
+<h2>Common Resources</h2>
+<p>RFC 2616 is the definitive resource for HTTP/1.1. The IETF currently has
+a working group, Httpbis, who has a charter to revise and clarify RFC
+2616. Their documents (currently drafts) will eventually replace RFC
+2616. The drafts have gone through numerous revisions and I now look to
+them when looking for clarification.</p>
+<ul>
+<li>RFC 2616 <a href="http://www.w3.org/Protocols/rfc2616/rfc2616.html">HTML</a>
+  <a href="https://www.ietf.org/rfc/rfc2616.txt">text</a></li>
+<li>Httpbis <a href="https://tools.ietf.org/wg/httpbis/">drafts</a></li>
+</ul>
+<h2>Lessons Learned</h2>
+<h3>Don't Trust HTTP Stacks</h3>
+<p>I've learned to not trust HTTP implementations. Writing a proper HTTP
+stack is hard. Making it conform to all the corner cases is even harder.</p>
+<p>When dealing with load balancers and proxies, I tend to avoid performing
+HTTP until absolutely necessary. In other words, put load balancers in
+TCP mode and don't have them talk HTTP. I trust a network appliance's
+ability to speak TCP more than HTTP.</p>
+<h2>Common Mistakes</h2>
+<h3>Improper Status Code Usage</h3>
+<p>One of the biggest mistakes I see people make with HTTP is improper
+usage of status codes. I attribute most of the mistakes to people
+reading the simple text description of the status code and not
+specification. This naive approach leads to completely wrong usage of
+codes like 406 Not Acceptable, which is used in relationship to the
+Accept- series of headers and has nothing to do with the <em>general</em>
+acceptability of a particular request.</p>
+<h2>Advanced Concepts</h2>
+<h3>Conditional Requests</h3>
+<p>HTTP provides a mechanism whereby you can perform conditional requests.
+Effectively the client says "I know X and Y about this resource: only
+retrieve if it is different." This is a very powerful construct. Proper
+understanding of conditional requests can mean the difference between
+effortless scalability and a costly hardware or software build-out.</p>
+<h4>Weak and Strong Validators</h4>
+<p>Validators are means by which content/resources are compared. They come
+in two flavors: weak and strong.</p>
+<p>Weak validators are typically cheaper to create and compare compared to
+strong validators. However, they aren't as effective.</p>
+<p>Strong validators have the rule that they must change to a new,
+previously unused or guaranteed unique value whenever a change occurs to
+the representation data such that a change would be observable in the
+payload body of a 200 response to a GET. Two resources cannot share the
+same validator unless the paylad body would be identical. Strong
+validators should also be unique over all representations over all time.</p>
+<p>An example of a weak validator is a time. You could take the time a file
+or record was last modified and use that as a validator. An example of a
+strong validator is the SHA-2 of a file.</p>
+<p>Many people use hashes for strong validators. This is a good way to
+ensure the uniqueness requirements for strong validators, as the
+probability of hash collisions (assuming a proper algorithm) is
+extremely small.</p>
+<p>The general rule is to use stong validators if you can. Strong
+guarantees are better than weak guarantees, after all. However, pay
+careful attention to how you are calculating the validators. Calculation
+could be expensive, possibly too expensive for your needs. You may be
+tempted to cache these strong validators. Be careful: can you guarantee
+the cache will <em>always</em> be updated if the underlying resource changes?
+If not, you will likely encounter bugs.</p>
+<p>That being said, weak validators have their use. For example, you may
+want to force a conditional request based on resource age alone. Here,
+weak validators are perfectly fine.</p>
+<p>It is common to use a date and time as a validator. These validators are
+typically weak, but they can be strong if some conditions are met. Read
+the spec for the crazy rules.</p>
+<p>Dates work great as cheap validators under most circumstances. However,
+they don't work too well if:</p>
+<ul>
+<li>Resources are updated multiple times per second</li>
+<li>Times aren't always consistent (e.g. multiple nodes serving from local
+  filesystems behind a non-deterministic load balancer)</li>
+</ul>
+<p>The ETag header holds the validator for a particular representation. It
+is an opaque quoated string. If it is prefixed with <em>W/</em>, the validator
+is weak. Otherwise it is strong.</p>
+<p>Unfortunately, there is no one-size-fits-all rule for validator
+generation. If you are serving files off a filesystem, the HTTP server
+will typically use mtime as a weak validator and MD5, SHA-1, etc of the
+file's contents as a strong validator. Unfortunately, the ETag header is
+sent at the top of the response, so the value must be calculated before
+the response body is sent on the wire. If the server were dynamically
+calculating file hashes, it would have to choose between reading a file
+once from I/O and buffering to memory or performing 1 read pass to
+calculate the hash and another to send the file over the wire. The real
+answer is to use a modern filesystem like ZFS where file hashes are
+stored as part of the file metadata and are updated automagically.
+However, most HTTP servers don't have these kinds of deep hooks to save
+work. In the end, you know your own application the best, so you know
+how to most effeciently implement validator generation.</p>
+<h3>Partial Content</h3>
+<p>Servers can return partial responses for resources.</p>
+<p>Request has Range header. Could also have If-Range to make conditional.
+Response contains Content-Range OR <em>Content-Type: multipart/byteranges</em>
+with Content-Range for <em>each</em> part. Response must also contain Date and
+{Cache-Control, ETag, Expires, Content-Location, Last-Modified, Vary} if
+a non-range request would have resulted in a 200 and contained these.</p>
+<p>Response code is 206 on success or 416 on failure.</p>
+<p>Clients can request multiple ranges. There are all kinds of crazy rules
+around this. Read the spec.</p>
+<h3>Representation Transformation</h3>
+<p>It is possible for intermediary agents to transform responses. If they
+do, they are supposed to return 203 for originally 200 responses. If the
+original response wasn't 200, they should use the Warning header with
+the 214 code. I <em>think</em> they are supposed to retain the original
+response code at that point, but I'm not clear.</p>
+<p>Representation transformation can be controlled by Cache-Control
+no-transform.</p>
+<p>In the wild, many intermediary agents transform content without doing
+the right thing.</p>
+<p>Not many stacks seem to have support for this. If writing an HTTP
+service, I would not rely on HTTP transformation unless you have total
+confidence in all HTTP stacks. In other words, only use this if you are
+a business deploying a private application on your network. If an open
+source project, you don't know what others' stacks will look like, so
+avoid relying on this.</p>
+<h2>Status Codes</h2>
+<h3>100 Continue</h3>
+<p><a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1">2616</a>
+<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#sec8.2.3">usage</a></p>
+<p>Often used as part of look-before-you-leap conditional POSTs or PUTs
+dealing with large payloads. Can be in response to any HTTP method,
+however.</p>
+<p>HTTP request must have <em>Expect: 100-continue</em> header.</p>
+<p>Some stacks (like parts of .NET) utilize conditional POST or PUT
+automatically. Many (most?) HTTP server stacks intercept <em>Expect:
+100-continue</em> requests <strong>before</strong> they hit the application layer. Apache
+is an example.</p>
+<p>These responses can be sent <em>after</em> the server has seen part of the
+request. This may confuse poorly written HTTP stacks with strict state
+machines.</p>
+<p>Some clients (can't remember which) send conditional requests but don't
+wait for this response.</p>
+<p>If server sends 100 Continue, it must eventually send a final response.</p>
+<h3>101 Switching Protocols</h3>
+<p>Used if request contains Upgrade header. Part of switching the protocol
+of the TCP channel. Has nothing to do with application-level protocols.</p>
+<h3>200 OK</h3>
+<p>Most common response code. It is almost always safe to send this. Fall
+back to this status code if nothing else makes sense.</p>
+<h3>201 Created</h3>
+<p>Request resulted in new resource being created. Often used as response
+to PUT to a resource-centric URI.</p>
+<p>Response's Location header contains URI for best representation of the
+created resource. This is typically the URI for the request.</p>
+<p>Response body contains resource characteristics and location(s). Media
+type of response can be anything.</p>
+<p>Resource must be created (and available) before server returns. If not,
+use 202.</p>
+<h3>202 Accepted</h3>
+<p>Used for deferred processing. Server sends when it has received
+something but hasn't acted on it.</p>
+<p>Response body should contain pointers so client can query processing
+state.</p>
+<p>I've used this for job processing. Set up a bunch of workers processing
+jobs. Set up HTTP server. When client submits work, server assigns
+unique ID to job, saves it to a queue, then returns a 202 with metadata
+describing job and a URI to query for job state. Client then comes back
+later and queries job status URI to see if the job has finished. If not,
+the client typically waits and polls again. If it has, the client moves
+on, likely doing something with processed data.</p>
+<h3>203 Non-Authoritative</h3>
+<p>For 200's that have been modified by an intermediary agent. See section
+about representation transformations for more.</p>
+<h3>204 No Content</h3>
+<p>Like a 200 but with no response body and special semantics. If server
+wishes to convey information about request, that is done in headers.</p>
+<p>If you communicate any additional information in custom headers, I think
+it is best to use 200, 201, or 202 and send that as part of the response
+body instead.</p>
+<h3>205 Reset Content</h3>
+<p>Mostly used for interactive user agents. Server effectively tells client
+"I processed what you sent, reset your state and prepare to go again."</p>
+<p>Contains no response body.</p>
+<p>Most of the complexity here is in the client. I'm not sure what type of
+client support there is for this code.</p>
+<p>I've never seen this used in the wild. I would avoid it unless it
+really, really makes sense.</p>
+<h3>206 Partial Content</h3>
+<p>Used in response to a partial content request. See the section on that.</p>
+<h3>300 Multiple Choices</h3>
+<p>The requested resource has multiple representations. Almost certainly
+sent in response to a GET.</p>
+<p>Response body contains representation of different choices. You should
+contain URIs in this response.</p>
+<p>If there is a <em>best</em> URI, that is sent in the Location header. Clients
+are allowed to auto redirect if Location header is set. Watch out for
+this trap! Not sure what popular agents do in practice.</p>
+<p>When considering this status code, be sure you aren't reinventing
+content negotiation. If you don't want to rely on content negotiation
+and expose different media types at different URIs, this may come in
+handy.</p>
+<h3>301 Moved Permanently</h3>
+<p>Requested resource has been moved permanently.</p>
+<p>Only use this if you are absolutely sure you'll never want to reuse the
+URI, as downstream agents may remember the permanent change and not ask
+the server again if things have changed. You can theoretically control
+this with caching headers, but don't rely on it.</p>
+<p>New URI should be in Location header. It is valid to change the value of
+the Location header if things change later on. But, be sure that the
+original URI handed out by Location will also 3XX to new URI, or clients
+could get lost.</p>
+<h3>302 Found</h3>
+<p>Resource temporarily at another URI.</p>
+<p>This is an old HTTP 1.0 status code. Use one of the other 3XX codes if
+possible.</p>
+<p>This code is often used incorrectly as a result of a POST. The semantics
+of this code are "that thing you requested is over here for the moment."
+if you are looking for "I processed your request and the results are
+here," use 303.</p>
+<p>Agents are allowed to transparently convert from POST to GET when
+receiving this code. Consider 307 instead.</p>
+<h3>303 See Other</h3>
+<p>Provides an indirect response to a request.</p>
+<p>This should be used when processing POSTs and you want to return a
+resource while maintaining URI purity. For example, if submitting form
+data with POST, the server processes that request without issue and
+wants to give the client a representation of the new state. The server
+would issue a 303 with Location pointing to the URI representing the
+result of the POST.</p>
+<h3>304 Not Modified</h3>
+<p>Sent in response to conditional requests and says the response has not
+been modified.</p>
+<h3>305 Use Proxy</h3>
+<p>Deprecated in HTTP Bis drafts. Avoid this.</p>
+<h3>306 (Unused)</h3>
+<p>Been deprecated for a while. Don't use.</p>
+<h3>307 Temporary Redirect</h3>
+<p>Similar to 302 except different semantics. If writing a new service and
+you don't need HTTP/1.0 compatbility, you can use this.</p>
+<p>Agents may perform redirect automatically for safe methods, otherwise
+agent is required to confirm redirect. That seems to imply that this
+isn't suitable for automated agents??</p>
+<h3>4xx Client Errors</h3>
+<p>The 4xx class is for client errors. They are frequently misused because
+people read the short name not the full description. Response bodies to
+4xx should describe the error.</p>
+<h3>400 Bad Request</h3>
+<p>From the spec:</p>
+<pre><code>The server cannot or will not process the request, due to a client
+error (e.g., malformed syntax).
+</code></pre>
+<p>There is much contention over whether this applies strictly to the HTTP
+protocol or whether it can be expanded to application-level as well.
+Many have started using this to indicate general failures with the
+request (e.g. missing a query string parameter).</p>
+<p>In the ideal world, I think it would be OK to use this as a general
+purpose, application-level "I couldn't process the request because the
+client did something wrong, not me." In the real world, there are
+practical concerns. For example, some HTTP stacks will close the TCP
+connection when they see a 400 because they interpret 400 to mean the
+HTTP bits over the wire couldn't be parsed and the processing state is
+undefined. This is a completely valid concern! If you are an
+intermediary HTTP agent, you have to effectively guess who is right.
+Since you are allowed to close a persistent connection any time, many
+stacks play it safe and do this.</p>
+<p>If you find your high volume web service behind an intermediary agent
+that closes connections after seeing a 400, you could be in a world of
+hurt. All of a sudden requests take a few ms longer to establish the
+socket. And then one day you get random 25s request times. You scratch
+your head for a few minutes then realize you have thousands of sockets
+in TIME_WAIT and you've exhausted your TCP socket pool because of many
+short-lived requests.</p>
+<p>I think HTTP stacks have been trending towards not closing connections
+on 400. But, if you want to liberaly use 400, test on your
+infrastructure first and be sure to continuously monitor things by
+verifying new load balancer software updates, etc.</p>
+<p>Unfortunately, HTTP doesn't have a general purpose "there is something
+generic wrong with the request" status code. So, you can take a (small?)
+risk with 400's, use a more appropriate 4xx, or send a 200 with a media
+type that reflects errors.</p>
+<h3>401 Unauthorized</h3>
+<p>The request requires some form of authentication to be performed.
+Response contains WWW-Authenticate header. Client should then repeat
+with a suitable Authorization header.</p>
+<h3>402 Payment Required</h3>
+<p>Reserved for future use. This was originally conceived to be used for
+micropayments. Nothing official has manifested.</p>
+<p>Some people have devised schemes utilizing this. Since nothing is
+standardized, I recommend avoiding it to avoid nonconformance with
+future specs.</p>
+<h3>403 Forbidden</h3>
+<p>Where 401 is <em>authentication failed</em> 403 can be thought of as
+<em>authorization failed</em>. The credentials and everything else in the request
+are valid, but they don't have access or aren't authorized to make the
+request.</p>
+<p>Note that 403's can leak data by identifying whether a resource exists.
+For example, if user X attempts to access Y and receives a 403, they
+know that Y exists. If you are concerned about this leakage, you are
+allowed to return 404 even though 403 is more technically accurate.</p>
+<h3>404 Not Found</h3>
+<p>Nothing found at the requested URI. Condition could be temporary or
+permanent. If permanent 410 is more appropriate.</p>
+<p>This can also be used when the server doesn't want (or can't) reveal why
+a request is refused or when no other response is applicable.</p>
+<h3>405 Method Not Allowed</h3>
+<p>Sent when the HTTP response method is not allowed for the current URI.
+Response contains Allow header containing comma-delimited list of
+methods supported. Most people forget the Allow header. It is required.</p>
+<h3>406 Not Acceptable</h3>
+<p>Requested content could not be delivered because the server wasn't able
+to satisy the client's parameters given in Accept and Accept- headers.
+In other words, if content negotiation yields nothing suitable, this is
+returned.</p>
+<p>Many people read <em>Not Acceptable</em> and think it means a generic
+client-side error. This is wrong.</p>
+<p>Response should contain details on what content is available so the
+client can do something intelligent instead of giving up.</p>
+<p>See the section on content negotiation.</p>
+<h3>407 Proxy Authentication Required</h3>
+<p>This is like a 401 but is used for proxy authentication.</p>
+<h3>408 Request Timeout</h3>
+<p>The request was not produced/read in the time the server was willing to
+wait. Typically servers will send this automatically and applications
+running on the server have very little control over it.</p>
+<p>This typically only comes up when dealing with slow clients or very
+large uploads.</p>
+<h3>409 Conflict</h3>
+<p>The request could not be performed because it would result in a resource
+in a conflicted state. This is only allowed when the client might be
+able to resolve the conflict and try again. If the conflict can't be
+resolved, the spec says nothing on what should be used.</p>
+<p>Since the client should be able to resolve the conflict, the response
+should contain details to aid this.</p>
+<h3>410 Gone</h3>
+<p>This is like a permanent 404.</p>
+<p>Intelligent clients can remember 410's and may never try to request that
+URI again (because the condition is permanent). So, you shouldn't return
+a 410 unless you are absolutely positively sure that URI won't be used
+again. If you don't know, 404.</p>
+<p>410's are useful to instruct others to remove references to them. For
+example, when a search engine spider sees a 410, it will typically
+deindex the page immediately, However, it may attempt to query a 404
+again later.</p>
+<h3>411 Length Required</h3>
+<p>The server requires a Content-Length header on the request.</p>
+<p>This would likely only occur when performing chunked transfer and the
+server wants to ensure size restrictions <em>before</em> it starts processing
+the request.</p>
+<h3>412 Precondition Failed</h3>
+<p>Sent when a precondition (If-Match, If-None-Match, If-Modified-Since,
+If-Unmodified-Since, If-Range) evaluated to false. What's happening is
+client says "I'm asserting X and Y." Server says, "No, X isn't true,"
+and sends a 412.</p>
+<h3>413 Request Entity Too Large</h3>
+<p>Known as <em>Request Representation Too Large</em> in HTTP Bis drafts.</p>
+<p>The server refuses to process the request because it is too large.</p>
+<p>This can be used to enforce size limits on posted entities.</p>
+<p>The condition is allowed to be temporary and can be identifies as such
+by using Retry-After.</p>
+<h3>414 Request-URI Too Long</h3>
+<p>Known as <em>URI Too Long</em> in HTTP Bis drafts.</p>
+<p>Sent when the URI (the bit in the first line of the HTTP request) is too
+long. HTTP servers typically do this automatically. Unless you are
+implementing an HTTP server, you probably have no justification for
+sending this.</p>
+<p>While the HTTP spec doesn't define a length limit, most servers impose
+one. It is hard-coded in some servers and configurable in others.</p>
+<p>Anything over 1024 bytes is probably pushing the envelope. If you see
+this error, you should probably be sending data via the HTTP request
+body, not the URI.</p>
+<h3>415 Unsupported Media Type</h3>
+<p>The server can't understand the Content-Type of the request.</p>
+<h3>416 Requested Range Not Satisfiable</h3>
+<p>Returned when performing a range request and none of the requested
+ranges could be fulfilled.</p>
+<h3>417 Expectation Failed</h3>
+<p>The client sent an Expect header and the server doesn't know how to
+handle it.</p>
+<h3>426 Upgrade Required</h3>
+<p>The server is requesting that the client change the protocol on the
+channel. The response contains an Upgrade header saying what to upgrade
+to. After that, the client is supposed to follow typical upgrade
+procedure.</p>
+<p>This does <strong>not</strong> involve application-level upgrades. Instead, it is
+telling the client to change the underlying protocol away from
+HTTP/1.1 and to something else.</p>
+<h3>500 Internal Server Error</h3>
+<p>General server-side error code. If the server couldn't process the
+request because of an error on its end, this should be sent.</p>
+<p>Many HTTP handlers will send this out in the case of an uncaught
+exception, other errors.</p>
+<h3>501 Not Implemented</h3>
+<p>Sent when the server does not support handling a request.</p>
+<p>If I'm implementing an HTTP service, I use this for URIs whose
+functionality I haven't coded yet.</p>
+<h3>502 Bad Gateway</h3>
+<p>An intermediary agent sends this when an error was encountered talking
+to an upstream server.</p>
+<h3>503 Service Unavailable</h3>
+<p>Denotes a temporary condition where the server or service is unavailable
+for whatever reason and can't or doesn't want to process a request.</p>
+<p>Some servers send this automatically. Others will just not accept new
+sockets.</p>
+<p>It is a good idea to send a Retry-After header to tell clients when they
+should try again. This can be used for backoff control. Of course, not
+all clients heed the advice and try again immediately, so you can't rely
+on it as a infallible failure mechanism.</p>
+<h3>504 Gateway Timeout</h3>
+<p>An intermediary agent timed out while waiting for a response from an
+upstream server.</p>
+<h3>505 HTTP Version Not Supported</h3>
+<p>The protocol in the first line of the request message is not supported.
+This is typically sent automatically by the server.</p>
+</div>
+
+              </div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2011 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
