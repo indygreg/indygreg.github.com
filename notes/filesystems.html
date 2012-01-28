@@ -49,22 +49,23 @@ href="/blog/feed/atom" />
               <div id="content-wide">
                 
 <div class="note">
-  <h1>Perl</h1>
-<h2>Best Practices</h2>
-<p>Write modules, not scripts. This follows my aphorism of <em>everything is a
-library</em>.</p>
-<p>Read <a href="http://shop.oreilly.com/product/9780596001735.do">Perl Best Practices</a>.
-Heed them all almost always.</p>
-<p>Modules you should use:</p>
-<ul>
-<li>strict - Always</li>
-<li>warnings - Always. Make all fatal if possible.</li>
-<li><a href="http://search.cpan.org/~thaljef/Perl-Critic-1.117/lib/Perl/Critic.pm">Perl::Critic</a> -
-  Crank up the reporting to brutal. Only diverge from practices when you
-  absolutely need to. This policy produces remarkably readable Perl.</li>
-<li>English - Replace the built-in line noise variables with long forms
-  for readability.</li>
-</ul>
+  <h1>Filesystems</h1>
+<p>This page contains random notes on filesystems.</p>
+<h2>Transparent compression</h2>
+<p>Some modern filesystems (ZFS, btrfs) support transparent compression. If
+you have the CPU to spare, this can make a world of difference. If you
+are on magnetic hard drives (which commonly get saturated), you lessen
+the amount of data stored on physical disk and lessen how long it takes
+to read that data. This can result in significant I/O increases. If you
+are on an SSD, you store less on disk and drive the cost per storage
+lower.</p>
+<h1>Copy on Write</h1>
+<p>A FS that supports copy on write (COW) will not physically copy bits
+when a file is copied until the copy changes. Even then, it is often
+intelligent about only writing the bits that changed. Someone told me
+that the page cache is even smart enough to not duplicate the memory
+until it changes. I haven't confirmed that and am not sure which file
+systems/kernels that applies to (hopefully all).</p>
 </div>
 
               </div>
