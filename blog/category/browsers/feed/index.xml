@@ -10,7 +10,7 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 09 Apr 2012 03:43:14 GMT</pubDate>
+    <pubDate>Mon, 09 Apr 2012 03:56:39 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -338,7 +338,7 @@ someone else. Even if your data is encrypted locally, someone with the
 key can decrypt it. Services that send the entropy source to the server
 are subject to man-in-the-middle attacks and could be subverted by
 malicious or legal actions occurring on the server side (e.g. the
-service operator could be compelled through a subpeona to capture your
+service operator could be compelled through a subpoena to capture your
 entropy source and use it to decrypt your stored data, possibly without
 your knowledge).</p>
 <p>Firefox is the only product whose encryption source is full-entropy. All
