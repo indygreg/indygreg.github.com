@@ -109,9 +109,7 @@ IV. (It is worth noting that Chrome
 <a href="https://src.chromium.org/viewvc/chrome/trunk/src/sync/util/nigori.cc?annotate=129476#l157">does not use</a>
 a cryptographically-secure random number generator for the IV. I don't
 believe this amounts to anything more than a mild embarassment in this
-case.) Please note that PBKDF2 uses the iteration count as part of the
-hash, so knowing <em>Kuser</em> (which is transmitted to Google) does not help
-you derive <em>Kenc</em> or <em>Kmac</em>.</p>
+case.)</p>
 <p>When someone wishes to sync to a new Chrome instance, she simply enters her
 Google Account username and password (or custom sync passphrase)
 and data is downloaded from Google's servers and applied. The pre-PBKDF2
@@ -199,8 +197,9 @@ posts
 and <a href="http://arstechnica.com/apple/news/2012/04/can-apple-give-police-a-key-to-your-encrypted-iphone-data-ars-investigates.ars">3</a>
 and Matthew Green's <a href="http://blog.cryptographyengineering.com/2012/04/icloud-who-holds-key.html">response</a>.</p>
 <h2>Internet Explorer</h2>
-<p>Internet Explorer does not appear to have syncing functionality out of
-the box. Therefore, there is nothing to examine.</p>
+<p>Internet Explorer supports syncing of favorites via Windows Live Mesh.</p>
+<p>This was discovered after this post was originally written, which is why
+there are no additional details.</p>
 <h2>Firefox</h2>
 <p>Firefox has built-in support for syncing browser data via Firefox Sync.
 It doesn't sync as many data types as Chrome, but the basics (history,
@@ -425,6 +424,11 @@ Firefox Sync. That being said, I believe this post has been objective
 and not subject to my bias towards Firefox and/or Firefox Sync. If you
 feel differently, please leave a comment and I will adjust the post as
 necessary.</p>
+<p><strong>Edit 2012-04-16</strong> Note that IE supports Bookmark sync via Windows Live
+Mesh (thanks to Nick Richards for pointing it out in the comments). Also
+removed an incorrect sentence from the Chrome section which incorrectly
+stated that the PBKDF2 iteration count was part of the hash in each
+iteration.</p>
 
   </div>
 </div>
