@@ -10,10 +10,214 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 16 Apr 2012 06:47:23 GMT</pubDate>
+    <pubDate>Mon, 07 May 2012 20:59:47 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Improving the Mozilla Build System Experience</title>
+      <link>http://gregoryszorc.com/blog/2012/05/07/improving-the-mozilla-build-system-experience</link>
+      <pubDate>Mon, 07 May 2012 14:00:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/05/07/improving-the-mozilla-build-system-experience</guid>
+      <description>Improving the Mozilla Build System Experience</description>
+      <content:encoded><![CDATA[<p><em>tl;dr User experience matters and developers are people too. I
+have proposed a tool to help developers interact with the Firefox build
+system and source tree.</em></p>
+<p>I don't think I have to make my case when I state that Mozilla's build
+system end-user experience is lacking. There are lots of hurdles to overcome:</p>
+<ul>
+<li>Determine where to obtain the source code.</li>
+<li>Install a source control system (possibly).</li>
+<li>Wait a <em>long</em> time for the large source repository to download.</li>
+<li>Figure out how to launch the build process (unlike many other build
+  systems, it isn't as simple as <code>configure</code> or <code>make</code> - although it is
+  close).</li>
+<li>Determine which dependencies need to be installed and install them
+  (this can also take a long time).</li>
+<li>Create a configuration file (mozconfig).</li>
+<li>Build the tree (another long process).</li>
+</ul>
+<p>If you want to contribute patches, there are additional steps:</p>
+<ul>
+<li>Configure Mercurial with your personal info.</li>
+<li>Configure Mercurial to generate patches in proper format.</li>
+<li>Create a Bugzilla account (made simpler through Persona!).</li>
+<li>Figure out the proper Bugzilla product/component (even I still
+  struggle at this) so you can file a bug.</li>
+<li>Figure out how to attach a patch to a bug and request review (it isn't
+  intuitive if you've never used Bugzilla before).</li>
+<li>Figure out who should review patch.</li>
+<li>Learn how tests work so you can:</li>
+<li>Write new tests.</li>
+<li>Run existing tests to verify your changes.</li>
+<li>Obtain commit access (so at least you can push to Try).</li>
+<li>Learn how to push to Try.</li>
+<li>Learn about <a href="https://tbpl.mozilla.org/">TBPL</a>.</li>
+<li>Discover and use some of the amazing tools to help you
+  (<a href="https://mxr.mozilla.org/">MXR</a>, <a href="https://github.com/pbiggar/trychooser">trychooser</a>,
+  <a href="https://bitbucket.org/sfink/mqext">mqext</a>, etc).</li>
+</ul>
+<p>Granted, not all of these are required. But, they will be for returning
+contributors. My point is that there are lots of steps here. And, every
+one of them represents a point where someone could get frustrated and
+bail -- a point where Mozilla loses a potential contributor.</p>
+<p>Ever since I started at Mozilla, I've been thinking of ways this could
+be done better. While the
+<a href="https://developer.mozilla.org/En/Developer_Guide">Developer Guide</a>
+on MDN has improved drastically in the last year, there are still many
+ways the process could be improved and streamlined.</p>
+<p>In <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a>,
+I've put forward the groundwork of a tool to make the developer
+experience more user friendly. Yes, this is a vague goal, so let me go
+in to further detail.</p>
+<p>What I've submitted in the bug is essentially a framework for
+performing common actions related to the build system and source tree.
+These actions are defined as methods in Python code. Hooking it all
+together is a command-line interface which is launched via a short
+script in the root directory called <em>mach</em> (<em>mach</em> is German for <em>do</em>).
+Since actions speak louder than words, here's an example:</p>
+<pre><code>$ ./mach
+
+usage: mach command [command arguments]
+
+This program is your main control point for the Mozilla source tree.
+
+To perform an action, specify it as the first argument. Here are some common
+actions:
+
+  mach build         Build the source tree.
+  mach help          Show full help.
+  mach xpcshell-test Run xpcshell test(s).
+
+To see more help for a specific action, run:
+
+  mach &lt;command&gt; --help
+
+e.g. mach build --help
+</code></pre>
+<p>And, going into a sub-command:</p>
+<pre><code>$ ./mach xpcshell-test --help
+
+usage: mach xpcshell-test [-h] [--debug] [TEST]
+
+positional arguments:
+  TEST         Test to run. Can be specified as a single JS file, an
+               xpcshell.ini manifest file, a directory, or omitted. If
+               omitted, the entire xpcshell suite is executed.
+
+optional arguments:
+  -h, --help   show this help message and exit
+  --debug, -d  Run test in debugger.
+</code></pre>
+<p>Now, I've focused effort at this stage on performing actions after the
+initial build environment is configured. The reason is this is
+low-hanging fruit and easily allows me to create a proof-of-concept.
+But, I have many more ideas that I'd eventually like to see implemented.</p>
+<p>One of my grand ideas is to have some kind of setup wizard guide
+you through the first time you use <em>mach</em>. It can start by asking the
+basics: "Which application do you want to build?" "Release or Debug?"
+"Clang or GCC?" "Should I install Clang for you?" It could also be more
+intelligent about installing dependencies. "I see you are using Ubuntu
+and are missing required packages X and Y. Would you like me to install
+them?" And, why stop at a command-line interface? There's no reason a
+graphical frontend (perhaps Tcl/Tk) couldn't be implemented!</p>
+<p>The setup wizard could even encompass configuring your source control
+system for proper patch generation by ensuring your tree-local <em>.hg/hgrc</em>
+or <em>.git/config</em> files have the proper settings. We could even ask you
+for Bugzilla credentials so you could interact with Bugzilla directly
+from the command-line.</p>
+<p>Once we have all of the basic configs in place, it's just a matter of
+hooking up the plumbing. Want to submit a patch for review? We could
+provide a command for that:</p>
+<pre><code>./mach submit-patch
+
+"refactor-foo" is currently on top of your patch queue.
+
+Submit "refactor-foo"?
+y/n: y
+
+Enter bug number for patch or leave empty for no existing bug.
+Bug number:
+
+OK. A new bug for this patch will be created.
+
+Please enter a one-line summary of the patch:
+Summary: Refactor foo subsystem
+
+Is the patch for (r)eview, (f)eedback, or (n)either?
+r/f/n: r
+
+I've identified Gregory Szorc (:gps) as a potential reviewer for
+this code. If you'd like someone else, please enter their IRC
+nickname or e-mail address. Otherwise, press ENTER.
+Reviewer:
+
+I'm ready to submit your patch. Press ENTER to continue or CTRL+C to
+abort.
+
+Bug 700000 submitted! You can track it at
+https://bugzilla.mozilla.org/show_bug.cgi?id=700000
+</code></pre>
+<p>The framework is extremely flexible and extensible for a few reasons.
+First, it encourages all of the core <em>actions</em> to be implemented as
+Python modules/methods. Once you have things defined as API calls (not
+shell scripts), the environment feels like a cohesive library rather than
+a loose collection of shell scripts. Shell scripts have a place, don't get
+me wrong. But, they are hard to debug and test (not to mention performance
+penalties on Windows). Writing code as reusable libraries with shell
+scripts only being the frontend is a more robust approach to software
+design.</p>
+<p>Second, the command-line driver is implemented as a collection of
+sub-commands. This is similar to how version control systems like Git,
+Mercurial, and Subversion work. This makes discovery of features
+extremely easy: just list the supported commands! Contrast this to our
+current build system, where the answer is to consult a wiki (with likely
+out-of-date and fragmented information) or <em>gasp</em> try to read the
+makefiles in the tree.</p>
+<p>My immediate goal for
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a> is to
+get a minimal framework checked in to the tree with a core design people
+are content with. Once that is done, <strong>I'm hoping other people will come
+along and implement additional features and commands.</strong> Specifically, I'd
+like to see some of the awesome tools like <em>mqext</em> integrated such that
+their power can be harnessed without requiring people to first discover
+they exist and second install and configure them. I think it is silly for
+these obvious productivity wins to go unused by people ignrant of their
+existence. If they are valuable, let's ship them as part of a batteries
+included environment.</p>
+<p>In the long run, I think there are many more uses for this framework.
+For starters, it gives us a rallying point around which to organize all
+of the Python support/tools code in the tree. Currently, we have things
+spread all over the place. Quite frankly, it is a mess. I'd like to have
+a unified <em>site-packages</em> tree with all our Python so things are easier to
+locate and thus improve.</p>
+<p>If nothing else, the tool provides a framework for logging and
+formatting activities in a unified way. There are separate log streams:
+one for humans, one for machines. Under the hood, they both use the
+saming logging infrastructure. When messages are logged, the human
+stream is formatted as simple sentences (complete with terminal
+encodings and colorization). The machine-destined log stream is
+newline-delimited JSON containing the fields that were logged. This
+allows analysis of output without having to parse strings. This is how
+all log analysis should be done. But, that's for another post. Anyway,
+what this all means is that the output for humans can be more readable.
+Colors, progress bars: we can do that now.</p>
+<p>Over time, I imagine some may want to move logic out of configure and
+makefiles and into this tool (because Python is easier to maintain and
+debug, IMO). I would love to see that too. But, I want to stress that this
+isn't a focus right now. I believe this framework should be supplemental
+in the beginning and the official build system should not rely on it. Maybe
+that changes in the future. Time will tell.</p>
+<p>Anyway, this project is currently just my solo effort. This isn't
+captured on a roadmap or anyone's quarterly goals. There is no project page
+listing planned features. If you are interested in helping, drop me a line
+and/or join in on the bug. Hopefully the core framework will land soon.
+Once it does, I'm hoping for an explosion of new, user-friendly
+features/commands to make the overall Firefox development experience
+smoother.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Comparing the Security and Privacy of Browser Syncing</title>
       <link>http://gregoryszorc.com/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing</link>
