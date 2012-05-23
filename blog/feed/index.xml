@@ -10,10 +10,35 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 14 May 2012 07:02:55 GMT</pubDate>
+    <pubDate>Wed, 23 May 2012 15:47:16 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Smaller Firefox Build Logs</title>
+      <link>http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs</link>
+      <pubDate>Wed, 23 May 2012 08:50:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs</guid>
+      <description>Smaller Firefox Build Logs</description>
+      <content:encoded><![CDATA[<p>The other day I looked at a full Firefox build log from TBPL and noticed
+that ~84,000 of the ~170,000 lines in the log I looked at was output
+from archive processes. We were printing thousands of lines showing the
+files that were being added and extracted from the archives that contain
+test files!</p>
+<p>I thought this was wasteful, so I filed
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=757397">bug 757397</a> and
+coded up a patch. Ted agreed that these lines were rather worthless and
+the patch has landed in mozilla-inbound.</p>
+<p>The result of the patch is build logs are about half as big in terms of
+lines. And, it appears at least 500kb is shaved off the compressed log
+files as well.</p>
+<p>The real world impact is you should be able to load build logs from
+the server faster because they are smaller.</p>
+<p>If you were parsing this data before and are impacted by this, please
+leave a comment on the aforementioned bug and we'll go from there.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Python Bindings Updates in Clang 3.1</title>
       <link>http://gregoryszorc.com/blog/2012/05/14/python-bindings-updates-in-clang-3.1</link>

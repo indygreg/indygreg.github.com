@@ -7,12 +7,42 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2012-05-14T07:02:55Z</updated>
+  <updated>2012-05-23T15:47:16Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Smaller Firefox Build Logs]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs" />
+    <id>http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs</id>
+    <updated>2012-05-23T08:50:00Z</updated>
+    <published>2012-05-23T08:50:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
+    <summary type="html"><![CDATA[Smaller Firefox Build Logs]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs"><![CDATA[<p>The other day I looked at a full Firefox build log from TBPL and noticed
+that ~84,000 of the ~170,000 lines in the log I looked at was output
+from archive processes. We were printing thousands of lines showing the
+files that were being added and extracted from the archives that contain
+test files!</p>
+<p>I thought this was wasteful, so I filed
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=757397">bug 757397</a> and
+coded up a patch. Ted agreed that these lines were rather worthless and
+the patch has landed in mozilla-inbound.</p>
+<p>The result of the patch is build logs are about half as big in terms of
+lines. And, it appears at least 500kb is shaved off the compressed log
+files as well.</p>
+<p>The real world impact is you should be able to load build logs from
+the server faster because they are smaller.</p>
+<p>If you were parsing this data before and are impacted by this, please
+leave a comment on the aforementioned bug and we'll go from there.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
