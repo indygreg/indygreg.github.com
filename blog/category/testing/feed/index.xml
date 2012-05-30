@@ -10,7 +10,7 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Wed, 23 May 2012 15:47:16 GMT</pubDate>
+    <pubDate>Wed, 30 May 2012 08:23:15 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -44,7 +44,7 @@ for an example.</p>
 <p>The new method of publishing and consuming test-only JavaScript modules
 is clean and simple. From your Makefile, define <strong>TESTING_JS_MODULES</strong> to
 a list of (JavaScript) files to publish. Optionally, define
-<strong>TESTING_JS_MODULES_DIR</strong> to the relative path they should be published
+<strong>TESTING_JS_MODULE_DIR</strong> to the relative path they should be published
 to. If the directory variable is not defined, they will be published to
 the root directory. Here is an example Makefile.in:</p>
 <pre><code>DEPTH     = ../..
@@ -54,7 +54,7 @@ srcdir    = @srcdir@
 include $(DEPTH)/config/autoconf.mk
 
 TESTING_JS_MODULES = mockserver.js common.js
-TESTING_JS_MODULES_DIR = foobar
+TESTING_JS_MODULE_DIR = foobar
 </code></pre>
 <p>All test modules are installed to a common directory somewhere in the
 object directory. Where is not relevant. Just know it is outside the
