@@ -10,7 +10,7 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 18 Jun 2012 16:50:25 GMT</pubDate>
+    <pubDate>Mon, 18 Jun 2012 16:56:09 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -94,9 +94,9 @@ processor. I'm sure the wheel of parsing this <em>porcelain</em> output format
 has been invented before. But, I hadn't coded any Perl in a while and
 figured this was as good of an excuse as any!</p>
 <p>The Perl script to do the parsing and data analysis is available at
-https://gist.github.com/2945604. The core parsing function simply calls
-a supplied callback whenever a new <em>block</em> of code from the same
-commit/file is encountered.</p>
+<a href="https://gist.github.com/2945604">https://gist.github.com/2945604</a>.
+The core parsing function simply calls a supplied callback whenever a
+new <em>block</em> of code from the same commit/file is encountered.</p>
 <p>I implemented a function that records a mapping of commit times to
 blocks. Finally, I wrote a simple function to write the results.</p>
 <h2>Results</h2>
