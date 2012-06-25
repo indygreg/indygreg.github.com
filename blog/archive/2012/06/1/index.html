@@ -89,7 +89,7 @@ the classic paper
 Despite its age, it is still relevant - GNU make hasn't changed that
 much, after all. The thesis of the paper can be boiled down to the fact
 that make assembles a directed acyclic graph (DAG) and then executes it.
-Using recursive make, you are assembling N DAGs insteado of 1. Each DAG
+Using recursive make, you are assembling N DAGs instead of of 1. Each DAG
 must be executed separately. This adds execution overhead. On top of
 that, since the DAGs are separate, you are either
 a) missing information from each DAG (it doesn't know about other
@@ -115,7 +115,7 @@ later.</p>
 <h2>Transitioning to a Single DAG</h2>
 <p>A big problem with non-recursive make is transitioning to it. For
 projects like Firefox with its 1500 Makefiles, each existing in its own
-little universe, this is a herculean effort. There is a reason why
+little universe, this is a Herculean effort. There is a reason why
 many (including Mozilla) haven't done it: it's just too hard.</p>
 <p>The problem of slow build times with Firefox is important to me because
 I suffer from it almost every day. So, I got to thinking of creative
@@ -296,7 +296,7 @@ files. Simple parsing is ruled out, as make files can be more complex
 than you realize (all those pesky built-in functions). You don't want
 to burden people to add targets to print variable values and then
 execute make just to print variables. This would be violating steps
-1 and 2 from aboec! So, you somehow need to inject yourself into a
+1 and 2 from above! So, you somehow need to inject yourself into a
 make execution context.</p>
 <p>Fortunately, we have <a href="http://benjamin.smedbergs.us/pymake/">pymake</a>.
 Pymake is a mostly feature complete implementation of GNU make written
@@ -362,7 +362,7 @@ expansions (e.g. file system access or shell invocation). It can also
 cause the value of a variable to change during the course of execution
 from changes to systems not directly under the make file's control (such
 as the file system). For these reasons, <strong>I recommend to use the
-immediate assignment operator (:=) instead of the deferred asignment
+immediate assignment operator (:=) instead of the deferred assignment
 operator (=) unless you absolutely need deferred assignment</strong>. This is
 because immediate assignment approximates what most think assignment
 should be. Unfortunately, since <em>=</em> is the only assignment operator in the
@@ -407,7 +407,7 @@ defined. Over time, the make files will not only look like simple
 variable assignments (from part 1), but will also become static data
 structures. <strong>This will enable the Mozilla build system to be
 represented as a single, constant data structure.</strong> This opens up the
-tranformation possibilities described above. It also allows for more
+transformation possibilities described above. It also allows for more
 radical changes, such as replacing the make files with something else.
 More on that later.</p>
 <h2>Part 5: Rewriting Make Files</h2>
@@ -518,7 +518,7 @@ make file evaluation from once every time you run make to <em>some time
 before</em>. Put another way, we are reducing the amount of work make performs
 when evaluating a make file. As long as the original file and any files
 included by it don't change frequently, the cost of the static analysis
-and rewriting is repayed by simpler make files and the lower run-time
+and rewriting is repaid by simpler make files and the lower run-time
 cost they incur. This should translate to speedier make invocations.
 (Although, I have no data to prove this.)</p>
 <p>Another nice side-effect is that the rewritten and reduced make file is
