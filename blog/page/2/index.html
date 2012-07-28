@@ -50,6 +50,41 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="smaller-firefox-build-logs"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/05/23/smaller-firefox-build-logs" rel="bookmark" title="Permanent Link to Smaller Firefox Build Logs">Smaller Firefox Build Logs</a></h2>
+  <small>May 23, 2012 at 08:50 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
+ | <a href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The other day I looked at a full Firefox build log from TBPL and noticed
+that ~84,000 of the ~170,000 lines in the log I looked at was output
+from archive processes. We were printing thousands of lines showing the
+files that were being added and extracted from the archives that contain
+test files!</p>
+<p>I thought this was wasteful, so I filed
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=757397">bug 757397</a> and
+coded up a patch. Ted agreed that these lines were rather worthless and
+the patch has landed in mozilla-inbound.</p>
+<p>The result of the patch is build logs are about half as big in terms of
+lines. And, it appears at least 500kb is shaved off the compressed log
+files as well.</p>
+<p>The real world impact is you should be able to load build logs from
+the server faster because they are smaller.</p>
+<p>If you were parsing this data before and are impacted by this, please
+leave a comment on the aforementioned bug and we'll go from there.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="python-bindings-updates-in-clang-3.1"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/05/14/python-bindings-updates-in-clang-3.1" rel="bookmark" title="Permanent Link to Python Bindings Updates in Clang 3.1">Python Bindings Updates in Clang 3.1</a></h2>
   <small>May 14, 2012 at 12:05 AM | categories: 
@@ -903,90 +938,6 @@ iteration.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="gone-with-the-wind-thoughts"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/02/26/gone-with-the-wind-thoughts" rel="bookmark" title="Permanent Link to Gone with the Wind Thoughts">Gone with the Wind Thoughts</a></h2>
-  <small>February 26, 2012 at 02:30 PM | categories: 
-
-<a href='/blog/category/movies'>movies</a>
- | <a href="http://gregoryszorc.com/blog/2012/02/26/gone-with-the-wind-thoughts#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I watched <em>Gone with the Wind</em>, the 1939 classic, a few days ago.
-It is an amazing film. But, I was bothered by a number of plot points.</p>
-<h2>On Scarlett</h2>
-<p>How exactly am I supposed to feel about Scarlett? Sympathy? I hope not!
-She is a manipulative, gold-digging woman. Yes, I do love her strength and
-juxtaposition with men at times. But, she has no qualms about crying
-to get her way. Screw that! I knew people like her- in high school! One
-thing I learned was to keep as far away from people like this as you
-can. Rhett apparently didn't get the memo.</p>
-<h2>On Rhett Butler</h2>
-<p>At times I was like, yes, he's the man of men: I want to be him. But,
-there were a few things I couldn't get over.</p>
-<p>First, the age gap with Scarlett was <em>creepy</em>. When they first meet at
-Twelve Oaks, she's maybe 18 and he's what, 40? Maybe that was acceptable
-in the 1800's and earlier this century. But, that doesn't change that
-I'm freaked out by it. I'm 28 now and find 25 to be about the minimum
-age I can tolerate. The gap between Rhett and Scarlett is Hugh Hefner
-territory by 1800's standards.</p>
-<p>Maybe I missed the line, but I don't think they attributed his wealth to
-anything specific. Yes, they mentioned he was a blockade runner or
-something (which immediately got me thinking that Han Solo might have
-been modeled after him, which is an interesting train of thought). But,
-I don't think that's enough to explain his grand fortune. Hmm.</p>
-<p>He's cold. Too cold. After he drunkenly makes love to Scarlett near the
-end (I dare say rape, but she appears to have loved it the next
-morning, so maybe it was just aggressive - which I imagine Scarlett
-might enjoy given her masculine qualities. Am I allowed to go there?),
-she's feeling all good about things and then he comes in and is like
-"I'm going to London for a while. Oh, and I'm taking our daughter too!"
-What an asshole. I admire the consistency of his character, but he's
-a jerk for the timing, even though the actions were probably justified
-given the state of their relationship.</p>
-<h2>Lack of Character Arcs</h2>
-<p>In many great films, the protagonist goes through an arc to help the
-audience connect the lows and the highs and to root for them. In this
-film, our protagonist is Scarlett and her arc is questionable. Yes, she
-goes from living a great lifestyle to poverty via the Civil War then to
-lavishness after marrying Butler. But, the film revolves around
-relationships. All that stuff about the Civil War and the lifestyle of
-the south is just extra icing on the cake. Despite things around her
-changing, Scarlett's relationships are quite consistent throughout the
-film.</p>
-<p>Even though her arc is tiny, it is still larger than anyone else's since
-all the main characters were fairly rigid and hardly developed during
-the film. Rhett was the rich playboy who enjoyed his independence ("I'm
-not a marrying man"). Ashley was consistently ambiguous. Melanie was
-steadfast. Mammy was Mammy. From a character development perspective,
-not much went on in this film. It was simply an epic love story told in
-the south during the Civil War.</p>
-<h2>Misc Observations</h2>
-<p>It bothers me they seemed to overlook the stigma of Scarlett being a
-two-time widow. This is the deep south in the 1800's: her life would have
-been over after her first husband died. She would be an outcast for
-marrying again. Two, and she would be driven out of town, especially
-since her actions got #2 shot through the head. They alluded to this at
-times, but it was quickly moved faster. You'd think in a nearly 4 hour
-film they could find more time to cover this.</p>
-<p>Can you imagine people in 1939 watching two amazing (color) films with 2
-strong, female protagonists (Vivien Leigh, Judy Garland)? I'm not an
-expert on the history of cinema, but surely that year must have been a
-turning point.</p>
-<p>There are some incredible lines in this film. Obvious ones aside, I had
-no clue that the "don't call me Shirley" line originated in this film
-and not <em>Airplane!</em></p>
-<p>"Great balls of fire!" I need to watch Top Gun now.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/02/26/gone-with-the-wind-thoughts#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../1">« Previous Page</a>
   --  
