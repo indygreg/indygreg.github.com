@@ -10,7 +10,7 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 29 Jul 2012 21:04:53 GMT</pubDate>
+    <pubDate>Sun, 29 Jul 2012 21:08:53 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -785,8 +785,11 @@ build backend altogether.</p>
 <p>We will likely not have an official alternate build backend soon. Until
 then, there are no shortage of clown shoes that can be looked at.</p>
 <p>The redundant work during no-op builds is definitely tempting to
-address, as I think that has the most impact to most developers.
-I suspect a lot of the redundant work during no-op builds is due to
+address, as I think that has significant impact to most developers.
+Eliminating the absurdly long no-op build times removes the needs for
+hacks like <em>smart-make</em> and instills a culture of <em>trust the build
+system.</em></p>
+<p>I suspect a lot of the redundant work during no-op builds is due to
 poorly implemented rules in individual Makefiles rather than on
 silliness in rules.mk. Therefore,
 <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">removing rules from Makefile's</a>
