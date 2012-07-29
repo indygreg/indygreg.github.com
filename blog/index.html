@@ -748,8 +748,46 @@ however. I am tempted to say that if we truly did no-op builds and make
 Makefile's load into make faster, we could attain no-op build times in
 the ~10s range. I think this is pretty damn good! Even ~20s isn't too
 bad. As surprising as it is for me to say it, <strong>recursive make is not
-(a significant) part of our no-op build problem</strong>. However, <strong>recursive
-make is a large part of our non-no-op build problem</strong>.</p>
+(a significant) part of our no-op build problem</strong>.</p>
+<h2>Why is the Build System Slow?</h2>
+<p>People often ask the question above. As the data has told me, the
+answer, like many to complicated problems, is nuanced.</p>
+<p>If you are doing a clobber build on a fresh machine, the build system is
+slow because 1) compiling all the C/C++ takes a lot of time (84:19 CPU
+time actually) 2) we don't make efficient use of all available cores
+when building. Half of the CPU horsepower during a fresh build is
+unharnessed.</p>
+<p>If you are doing a no-op build, the build system is slow mainly because
+it is performing a lot of needless and redundant work. A significant
+contributor is the overhead of make, probably due to rules.mk being
+large.</p>
+<p>If you are doing an incremental build, you will fall somewhere between
+either extreme. You will likely get nipped by both inefficient core
+usage as well as redundant work. Which one hurts the most depends on the
+scope of the incremental change.</p>
+<p>If you are building on a machine with a magnetic hard drive (not an
+SSD), your builds are slow because you are waiting on I/O. You can
+combat this by putting 8+GB of memory in your system and doing your best
+to ensure that building mozilla-central can use as much of it as
+possible. I highly recommend 12GB, if not 16GB.</p>
+<h2>Follow-ups</h2>
+<p>The measurements reported in this post are only the tip of the iceberg.
+If I had infinite time, I would:</p>
+<ul>
+<li>Measure other applications, not just browser/Firefox. I've heard that
+  mobile/Fennec's build config is far from optimal, for example. I would
+  love to quantify that.</li>
+<li>Set up buildbot to record and post measurements so we have a dashboard
+  of build times. We have some of this today, but the granularity isn't
+  as fine as what I captured.</li>
+<li>Record per-directory times.</li>
+<li>Isolate time spent in different processes (DTrace could be used here).</li>
+<li>Capture I/O numbers.</li>
+<li>Correlate the impact of I/O service times on build times.</li>
+<li>Isolate the overhead of ccache (mainly in terms of I/O).</li>
+<li>Obtain numbers on other platforms and systems. Ensure results can be
+  reproduced.</li>
+</ul>
 <h2>Next Steps</h2>
 <p>If we want to make our existing recursive make build backend faster, I
 recommend the following actions (in no particular order):</p>
@@ -792,19 +830,6 @@ silliness in rules.mk. Therefore,
 again seems to be one of the most important things we can do to make the
 build system faster. It also prepares us for implementing newer build
 backends, so it is a win-win!</p>
-<h2>Follow-ups</h2>
-<p>The measurements reported in this post are only the tip of the iceberg.
-If I had infinite time, I would:</p>
-<ul>
-<li>Set up buildbot to record and post measurements so we have a dashboard
-  of build times. We have some of this today, but the granularity isn't
-  as fine as what I captured.</li>
-<li>Record per-directory times.</li>
-<li>Isolate time spent in different processes (DTrace could be used here).</li>
-<li>Capture I/O numbers.</li>
-<li>Isolate the impact of I/O service times on build times.</li>
-<li>Isolate the overhead of ccache (mainly in terms of I/O).</li>
-</ul>
 
   </div>
 </div>
