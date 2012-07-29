@@ -7,12 +7,930 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2012-07-28T07:46:43Z</updated>
+  <updated>2012-07-29T20:16:43Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[mozilla-central Build Times]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times" />
+    <id>http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times</id>
+    <updated>2012-07-29T13:20:00Z</updated>
+    <published>2012-07-29T13:20:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <summary type="html"><![CDATA[mozilla-central Build Times]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times"><![CDATA[<p>In my previous post, I
+<a href="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview/">explained how Mozilla's build system works</a>.
+In this post, I want to give people a feel for where time is spent and to
+identify obvious areas that need improvement.</p>
+<p>To my knowledge, nobody has provided such a comprehensive collection of
+measurements before. Thus, most of our thoughts on where build time goes
+have been largely lacking scientific rigor. I hope this post changes
+matters and injects some much-needed quantitative figures into the
+discussion.</p>
+<h2>Methodology</h2>
+<p>All the times reported in this post were obtained from my 2011
+generation MacBook Pro. It has 8 GB of RAM and a magnetic hard drive. It
+is not an ultimate build rig by any stretch of the imagination. However,
+it's no slouch either. The machine has 1 physical Core i7 processor with
+4 cores, each clocked at 2.3GHz. Each core has hyperthreading, so to the
+OS there appears to be 8 cores. For the remainder of this post, I'll
+simply state that my machine has 8 cores.</p>
+<p>When I obtained measurements, I tried to limit the number of processes
+running elsewhere on the machine. I also performed multiple runs and
+reported the best timings. This means that the results are likely
+synthetic and highly influenced by the page cache. More on that later.</p>
+<p>I configured make to use up to 8 parallel processes (adding -j8 to the
+make flags). I also used silent builds (the -s flag to make). Silent
+builds are important because terminal rendering can add many seconds of
+wall time to builds, especially on slow terminals (like Windows). I
+measured results with make output being written to the terminal. In
+hindsight, I wish I hadn't done this. Next time.</p>
+<p>To obtain the times, I used the ubiquitous <em>time</em> utility. Wall times
+are the <em>real</em> times from <em>time</em>. CPU time is the sum of the <em>user</em> and
+<em>sys</em> times.</p>
+<p>CPU utilization is the percentage of CPU cores busy during the wall time
+of execution. In other words, I divided the CPU time by 8 times the wall
+time (8 for the number of cores in my machine). 100% is impossible to
+obtain, as obviously the CPU on my machine is doing other things during
+measurement. But, I tried to limit the number of background processes
+running, so there shouldn't have been that much noise.</p>
+<p>I built a debug version of Firefox (the <em>browser</em> app in
+mozilla-central) using r160922 of the Clang compiler (pulled and built
+the day I did this measurement). The revision of mozilla-central being
+built was <a href="https://hg.mozilla.org/mozilla-central/rev/08428deb1e89">08428edb1e89</a>.
+I also had <em>--enable-tests</em>, which adds a significant amount of extra
+work to builds.</p>
+<h2>Configure</h2>
+<p><em>time</em> reported the following for running <em>configure</em>:</p>
+<pre><code>real 0m25.927s
+user 0m9.595s
+sys  0m8.729s
+</code></pre>
+<p>This is a one-time cost. Unless you are hacking on the build system or
+pull down a tree change that modified the build system, you typically
+don't need to worry about this.</p>
+<h2>Clobber Builds with Empty ccache</h2>
+<p>I built each tier separately with an empty ccache on a
+recently-configured object directory. This measures the optimal worst
+case time for building mozilla-central. In other words, we have nothing
+cached in the object directory, so the maximum amount of work needs to
+be performed. Since I measured multiple times and used the best results,
+this is what I mean by <em>optimal</em>.</p>
+<p>The table below contains the measurements. I omitted CPU utilization
+calculation for small time values because I don't feel it is relevant.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Utilization</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.714</td>
+    <td>0.774</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>5.081</td>
+    <td>8.620</td>
+    <td>21%</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.453</td>
+    <td>0.444</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>base (total)</td>
+    <td>6.248</td>
+    <td>9.838</td>
+    <td>19.7%</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>9.309</td>
+    <td>8.404</td>
+    <td>11.3%</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>1.030</td>
+    <td>1.877</td>
+    <td>22.8%</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>71.450</td>
+    <td>416.718</td>
+    <td>52%</td>
+  </tr>
+  <tr>
+    <td>js tools</td>
+    <td>0.324</td>
+    <td>0.246</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>js (total)</td>
+    <td>72.804</td>
+    <td>418.841</td>
+    <td>71.9%</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>40.487</td>
+    <td>141.704</td>
+    <td>43.7%</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>1211</td>
+    <td>4896</td>
+    <td>50.5%</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>70.416</td>
+    <td>90.917</td>
+    <td>16.1%</td>
+  </tr>
+  <tr>
+    <td>platform (total)</td>
+    <td>1312</td>
+    <td>5129</td>
+    <td>48.9%</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>4.383</td>
+    <td>3.059</td>
+    <td>8.7%</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>18.727</td>
+    <td>18.976</td>
+    <td>12.7%</td>
+  </tr>
+  <tr>
+    <td>app tools (no-op)</td>
+    <td>0.519s</td>
+    <td>0.968</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>app (total)</td>
+    <td>23.629</td>
+    <td>23.003</td>
+    <td>12.2%</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>1424 (23:44)</td>
+    <td>5589 (93:15)</td>
+    <td>49.1%</td>
+  </tr>
+</table>
+
+<p>It's worth mentioning that linking libxul is part of the platform libs
+tier. libxul linking should be called out because it is unlike other
+parts of the build in that it is more I/O bound and can't use multiple
+cores. On my machine, libxul linking (not using gold) takes ~61s. During
+this time, only 1 CPU core is in use. The ~61s wall time corresponds to
+roughly 5% of platform libs' wall time. Yet, even if we subtract this ~61s
+from the effective CPU calculation, the percentage doesn't change much.</p>
+<h2>Clobber with Populated ccache</h2>
+<p>Using the ccache from a recently built tree to make C/C++ compilation
+faster, I measured how long it took each tier to build on a clobber
+build.</p>
+<p>This measurement can be used to estimate the overhead of C/C++ compilation
+during builds. In theory, the difference between CPU times between this
+and the former measurement will be the amount of CPU time spent in the
+C/C++ compiler.</p>
+<p>This will also isolate how much time we spend <em>not</em> in the C/C++
+compiler. It will arguably be very difficult to
+make the C/C++ compiler faster (although things like reducing the abuse
+of templates can have a measureable impact). However, we do have control
+over many of the other things we do. If we find that CPU time spent
+outside the C/C++ compiler is large, we can look for pieces to optimize.</p>
+<p>Tiers not containing compiled files are omitted from the data.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+    <th>ccache savings (s) (Time in Compiler)</th>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>1.075</td>
+    <td>1.525</td>
+    <td>7.095</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>1.957</td>
+    <td>0.933</td>
+    <td>1.522</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>5.582</td>
+    <td>1.688</td>
+    <td>6.716</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>22.829</td>
+    <td>9.529</td>
+    <td>407.189</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>431</td>
+    <td>328</td>
+    <td>4568</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>14.498</td>
+    <td>25.744</td>
+    <td>65.173</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>10.193</td>
+    <td>15.809</td>
+    <td>3.167</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>487.134 (6:07)</td>
+    <td>383.229 (6:23)</td>
+    <td>5059 (84:19)</td>
+  </tr>
+</table>
+
+<h2>No-op Build</h2>
+<p>A <em>no-op</em> build is a build performed in an object directory that was
+just built. Nothing changed in the source repository nor object
+directory, so theoretically the build should do nothing. And, it should
+be fast.</p>
+<p>In reality, our build system isn't smart and performs some redundant
+work. One part of redundant work is because one of the first things the
+main Makefile does before invoking the tiers is delete a large chunk of
+the <em>dist/</em> directory and the entirety of the <em>_tests/</em> directory from
+the object directory.</p>
+<p>In these measurements, I bypassed the deletion of these directories. In
+other words, I measure what <em>no-op</em> builds are if we eliminate the
+clown shoes around blowing away large parts of the object directory.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.524</td>
+    <td>0.537</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.625</td>
+    <td>0.599</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.447</td>
+    <td>0.437</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.809</td>
+    <td>0.752</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.334</td>
+    <td>0.324</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.375</td>
+    <td>0.361</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>10.904</td>
+    <td>13.136</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>30.969</td>
+    <td>44.25</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>8.213</td>
+    <td>10.737</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.524</td>
+    <td>1.006</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>6.090</td>
+    <td>13.753</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>59.814</td>
+    <td>85.892</td>
+  </tr>
+</table>
+
+<p>So, no-op builds use ~60s of wall time and only make use of 17.9% of
+available CPU resources.</p>
+<h2>No-op Build With Directory Removal Silliness</h2>
+<p>As mentioned above, before the tiers are iterated, the top-level
+Makefile blows away large parts of <em>dist/</em> and the entirety of
+<em>_tests/</em>. What impact does this have?</p>
+<p>In this section, I try to isolate how much time was thrown away by doing
+this.</p>
+<p>First, we have to account for the deletion of these directories. On my
+test build, deleting 15,005 files in these directories took ~3 seconds.</p>
+<p>The table below contains my results. This is a more accurate reading
+than the above on how long no-op builds takes because this is actually
+what we do during normal builds. The time delta column contains the
+difference between this build and a build without the removal silliness.
+Positive times can be attributes to overhead associated with
+repopulating <em>dist/</em> and <em>_tests/</em>.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>Wall Time Delta (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Time Delta (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.544</td>
+    <td>Negligible</td>
+    <td>0.559</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.616</td>
+    <td>Negligible</td>
+    <td>0.594</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.447</td>
+    <td>Negligible</td>
+    <td>0.436</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.803</td>
+    <td>Negligible</td>
+    <td>0.743</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.338</td>
+    <td>Negligible</td>
+    <td>0.329</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.378</td>
+    <td>Negligible</td>
+    <td>0.363</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>13.140</td>
+    <td>2.236</td>
+    <td>13.314</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>35.290</td>
+    <td>4.329</td>
+    <td>43.059</td>
+    <td>-1.191 (normal variance?)</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>8.819</td>
+    <td>0.606</td>
+    <td>10.983</td>
+    <td>0.246</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.525</td>
+    <td>Negligible</td>
+    <td>1.012</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>8.876</td>
+    <td>2.786</td>
+    <td>13.527</td>
+    <td>-0.226</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>69.776</td>
+    <td>9.962</td>
+    <td>84.919</td>
+    <td>-0.973 (normal variance)</td>
+  </tr>
+</table>
+
+<p>If a delta is listed as negligible, it was within 100ms of the original
+value and I figured this was either due to expected variance between
+runs or below our threshold for caring. In the case of base, nspr, and
+js tiers, the delta was actually much smaller than 100ms, often less
+then 10ms.</p>
+<p>It certainly appears that the penalty for deleting large parts of
+<em>dist/</em> and the entirety of <em>_tests/</em> is about 10 seconds.</p>
+<h2>The Overhead of Make</h2>
+<p>We've measured supposed no-op build times. As I stated above, our no-op
+builds actually aren't no-op builds. Even if we bypass the deletion of
+<em>dist/</em> and <em>_tests/</em> we always evaluate some make rules. Can we measure how
+much work it takes to just load the make files without actually doing
+anything? This would allow us to get a rough estimate of how much we are
+wasting by doing redundant work. It will also help us establish a
+baseline for make overhead.</p>
+<p>Turns out we can! Make has a <em>--dry-run</em> argument which evaluates the make
+file but doesn't actually do anything. It simply prints what would have
+been done.</p>
+<p>Using <em>--dry-run</em>, I timed the different tiers. The difference from a no-op
+build should roughly be the overhead associated with make itself. It is
+possible that <em>--dry-run</em> adds a little overhead because it prints the
+commands that would have been executed. (Previous timings were using
+<em>-s</em>, which suppresses this.)</p>
+<p>The delta times in the following table are the difference in times
+between the true no-op build from above (the one where we don't delete
+<em>dist/</em> and <em>_tests/</em>) and the times measured here. It roughly isolates
+the amount of time spent outside of make, doing redundant work.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>Wall Time Delta (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Time Delta (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.369</td>
+    <td>0.155</td>
+    <td>0.365</td>
+    <td>0.172</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.441</td>
+    <td>0.184</td>
+    <td>0.431</td>
+    <td>0.168</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.368</td>
+    <td>0.079</td>
+    <td>0.364</td>
+    <td>0.073</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.636</td>
+    <td>0.173</td>
+    <td>0.591</td>
+    <td>0.161</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.225</td>
+    <td>0.109</td>
+    <td>0.225</td>
+    <td>0.099</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.278</td>
+    <td>0.097</td>
+    <td>0.273</td>
+    <td>0.088</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>3.841</td>
+    <td>7.063</td>
+    <td>6.108</td>
+    <td>7.028</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>8.938</td>
+    <td>22.031</td>
+    <td>14.723</td>
+    <td>29.527</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>3.962</td>
+    <td>4.251</td>
+    <td>6.185</td>
+    <td>4.552</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.422</td>
+    <td>0.102</td>
+    <td>0.865</td>
+    <td>0.141</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>0.536</td>
+    <td>5.554</td>
+    <td>1.148</td>
+    <td>12.605</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>20.016</td>
+    <td>39.798</td>
+    <td>31.278</td>
+    <td>54.614</td>
+  </tr>
+</table>
+
+<h2>Observations</h2>
+<p>The numbers say a lot. I'll get to key takeaways in a bit.</p>
+<p>First, what the numbers don't show is the variance between runs.
+Subsequent runs are almost always <em>significantly</em> faster than the
+initial, even on no-op builds. I suspect this is due mostly to
+I/O wait. In the initial tier run, files are loaded into the page cache.
+Then, in subsequent runs, all I/O comes from physical memory rather than
+waiting on a magnetic hard drive.</p>
+<p>Because of the suspected I/O related variance, I fear that the numbers I
+obtained are highly synthetic, at least for my machine. It is unlikely
+I'll ever see all these numbers in one mozilla-central build. Instead,
+it requires a specific sequence of events to obtain the best times
+possible. And, this sequence of events is not likely to correspond with
+real-world usage.</p>
+<p>That being said, I think these numbers are important. If you remove I/O
+from the equation - say you have an SSD with near 0 service times or
+have enough memory so you don't need a hard drive - these numbers will
+tell what limits you are brushing up against. And, as computers get more
+powerful, I think more and more people will cross this threshold and
+will be more limited by the build system than the capabilities of their
+hardware. (A few months ago, I
+<a href="https://groups.google.com/forum/#!topic/mozilla.dev.builds/FJclsTA_OBQ/discussion">measured resource usage</a>
+when compiling mozilla-central on Linux and concluded you need roughly
+9GB of dedicated memory to compile and link mozilla-central without page
+cache eviction. In other words, if building on a machine with only 8GB
+of RAM, your hard drive will play a role.)</p>
+<p>Anyway, to the numbers.</p>
+<p>I think the most important number in the above tables is <strong>49.1%</strong>. That
+is the effective CPU utilization during a clobber build. This means that
+<strong>during a build, on average half of the available CPU cores are
+unused.</strong> Now, I could be generous and bump this number to 50.7%. That's
+what the effective CPU utilization is if you remove the ~60s of libxul
+linking from the calculation.</p>
+<p>The 49.1% has me reaching the following conclusions:</p>
+<ol>
+<li>I/O wait really matters.</li>
+<li>Our recursive use of make is incapable of executing more than 4 items
+   at a time on average (assuming 8 cores).</li>
+<li>My test machine had more CPU wait than I think.</li>
+</ol>
+<p>I/O wait is easy to prove: compare times on an SSD or with a similar I/O
+bus with near zero service times (e.g. a filled page cache with no
+eviction - like a machine with 16+ GB of memory that has built
+mozilla-central recently).</p>
+<p>A derived time not captured in any table is 11:39. This is the total
+CPU time of a clobber build (93:15) divided by the number of cores (8).
+<strong>If we had 100% CPU utilization across all cores during builds, we should
+be able to build mozilla-central in 11:39.</strong> This is an ideal figure and
+won't be reached. As mentioned above, libxul linking takes ~60s itself! I
+think 13:00 is a more realistic optimal compilation time for a modern 8
+core machine. This points out a startling number: <strong>we are wasting
+~12 minutes of wall time due to not fully utilizing CPU cores during
+clobber builds.</strong></p>
+<p>Another important number is 5059 out of 5589, or 90.5%. That is the CPU
+time in a clobber build spent in the C/C++ compiler, as measured by the
+speedup of using ccache. It's unlikely we are going to make the C/C++
+compiler go much faster (short of not compiling things). So, this is a
+big fat block of time we will never be able to optimize. On my machine
+<strong>compiling mozilla-central will always take at least ~10:30 wall time,
+just in compiling C/C++.</strong></p>
+<p>A clobber build with a saturated ccache took 487s wall time but only 383s
+CPU time. That's only about 10% total CPU utilization. And, this
+represents only 6.8% of total CPU time from the original clobber build.
+Although, it is 34.2% of total wall time.</p>
+<p>The above means that everything not the C/C++ compiler is horribly
+inefficient. These are clown shoes of epic proportions. We're not even
+using 1 full core doing build actions outside of the C/C++ compiler!</p>
+<p>Because we are inefficient when it comes to core usage, I
+think a key takeaway is that throwing more cores at the existing build
+system will have diminishing returns. Sure, some parts of the build system
+today could benefit from it (mainly js, layout, and dom, as they have
+Makefile's with large numbers of source files). But, most of the build
+system won't take advantage of many cores. <strong>If you want to throw money
+at a build machine, I think your first choice should be an SSD. If you
+can't do that, have as much memory as you can so most of your filesystem
+I/O is serviced by the page cache, not your disk drive.</strong></p>
+<p>In the final table, we isolated how much time <em>make</em> is spending to
+just to figure out what to do. That amounts to ~20 seconds wall
+time and ~31s CPU time. That leaves ~40s wall and ~55s CPU for non-make
+work during no-op builds. Translation: we are doing 40s of wall time work
+during no-op builds. Nothing changed. <strong>We are throwing 40s of wall time
+away because the build system isn't using proper dependencies and is
+doing redundant work.</strong></p>
+<p>I've long been a critic of us blowing away parts of <em>dist/</em> and
+<em>_tests/</em> at the top of builds. Well, after measuring it, I have mixed
+reactions. It only amounts to about ~10s of added time to builds. This
+doesn't seem like a lot in the grand scheme of things. However, this is
+~10s on top of the ~60s it actually takes to iterate through the tiers.
+So, in terms of percentages for no-op builds, it is actually quite
+significant.</p>
+<p>No-op builds with the existing build system take ~70s under ideal
+conditions. In order of time, the breakdown is roughly:</p>
+<ul>
+<li>~40s for doing redundant work in Makefiles</li>
+<li>~20s for make traversal and loading overhead</li>
+<li>~10s for repopulating deleted content from <em>dist/</em> and <em>_tests/</em></li>
+</ul>
+<p>In other words, <strong>~50s of ~70s no-op build times are spent doing work
+we have already done.</strong> This is almost purely clown shoes. Assuming we
+can't make make traversal and loading faster, the shortest possible
+no-op build time will be ~20s.</p>
+<p>Splitting things up a bit more:</p>
+<ul>
+<li>~22s - platform libs make evaluation</li>
+<li>~20s - make file traversal and loading (readying for evaluation)</li>
+<li>~10s - repopulating deleted content from <em>dist/</em> and <em>_tests/</em></li>
+<li>~7s - platform export make evaluation</li>
+<li>~5.5 - app libs make evaluation</li>
+<li>~4s - platform tools</li>
+</ul>
+<p>The ~20s for make file traversal and loading is interesting. I suspect
+(although I haven't yet measured) that a lot of this is due to the sheer
+size of rules.mk. As I
+<a href="http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times/">measured</a>
+on Friday, the overhead of rules.mk with pymake is significant. I
+hypothesized that it would have a similar impact on GNU make. I think a
+good amount of this ~20s is similar overhead. I need to isolate,
+however. I am tempted to say that if we truly did no-op builds and make
+Makefile's load into make faster, we could attain no-op build times in
+the ~10s range. I think this is pretty damn good! Even ~20s isn't too
+bad. As surprising as it is for me to say it, <strong>recursive make is not
+(a significant) part of our no-op build problem</strong>. However, <strong>recursive
+make is a large part of our non-no-op build problem</strong>.</p>
+<h2>Next Steps</h2>
+<p>If we want to make our existing recursive make build backend faster, I
+recommend the following actions (in no particular order):</p>
+<ol>
+<li>Factor pieces out of rules.mk into separate .mk files and
+   conditionally load based on presence of specific variables. In other
+   words, finish what we have started. This definitely cuts down on the
+   overhead with pymake (as measured on Friday) and <em>likely</em> makes GNU
+   make faster as well.</li>
+<li>Don't blow away parts of <em>dist/</em> and <em>_tests/</em> at the top of builds.
+   I know this introduces a problem where we could leave orphaned files
+   in the object directory. We should solve this problem by having
+   proper manifests for everything so we can detect and delete orphans.
+   The cheap man's solution is to periodically clobber these
+   directories.</li>
+<li>Don't perform unnecessary work during no-op builds. I suspect a lot
+   of redundant work is due to rules in Makefile's not the rules in
+   rules.mk. As we eliminate rules from Makefile's, this problem should
+   gradually go away since rules.mk is generally intelligent about these
+   things.</li>
+<li>More parallelism. I'm not sure how we're going to solve this with
+   recursive make short of using PARALLEL_DIRS more and/or consolidating
+   Makefile's together.</li>
+</ol>
+<p>Again, these steps apply to our current recursive make build backend.</p>
+<p>Because the most significant losses are due to ungained parallelism, <strong>our
+focus should be on increasing parallelism.</strong> We can only do this so much
+with recursive make. It is clear now more than ever that recursive make
+needs to be replaced with something that can fully realize the potential
+of multiple CPU cores. That could be non-recursive make or a separate
+build backend altogether.</p>
+<p>We will likely not have an official alternate build backend soon. Until
+then, there are no shortage of clown shoes that can be looked at.</p>
+<p>The redundant work during no-op builds is definitely tempting to
+address, as I think that has the most impact to most developers.
+I suspect a lot of the redundant work during no-op builds is due to
+poorly implemented rules in individual Makefiles rather than on
+silliness in rules.mk. Therefore,
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">removing rules from Makefile's</a>
+again seems to be one of the most important things we can do to make the
+build system faster. It also prepares us for implementing newer build
+backends, so it is a win-win!</p>
+<h2>Follow-ups</h2>
+<p>The measurements reported in this post are only the tip of the iceberg.
+If I had infinite time, I would:</p>
+<ul>
+<li>Set up buildbot to record and post measurements so we have a dashboard
+  of build times. We have some of this today, but the granularity isn't
+  as fine as what I captured.</li>
+<li>Record per-directory times.</li>
+<li>Isolate time spent in different processes (DTrace could be used here).</li>
+<li>Capture I/O numbers.</li>
+<li>Isolate the impact of I/O service times on build times.</li>
+<li>Isolate the overhead of ccache (mainly in terms of I/O).</li>
+</ul>]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mozilla Build System Overview]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview" />
+    <id>http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview</id>
+    <updated>2012-07-29T13:15:00Z</updated>
+    <published>2012-07-29T13:15:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <summary type="html"><![CDATA[Mozilla Build System Overview]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview"><![CDATA[<p>Mozilla's build system is a black box to many. This post attempts to
+shed some light onto how it works.</p>
+<h2>Configuration File</h2>
+<p>The first part of building is creating a configuration file. This
+defines what application to build (Firefox, Firefox OS, Fennec, etc) as
+well as build options, like to create a release or debug build. This
+step isn't technically required, but most people do it.</p>
+<p>Configuration files currently exist as <em>mozconfig</em> files. By default,
+most people create a <em>.mozconfig</em> file in the root directory of
+mozilla-central.</p>
+<h2>Interaction</h2>
+<p>All interaction with the build system is currently gated through the
+<em>client.mk</em> file in the root directory of mozilla-central. Although, I'm
+trying to land an alternate (and eventual replacement) to <em>client.mk</em>
+called <em>mach</em>. You can read about it in previous posts on this blog.</p>
+<p>When you run <em>make -f client.mk</em>, you are invoking the build system and
+telling it to do whatever it needs to do build the tree.</p>
+<h2>Running Configure</h2>
+<p>The first thing <em>client.mk</em> does to a fresh tree is invoke <em>configure</em>.
+<em>configure</em> is a shell script in the root directory of the repository.
+It is generated from the checked-in <em>configure.in</em> file using the GNU
+<em>autoconf</em> utility. I won't go into detail on how autoconf works because
+I don't have a beard.</p>
+<p><em>configure</em> accomplishes some important tasks.</p>
+<p>First, it validates that the build environment is sane. It performs sone
+sanity testing on the directory tree then looks at the system and build
+configuration to make sure everything should work.</p>
+<p>It identifies the active compiler, locations of common tools and
+utilities, and ensures everything works as needed. It figures out how to
+convert desired traits into system-specific options. e.g. the exact
+argument to pass to the compiler to enable warnings.</p>
+<p>Once <em>configure</em> determines the environment is sane, it writes out what
+it learned.</p>
+<p>Currently, <em>configure</em> takes what it has learned and invokes the
+<em>allmakefiles.sh</em> script in the root directory. This script prints out
+the set of Makefile's that will be used to build the tree for the
+current configuration. <em>configure</em> takes the output of filenames and
+then procedes to generate those files.</p>
+<p>Generation of Makefile's is rather simple. In the source tree are a
+bunch of <em>.in</em> files, typically <em>Makefile.in</em>. These contain special
+markers. <em>configure</em> takes the set of determined configuration variables
+and performs substitution of the variable markers in the <em>.in</em> files with
+them. The <em>.in</em> files with variables substitutes are written out in the
+object directory. There are also some GYP files in the source tree.
+<em>configure</em> invokes a tool to convert these into Mozilla-style
+Makefile's.</p>
+<p><em>configure</em> also invokes <em>configure</em> for other managed projects
+in mozilla-central, such as the SpiderMonkey source in <em>js/src</em>.</p>
+<p><em>configure</em> finishes by writing out other miscellaneous files in the
+object directory.</p>
+<h2>Running Make</h2>
+<p>The next step of the build is running make. <em>client.mk</em> simply points
+GNU make (or pymake) at the <em>Makefile</em> in the top-level directory of the
+object directory and essentially says <em>evaluate</em>.</p>
+<h3>Build System Tiers</h3>
+<p>The build system is broken up into different tiers. Each tier represents
+a major phase or product in the build system. Most builds have the
+following tiers:</p>
+<ol>
+<li>base - Builds global dependencies</li>
+<li>nspr - Builds NSPR</li>
+<li>js - Builds SpiderMonkey</li>
+<li>platform - Builds the Gecko platform</li>
+<li>app - Builds the configured application (e.g. Firefox, Fennec,
+   Firefox OS)</li>
+</ol>
+<p>Inside each tier are the distinct sub-tiers:</p>
+<ol>
+<li>export</li>
+<li>libs</li>
+<li>tools</li>
+</ol>
+<p>A Makefile generally belongs to 1 main tier. Inside Makefile's or in
+other included .mk files (make files that are not typically called
+directly by make) are statements which define which directories
+belong to which tiers. See
+<a href="https://mxr.mozilla.org/mozilla-central/source/toolkit/toolkit-tiers.mk">toolkit-tiers.mk</a>
+for an example.</p>
+<p>When the top-level Makefile is invoked, it iterates through every tier
+and every sub-tier within it. It starts at the first tier and evaluates
+the <em>export</em> target on every Makefile/directory defined in it. It then
+moves on to the <em>libs</em> target then finally the <em>tools</em> target. When it's
+done with the <em>tools</em> target, it moves on to the next tier and does the
+same iteration.</p>
+<p>For example, we first start by evaluating the <em>export</em> target of the
+<em>base</em> tier. Then we evaluate <em>base</em>'s <em>libs</em> and <em>tools</em> tiers. We then
+move on to <em>nspr</em> and do the same. And, we keep going. In other words,
+the build system makes 3 passes through each tier.</p>
+<p>Tiers are composed of directory members. e.g. <em>dom</em> or <em>layout</em>. When
+make descends into a tier member directory, it looks for specially named
+variables that tell it what sub-directories are also part of this
+directory. The <em>DIRS</em> variable is the most common. But, we also use
+<em>TEST_DIRS</em>, <em>PARALLEL_DIRS</em>, <em>TOOL_DIRS</em>, and a few others. make will
+invoke make for all defined child directories and for the children of
+the children, and so on. This is what we mean by <em>recursive make</em>. make
+essentially recurses into directory trees, evaluating all the
+directories linearly.</p>
+<p>Getting back to the tiers, the sub-tiers <em>export</em>, <em>libs</em>, and <em>tools</em>
+can be thought of as <em>pre-build</em>, <em>build</em>, and <em>post-build</em> events.
+Although, this analogy is far from perfect.</p>
+<p><em>export</em> generally prepares the object directory for more comprehensive
+building. It copies C/C++ header files into a unified object directory,
+generates header files from IDLs files, etc.</p>
+<p><em>libs</em> does most of the work. It compiles C++ code and performs lots of
+other main work, such as Jar manifest creation.</p>
+<p><em>tools</em> does a lot of miscellaneous work. If you have tests enabled,
+this is where tests are typically compiled and/or installed, for
+example.</p>
+<h3>Processing a Makefile</h3>
+<p>For each directory inside a tier, make evaluates the Makefile in that
+directory for the target/sub-tier specified.</p>
+<p>The basic gist of Makefile execution is actually pretty simple.</p>
+<p>Mozilla's Makefiles typically look like:</p>
+<pre><code>DEPTH := .
+topsrcdir := @top_srcdir@
+srcdir := @srcdir@
+VPATH := @srcdir@
+
+include $(DEPTH)/config/autoconf.mk
+
+IDLSRCS := foo.idl bar.idl
+CPPSRCS := hello.cpp world.cpp
+
+include $(topsrcdir)/config/rules.mk
+</code></pre>
+<p>All the magic in Makefile processing happens in <em>rules.mk</em>. This make file
+simply looks for specially named variables (like <em>IDLSRCS</em> or <em>CPPSRCS</em>)
+and magically converts them into targets for make to evaluate.</p>
+<p>In the above sample Makefile, the <em>IDLSRCS</em> variable will result in an
+implicit <em>export</em> target which copies IDLs into the object directory and
+compiles them to .h files. <em>CPPSRCS</em> will result in a <em>libs</em> target that
+results in each .cpp file being compiled into a .o file.</p>
+<p>Of course, there is nothing stopping you from defining targets/rules in
+Makefile's themselves. This practice is actually quite widespread.
+Unfortunately, it is a bad practice, so you shouldn't do it. The
+preferred behavior is to define variables in a Makefile and have
+rules.mk magically provide the make targets/rules to do stuff with them.
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">Bug 769378</a> tracks
+fixing this bad practice.</p>
+<h2>Conclusion</h2>
+<p>So, there you have it: a very brief overview of how Mozilla's build
+system works!</p>
+<p>In my next post, I will shed some light onto how much times goes into
+different parts of the build system.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1810,601 +2728,5 @@ the test runners eventually. I implemented xpcshell support because a)
 that is the test harness I use almost exclusively and b) it is the only
 one I'm comfortable modifying. If you want to implement support in
 another test runner, please have a go at it!</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Improving the Mozilla Build System Experience]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/05/07/improving-the-mozilla-build-system-experience" />
-    <id>http://gregoryszorc.com/blog/2012/05/07/improving-the-mozilla-build-system-experience</id>
-    <updated>2012-05-07T16:45:00Z</updated>
-    <published>2012-05-07T16:45:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
-    <summary type="html"><![CDATA[Improving the Mozilla Build System Experience]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/05/07/improving-the-mozilla-build-system-experience"><![CDATA[<p><em>tl;dr User experience matters and developers are people too. I
-have proposed a tool to help developers interact with the Firefox build
-system and source tree.</em></p>
-<p>I don't think I have to make my case when I state that Mozilla's build
-system end-user experience is lacking. There are lots of hurdles to overcome:</p>
-<ul>
-<li>Determine where to obtain the source code.</li>
-<li>Install a source control system (possibly).</li>
-<li>Wait a <em>long</em> time for the large source repository to download.</li>
-<li>Figure out how to launch the build process (unlike many other build
-  systems, it isn't as simple as <code>configure</code> or <code>make</code> - although it is
-  close).</li>
-<li>Determine which dependencies need to be installed and install them
-  (this can also take a long time).</li>
-<li>Create a configuration file (mozconfig).</li>
-<li>Build the tree (another long process).</li>
-</ul>
-<p>If you want to contribute patches, there are additional steps:</p>
-<ul>
-<li>Configure Mercurial with your personal info.</li>
-<li>Configure Mercurial to generate patches in proper format.</li>
-<li>Create a Bugzilla account (made simpler through Persona!).</li>
-<li>Figure out the proper Bugzilla product/component (even I still
-  struggle at this) so you can file a bug.</li>
-<li>Figure out how to attach a patch to a bug and request review (it isn't
-  intuitive if you've never used Bugzilla before).</li>
-<li>Figure out who should review patch.</li>
-<li>Learn how tests work so you can:</li>
-<li>Write new tests.</li>
-<li>Run existing tests to verify your changes.</li>
-<li>Obtain commit access (so at least you can push to Try).</li>
-<li>Learn how to push to Try.</li>
-<li>Learn about <a href="https://tbpl.mozilla.org/">TBPL</a>.</li>
-<li>Discover and use some of the amazing tools to help you
-  (<a href="https://mxr.mozilla.org/">MXR</a>, <a href="https://github.com/pbiggar/trychooser">trychooser</a>,
-  <a href="https://bitbucket.org/sfink/mqext">mqext</a>, etc).</li>
-</ul>
-<p>Granted, not all of these are required. But, they will be for returning
-contributors. My point is that there are lots of steps here. And, every
-one of them represents a point where someone could get frustrated and
-bail -- a point where Mozilla loses a potential contributor.</p>
-<p>Ever since I started at Mozilla, I've been thinking of ways this could
-be done better. While the
-<a href="https://developer.mozilla.org/En/Developer_Guide">Developer Guide</a>
-on MDN has improved drastically in the last year, there are still many
-ways the process could be improved and streamlined.</p>
-<p>In <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a>,
-I've put forward the groundwork of a tool to make the developer
-experience more user friendly. Yes, this is a vague goal, so let me go
-in to further detail.</p>
-<p>What I've submitted in the bug is essentially a framework for
-performing common actions related to the build system and source tree.
-These actions are defined as methods in Python code. Hooking it all
-together is a command-line interface which is launched via a short
-script in the root directory called <em>mach</em> (<em>mach</em> is German for <em>do</em>).
-Since actions speak louder than words, here's an example:</p>
-<pre><code>$ ./mach
-
-usage: mach command [command arguments]
-
-This program is your main control point for the Mozilla source tree.
-
-To perform an action, specify it as the first argument. Here are some common
-actions:
-
-  mach build         Build the source tree.
-  mach help          Show full help.
-  mach xpcshell-test Run xpcshell test(s).
-
-To see more help for a specific action, run:
-
-  mach &lt;command&gt; --help
-
-e.g. mach build --help
-</code></pre>
-<p>And, going into a sub-command:</p>
-<pre><code>$ ./mach xpcshell-test --help
-
-usage: mach xpcshell-test [-h] [--debug] [TEST]
-
-positional arguments:
-  TEST         Test to run. Can be specified as a single JS file, an
-               xpcshell.ini manifest file, a directory, or omitted. If
-               omitted, the entire xpcshell suite is executed.
-
-optional arguments:
-  -h, --help   show this help message and exit
-  --debug, -d  Run test in debugger.
-</code></pre>
-<p>Now, I've focused effort at this stage on performing actions after the
-initial build environment is configured. The reason is this is
-low-hanging fruit and easily allows me to create a proof-of-concept.
-But, I have many more ideas that I'd eventually like to see implemented.</p>
-<p>One of my grand ideas is to have some kind of setup wizard guide
-you through the first time you use <em>mach</em>. It can start by asking the
-basics: "Which application do you want to build?" "Release or Debug?"
-"Clang or GCC?" "Should I install Clang for you?" It could also be more
-intelligent about installing dependencies. "I see you are using Ubuntu
-and are missing required packages X and Y. Would you like me to install
-them?" And, why stop at a command-line interface? There's no reason a
-graphical frontend (perhaps Tcl/Tk) couldn't be implemented!</p>
-<p>The setup wizard could even encompass configuring your source control
-system for proper patch generation by ensuring your tree-local <em>.hg/hgrc</em>
-or <em>.git/config</em> files have the proper settings. We could even ask you
-for Bugzilla credentials so you could interact with Bugzilla directly
-from the command-line.</p>
-<p>Once we have all of the basic configs in place, it's just a matter of
-hooking up the plumbing. Want to submit a patch for review? We could
-provide a command for that:</p>
-<pre><code>./mach submit-patch
-
-"refactor-foo" is currently on top of your patch queue.
-
-Submit "refactor-foo"?
-y/n: y
-
-Enter bug number for patch or leave empty for no existing bug.
-Bug number:
-
-OK. A new bug for this patch will be created.
-
-Please enter a one-line summary of the patch:
-Summary: Refactor foo subsystem
-
-Is the patch for (r)eview, (f)eedback, or (n)either?
-r/f/n: r
-
-I've identified Gregory Szorc (:gps) as a potential reviewer for
-this code. If you'd like someone else, please enter their IRC
-nickname or e-mail address. Otherwise, press ENTER.
-Reviewer:
-
-I'm ready to submit your patch. Press ENTER to continue or CTRL+C to
-abort.
-
-Bug 700000 submitted! You can track it at
-https://bugzilla.mozilla.org/show_bug.cgi?id=700000
-</code></pre>
-<p>The framework is extremely flexible and extensible for a few reasons.
-First, it encourages all of the core <em>actions</em> to be implemented as
-Python modules/methods. Once you have things defined as API calls (not
-shell scripts), the environment feels like a cohesive library rather than
-a loose collection of shell scripts. Shell scripts have a place, don't get
-me wrong. But, they are hard to debug and test (not to mention performance
-penalties on Windows). Writing code as reusable libraries with shell
-scripts only being the frontend is a more robust approach to software
-design.</p>
-<p>Second, the command-line driver is implemented as a collection of
-sub-commands. This is similar to how version control systems like Git,
-Mercurial, and Subversion work. This makes discovery of features
-extremely easy: just list the supported commands! Contrast this to our
-current build system, where the answer is to consult a wiki (with likely
-out-of-date and fragmented information) or <em>gasp</em> try to read the
-makefiles in the tree.</p>
-<p>My immediate goal for
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a> is to
-get a minimal framework checked in to the tree with a core design people
-are content with. Once that is done, <strong>I'm hoping other people will come
-along and implement additional features and commands.</strong> Specifically, I'd
-like to see some of the awesome tools like <em>mqext</em> integrated such that
-their power can be harnessed without requiring people to first discover
-they exist and second install and configure them. I think it is silly for
-these obvious productivity wins to go unused by people ignrant of their
-existence. If they are valuable, let's ship them as part of a batteries
-included environment.</p>
-<p>In the long run, I think there are many more uses for this framework.
-For starters, it gives us a rallying point around which to organize all
-of the Python support/tools code in the tree. Currently, we have things
-spread all over the place. Quite frankly, it is a mess. I'd like to have
-a unified <em>site-packages</em> tree with all our Python so things are easier to
-locate and thus improve.</p>
-<p>If nothing else, the tool provides a framework for logging and
-formatting activities in a unified way. There are separate log streams:
-one for humans, one for machines. Under the hood, they both use the
-saming logging infrastructure. When messages are logged, the human
-stream is formatted as simple sentences (complete with terminal
-encodings and colorization). The machine-destined log stream is
-newline-delimited JSON containing the fields that were logged. This
-allows analysis of output without having to parse strings. This is how
-all log analysis should be done. But, that's for another post. Anyway,
-what this all means is that the output for humans can be more readable.
-Colors, progress bars: we can do that now.</p>
-<p>Over time, I imagine some may want to move logic out of configure and
-makefiles and into this tool (because Python is easier to maintain and
-debug, IMO). I would love to see that too. But, I want to stress that this
-isn't a focus right now. I believe this framework should be supplemental
-in the beginning and the official build system should not rely on it. Maybe
-that changes in the future. Time will tell.</p>
-<p>Anyway, this project is currently just my solo effort. This isn't
-captured on a roadmap or anyone's quarterly goals. There is no project page
-listing planned features. If you are interested in helping, drop me a line
-and/or join in on the bug. Hopefully the core framework will land soon.
-Once it does, I'm hoping for an explosion of new, user-friendly
-features/commands to make the overall Firefox development experience
-smoother.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Comparing the Security and Privacy of Browser Syncing]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing" />
-    <id>http://gregoryszorc.com/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing</id>
-    <updated>2012-04-08T21:00:00Z</updated>
-    <published>2012-04-08T21:00:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="security" />
-    <category scheme="http://gregoryszorc.com/blog" term="browsers" />
-    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
-    <category scheme="http://gregoryszorc.com/blog" term="internet" />
-    <summary type="html"><![CDATA[Comparing the Security and Privacy of Browser Syncing]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing"><![CDATA[<p>Many popular web browsers offer built-in synchronization of browser data
-(history, bookmarks, passwords, etc) across devices. In this post, I
-examine the data security and privacy aspects of some of them.</p>
-<h2>Chrome</h2>
-<p>Chrome and Chromium have comprehensive support for browser sync.</p>
-<p>When you sign in to Chrome (using your Google Account credentials),
-Chrome prompts you to set up sync. By default, all data types are
-uploaded to Google's servers.</p>
-<p>The default behavior is for Chrome to encrypt your passwords before
-uploading them to the server. All of your remaining data (history,
-bookmarks, etc) is uploaded to Google unencrypted. This means anyone
-with access to Google's servers has full access to your history, etc.</p>
-<p>Access to the uploaded data is governed by the
-<a href="https://www.google.com/chrome/intl/en/privacy.html">Google Chrome Privacy Notice</a>.
-This policy (pulled on April 3, 2012) states that the sync data is
-governed by the unified
-<a href="https://www.google.com/policies/privacy/">Google Privacy Policy</a>.
-This policy states (as pulled on April 4, 2012):</p>
-<pre><code>We use the information we collect from all of our services to
-provide, maintain, protect and improve them, to develop new ones,
-and to protect Google and our users. We also use this information
-to offer you tailored content – like giving you more relevant
-search results and ads.
-</code></pre>
-<p>In other words, you are granting Google the ability to use your synced
-data.</p>
-<p>An advanced settings dialog as part of the sync setup allows users to
-opt in to local encryption of all data - not just passwords - simply by
-clicking a checkbox. This same dialog also allows users to choose an
-alternate passphrase (not your Google Account password) for encrypting
-data.</p>
-<p>For encrypted data, Chrome uses an encryption scheme called Nigori. An
-<a href="http://www.links.org/files/nigori-overview.pdf">Overview</a> and <a href="http://www.links.org/files/nigori-protocol.html">protocol
-details</a> are
-<a href="http://www.links.org/?cat=38">available</a> from the author's website.</p>
-<p>This encryption scheme takes the user-supplied passphrase and uses
-<a href="http://tools.ietf.org/html/rfc2898">PBKDF2</a> to derive keys. It first
-derives a 64 bit salt key, <em>Suser</em>, using 1001 iterations of PBKDF2 with
-SHA1 using the username as the salt. Then, it performs 3 more PBKDF2
-derivations to produce three 128 bit keys from the original passphrase
-using the newly-derived salt key, producing <em>Kuser</em>, <em>Kenc</em>, and
-<em>Khmac</em>. For these, the PBKDF2 iteration counts are 1002, 1003, and 1004,
-respectively. <em>Kuser</em> and <em>Kenc</em> use AES as the PBKDF2 algorithm.
-<em>Kmac</em> uses SHA-1. <em>Kuser</em> is used to authenticate the client with the
-server. <em>Kenc</em> and <em>Kmac</em> are used to encrypt and sign data,
-respectively. Data is encrypted with AES-128 in CBC mode with a 16 byte
-IV. (It is worth noting that Chrome
-<a href="https://src.chromium.org/viewvc/chrome/trunk/src/sync/util/nigori.cc?annotate=129476#l157">does not use</a>
-a cryptographically-secure random number generator for the IV. I don't
-believe this amounts to anything more than a mild embarassment in this
-case.)</p>
-<p>When someone wishes to sync to a new Chrome instance, she simply enters her
-Google Account username and password (or custom sync passphrase)
-and data is downloaded from Google's servers and applied. The pre-PBKDF2
-passphrase is all that is needed. The new Chrome instance remembers
-the passphrase and syncing is automatic from that point on.</p>
-<h2>Opera</h2>
-<p>Opera supports syncing via <a href="http://www.opera.com/link/">Opera Link</a>.
-Opera Link supports syncing bookmarks, history, passwords, search engine
-plugins, and other data types.</p>
-<p>Opera is not open source and I have not been able to find technical
-details on how Opera Link is implemented. The two sources I found are a
-<a href="http://my.opera.com/operalink/blog/2011/05/03/security-of-synchronized-passwords-with-opera-link">blog post</a>
-and the <a href="http://www.opera.com/browser/tutorials/link/">Guide to Using Opera Link</a>.</p>
-<p>From those two documents, we know that Opera locally encrypts passwords.
-However, it is unclear whether other data is also encrypted locally. I
-can interpret the blog post to go either way. (If someone knows, please
-leave a comment with some kind of proof and I'll update this post.)</p>
-<p>The blog post gives a high-level overview of how encryption works. A
-lone comment is the only source of technical details:</p>
-<pre><code>for encryption we use AES-128, and we use a random salt that is
-part of each "blob" (one blob is a single field in each password
-entry)
-</code></pre>
-<p>As commenters in that post have pointed out, that is still very short on
-technical details.</p>
-<p>What I <em>think</em> is going on is that when you initially set up Opera Link,
-it generates a full-entropy 128 bit key from a random number generator.
-Uploaded data is encrypted with this key using AES-128 with a
-randomly-generated IV (or <em>salt</em> using terms from the blog post). The
-ciphertext and the IV are uploaded to Opera's servers. There may be HMAC
-or some other form of message verification involved, but I could find no
-evidence of that.</p>
-<p>Since Opera Link is tied to your Opera Account password, I'm guessing
-that Opera uses PBKDF2 to derive a key from the password. It then uses
-this key to symmetrically encrypt the randomly-generated encryption key.
-It then uploads the encrypted encryption key to Opera's servers.</p>
-<p>When someone wishes to sync with a new Opera instance, she simply enters
-her Opera Account credentials on the new Opera and Opera Link is set up
-automatically. This is a one-time set-up process.</p>
-<p>Data uploaded with Opera Link is goverened by an
-<a href="http://www.opera.com/privacy/#operalink">Opera Link Privacy Policy</a>.
-This policy states (pulled on April 4, 2012):</p>
-<pre><code>Opera will never disclose, share, or distribute an individual’s
-Linked data to any third party except where required by law or
-regulation, or in cases where you have chosen to grant access to your
-data to an Opera or third party application or service using Opera
-Link API. Opera restricts internal access to this information
-exclusively to those who need it for the operation of the Link
-service.
-</code></pre>
-<h2>Safari</h2>
-<p>Safari supports syncing via iCloud. Its offerings appear to currently be
-limited to bookmarks, possibly because iCloud is a relatively new
-offering from Apple.</p>
-<p>Configuration of iCloud is something that typically happens outside of
-Safari at the OS level. And, iCloud is deeply tied to your Apple ID.
-Users typically sign up for an Apple ID then enable iCloud support for a
-Safari feature (currently just bookmarks). During Apple ID setup, iCloud
-asks you some security questions. To connect a new device, you simply
-sign in to Apple ID, enable iCloud, and things just work.</p>
-<p>Technical details of iCloud's security model are hard to come by. What we
-do appear to know is that everything except email and
-notes is encrypted on Apple's servers. However, the current theory is
-that this encryption only occurs after the data hits Apple's servers or
-that Apple has the encryption key and can read your data without your
-knowledge.</p>
-<p>Data uploaded to iCloud is governed by the
-<a href="https://www.apple.com/legal/icloud/en/terms.html">iCloud Terms and Conditions</a>.
-This policy states (pulled on April 7, 2012):</p>
-<pre><code>You further consent and agree that Apple may collect, use, transmit,
-process and maintain information related to your Account, and any
-devices or computers registered thereunder, for purposes of providing
-the Service, and any features therein, to you. Information collected
-by Apple when you use the Service may also include technical or
-diagnostic information related to your use that may be used by Apple
-to support, improve and enhance Apple’s products and services.
-</code></pre>
-<p>If data is readable by Apple, this policy grants Apple the right to use it.</p>
-<p>I'm not going to speculate about the technical details of Apple's
-encryption model because I couldn't find any non-speculative sources to base
-it on. If you want to read the speculation of others, see Ars Technica
-posts
-<a href="http://arstechnica.com/apple/news/2012/03/how-safe-is-icloud-data-ars-investigates.ars">1</a>,
-<a href="http://arstechnica.com/apple/news/2012/04/apple-holds-the-master-key-when-it-comes-to-icloud-security-privacy.ars">2</a>,
-and <a href="http://arstechnica.com/apple/news/2012/04/can-apple-give-police-a-key-to-your-encrypted-iphone-data-ars-investigates.ars">3</a>
-and Matthew Green's <a href="http://blog.cryptographyengineering.com/2012/04/icloud-who-holds-key.html">response</a>.</p>
-<h2>Internet Explorer</h2>
-<p>Internet Explorer supports syncing of favorites via Windows Live Mesh.</p>
-<p>This was discovered after this post was originally written, which is why
-there are no additional details.</p>
-<h2>Firefox</h2>
-<p>Firefox has built-in support for syncing browser data via Firefox Sync.
-It doesn't sync as many data types as Chrome, but the basics (history,
-bookmarks, passwords, add-ons) are all there.</p>
-<p>When you initially create a Firefox Sync account, you are asked to
-create a Mozilla Services account by entering an e-mail address and
-password. Once this process is done, Firefox uploads data to the sync
-server in the background.</p>
-<p>By default, all data is encrypted locally before being uploaded to the
-server. There is no option to disable client-side encryption.</p>
-<p>Data uploaded to the server is governed by the
-<a href="https://services.mozilla.com/privacy-policy/">Firefox Sync Privacy Policy</a>.
-The summary (pulled on April 4, 2012) is quite clear:</p>
-<pre><code>* Your data is only used to provide the Firefox Sync service.
-* Firefox Sync on your computer encrypts your data before sending
-  it to us so the data isn’t sitting around on our servers in a
-  usable form.
-* We don’t sell your data or use ad networks on the Firefox Sync
-  webpages or service.
-</code></pre>
-<p>While Mozilla provides a default server for Firefox Sync, the server
-is open source (see their
-<a href="http://docs.services.mozilla.com/">documentation</a>) and
-anybody can run a server and point their clients at it.</p>
-<p>When a new account is created, Firefox creates a full-entropy 128 bit key
-via random number generation. It then derives two 256 bit keys through
-SHA-256 HMAC-based HKDF
-(<a href="http://tools.ietf.org/html/rfc5869">RFC 5869</a>). This key pair
-effectively constitutes a root encryption and signing key.</p>
-<p>Firefox then generates a completely new pair of full-entropy 256 bit
-keys via random number generation. This key pair is used to encrypt and
-sign all data uploaded to the server. This second key pair is called a
-<em>collection key</em>.</p>
-<p>Firefox takes your synced data, and performs AES-256 in CBC mode with a 16
-byte randomly-generated IV (unique for each record) with the <em>collection
-key's</em> symmetric encryption key. The ciphertext is then hashed with the
-HMAC key. The ciphertext, HMAC, and IV are uploaded to the server.</p>
-<p>The <em>collection key</em> is encrypted and signed with the root key pair and
-uploaded to the server as well. The root keys remain on the client and are
-never transmitted to the server.</p>
-<p>Technical details of the full crypto model are
-<a href="http://docs.services.mozilla.com/sync/storageformat5.html">available</a>.</p>
-<p>The e-mail and password for the Mozilla Services account are used to
-authenticate the HTTPS channel with the server using HTTP Basic Auth.</p>
-<p>When you wish to connect another Firefox instance to your Firefox Sync
-account, the root 128 bit key must be transferred to the new device.
-Firefox supports manually entering the 128 bit key as a 26 character
-value. More commonly,
-<a href="http://grouper.ieee.org/groups/1363/Research/contributions/hao-ryan-2008.pdf">Password Authenticated Key Exchange by Juggling</a>
-(J-PAKE) is used. One device displays 12 characters and establishes a
-channel with a central brokering server. The same 12 characters are
-entered on the pairing device. The two devices establish a
-cryptographically secure channel between them and proceed to exchange
-the Mozilla Account credentials, server information, and the 128 bit
-root key. While the J-PAKE server is hosted by Mozilla, the channel is
-secured between both endpoints, so the server operator can't read the
-root key as it passes through it.</p>
-<p>The new client then derives the root key pair via HKDF, downloads,
-verifies, and decrypts the collection key from the server, then
-uses that key pair for all subsequent encryption and verification
-operations.</p>
-<p>Once a client has been paired, it holds on to the root key indefinitely
-and a user doesn't need to take any subsequent action for syncing to
-occur.</p>
-<h2>LastPass</h2>
-<p><a href="https://lastpass.com/">LastPass</a> isn't a browser, but a password
-manager that can be integrated with all the popular browsers. I thought
-it would be interesting to throw it into the comparison, especially
-since LastPass is perceived to have an excellent security model.</p>
-<p>Technical details of LastPass's security model are
-<a href="http://helpdesk.lastpass.com/security-options/password-iterations-pbkdf2/">available</a>
-in the LastPass User Manual. The remaining details are
-<a href="https://lastpass.com/support.php?cmd=showfaq&amp;id=1096">found</a> on a
-help desk answer.</p>
-<p>LastPass encrypts all of your data locally before uploading it to the
-LastPass servers. It does this by making use of a master password.</p>
-<p>Data uploaded to LastPass's servers is governed by a
-<a href="https://lastpass.com/aboutus_privacy.php">Privacy Statement</a>. The
-summary that best reflects it (as pulled on April 4, 2012) is:</p>
-<pre><code>We don't allow you to send LastPass critically important information
-like your usernames, passwords, account notes, and LastPass master
-password; instead your LastPass master password is used locally to
-encrypt the important data that's sent to us so that no one,
-including LastPass employees ever can access it.
-</code></pre>
-<p>LastPass performs <em>N</em> iterations (default 500) of PBKDF2 using SHA256
-over your master password to produce a 256 bit encryption key. It then
-produces one additional iteration to produce a login key. Data is
-encrypted locally using AES-256 with the encryption key derived from
-your master password.  Encrypted data is uploaded to LastPass's servers.
-Your master password is never transmitted to LastPass. Instead, the
-login key is used to authenticate communications.</p>
-<p>The LastPass web interface downloads encrypted blobs and decrypts them
-locally using the PBKDF2-derived encryption key.</p>
-<p>To set up a new LastPass client, you download LastPass and present your
-username and master password. Typically, the master password needs to be
-presented every time you initially access your LastPass data (e.g. the
-first time you need to find a password after starting your browser).</p>
-<h2>Assessment</h2>
-<p>The following chart summarizes the security aspects of different
-browsers' sync features. Desirable traits for better security are bolded.</p>
-<table border="1">
-  <tr>
-    <th>Product</th>
-    <th>Encryption Defaults</th>
-    <th>Can Encrypt Everything?</th>
-    <th>Encryption Entropy Source</th>
-    <th>Server Knows Decryption Key?</th>
-    <th>Server-Side Data Recovery Difficulty</th>
-  </tr>
-  <tr>
-    <td>Chrome</td>
-    <td>Passwords encrypted; everything else stored in cleartext</td>
-    <td><strong>Yes</strong></td>
-    <td>User-supplied passphrase</td>
-    <td>Yes by default (Google Account password). <strong>No if using custom
-        passphrase</strong></td>
-    <td>No effort for unencrypted data. <strong>1001 PBKDF2-SHA1 + 1003
-        PBKDF2-AES iterations for encrypted data.</strong></td>
-  </tr>
-  <tr>
-    <td>Opera</td>
-    <td>Passwords encrypted; everything else unknown</td>
-    <td>Unknown</td>
-    <td>User-supplied passphrase</td>
-    <td>Yes. Can't change.</td>
-    <td>Unknown</td>
-  </tr>
-  <tr>
-    <td>Safari</td>
-    <td>On remote disks only?</td>
-    <td>No</td>
-    <td>Unknown. User-supplied password?</td>
-    <td>Yes (probably)</td>
-    <td>No effort for Apple (apparently)</td>
-  </tr>
-  <tr>
-    <td>Firefox</td>
-    <td><strong>Everything</strong></td>
-    <td><strong>Yes</strong> (default)</td>
-    <td><strong>128 bit randomly generated key</strong></td>
-    <td><strong>No</strong></td>
-    <td><strong>128 bit key + HKDF into AES-256</strong></td>
-  </tr>
-  <tr>
-    <td>LastPass</td>
-    <td><strong>Everything</strong> (only syncs passwords and notes)</td>
-    <td><strong>Yes</strong> (default)</td>
-    <td>User-supplied passphrase</td>
-    <td><strong>No</strong></td>
-    <td><strong>Variable PBKDF2-SHA256 iterations (default 500)</strong></td>
-  </tr>
-</table>
-
-<p>So much about Safari is unknown, so it will be ignored.</p>
-<p>Firefox and LastPass (and possibly Opera) are the only products that
-encrypt all data by default. Chrome (and possibly Opera) is the only
-product that does not encrypt all data by default.</p>
-<p>Firefox and LastPass are the only products that don't send the entropy
-source to the server by default. Chrome uses the Google Account
-password by default and this is sent to Google when logging in to
-various services. Opera sends the password to Opera when logging in to
-your Opera Account. Google allows you to change the entropy source to a
-custom passphrase so Google doesn't receive the entropy source.
-Opera does not.</p>
-<p>Sending the entropy source to the server is an important security
-consideration because it means you are giving the key to your data to
-someone else. Even if your data is encrypted locally, someone with the
-key can decrypt it. Services that send the entropy source to the server
-are subject to man-in-the-middle attacks and could be subverted by
-malicious or legal actions occurring on the server side (e.g. the
-service operator could be compelled through a subpoena to capture your
-entropy source and use it to decrypt your stored data, possibly without
-your knowledge).</p>
-<p>Firefox is the only product whose encryption source is full-entropy. All
-other products rely on taking a user-supplied passphrase and using
-"key-stretching" via PBKDF2 to increase the cost of a brute-force
-search.</p>
-<p>PBKDF2-derived encryption keys are common in the examined products.
-It is worth noting that PBKDF2 can be susceptible to dictionary and
-brute-force attacks because assumptions can be made about the input
-passphrase, such as its entropy and length. Systems often enforce rules
-on the source passphrase (e.g. between 5 and 15 characters and contains
-only letters and numbers). When cracking keys, you normally iterate
-through every possible permutation until you find one that works. When
-you can make assumptions about the input, you can eliminate a large
-number of these permutations. The products that use PBKDF2 are
-theoretically susceptible to this weakened brute-force search.</p>
-<p>Since Firefox does not rely on PBKDF2, it is the only examined product not
-theoretically susceptible to a weakened brute-force search. Instead, an
-attacker would have to churn through every permutation of a 128 bit root
-key, which would take billions of computer-years. (See
-<a href="https://en.wikipedia.org/w/index.php?title=Brute-force_attack&amp;oldid=482091625">Brute-force attack</a>
-on Wikipedia for more.)</p>
-<p>Firefox's additional security comes at the price of more complex device
-setup. Firefox users need to physically have a copy of the 128 bit root
-key or physical access to 2 devices when pairing. All other products
-rely on a passphrase which the user can carry around seemlessly in her
-head. In addition, if the Firefox root encryption key is lost, it is
-more likely that your data is not recoverable because the key is not in
-your head.</p>
-<h2>Conclusion</h2>
-<p>Considering just the security and privacy aspects, I can only recommend
-two of the examined products: Firefox Sync and LastPass. I am recommending
-them because they encrypt all data locally by default and they do not
-send the encryption key source to the server. Of these two, Firefox
-Sync is more secure for reasons outlined above.</p>
-<p>I can't recommend Safari because details about iCloud's encryption
-strategy are unknown. Furthermore, it appears Apple can recover your
-(possibly) encrypted data without your knowledge.</p>
-<p>I can't recommend Opera because your encryption key source (your Opera Account
-password) is sent to Opera's servers. Furthermore, not enough technical
-details of Opera Link are available to vet it.</p>
-<p>I can't recommend Chrome (at least in its default configuration) because
-it doesn't encrypt all data locally (only passwords) and you
-periodically send the encryption key source (your Google Account password)
-to Google's servers when using other Google services. If you enable
-encryption of all data and use a custom passphrase, Chrome's security model
-is essentially identical to LastPass's and thus can be recommended.</p>
-<p><strong>Disclaimer</strong>: I am currently employed by Mozilla and work on
-Firefox Sync. That being said, I believe this post has been objective
-and not subject to my bias towards Firefox and/or Firefox Sync. If you
-feel differently, please leave a comment and I will adjust the post as
-necessary.</p>
-<p><strong>Edit 2012-04-16</strong> Note that IE supports Bookmark sync via Windows Live
-Mesh (thanks to Nick Richards for pointing it out in the comments). Also
-removed an incorrect sentence from the Chrome section which incorrectly
-stated that the PBKDF2 iteration count was part of the hash in each
-iteration.</p>]]></content>
   </entry>
 </feed>

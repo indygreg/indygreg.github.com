@@ -7,12 +7,930 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2012-07-28T07:46:43Z</updated>
+  <updated>2012-07-29T20:16:43Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[mozilla-central Build Times]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times" />
+    <id>http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times</id>
+    <updated>2012-07-29T13:20:00Z</updated>
+    <published>2012-07-29T13:20:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <summary type="html"><![CDATA[mozilla-central Build Times]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times"><![CDATA[<p>In my previous post, I
+<a href="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview/">explained how Mozilla's build system works</a>.
+In this post, I want to give people a feel for where time is spent and to
+identify obvious areas that need improvement.</p>
+<p>To my knowledge, nobody has provided such a comprehensive collection of
+measurements before. Thus, most of our thoughts on where build time goes
+have been largely lacking scientific rigor. I hope this post changes
+matters and injects some much-needed quantitative figures into the
+discussion.</p>
+<h2>Methodology</h2>
+<p>All the times reported in this post were obtained from my 2011
+generation MacBook Pro. It has 8 GB of RAM and a magnetic hard drive. It
+is not an ultimate build rig by any stretch of the imagination. However,
+it's no slouch either. The machine has 1 physical Core i7 processor with
+4 cores, each clocked at 2.3GHz. Each core has hyperthreading, so to the
+OS there appears to be 8 cores. For the remainder of this post, I'll
+simply state that my machine has 8 cores.</p>
+<p>When I obtained measurements, I tried to limit the number of processes
+running elsewhere on the machine. I also performed multiple runs and
+reported the best timings. This means that the results are likely
+synthetic and highly influenced by the page cache. More on that later.</p>
+<p>I configured make to use up to 8 parallel processes (adding -j8 to the
+make flags). I also used silent builds (the -s flag to make). Silent
+builds are important because terminal rendering can add many seconds of
+wall time to builds, especially on slow terminals (like Windows). I
+measured results with make output being written to the terminal. In
+hindsight, I wish I hadn't done this. Next time.</p>
+<p>To obtain the times, I used the ubiquitous <em>time</em> utility. Wall times
+are the <em>real</em> times from <em>time</em>. CPU time is the sum of the <em>user</em> and
+<em>sys</em> times.</p>
+<p>CPU utilization is the percentage of CPU cores busy during the wall time
+of execution. In other words, I divided the CPU time by 8 times the wall
+time (8 for the number of cores in my machine). 100% is impossible to
+obtain, as obviously the CPU on my machine is doing other things during
+measurement. But, I tried to limit the number of background processes
+running, so there shouldn't have been that much noise.</p>
+<p>I built a debug version of Firefox (the <em>browser</em> app in
+mozilla-central) using r160922 of the Clang compiler (pulled and built
+the day I did this measurement). The revision of mozilla-central being
+built was <a href="https://hg.mozilla.org/mozilla-central/rev/08428deb1e89">08428edb1e89</a>.
+I also had <em>--enable-tests</em>, which adds a significant amount of extra
+work to builds.</p>
+<h2>Configure</h2>
+<p><em>time</em> reported the following for running <em>configure</em>:</p>
+<pre><code>real 0m25.927s
+user 0m9.595s
+sys  0m8.729s
+</code></pre>
+<p>This is a one-time cost. Unless you are hacking on the build system or
+pull down a tree change that modified the build system, you typically
+don't need to worry about this.</p>
+<h2>Clobber Builds with Empty ccache</h2>
+<p>I built each tier separately with an empty ccache on a
+recently-configured object directory. This measures the optimal worst
+case time for building mozilla-central. In other words, we have nothing
+cached in the object directory, so the maximum amount of work needs to
+be performed. Since I measured multiple times and used the best results,
+this is what I mean by <em>optimal</em>.</p>
+<p>The table below contains the measurements. I omitted CPU utilization
+calculation for small time values because I don't feel it is relevant.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Utilization</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.714</td>
+    <td>0.774</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>5.081</td>
+    <td>8.620</td>
+    <td>21%</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.453</td>
+    <td>0.444</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>base (total)</td>
+    <td>6.248</td>
+    <td>9.838</td>
+    <td>19.7%</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>9.309</td>
+    <td>8.404</td>
+    <td>11.3%</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>1.030</td>
+    <td>1.877</td>
+    <td>22.8%</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>71.450</td>
+    <td>416.718</td>
+    <td>52%</td>
+  </tr>
+  <tr>
+    <td>js tools</td>
+    <td>0.324</td>
+    <td>0.246</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>js (total)</td>
+    <td>72.804</td>
+    <td>418.841</td>
+    <td>71.9%</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>40.487</td>
+    <td>141.704</td>
+    <td>43.7%</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>1211</td>
+    <td>4896</td>
+    <td>50.5%</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>70.416</td>
+    <td>90.917</td>
+    <td>16.1%</td>
+  </tr>
+  <tr>
+    <td>platform (total)</td>
+    <td>1312</td>
+    <td>5129</td>
+    <td>48.9%</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>4.383</td>
+    <td>3.059</td>
+    <td>8.7%</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>18.727</td>
+    <td>18.976</td>
+    <td>12.7%</td>
+  </tr>
+  <tr>
+    <td>app tools (no-op)</td>
+    <td>0.519s</td>
+    <td>0.968</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>app (total)</td>
+    <td>23.629</td>
+    <td>23.003</td>
+    <td>12.2%</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>1424 (23:44)</td>
+    <td>5589 (93:15)</td>
+    <td>49.1%</td>
+  </tr>
+</table>
+
+<p>It's worth mentioning that linking libxul is part of the platform libs
+tier. libxul linking should be called out because it is unlike other
+parts of the build in that it is more I/O bound and can't use multiple
+cores. On my machine, libxul linking (not using gold) takes ~61s. During
+this time, only 1 CPU core is in use. The ~61s wall time corresponds to
+roughly 5% of platform libs' wall time. Yet, even if we subtract this ~61s
+from the effective CPU calculation, the percentage doesn't change much.</p>
+<h2>Clobber with Populated ccache</h2>
+<p>Using the ccache from a recently built tree to make C/C++ compilation
+faster, I measured how long it took each tier to build on a clobber
+build.</p>
+<p>This measurement can be used to estimate the overhead of C/C++ compilation
+during builds. In theory, the difference between CPU times between this
+and the former measurement will be the amount of CPU time spent in the
+C/C++ compiler.</p>
+<p>This will also isolate how much time we spend <em>not</em> in the C/C++
+compiler. It will arguably be very difficult to
+make the C/C++ compiler faster (although things like reducing the abuse
+of templates can have a measureable impact). However, we do have control
+over many of the other things we do. If we find that CPU time spent
+outside the C/C++ compiler is large, we can look for pieces to optimize.</p>
+<p>Tiers not containing compiled files are omitted from the data.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+    <th>ccache savings (s) (Time in Compiler)</th>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>1.075</td>
+    <td>1.525</td>
+    <td>7.095</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>1.957</td>
+    <td>0.933</td>
+    <td>1.522</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>5.582</td>
+    <td>1.688</td>
+    <td>6.716</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>22.829</td>
+    <td>9.529</td>
+    <td>407.189</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>431</td>
+    <td>328</td>
+    <td>4568</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>14.498</td>
+    <td>25.744</td>
+    <td>65.173</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>10.193</td>
+    <td>15.809</td>
+    <td>3.167</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>487.134 (6:07)</td>
+    <td>383.229 (6:23)</td>
+    <td>5059 (84:19)</td>
+  </tr>
+</table>
+
+<h2>No-op Build</h2>
+<p>A <em>no-op</em> build is a build performed in an object directory that was
+just built. Nothing changed in the source repository nor object
+directory, so theoretically the build should do nothing. And, it should
+be fast.</p>
+<p>In reality, our build system isn't smart and performs some redundant
+work. One part of redundant work is because one of the first things the
+main Makefile does before invoking the tiers is delete a large chunk of
+the <em>dist/</em> directory and the entirety of the <em>_tests/</em> directory from
+the object directory.</p>
+<p>In these measurements, I bypassed the deletion of these directories. In
+other words, I measure what <em>no-op</em> builds are if we eliminate the
+clown shoes around blowing away large parts of the object directory.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.524</td>
+    <td>0.537</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.625</td>
+    <td>0.599</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.447</td>
+    <td>0.437</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.809</td>
+    <td>0.752</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.334</td>
+    <td>0.324</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.375</td>
+    <td>0.361</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>10.904</td>
+    <td>13.136</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>30.969</td>
+    <td>44.25</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>8.213</td>
+    <td>10.737</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.524</td>
+    <td>1.006</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>6.090</td>
+    <td>13.753</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>59.814</td>
+    <td>85.892</td>
+  </tr>
+</table>
+
+<p>So, no-op builds use ~60s of wall time and only make use of 17.9% of
+available CPU resources.</p>
+<h2>No-op Build With Directory Removal Silliness</h2>
+<p>As mentioned above, before the tiers are iterated, the top-level
+Makefile blows away large parts of <em>dist/</em> and the entirety of
+<em>_tests/</em>. What impact does this have?</p>
+<p>In this section, I try to isolate how much time was thrown away by doing
+this.</p>
+<p>First, we have to account for the deletion of these directories. On my
+test build, deleting 15,005 files in these directories took ~3 seconds.</p>
+<p>The table below contains my results. This is a more accurate reading
+than the above on how long no-op builds takes because this is actually
+what we do during normal builds. The time delta column contains the
+difference between this build and a build without the removal silliness.
+Positive times can be attributes to overhead associated with
+repopulating <em>dist/</em> and <em>_tests/</em>.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>Wall Time Delta (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Time Delta (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.544</td>
+    <td>Negligible</td>
+    <td>0.559</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.616</td>
+    <td>Negligible</td>
+    <td>0.594</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.447</td>
+    <td>Negligible</td>
+    <td>0.436</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.803</td>
+    <td>Negligible</td>
+    <td>0.743</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.338</td>
+    <td>Negligible</td>
+    <td>0.329</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.378</td>
+    <td>Negligible</td>
+    <td>0.363</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>13.140</td>
+    <td>2.236</td>
+    <td>13.314</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>35.290</td>
+    <td>4.329</td>
+    <td>43.059</td>
+    <td>-1.191 (normal variance?)</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>8.819</td>
+    <td>0.606</td>
+    <td>10.983</td>
+    <td>0.246</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.525</td>
+    <td>Negligible</td>
+    <td>1.012</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>8.876</td>
+    <td>2.786</td>
+    <td>13.527</td>
+    <td>-0.226</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>69.776</td>
+    <td>9.962</td>
+    <td>84.919</td>
+    <td>-0.973 (normal variance)</td>
+  </tr>
+</table>
+
+<p>If a delta is listed as negligible, it was within 100ms of the original
+value and I figured this was either due to expected variance between
+runs or below our threshold for caring. In the case of base, nspr, and
+js tiers, the delta was actually much smaller than 100ms, often less
+then 10ms.</p>
+<p>It certainly appears that the penalty for deleting large parts of
+<em>dist/</em> and the entirety of <em>_tests/</em> is about 10 seconds.</p>
+<h2>The Overhead of Make</h2>
+<p>We've measured supposed no-op build times. As I stated above, our no-op
+builds actually aren't no-op builds. Even if we bypass the deletion of
+<em>dist/</em> and <em>_tests/</em> we always evaluate some make rules. Can we measure how
+much work it takes to just load the make files without actually doing
+anything? This would allow us to get a rough estimate of how much we are
+wasting by doing redundant work. It will also help us establish a
+baseline for make overhead.</p>
+<p>Turns out we can! Make has a <em>--dry-run</em> argument which evaluates the make
+file but doesn't actually do anything. It simply prints what would have
+been done.</p>
+<p>Using <em>--dry-run</em>, I timed the different tiers. The difference from a no-op
+build should roughly be the overhead associated with make itself. It is
+possible that <em>--dry-run</em> adds a little overhead because it prints the
+commands that would have been executed. (Previous timings were using
+<em>-s</em>, which suppresses this.)</p>
+<p>The delta times in the following table are the difference in times
+between the true no-op build from above (the one where we don't delete
+<em>dist/</em> and <em>_tests/</em>) and the times measured here. It roughly isolates
+the amount of time spent outside of make, doing redundant work.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>Wall Time Delta (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Time Delta (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.369</td>
+    <td>0.155</td>
+    <td>0.365</td>
+    <td>0.172</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.441</td>
+    <td>0.184</td>
+    <td>0.431</td>
+    <td>0.168</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.368</td>
+    <td>0.079</td>
+    <td>0.364</td>
+    <td>0.073</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.636</td>
+    <td>0.173</td>
+    <td>0.591</td>
+    <td>0.161</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.225</td>
+    <td>0.109</td>
+    <td>0.225</td>
+    <td>0.099</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.278</td>
+    <td>0.097</td>
+    <td>0.273</td>
+    <td>0.088</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>3.841</td>
+    <td>7.063</td>
+    <td>6.108</td>
+    <td>7.028</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>8.938</td>
+    <td>22.031</td>
+    <td>14.723</td>
+    <td>29.527</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>3.962</td>
+    <td>4.251</td>
+    <td>6.185</td>
+    <td>4.552</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.422</td>
+    <td>0.102</td>
+    <td>0.865</td>
+    <td>0.141</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>0.536</td>
+    <td>5.554</td>
+    <td>1.148</td>
+    <td>12.605</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>20.016</td>
+    <td>39.798</td>
+    <td>31.278</td>
+    <td>54.614</td>
+  </tr>
+</table>
+
+<h2>Observations</h2>
+<p>The numbers say a lot. I'll get to key takeaways in a bit.</p>
+<p>First, what the numbers don't show is the variance between runs.
+Subsequent runs are almost always <em>significantly</em> faster than the
+initial, even on no-op builds. I suspect this is due mostly to
+I/O wait. In the initial tier run, files are loaded into the page cache.
+Then, in subsequent runs, all I/O comes from physical memory rather than
+waiting on a magnetic hard drive.</p>
+<p>Because of the suspected I/O related variance, I fear that the numbers I
+obtained are highly synthetic, at least for my machine. It is unlikely
+I'll ever see all these numbers in one mozilla-central build. Instead,
+it requires a specific sequence of events to obtain the best times
+possible. And, this sequence of events is not likely to correspond with
+real-world usage.</p>
+<p>That being said, I think these numbers are important. If you remove I/O
+from the equation - say you have an SSD with near 0 service times or
+have enough memory so you don't need a hard drive - these numbers will
+tell what limits you are brushing up against. And, as computers get more
+powerful, I think more and more people will cross this threshold and
+will be more limited by the build system than the capabilities of their
+hardware. (A few months ago, I
+<a href="https://groups.google.com/forum/#!topic/mozilla.dev.builds/FJclsTA_OBQ/discussion">measured resource usage</a>
+when compiling mozilla-central on Linux and concluded you need roughly
+9GB of dedicated memory to compile and link mozilla-central without page
+cache eviction. In other words, if building on a machine with only 8GB
+of RAM, your hard drive will play a role.)</p>
+<p>Anyway, to the numbers.</p>
+<p>I think the most important number in the above tables is <strong>49.1%</strong>. That
+is the effective CPU utilization during a clobber build. This means that
+<strong>during a build, on average half of the available CPU cores are
+unused.</strong> Now, I could be generous and bump this number to 50.7%. That's
+what the effective CPU utilization is if you remove the ~60s of libxul
+linking from the calculation.</p>
+<p>The 49.1% has me reaching the following conclusions:</p>
+<ol>
+<li>I/O wait really matters.</li>
+<li>Our recursive use of make is incapable of executing more than 4 items
+   at a time on average (assuming 8 cores).</li>
+<li>My test machine had more CPU wait than I think.</li>
+</ol>
+<p>I/O wait is easy to prove: compare times on an SSD or with a similar I/O
+bus with near zero service times (e.g. a filled page cache with no
+eviction - like a machine with 16+ GB of memory that has built
+mozilla-central recently).</p>
+<p>A derived time not captured in any table is 11:39. This is the total
+CPU time of a clobber build (93:15) divided by the number of cores (8).
+<strong>If we had 100% CPU utilization across all cores during builds, we should
+be able to build mozilla-central in 11:39.</strong> This is an ideal figure and
+won't be reached. As mentioned above, libxul linking takes ~60s itself! I
+think 13:00 is a more realistic optimal compilation time for a modern 8
+core machine. This points out a startling number: <strong>we are wasting
+~12 minutes of wall time due to not fully utilizing CPU cores during
+clobber builds.</strong></p>
+<p>Another important number is 5059 out of 5589, or 90.5%. That is the CPU
+time in a clobber build spent in the C/C++ compiler, as measured by the
+speedup of using ccache. It's unlikely we are going to make the C/C++
+compiler go much faster (short of not compiling things). So, this is a
+big fat block of time we will never be able to optimize. On my machine
+<strong>compiling mozilla-central will always take at least ~10:30 wall time,
+just in compiling C/C++.</strong></p>
+<p>A clobber build with a saturated ccache took 487s wall time but only 383s
+CPU time. That's only about 10% total CPU utilization. And, this
+represents only 6.8% of total CPU time from the original clobber build.
+Although, it is 34.2% of total wall time.</p>
+<p>The above means that everything not the C/C++ compiler is horribly
+inefficient. These are clown shoes of epic proportions. We're not even
+using 1 full core doing build actions outside of the C/C++ compiler!</p>
+<p>Because we are inefficient when it comes to core usage, I
+think a key takeaway is that throwing more cores at the existing build
+system will have diminishing returns. Sure, some parts of the build system
+today could benefit from it (mainly js, layout, and dom, as they have
+Makefile's with large numbers of source files). But, most of the build
+system won't take advantage of many cores. <strong>If you want to throw money
+at a build machine, I think your first choice should be an SSD. If you
+can't do that, have as much memory as you can so most of your filesystem
+I/O is serviced by the page cache, not your disk drive.</strong></p>
+<p>In the final table, we isolated how much time <em>make</em> is spending to
+just to figure out what to do. That amounts to ~20 seconds wall
+time and ~31s CPU time. That leaves ~40s wall and ~55s CPU for non-make
+work during no-op builds. Translation: we are doing 40s of wall time work
+during no-op builds. Nothing changed. <strong>We are throwing 40s of wall time
+away because the build system isn't using proper dependencies and is
+doing redundant work.</strong></p>
+<p>I've long been a critic of us blowing away parts of <em>dist/</em> and
+<em>_tests/</em> at the top of builds. Well, after measuring it, I have mixed
+reactions. It only amounts to about ~10s of added time to builds. This
+doesn't seem like a lot in the grand scheme of things. However, this is
+~10s on top of the ~60s it actually takes to iterate through the tiers.
+So, in terms of percentages for no-op builds, it is actually quite
+significant.</p>
+<p>No-op builds with the existing build system take ~70s under ideal
+conditions. In order of time, the breakdown is roughly:</p>
+<ul>
+<li>~40s for doing redundant work in Makefiles</li>
+<li>~20s for make traversal and loading overhead</li>
+<li>~10s for repopulating deleted content from <em>dist/</em> and <em>_tests/</em></li>
+</ul>
+<p>In other words, <strong>~50s of ~70s no-op build times are spent doing work
+we have already done.</strong> This is almost purely clown shoes. Assuming we
+can't make make traversal and loading faster, the shortest possible
+no-op build time will be ~20s.</p>
+<p>Splitting things up a bit more:</p>
+<ul>
+<li>~22s - platform libs make evaluation</li>
+<li>~20s - make file traversal and loading (readying for evaluation)</li>
+<li>~10s - repopulating deleted content from <em>dist/</em> and <em>_tests/</em></li>
+<li>~7s - platform export make evaluation</li>
+<li>~5.5 - app libs make evaluation</li>
+<li>~4s - platform tools</li>
+</ul>
+<p>The ~20s for make file traversal and loading is interesting. I suspect
+(although I haven't yet measured) that a lot of this is due to the sheer
+size of rules.mk. As I
+<a href="http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times/">measured</a>
+on Friday, the overhead of rules.mk with pymake is significant. I
+hypothesized that it would have a similar impact on GNU make. I think a
+good amount of this ~20s is similar overhead. I need to isolate,
+however. I am tempted to say that if we truly did no-op builds and make
+Makefile's load into make faster, we could attain no-op build times in
+the ~10s range. I think this is pretty damn good! Even ~20s isn't too
+bad. As surprising as it is for me to say it, <strong>recursive make is not
+(a significant) part of our no-op build problem</strong>. However, <strong>recursive
+make is a large part of our non-no-op build problem</strong>.</p>
+<h2>Next Steps</h2>
+<p>If we want to make our existing recursive make build backend faster, I
+recommend the following actions (in no particular order):</p>
+<ol>
+<li>Factor pieces out of rules.mk into separate .mk files and
+   conditionally load based on presence of specific variables. In other
+   words, finish what we have started. This definitely cuts down on the
+   overhead with pymake (as measured on Friday) and <em>likely</em> makes GNU
+   make faster as well.</li>
+<li>Don't blow away parts of <em>dist/</em> and <em>_tests/</em> at the top of builds.
+   I know this introduces a problem where we could leave orphaned files
+   in the object directory. We should solve this problem by having
+   proper manifests for everything so we can detect and delete orphans.
+   The cheap man's solution is to periodically clobber these
+   directories.</li>
+<li>Don't perform unnecessary work during no-op builds. I suspect a lot
+   of redundant work is due to rules in Makefile's not the rules in
+   rules.mk. As we eliminate rules from Makefile's, this problem should
+   gradually go away since rules.mk is generally intelligent about these
+   things.</li>
+<li>More parallelism. I'm not sure how we're going to solve this with
+   recursive make short of using PARALLEL_DIRS more and/or consolidating
+   Makefile's together.</li>
+</ol>
+<p>Again, these steps apply to our current recursive make build backend.</p>
+<p>Because the most significant losses are due to ungained parallelism, <strong>our
+focus should be on increasing parallelism.</strong> We can only do this so much
+with recursive make. It is clear now more than ever that recursive make
+needs to be replaced with something that can fully realize the potential
+of multiple CPU cores. That could be non-recursive make or a separate
+build backend altogether.</p>
+<p>We will likely not have an official alternate build backend soon. Until
+then, there are no shortage of clown shoes that can be looked at.</p>
+<p>The redundant work during no-op builds is definitely tempting to
+address, as I think that has the most impact to most developers.
+I suspect a lot of the redundant work during no-op builds is due to
+poorly implemented rules in individual Makefiles rather than on
+silliness in rules.mk. Therefore,
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">removing rules from Makefile's</a>
+again seems to be one of the most important things we can do to make the
+build system faster. It also prepares us for implementing newer build
+backends, so it is a win-win!</p>
+<h2>Follow-ups</h2>
+<p>The measurements reported in this post are only the tip of the iceberg.
+If I had infinite time, I would:</p>
+<ul>
+<li>Set up buildbot to record and post measurements so we have a dashboard
+  of build times. We have some of this today, but the granularity isn't
+  as fine as what I captured.</li>
+<li>Record per-directory times.</li>
+<li>Isolate time spent in different processes (DTrace could be used here).</li>
+<li>Capture I/O numbers.</li>
+<li>Isolate the impact of I/O service times on build times.</li>
+<li>Isolate the overhead of ccache (mainly in terms of I/O).</li>
+</ul>]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mozilla Build System Overview]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview" />
+    <id>http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview</id>
+    <updated>2012-07-29T13:15:00Z</updated>
+    <published>2012-07-29T13:15:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <summary type="html"><![CDATA[Mozilla Build System Overview]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview"><![CDATA[<p>Mozilla's build system is a black box to many. This post attempts to
+shed some light onto how it works.</p>
+<h2>Configuration File</h2>
+<p>The first part of building is creating a configuration file. This
+defines what application to build (Firefox, Firefox OS, Fennec, etc) as
+well as build options, like to create a release or debug build. This
+step isn't technically required, but most people do it.</p>
+<p>Configuration files currently exist as <em>mozconfig</em> files. By default,
+most people create a <em>.mozconfig</em> file in the root directory of
+mozilla-central.</p>
+<h2>Interaction</h2>
+<p>All interaction with the build system is currently gated through the
+<em>client.mk</em> file in the root directory of mozilla-central. Although, I'm
+trying to land an alternate (and eventual replacement) to <em>client.mk</em>
+called <em>mach</em>. You can read about it in previous posts on this blog.</p>
+<p>When you run <em>make -f client.mk</em>, you are invoking the build system and
+telling it to do whatever it needs to do build the tree.</p>
+<h2>Running Configure</h2>
+<p>The first thing <em>client.mk</em> does to a fresh tree is invoke <em>configure</em>.
+<em>configure</em> is a shell script in the root directory of the repository.
+It is generated from the checked-in <em>configure.in</em> file using the GNU
+<em>autoconf</em> utility. I won't go into detail on how autoconf works because
+I don't have a beard.</p>
+<p><em>configure</em> accomplishes some important tasks.</p>
+<p>First, it validates that the build environment is sane. It performs sone
+sanity testing on the directory tree then looks at the system and build
+configuration to make sure everything should work.</p>
+<p>It identifies the active compiler, locations of common tools and
+utilities, and ensures everything works as needed. It figures out how to
+convert desired traits into system-specific options. e.g. the exact
+argument to pass to the compiler to enable warnings.</p>
+<p>Once <em>configure</em> determines the environment is sane, it writes out what
+it learned.</p>
+<p>Currently, <em>configure</em> takes what it has learned and invokes the
+<em>allmakefiles.sh</em> script in the root directory. This script prints out
+the set of Makefile's that will be used to build the tree for the
+current configuration. <em>configure</em> takes the output of filenames and
+then procedes to generate those files.</p>
+<p>Generation of Makefile's is rather simple. In the source tree are a
+bunch of <em>.in</em> files, typically <em>Makefile.in</em>. These contain special
+markers. <em>configure</em> takes the set of determined configuration variables
+and performs substitution of the variable markers in the <em>.in</em> files with
+them. The <em>.in</em> files with variables substitutes are written out in the
+object directory. There are also some GYP files in the source tree.
+<em>configure</em> invokes a tool to convert these into Mozilla-style
+Makefile's.</p>
+<p><em>configure</em> also invokes <em>configure</em> for other managed projects
+in mozilla-central, such as the SpiderMonkey source in <em>js/src</em>.</p>
+<p><em>configure</em> finishes by writing out other miscellaneous files in the
+object directory.</p>
+<h2>Running Make</h2>
+<p>The next step of the build is running make. <em>client.mk</em> simply points
+GNU make (or pymake) at the <em>Makefile</em> in the top-level directory of the
+object directory and essentially says <em>evaluate</em>.</p>
+<h3>Build System Tiers</h3>
+<p>The build system is broken up into different tiers. Each tier represents
+a major phase or product in the build system. Most builds have the
+following tiers:</p>
+<ol>
+<li>base - Builds global dependencies</li>
+<li>nspr - Builds NSPR</li>
+<li>js - Builds SpiderMonkey</li>
+<li>platform - Builds the Gecko platform</li>
+<li>app - Builds the configured application (e.g. Firefox, Fennec,
+   Firefox OS)</li>
+</ol>
+<p>Inside each tier are the distinct sub-tiers:</p>
+<ol>
+<li>export</li>
+<li>libs</li>
+<li>tools</li>
+</ol>
+<p>A Makefile generally belongs to 1 main tier. Inside Makefile's or in
+other included .mk files (make files that are not typically called
+directly by make) are statements which define which directories
+belong to which tiers. See
+<a href="https://mxr.mozilla.org/mozilla-central/source/toolkit/toolkit-tiers.mk">toolkit-tiers.mk</a>
+for an example.</p>
+<p>When the top-level Makefile is invoked, it iterates through every tier
+and every sub-tier within it. It starts at the first tier and evaluates
+the <em>export</em> target on every Makefile/directory defined in it. It then
+moves on to the <em>libs</em> target then finally the <em>tools</em> target. When it's
+done with the <em>tools</em> target, it moves on to the next tier and does the
+same iteration.</p>
+<p>For example, we first start by evaluating the <em>export</em> target of the
+<em>base</em> tier. Then we evaluate <em>base</em>'s <em>libs</em> and <em>tools</em> tiers. We then
+move on to <em>nspr</em> and do the same. And, we keep going. In other words,
+the build system makes 3 passes through each tier.</p>
+<p>Tiers are composed of directory members. e.g. <em>dom</em> or <em>layout</em>. When
+make descends into a tier member directory, it looks for specially named
+variables that tell it what sub-directories are also part of this
+directory. The <em>DIRS</em> variable is the most common. But, we also use
+<em>TEST_DIRS</em>, <em>PARALLEL_DIRS</em>, <em>TOOL_DIRS</em>, and a few others. make will
+invoke make for all defined child directories and for the children of
+the children, and so on. This is what we mean by <em>recursive make</em>. make
+essentially recurses into directory trees, evaluating all the
+directories linearly.</p>
+<p>Getting back to the tiers, the sub-tiers <em>export</em>, <em>libs</em>, and <em>tools</em>
+can be thought of as <em>pre-build</em>, <em>build</em>, and <em>post-build</em> events.
+Although, this analogy is far from perfect.</p>
+<p><em>export</em> generally prepares the object directory for more comprehensive
+building. It copies C/C++ header files into a unified object directory,
+generates header files from IDLs files, etc.</p>
+<p><em>libs</em> does most of the work. It compiles C++ code and performs lots of
+other main work, such as Jar manifest creation.</p>
+<p><em>tools</em> does a lot of miscellaneous work. If you have tests enabled,
+this is where tests are typically compiled and/or installed, for
+example.</p>
+<h3>Processing a Makefile</h3>
+<p>For each directory inside a tier, make evaluates the Makefile in that
+directory for the target/sub-tier specified.</p>
+<p>The basic gist of Makefile execution is actually pretty simple.</p>
+<p>Mozilla's Makefiles typically look like:</p>
+<pre><code>DEPTH := .
+topsrcdir := @top_srcdir@
+srcdir := @srcdir@
+VPATH := @srcdir@
+
+include $(DEPTH)/config/autoconf.mk
+
+IDLSRCS := foo.idl bar.idl
+CPPSRCS := hello.cpp world.cpp
+
+include $(topsrcdir)/config/rules.mk
+</code></pre>
+<p>All the magic in Makefile processing happens in <em>rules.mk</em>. This make file
+simply looks for specially named variables (like <em>IDLSRCS</em> or <em>CPPSRCS</em>)
+and magically converts them into targets for make to evaluate.</p>
+<p>In the above sample Makefile, the <em>IDLSRCS</em> variable will result in an
+implicit <em>export</em> target which copies IDLs into the object directory and
+compiles them to .h files. <em>CPPSRCS</em> will result in a <em>libs</em> target that
+results in each .cpp file being compiled into a .o file.</p>
+<p>Of course, there is nothing stopping you from defining targets/rules in
+Makefile's themselves. This practice is actually quite widespread.
+Unfortunately, it is a bad practice, so you shouldn't do it. The
+preferred behavior is to define variables in a Makefile and have
+rules.mk magically provide the make targets/rules to do stuff with them.
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">Bug 769378</a> tracks
+fixing this bad practice.</p>
+<h2>Conclusion</h2>
+<p>So, there you have it: a very brief overview of how Mozilla's build
+system works!</p>
+<p>In my next post, I will shed some light onto how much times goes into
+different parts of the build system.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
