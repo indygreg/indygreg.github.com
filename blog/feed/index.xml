@@ -10,10 +10,109 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 30 Jul 2012 18:48:37 GMT</pubDate>
+    <pubDate>Wed, 15 Aug 2012 21:23:53 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Build Firefox Faster with Build Splendid</title>
+      <link>http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid</link>
+      <pubDate>Wed, 15 Aug 2012 14:30:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <category><![CDATA[build system]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid</guid>
+      <description>Build Firefox Faster with Build Splendid</description>
+      <content:encoded><![CDATA[<p>Would you like to build Firefox faster? If so, do the following:</p>
+<pre><code>hg qimport http://people.mozilla.org/~gszorc/build-splendid.patch
+hg qpush
+rm .mozconfig* (you may want to create a backup first)
+./mach build
+</code></pre>
+<p>This should <em>just work</em> on OS X, Linux, and other Unix-style systems.
+<strong>Windows support is currently broken, sorry.</strong></p>
+<p><em>mach</em> can do much more than build. Run the following to see what:</p>
+<pre><code>./mach --help
+</code></pre>
+<h2>Important Info</h2>
+<p><em>mach</em> replaces client.mk. <em>mach</em> has its own configuration file. The
+first time you run <em>mach</em>, it will create the file <em>mach.ini</em> in the
+same directory as the <em>mach</em> script. This is your new <em>mozconfig</em> file.</p>
+<p>The default <em>mach.ini</em> places the object directory into the directory
+<em>objdir</em> under the top source directory. It also builds an optimized
+binary without debug info.</p>
+<p>Run the following to see which config settings you can add to
+<em>mach.ini</em>:</p>
+<pre><code>./mach settings-create
+./mach settings-list
+</code></pre>
+<p>This <em>may</em> fail because I'm still working out the kinks with <em>gettext</em>.
+If it doesn't work, open <em>python/mozbuild-bs/mozbuild/base.py</em> and search
+for <em>_register_settings</em>. Open
+<em>python/mozbuild-bs/mozbuild/locale/en-US/LC_MESSAGES/mozbuild.po</em> for
+the help messages.</p>
+<p>As a point of reference, my <em>mach.ini</em> looks like the following:</p>
+<pre><code>[build]
+application = browser
+
+configure_extra = --enable-dtrace --enable-tests
+
+[compiler]
+cc = /usr/local/llvm/bin/clang
+cxx = /usr/local/llvm/bin/clang++
+
+cflags = -fcolor-diagnostics
+cxxflags = -fcolor-diagnostics
+
+[paths]
+source_directory = /Users/gps/src/mozilla-central-git
+object_directory = /Users/gps/src/mozilla-central-git/objdir
+</code></pre>
+<p>I am on OS X and am using a locally-built version of LLVM/Clang, which I
+have installed to <em>/usr/local/llvm</em>.</p>
+<p>You'll notice there are no options to configure make. The patch
+automatically selects optimal settings for your platform!</p>
+<h2>Known Issues and Caveats</h2>
+<p>This is alpha. It works in scenarios in which I have tested it, mainly
+building the <em>browser</em> application on OS X and Linux. There are many
+features missing and likely many bugs.</p>
+<p>I have been using this as part of my day-to-day development for weeks.
+However, your mileage may vary.</p>
+<p>As stated above, Windows support is lacking. It will appear to work, but
+things will blow up during building. Don't even try to use it on
+Windows.</p>
+<p>There are likely many bugs. Please don't file Bugzilla bugs, as this
+isn't part of the build system just yet.</p>
+<p><strong>This patch takes over the build system. Do not attempt to use
+client.mk or run make directly with this patch applied.</strong></p>
+<p>If you encounter an issue, your methods of recourse are:</p>
+<ol>
+<li>Post a comment on this blog post</li>
+<li>Ping me on irc.mozilla.org. My nick is <em>gps</em>. Try the #buildfaster
+   channel.</li>
+<li>Send an email to gps@mozilla.com</li>
+</ol>
+<p>I am particularly interested in exceptions and build failures.</p>
+<p>If you encounter an issue building with this, just reverse the patch and
+build like you have always done (don't forget to restore your mozconfig
+file).</p>
+<p>If <em>mach.ini</em> does not support everything you were doing in your
+mozconfig, please send me a copy of your mozconfig so I can implement
+whatever you need.</p>
+<h2>Other Info</h2>
+<p>I will likely write a follow-up post detailing what's going on. If you
+are curious, the code lives in <em>python/mozbuild-bs</em>. The <em>backend</em> and
+<em>frontend</em> sub-packages are where the magic is at. Once the backend has
+been configured, check out <em>hybridmake.mk</em> and all of the <em>splendid.mk</em>
+files in the object directory.</p>
+<p>I am particularly interested in the real-world impact of this patch on
+people's build times. In this early version of the patch, you likely
+won't see drastic speed increases. On my MacBook Pro with an SSD, I see
+end-to-end clobber build times decrease by over a minute. With a little
+more work, I should be able to shave another minute or two off of that.</p>
+<p>I will try to keep the patch up-to-date as I improve the build system.
+Refresh early and often.</p>]]></content:encoded>
+    </item>
     <item>
       <title>mozilla-central Build Times</title>
       <link>http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times</link>
@@ -2647,66 +2746,6 @@ so I'm sure you'll get an answer. If you prefer email, send it to the
 <a href="http://lists.cs.uiuc.edu/mailman/listinfo/cfe-dev">cfe-dev</a> list.</p>
 <p>If you have any questions, leave them in the comments or ask using one
 of the methods above.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Better Sharing of Test Code in Mozilla Projects</title>
-      <link>http://gregoryszorc.com/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects</link>
-      <pubDate>Thu, 10 May 2012 10:35:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Firefox]]></category>
-      <category><![CDATA[testing]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects</guid>
-      <description>Better Sharing of Test Code in Mozilla Projects</description>
-      <content:encoded><![CDATA[<p>Just <a href="https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=b063ba6dd084">landed</a>
-in mozilla-inbound (Firefox's integration tree) is
-support for test-only JavaScript modules. That is, JavaScript modules
-that are utilized by just test code. This is being tracked in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=748490">bug 748490</a>.</p>
-<p>The use case for this feature is sharing common test code, mock types,
-etc between tests. For example, in the Services code, we have a number
-of mock types (like a JS implementation of the Sync HTTP server) that
-need to be utilized across sub-modules. With test-only modules, it is
-now possible to publish these modules to a common location and import
-them using the familiar Cu.import() syntax. Previously, you had to
-perform the equivalent of a <em>#include</em> (possibly by utilizing the
-<em>[head]</em> section of xpcshell.ini files). The previous method of
-importing is dirty because you pollute the global object. Furthermore,
-it is really inconvenient when you wish to utilize shared files from
-different directories. See
-<a href="https://hg.mozilla.org/mozilla-central/file/f80568dba010/services/sync/tests/unit/xpcshell.ini#l2">this file</a>
-for an example.</p>
-<p>The new method of publishing and consuming test-only JavaScript modules
-is clean and simple. From your Makefile, define <strong>TESTING_JS_MODULES</strong> to
-a list of (JavaScript) files to publish. Optionally, define
-<strong>TESTING_JS_MODULE_DIR</strong> to the relative path they should be published
-to. If the directory variable is not defined, they will be published to
-the root directory. Here is an example Makefile.in:</p>
-<pre><code>DEPTH     = ../..
-topsrcdir = @top_srcdir@
-srcdir    = @srcdir@
-
-include $(DEPTH)/config/autoconf.mk
-
-TESTING_JS_MODULES = mockserver.js common.js
-TESTING_JS_MODULE_DIR = foobar
-</code></pre>
-<p>All test modules are installed to a common directory somewhere in the
-object directory. Where is not relevant. Just know it is outside the
-normal distribution directory, so the test modules aren't packaged. This
-common directory is registered with the resource manager under
-<em>resource://testing/</em>. So, once a build is performed, you can import these
-files via Components.utils.import():</p>
-<pre><code>Cu.import("resource://testing-common/foobar/mockserver.js");
-</code></pre>
-<p>I hope this feature facilitates better reuse of test code. So, next time
-you are writing test code, please consider writing writing and publishing it
-as a module so others can utilize it.</p>
-<p>One more thing. Currently, integration with the resource manager is only
-implemented for xpcshell tests. I'd like to see this supported in all
-the test runners eventually. I implemented xpcshell support because a)
-that is the test harness I use almost exclusively and b) it is the only
-one I'm comfortable modifying. If you want to implement support in
-another test runner, please have a go at it!</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

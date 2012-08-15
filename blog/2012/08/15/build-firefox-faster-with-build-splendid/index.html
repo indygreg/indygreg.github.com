@@ -1,0 +1,211 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc'c Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="build-firefox-faster-with-build-splendid"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/08/15/build-firefox-faster-with-build-splendid" rel="bookmark" title="Permanent Link to Build Firefox Faster with Build Splendid">Build Firefox Faster with Build Splendid</a></h2>
+  <small>August 15, 2012 at 02:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Would you like to build Firefox faster? If so, do the following:</p>
+<pre><code>hg qimport http://people.mozilla.org/~gszorc/build-splendid.patch
+hg qpush
+rm .mozconfig* (you may want to create a backup first)
+./mach build
+</code></pre>
+<p>This should <em>just work</em> on OS X, Linux, and other Unix-style systems.
+<strong>Windows support is currently broken, sorry.</strong></p>
+<p><em>mach</em> can do much more than build. Run the following to see what:</p>
+<pre><code>./mach --help
+</code></pre>
+<h2>Important Info</h2>
+<p><em>mach</em> replaces client.mk. <em>mach</em> has its own configuration file. The
+first time you run <em>mach</em>, it will create the file <em>mach.ini</em> in the
+same directory as the <em>mach</em> script. This is your new <em>mozconfig</em> file.</p>
+<p>The default <em>mach.ini</em> places the object directory into the directory
+<em>objdir</em> under the top source directory. It also builds an optimized
+binary without debug info.</p>
+<p>Run the following to see which config settings you can add to
+<em>mach.ini</em>:</p>
+<pre><code>./mach settings-create
+./mach settings-list
+</code></pre>
+<p>This <em>may</em> fail because I'm still working out the kinks with <em>gettext</em>.
+If it doesn't work, open <em>python/mozbuild-bs/mozbuild/base.py</em> and search
+for <em>_register_settings</em>. Open
+<em>python/mozbuild-bs/mozbuild/locale/en-US/LC_MESSAGES/mozbuild.po</em> for
+the help messages.</p>
+<p>As a point of reference, my <em>mach.ini</em> looks like the following:</p>
+<pre><code>[build]
+application = browser
+
+configure_extra = --enable-dtrace --enable-tests
+
+[compiler]
+cc = /usr/local/llvm/bin/clang
+cxx = /usr/local/llvm/bin/clang++
+
+cflags = -fcolor-diagnostics
+cxxflags = -fcolor-diagnostics
+
+[paths]
+source_directory = /Users/gps/src/mozilla-central-git
+object_directory = /Users/gps/src/mozilla-central-git/objdir
+</code></pre>
+<p>I am on OS X and am using a locally-built version of LLVM/Clang, which I
+have installed to <em>/usr/local/llvm</em>.</p>
+<p>You'll notice there are no options to configure make. The patch
+automatically selects optimal settings for your platform!</p>
+<h2>Known Issues and Caveats</h2>
+<p>This is alpha. It works in scenarios in which I have tested it, mainly
+building the <em>browser</em> application on OS X and Linux. There are many
+features missing and likely many bugs.</p>
+<p>I have been using this as part of my day-to-day development for weeks.
+However, your mileage may vary.</p>
+<p>As stated above, Windows support is lacking. It will appear to work, but
+things will blow up during building. Don't even try to use it on
+Windows.</p>
+<p>There are likely many bugs. Please don't file Bugzilla bugs, as this
+isn't part of the build system just yet.</p>
+<p><strong>This patch takes over the build system. Do not attempt to use
+client.mk or run make directly with this patch applied.</strong></p>
+<p>If you encounter an issue, your methods of recourse are:</p>
+<ol>
+<li>Post a comment on this blog post</li>
+<li>Ping me on irc.mozilla.org. My nick is <em>gps</em>. Try the #buildfaster
+   channel.</li>
+<li>Send an email to gps@mozilla.com</li>
+</ol>
+<p>I am particularly interested in exceptions and build failures.</p>
+<p>If you encounter an issue building with this, just reverse the patch and
+build like you have always done (don't forget to restore your mozconfig
+file).</p>
+<p>If <em>mach.ini</em> does not support everything you were doing in your
+mozconfig, please send me a copy of your mozconfig so I can implement
+whatever you need.</p>
+<h2>Other Info</h2>
+<p>I will likely write a follow-up post detailing what's going on. If you
+are curious, the code lives in <em>python/mozbuild-bs</em>. The <em>backend</em> and
+<em>frontend</em> sub-packages are where the magic is at. Once the backend has
+been configured, check out <em>hybridmake.mk</em> and all of the <em>splendid.mk</em>
+files in the object directory.</p>
+<p>I am particularly interested in the real-world impact of this patch on
+people's build times. In this early version of the patch, you likely
+won't see drastic speed increases. On my MacBook Pro with an SSD, I see
+end-to-end clobber build times decrease by over a minute. With a little
+more work, I should be able to shave another minute or two off of that.</p>
+<p>I will try to keep the patch up-to-date as I improve the build system.
+Refresh early and often.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
