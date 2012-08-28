@@ -7,12 +7,114 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2012-08-15T21:23:53Z</updated>
+  <updated>2012-08-28T18:58:21Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Visual Studio Project Generation for mozilla-central]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central" />
+    <id>http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central</id>
+    <updated>2012-08-28T12:00:00Z</updated>
+    <published>2012-08-28T12:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <summary type="html"><![CDATA[Visual Studio Project Generation for mozilla-central]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central"><![CDATA[<p>I have very alpha support for Visual Studio project generation for
+mozilla-central that daring people can dogfood.</p>
+<p>I want to emphasize that this is extremely alpha. Normally, I wouldn't
+release things as fragile as they are. But, I know Windows developers
+sorely miss Visual Studio, especially IntelliSense. The current Visual
+Studio projects support IntelliSense, so I want to get this in the hands
+of Windows developers ASAP.</p>
+<p>The current directions for making this all work are a bit hacky. Things
+will change once things have matured. For now, please excuse the mess.</p>
+<p>First, you will need to grab the code. If you use Git, set up a remote
+to my repository:</p>
+<pre><code>git remote add indygreg git://github.com/indygreg/mozilla-central.git
+git fetch indygreg
+</code></pre>
+<p>The branch of interest is <em>build-splendid</em>. I periodically rebase this
+branch on top of master. You have been warned.</p>
+<p>You can switch to this branch:</p>
+<pre><code>git checkout -b build-splendid indygreg/build-splendid
+</code></pre>
+<p>Alternatively, you can squash it down to a single commit and merge it
+into your local branch. Once you've done that, you can record the SHA-1
+of the commit and cherry-pick that wherever you like!</p>
+<pre><code>git merge --squash indygreg/build-splendid
+git commit
+</code></pre>
+<p>In the current state, you need to build the tree or the Visual Studio
+projects will complain about missing files. It doesn't matter if you
+build the tree before or after Visual Studio projects are generated.
+But, we might as well get it out of the way. From your MozillaBuild
+environment, run:</p>
+<pre><code>./mach build
+</code></pre>
+<p>That should <em>just work</em>. If it doesn't, you may need to configure
+mach.ini. See my <a href="http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid/">previous post</a>
+on how to configure mach.ini. As a reference, my Windows config is:</p>
+<pre><code>[build]
+
+configure_extra = --disable-webgl
+
+[compiler]
+
+[paths]
+source_directory = c:\dev\src\mozilla-central-git
+object_directory = c:\dev\src\mozilla-central-git\objdir
+</code></pre>
+<p>Now, to generate Visual Studio project files:</p>
+<pre><code>./mach backendconfig visualstudio
+</code></pre>
+<p>That should take about a minute to finish. When it's done, it should
+have created <em>objdir/msvc/mozilla.sln</em>. You should be able to load that
+in Visual Studio!</p>
+<p>You will need to regenerate Visual Studio project files when the build
+config changes. As a rule of thumb, do this every time you pull source.
+You don't need to perform a full build before you generate Visual Studio
+files (you do need to perform configure, however). However, if you have
+not performed a full build, Visual Studio may not be able to find some
+files, like headers generated from IDLs.</p>
+<p><strong>Please close the solution before regenerating the project files.</strong> If
+you don't, Visual Studio puts up a modal dialog for each project file
+that changed and you have to click through over a hundred of these. It's
+extremely frustrating. I'm investigating workarounds.</p>
+<h2>Current State</h2>
+<p>Currently, it only generates projects for C/C++ compilation (libraries).
+I still need to add support for IDL, headers, etc. However, each
+project has proper compiler flags, header search paths, etc. So,
+IntelliSense is happy and some things do manage to compile!</p>
+<p>Many parts are broken and sub-par.</p>
+<p>I've only tested on Visual Studio 2008. If you are running Visual Studio
+\2010, you can try to upgrade the solution. This <em>may</em> work. The backend
+supports generating solutions for different versions. But, I haven't
+tested things work on non-2008 and I don't want to expose untested behavior.</p>
+<p>Compiling within Visual Studio works for some things. On my system, I
+get a lot of <em>nullptr not defined</em> errors. I'm not sure why. This will
+hopefully be worked out soon.</p>
+<p>If you do manager to compile within Visual Studio, the output files
+don't go in the right places. So, if you do a build from the
+command-line, it will have to re-compile to pick up changes.</p>
+<p>Project names are based on the name of the library they produce. I'm not
+sure if this is the best solution.</p>
+<p>Project dependencies are not set up. They will be added later.</p>
+<p>Projects for linking libxul or building firefox.exe are not yet
+provided. Along the same vein, debugging support is not built-in. I'm
+working on it.</p>
+<p>Basically, IntelliSense works. You can now use Visual Studio as a rich
+editor. Hopefully this is a step in the right direction.</p>
+<p>I'm anxious to hear if this works for other people. Please leave
+comments!</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -2615,185 +2717,5 @@ files as well.</p>
 the server faster because they are smaller.</p>
 <p>If you were parsing this data before and are impacted by this, please
 leave a comment on the aforementioned bug and we'll go from there.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Python Bindings Updates in Clang 3.1]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/05/14/python-bindings-updates-in-clang-3.1" />
-    <id>http://gregoryszorc.com/blog/2012/05/14/python-bindings-updates-in-clang-3.1</id>
-    <updated>2012-05-14T00:05:00Z</updated>
-    <published>2012-05-14T00:05:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Python" />
-    <category scheme="http://gregoryszorc.com/blog" term="Clang" />
-    <category scheme="http://gregoryszorc.com/blog" term="compilers" />
-    <summary type="html"><![CDATA[Python Bindings Updates in Clang 3.1]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/05/14/python-bindings-updates-in-clang-3.1"><![CDATA[<p><a href="http://clang.llvm.org/">Clang</a> 3.1 is scheduled to be released any hour
-now. And, I'm proud to say that I've contributed to it! Specifically,
-I've contributed improvements to the Python bindings, which are an
-interface to
-<a href="http://clang.llvm.org/doxygen/group__CINDEX.html">libclang</a>, the C
-interface to Clang.</p>
-<p>Since 3.1 is being released today, I wanted to share some of the new
-features in this release. An exhaustive list of newly supported APIs is
-available in the
-<a href="http://clang.llvm.org/docs/ReleaseNotes.html#pythonchanges">release notes</a>.</p>
-<h2>Diagnostic Metadata</h2>
-<p><em>Diagnostics</em> are how Clang represents warnings and errors during
-compilation. The Python bindings
-now allow you to get at more metadata. Of particilar interest is
-<strong>Diagnostic.option</strong>. This property allows you to see the compiler flag
-that triggered the diagnostic. Or, you could query
-<strong>Diagnostic.disable_option</strong> for the compiler flag that would silence
-this diagnostic.</p>
-<p>These might be useful if you are analyzing diagnostics produced by the
-compiler. For example, you could parse source code using the Python
-bindings and collect aggregate information on all the diagnostics
-encountered.</p>
-<p>Here is an example:</p>
-<pre><code>from clang.cindex import Index
-
-index = Index.create()
-tu = index.parse('hello.c')
-
-for diag in tu.diagnostics:
-    print diag.severity
-    print diag.location
-    print diag.spelling
-    print diag.option
-</code></pre>
-<p>Or, if you are using the Python bindings from trunk:</p>
-<pre><code>from clang.cindex import TranslationUnit
-
-tu = TranslationUnit.from_source('hello.c')
-...
-</code></pre>
-<p>Sadly, the patch that enabled this simpler usage did not make the 3.1
-branch.</p>
-<h2>Finding Entities from Source Location</h2>
-<p>Two new APIs, <strong>SourceLocation.from_position</strong> and
-<strong>Cursor.from_location</strong>, allow you to easily extract a cursor in the AST
-from any arbitrary point in a file.</p>
-<p>Say you want to find the element in the AST that occupies column 6 of
-line #10 in the file <em>foo.c</em>:</p>
-<pre><code>from clang.cindex import Cursor
-from clang.cindex import Index
-from clang.cindex import SourceLocation
-
-index = Index.create()
-tu = index.parse('foo.c')
-
-f = File.from_name(tu, 'foo.c')
-
-location = SourceLocation.from_position(tu, f, 10, 6)
-cursor = Cursor.from_location(tu, location)
-</code></pre>
-<p>Of course, you could do this by iterating over cursors in the AST until
-one with the desired source range is found. But, that would involve more
-API calls.</p>
-<p>I would like to say that these APIs feel klunky to me. There is lots of
-redundancy in there. In my opinion, there should just be a
-<strong>TranslationUnit.get_cursor(file='foo.c', line=10, column=6)</strong> that
-does the right thing. Maybe that will make it into a future release.
-Maybe it won't. After all, the Python bindings are really a thin wrapper
-around the C API and an argument can be made that there should be
-minimal extra logic and complexity in the Python bindings. Time will
-tell.</p>
-<h2>Type Metadata</h2>
-<p>It is now possible to access more metadata on <strong>Type</strong> instances. For
-example, you can:</p>
-<ul>
-<li>See what the elements of an array are using <strong>Type.get_array_element_type</strong></li>
-<li>See how many elements are in a static array using
-  <strong>Type.get_array_element_count</strong></li>
-<li>Determine if a function is variadic using <strong>Type.is_function_variadic</strong></li>
-<li>Inspect the Types of function arguments using <strong>Type.argument_types</strong></li>
-</ul>
-<p>In this example, I will show how to iterate over all the functions
-declared in a file and to inspect their arguments.</p>
-<pre><code>from clang.cindex import CursorKind
-from clang.cindex import Index
-from clang.cindex import TypeKind
-
-index = Index.create()
-tu = index.parse('hello.c')
-
-for cursor in tu.cursor.get_children():
-    # Ignore AST elements not from the main source file (e.g.
-    # from included files).
-    if not cursor.location.file or cursor.location.file.name != 'hello.c':
-        continue
-
-    # Ignore AST elements not a function declaration.
-    if cursor.kind != CursorKind.FUNCTION_DECL:
-        continue
-
-    # Obtain the return Type for this function.
-    result_type = cursor.type.get_result()
-
-    print 'Function: %s' % cursor.spelling
-    print '  Return type: %s' % result_type.kind.spelling
-    print '  Arguments:'
-
-    # Function has no arguments.
-    if cursor.type.kind == TypeKind.FUNCTIONNOPROTO:
-        print '    None'
-        continue
-
-    for arg_type in cursor.argument_types():
-        print '    %s' % arg_type.kind.spelling
-</code></pre>
-<p>This example is overly simplified. A more robust solution would also
-inspect the Type instances to see if they are constants, check for
-pointers, check for variadic functions, etc.</p>
-<p>An example application of these APIs is to build a tool which
-automatically generated
-<a href="http://docs.python.org/library/ctypes.html">ctypes</a> or similar
-<a href="https://en.wikipedia.org/wiki/Foreign_function_interface">FFI</a>
-bindings. Many of these tools today use custom parsers. Why invent a
-custom (and likely complex) parser when you can call out into Clang and
-have it to all the heavy lifting for you?</p>
-<h2>Future Features</h2>
-<p>As I write this, there are already a handful of Python binding features
-checked into Clang's SVN trunk that were made after the 3.1 branch was cut.
-And, I'm actively working at integrating many more.</p>
-<p>Still to come to the Python bindings are:</p>
-<ul>
-<li>Better memory management support (currently, not all references are
-  kept everywhere, so it is possible for a GC to collect and dispose of
-  objects that should be alive, even though they are not in scope).</li>
-<li>Support for token API (lexer output)</li>
-<li>More complete coverage of Cursor and Type APIs</li>
-<li>More friendly APIs</li>
-</ul>
-<p>I have a personal goal for the Python bindings to cover 100% of the
-functionality in libclang. My work towards that goal is captured in my
-<a href="https://github.com/indygreg/clang/tree/python_features/">python features</a>
-branch on GitHub. I periodically clean up a patch, submit it for review,
-apply feedback, and commit. That branch is highly volatile and I do
-rebase. You have been warned.</p>
-<p>Furthermore, I would like to add additional functionality to libclang
-[and expose it to Python]. For example, I would love for libclang to
-support code generation (i.e. compiling), not just parsing. This would
-enable all kinds of nifty scenarios (like channeling your build system's
-compiler calls through a proxy which siphons off metadata such as
-diagnostics).</p>
-<h2>Credits and Getting Involved</h2>
-<p>I'm not alone in my effort to improve Clang's Python bindings.
-Anders Waldenborg has landed a number of patches to add functionality
-and tests. He has also been actively reviewing patches and implementing
-official LLVM Python bindings! On the reviewing front, Manuel Klimek has been
-invaluable. I've lost track of how many bugs he's caught and good
-suggestions he's made. Tobias Grosser and Chandler Carruth have also
-reviewed their fair share of patches and handled community contributions.</p>
-<p>If you are interested in contributing to the Python bindings, we could
-use your help! You can find me in <a href="http://llvm.org/docs/#irc">#llvm</a> as
-IndyGreg. If I'm not around, the LLVM community is generally pretty helpful,
-so I'm sure you'll get an answer. If you prefer email, send it to the
-<a href="http://lists.cs.uiuc.edu/mailman/listinfo/cfe-dev">cfe-dev</a> list.</p>
-<p>If you have any questions, leave them in the comments or ask using one
-of the methods above.</p>]]></content>
   </entry>
 </feed>
