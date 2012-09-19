@@ -50,6 +50,63 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="bootstrap-your-system-to-build-firefox"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/09/18/bootstrap-your-system-to-build-firefox" rel="bookmark" title="Permanent Link to Bootstrap Your System to Build Firefox">Bootstrap Your System to Build Firefox</a></h2>
+  <small>September 18, 2012 at 05:00 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
+ | <a href="http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>If you've looked at the
+<a href="https://developer.mozilla.org/en-US/docs/Simple_Firefox_build">build instructions</a>
+for Firefox lately, you may have noticed something new: support for
+system bootstrapping!</p>
+<p>Now checked in to mozilla-central is a
+<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mozboot/">framework</a>
+for ensuring your system is capable of building mozilla-central and
+Firefox. You just need to download and run a single Python script and it
+performs magic.</p>
+<p>Kudos go out to a community contributor, kmm (name wasn't revealed) for
+doing the legwork for tracking down and verifying things worked on all
+the Linux distros. Richard Newman and Jeff Hammel also helped with code
+reviews. Just hours after it landed, Landry Breuil contributed support
+for OpenBSD!</p>
+<p>Currently, bootstrapping works for the following:</p>
+<ul>
+<li>Ubuntu Linux</li>
+<li>Mint</li>
+<li>CentOS 6.x</li>
+<li>Fedora</li>
+<li>OS X 10.6, 10.7, and 10.8</li>
+<li>OpenBSD</li>
+</ul>
+<p>If you want to add support for an additional OS, please file a
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=Build%20Config">Core : Build Config</a>
+bug. Likewise, if you encounter an issue, please file a bug so others
+don't get tripped up by it!</p>
+<p>Bootstrap support is definitely in its infancy. It still needs features
+like better prompting and opportunities for user choice (e.g. support
+MacPorts on OS X - currently it only works with Homebrew). But, I think
+it is much better than what existed previously, especially on OS X.</p>
+<p>I consider this bootstrapping component just one piece in a larger
+mission to make developing and building Firefox (and other Gecko
+applications) easier. This should (hopefully) lead to more development
+involvement. The next component to land will likely be
+<a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack">mach</a>.
+It's (finally) been getting some review love (thanks Jeff Hammel!), so
+I'm optimistic it will land in the next few weeks.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="visual-studio-project-generation-for-mozilla-central"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central" rel="bookmark" title="Permanent Link to Visual Studio Project Generation for mozilla-central">Visual Studio Project Generation for mozilla-central</a></h2>
   <small>August 28, 2012 at 12:00 PM | categories: 
@@ -569,75 +626,6 @@ leave a comment on the aforementioned bug and we'll go from there.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="better-sharing-of-test-code-in-mozilla-projects"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects" rel="bookmark" title="Permanent Link to Better Sharing of Test Code in Mozilla Projects">Better Sharing of Test Code in Mozilla Projects</a></h2>
-  <small>May 10, 2012 at 10:35 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/testing'>testing</a>
- | <a href="http://gregoryszorc.com/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Just <a href="https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=b063ba6dd084">landed</a>
-in mozilla-inbound (Firefox's integration tree) is
-support for test-only JavaScript modules. That is, JavaScript modules
-that are utilized by just test code. This is being tracked in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=748490">bug 748490</a>.</p>
-<p>The use case for this feature is sharing common test code, mock types,
-etc between tests. For example, in the Services code, we have a number
-of mock types (like a JS implementation of the Sync HTTP server) that
-need to be utilized across sub-modules. With test-only modules, it is
-now possible to publish these modules to a common location and import
-them using the familiar Cu.import() syntax. Previously, you had to
-perform the equivalent of a <em>#include</em> (possibly by utilizing the
-<em>[head]</em> section of xpcshell.ini files). The previous method of
-importing is dirty because you pollute the global object. Furthermore,
-it is really inconvenient when you wish to utilize shared files from
-different directories. See
-<a href="https://hg.mozilla.org/mozilla-central/file/f80568dba010/services/sync/tests/unit/xpcshell.ini#l2">this file</a>
-for an example.</p>
-<p>The new method of publishing and consuming test-only JavaScript modules
-is clean and simple. From your Makefile, define <strong>TESTING_JS_MODULES</strong> to
-a list of (JavaScript) files to publish. Optionally, define
-<strong>TESTING_JS_MODULE_DIR</strong> to the relative path they should be published
-to. If the directory variable is not defined, they will be published to
-the root directory. Here is an example Makefile.in:</p>
-<pre><code>DEPTH     = ../..
-topsrcdir = @top_srcdir@
-srcdir    = @srcdir@
-
-include $(DEPTH)/config/autoconf.mk
-
-TESTING_JS_MODULES = mockserver.js common.js
-TESTING_JS_MODULE_DIR = foobar
-</code></pre>
-<p>All test modules are installed to a common directory somewhere in the
-object directory. Where is not relevant. Just know it is outside the
-normal distribution directory, so the test modules aren't packaged. This
-common directory is registered with the resource manager under
-<em>resource://testing/</em>. So, once a build is performed, you can import these
-files via Components.utils.import():</p>
-<pre><code>Cu.import("resource://testing-common/foobar/mockserver.js");
-</code></pre>
-<p>I hope this feature facilitates better reuse of test code. So, next time
-you are writing test code, please consider writing writing and publishing it
-as a module so others can utilize it.</p>
-<p>One more thing. Currently, integration with the resource manager is only
-implemented for xpcshell tests. I'd like to see this supported in all
-the test runners eventually. I implemented xpcshell support because a)
-that is the test harness I use almost exclusively and b) it is the only
-one I'm comfortable modifying. If you want to implement support in
-another test runner, please have a go at it!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/firefox/2">Next Page »</a>
 

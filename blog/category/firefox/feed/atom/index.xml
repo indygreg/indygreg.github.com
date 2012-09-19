@@ -7,12 +7,64 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2012-08-28T18:58:21Z</updated>
+  <updated>2012-09-19T00:15:33Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Bootstrap Your System to Build Firefox]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox" />
+    <id>http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox</id>
+    <updated>2012-09-18T17:00:00Z</updated>
+    <published>2012-09-18T17:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
+    <summary type="html"><![CDATA[Bootstrap Your System to Build Firefox]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox"><![CDATA[<p>If you've looked at the
+<a href="https://developer.mozilla.org/en-US/docs/Simple_Firefox_build">build instructions</a>
+for Firefox lately, you may have noticed something new: support for
+system bootstrapping!</p>
+<p>Now checked in to mozilla-central is a
+<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mozboot/">framework</a>
+for ensuring your system is capable of building mozilla-central and
+Firefox. You just need to download and run a single Python script and it
+performs magic.</p>
+<p>Kudos go out to a community contributor, kmm (name wasn't revealed) for
+doing the legwork for tracking down and verifying things worked on all
+the Linux distros. Richard Newman and Jeff Hammel also helped with code
+reviews. Just hours after it landed, Landry Breuil contributed support
+for OpenBSD!</p>
+<p>Currently, bootstrapping works for the following:</p>
+<ul>
+<li>Ubuntu Linux</li>
+<li>Mint</li>
+<li>CentOS 6.x</li>
+<li>Fedora</li>
+<li>OS X 10.6, 10.7, and 10.8</li>
+<li>OpenBSD</li>
+</ul>
+<p>If you want to add support for an additional OS, please file a
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=Build%20Config">Core : Build Config</a>
+bug. Likewise, if you encounter an issue, please file a bug so others
+don't get tripped up by it!</p>
+<p>Bootstrap support is definitely in its infancy. It still needs features
+like better prompting and opportunities for user choice (e.g. support
+MacPorts on OS X - currently it only works with Homebrew). But, I think
+it is much better than what existed previously, especially on OS X.</p>
+<p>I consider this bootstrapping component just one piece in a larger
+mission to make developing and building Firefox (and other Gecko
+applications) easier. This should (hopefully) lead to more development
+involvement. The next component to land will likely be
+<a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack">mach</a>.
+It's (finally) been getting some review love (thanks Jeff Hammel!), so
+I'm optimistic it will land in the next few weeks.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
