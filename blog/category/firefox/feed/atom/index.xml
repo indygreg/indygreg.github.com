@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2012-09-27T00:27:37Z</updated>
+  <updated>2012-09-27T00:30:49Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -62,7 +62,7 @@ post on a personal blog), you can find additional usage information in
 the
 <a href="https://developer.mozilla.org/En/Developer_Guide/mach">mach article</a> on
 MDN. The
-<a href="https://hg.mozilla.org/mozilla-central/files/default/python/mach/README.rst">mach README</a>
+<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mach/README.rst">mach README</a>
 holds more technical information for people wanting to poke at the inner
 workings.</p>
 <p>Mach does require Python 2.7. The build system will likely soon require
