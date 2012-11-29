@@ -1,0 +1,75 @@
+{
+ "name": "build",
+ "children": [
+  {
+   "name": "base",
+   "children": [
+    {
+     "name": "export"
+    },
+    {
+     "name": "libs"
+    },
+    {
+     "name": "tools"
+    }
+   ]
+  },
+  {
+   "name": "nspr",
+   "children": [
+    {
+     "name": "export"
+    },
+    {
+     "name": "libs"
+    },
+    {
+     "name": "tools"
+    }
+   ]
+  },
+  {
+   "name": "js",
+   "children": [
+    {
+     "name": "export"
+    },
+    {
+     "name": "libs"
+    },
+    {
+     "name": "tools"
+    }
+   ]
+  },
+  {
+   "name": "platform",
+   "children": [
+    {
+     "name": "export"
+    },
+    {
+     "name": "libs"
+    },
+    {
+     "name": "tools"
+    }
+   ]
+  },
+  {
+   "name": "app",
+   "children": [
+    {
+     "name": "export"
+    },
+    {
+     "name": "libs"
+    },
+    {
+     "name": "tools"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Firefox Build System: Present and Future</title>
+
+    <meta charset='utf-8'>
+    <link rel="stylesheet" href="jquery-ui.css" />
+    <script src='slides.js'></script>
+    <script src="d3.v3.js"></script>
+    <script src="jquery-1.8.2.js"></script>
+    <script src="jquery-ui.js"></script>
+  </head>
+<style>
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.area {
+  fill: #E66000;
+}
+
+.graph {
+  font: 14px sans-serif;
+  margin-top: 25px;
+}
+
+.node {
+  font: 16px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+
+#build_targets_graph circle.node {
+  cursor: pointer;
+  stroke: #000;
+  stroke-width: .5px;
+}
+
+#build_target_graph line.link {
+  fill: none;
+  stroke: #9ecae1;
+  stroke-width: 1.5px;
+}
+
+#makefile_tree_map .chart {
+  display: block;
+  margin: auto;
+  margin-top: 40px;
+}
+
+#makefile_tree_map text {
+  font-size: 11px;
+}
+
+#makefile_tree_map rect {
+  fill: none;
+}
+
+
+#makefile_slider .chart {
+  display: block;
+  margin: auto;
+  margin-top: 40px;
+  font-size: 11px;
+}
+
+#makefile_slider rect {
+  stroke: #eee;
+  fill: #aaa;
+  fill-opacity: .8;
+}
+
+#makefile_slider rect.parent {
+  cursor: pointer;
+  fill: steelblue;
+}
+
+#makefile_slider text {
+  pointer-events: none;
+}
+
+
+.devspectrum {
+  display: none;
+}
+
+#driver-heygirl {
+  width: 400px;
+  position: absolute;
+  margin-top: -100px;
+  margin-left: 400px;
+}
+
+</style>
+  <body style='display: none'>
+    <script type="application/javascript;version=1.8">
+
+function addGraph(id, data, yProp, ceiling=null) {
+  let margin = {top: 20, right: 20, bottom: 40, left: 80};
+  let width = 800 - margin.left - margin.right;
+  let height = 500 - margin.top - margin.bottom;
+  let x = d3.scale.linear().range([0, width]);
+  let y = d3.scale.linear().range([height, 0]);
+
+  let xAxis = d3.svg.axis().scale(x).orient("bottom");
+  let yAxis = d3.svg.axis().scale(y).orient("left");
+
+  let area = d3.svg.area()
+    .x(function(d) { return x(d.time); })
+    .y0(height)
+    .y1(function(d) { return y(d[yProp]); });
+
+  document.getElementById(id).innerHTML = "";
+
+  let svg = d3.select("#" + id).append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  x.domain([0, d3.max(data, function(d) { return parseInt(d.time, 10); })]);
+  y.domain([0, d3.max(data, function(d) { return parseInt(d[yProp], 10); })]);
+
+  if (ceiling) {
+    y.domain([0, ceiling]);
+  }
+
+  svg.append("path")
+    .datum(data)
+    .attr("class", "area")
+    .attr("d", area);
+
+  svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+  svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis);
+}
+
+function dendrogram(id, dataFile) {
+  let width = 750;
+  let height = 600;
+
+  let cluster = d3.layout.cluster().size([height, width - 100]);
+
+  let diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.y, d.x]; });
+
+  let svg = d3.select("#" + id).append("svg")
+      .attr("width", width)
+      .attr("height", height)
+    .append("g")
+      .attr("transform", "translate(40,0)");
+
+  d3.json(dataFile, function(error, root) {
+    let nodes = cluster.nodes(root);
+    let links = cluster.links(nodes);
+
+    let link = svg.selectAll(".link")
+      .data(links)
+      .enter().append("path")
+        .attr("class", "link")
+        .attr("d", diagonal);
+
+    let node = svg.selectAll(".node")
+        .data(nodes)
+      .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+    node.append("text")
+      .attr("dx", function(d) { return d.children ? -8 : 8; })
+      .attr("dy", 3)
+      .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .text(function(d) { return d.name; });
+  });
+}
+
+function updateMeasurementGraph() {
+  let selected = document.getElementById("build-measurements");
+  let file = selected[selected.selectedIndex].value;
+
+  let typeElem = document.getElementById("graph_type");
+  let type = typeElem[typeElem.selectedIndex].value;
+
+  d3.tsv("resource-usage/" + file, function(error, data) {
+    addGraph("measurement_graph", data, type);
+  });
+}
+
+function drawMakefileHierarchy() {
+  let width = 800;
+  let height = 600;
+  let root;
+
+  function tick() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+  }
+
+  let force = d3.layout.force()
+      .on("tick", tick)
+      .linkDistance(function(d) { return 4; })
+      .charge(function(d) { return -10; })
+      .size([width, height]);
+
+  let vis = d3.select("#build_targets_graph").append("svg:svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  // Returns a list of all nodes under the root.
+  function flatten(root, cpp) {
+    let nodes = [];
+    let i = 0;
+
+    function recurse(node) {
+      if (node.children) {
+        node.size = node.children.reduce(function(p, v) {
+          return p + recurse(v, cpp);
+        }, 0);
+      } else {
+        node.size = 0;
+      }
+
+      if (!node.id) {
+        node.id = ++i;
+      }
+
+      if (node.cpp) {
+        node.size += node.cpp.length;
+      }
+
+      if (node.c) {
+        node.size += node.c.length;
+      }
+
+      if (node.idl) {
+        node.size += node.idl.length;
+      }
+
+      nodes.push(node);
+
+      if (cpp && node.cpp) {
+        for (let cpp in node.cpp) {
+          nodes.push({
+            id: ++i,
+            size: 1
+          });
+        }
+      }
+
+      return node.size;
+    }
+
+    root.size = recurse(root);
+    return nodes;
+  }
+
+  function updateHierarchy() {
+    let nodes = flatten(root, false);
+    let links = d3.layout.tree().links(nodes);
+
+    force.nodes(nodes).links(links).start();
+
+    link = vis.selectAll("line.link")
+      .data(links, function(d) { return d.target_id; });
+
+    link.enter().insert("svg:line", ".node")
+      .attr("class", "link")
+      .attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; });
+
+    link.exit().remove();
+
+    node = vis.selectAll("circle.node")
+      .data(nodes, function(d) { return d.id; })
+      .style("fill", color);
+
+    function nodeRadius(d) {
+      if (d.children) {
+        return 4;
+      }
+
+      return 2;
+
+      if (d.name == "root") {
+        return 5;
+      }
+
+      return Math.sqrt(d.size) || 2;
+    }
+
+    node.transition()
+      .attr("r", nodeRadius);
+
+    node.enter().append("svg:circle")
+      .attr("class", "node")
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; })
+      .attr("r", nodeRadius)
+      .style("fill", color)
+      .on("click", click)
+      .call(force.drag)
+
+    node.exit().remove();
+  }
+
+  function color(d) {
+    return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
+  }
+
+  // Toggle children on click.
+  function click(d) {
+    if (d.children) {
+      d._children = d.children;
+      d.children = null;
+    } else {
+      d.children = d._children;
+      d._children = null;
+    }
+    updateHierarchy();
+  }
+
+  $.getJSON("makefile-hierarchy.json", function(json) {
+    root = json;
+    root.fixed = true;
+    root.x = width / 2;
+    root.y = height / 2;
+
+    updateHierarchy();
+  });
+}
+
+function toggleMakefileHierarchy() {
+  let e = document.getElementById("build_targets_graph");
+  if (e.childElementCount) {
+    e.innerHTML = "";
+  } else {
+    drawMakefileHierarchy();
+  }
+}
+
+function drawMakefileTreeMap(valueFunc) {
+  let w = 800,
+    h = 550,
+    x = d3.scale.linear().range([0, w]),
+    y = d3.scale.linear().range([0, h]),
+    color = d3.scale.category20c(),
+    root,
+    node;
+
+  let treemap = d3.layout.treemap()
+      .round(false)
+      .size([w, h])
+      .sticky(true)
+      .value(valueFunc);
+
+  let svg = d3.select("#makefile_tree_map").append("div")
+      .attr("class", "chart")
+      .style("width", w + "px")
+      .style("height", h + "px")
+    .append("svg:svg")
+      .attr("width", w)
+      .attr("height", h)
+    .append("svg:g")
+      .attr("transform", "translate(.5,.5)");
+
+  $.getJSON("makefile-hierarchy.json", function(data) {
+    node = root = data;
+
+    let nodes = treemap.nodes(root)
+        .filter(function(d) { return !d.children; });
+
+    let cell = svg.selectAll("g")
+        .data(nodes)
+      .enter().append("svg:g")
+        .attr("class", "cell")
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+        .on("click", function(d) { return zoom(node == d.parent ? root : d.parent); });
+
+    cell.append("svg:rect")
+        .attr("width", function(d) { return d.dx - 1; })
+        .attr("height", function(d) { return d.dy - 1; })
+        .style("fill", function(d) { return color(d.parent.name); });
+
+    cell.append("svg:text")
+        .attr("x", function(d) { return d.dx / 2; })
+        .attr("y", function(d) { return d.dy / 2; })
+        .attr("dy", ".35em")
+        .attr("text-anchor", "middle")
+        .text(function(d) { return d.name; })
+        .style("opacity", function(d) { d.w = this.getComputedTextLength(); return d.dx > d.w ? 1 : 0; });
+
+    d3.select(window).on("click", function() { zoom(root); });
+  });
+
+  function zoom(d) {
+    let kx = w / d.dx, ky = h / d.dy;
+    x.domain([d.x, d.x + d.dx]);
+    y.domain([d.y, d.y + d.dy]);
+
+    let t = svg.selectAll("g.cell").transition()
+        .duration(d3.event.altKey ? 7500 : 750)
+        .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+    t.select("rect")
+        .attr("width", function(d) { return kx * d.dx - 1; })
+        .attr("height", function(d) { return ky * d.dy - 1; })
+
+    t.select("text")
+        .attr("x", function(d) { return kx * d.dx / 2; })
+        .attr("y", function(d) { return ky * d.dy / 2; })
+        .style("opacity", function(d) { return kx * d.dx > d.w ? 1 : 0; });
+
+    node = d;
+    d3.event.stopPropagation();
+  }
+}
+
+function drawMakefileSlider(valueFunc) {
+  let w = 800,
+    h = 550,
+    x = d3.scale.linear().range([0, w]),
+    y = d3.scale.linear().range([0, h]);
+
+  let vis = d3.select("#makefile_slider").append("div")
+      .attr("class", "chart")
+      .style("width", w + "px")
+      .style("height", h + "px")
+    .append("svg:svg")
+      .attr("width", w)
+      .attr("height", h);
+
+  let partition = d3.layout.partition()
+      .value(valueFunc);
+
+  $.getJSON("makefile-hierarchy.json", function(root) {
+    let g = vis.selectAll("g")
+        .data(partition.nodes(root))
+      .enter().append("svg:g")
+        .attr("transform", function(d) { return "translate(" + x(d.y) + "," + y(d.x) + ")"; })
+        .on("click", click);
+
+    let kx = w / root.dx,
+        ky = h / 1;
+
+    g.append("svg:rect")
+        .attr("width", root.dy * kx)
+        .attr("height", function(d) { return d.dx * ky; })
+        .attr("class", function(d) { return d.children ? "parent" : "child"; });
+
+    g.append("svg:text")
+        .attr("transform", transform)
+        .attr("dy", ".35em")
+        .style("opacity", function(d) { return d.dx * ky > 12 ? 1 : 0; })
+        .text(function(d) { return d.name; })
+
+    d3.select(window)
+        .on("click", function() { click(root); })
+
+    function click(d) {
+      if (!d.children) return;
+
+      kx = (d.y ? w - 40 : w) / (1 - d.y);
+      ky = h / d.dx;
+      x.domain([d.y, 1]).range([d.y ? 40 : 0, w]);
+      y.domain([d.x, d.x + d.dx]);
+
+      let t = g.transition()
+          .duration(d3.event.altKey ? 7500 : 750)
+          .attr("transform", function(d) { return "translate(" + x(d.y) + "," + y(d.x) + ")"; });
+
+      t.select("rect")
+          .attr("width", d.dy * kx)
+          .attr("height", function(d) { return d.dx * ky; });
+
+      t.select("text")
+          .attr("transform", transform)
+          .style("opacity", function(d) { return d.dx * ky > 12 ? 1 : 0; });
+
+      d3.event.stopPropagation();
+    }
+
+    function transform(d) {
+      return "translate(8," + d.dx * ky / 2 + ")";
+    }
+  });
+}
+
+$(function() {
+  $("#devspectrum-slider").slider({
+    value: 0,
+    min: 0,
+    max: 10,
+    slide: function(event, ui) {
+      $(".devspectrum").hide();
+      $("#devspectrum-" + ui.value).show();
+    },
+  });
+
+  $("#devspectrum-0").show();
+
+  dendrogram("tier_tree", "tiers.json");
+
+  updateMeasurementGraph();
+
+  d3.select("#makefile_tree_map_select").on("change", function() {
+    let value;
+    let showSlider = false;
+    let showTreeMap = false;
+
+    if (this.value == "makefile_count") {
+      value = function(d) { return 1; }
+      showTreeMap = true;
+    } else if (this.value == "cpp_count") {
+      value = function(d) { return d.cpp ? d.cpp.length : 0; }
+      showTreeMap = true;
+    } else if (this.value == "slider_count") {
+      showSlider = true;
+      value = function(d) { return 1; }
+    } else if (this.value == "slider_cpp_count") {
+      showSlider = true;
+      value = function(d) { return d.cpp ? d.cpp.length : 0; }
+    } else if (this.value == "slider_idl_count") {
+      showSlider = true;
+      value = function(d) { return d.idl ? d.idl.length : 0; }
+    }
+
+    document.getElementById("makefile_tree_map").innerHTML = "";
+    document.getElementById("makefile_slider").innerHTML = "";
+
+    if (showSlider) {
+      drawMakefileSlider(value);
+      return;
+    }
+
+    if (showTreeMap) {
+      drawMakefileTreeMap(value);
+      return;
+    }
+  });
+})
+
+</script>
+    <section class='slides layout-regular template-default'>
+      <article>
+        <h1>
+          Firefox Build System: Present and Future
+        </h1>
+        <p>
+          Gregory Szorc
+          <br>
+          <a href="mailto:gps@mozilla.com">gps@mozilla.com</a>
+          <br>
+          November 29, 2012
+        </p>
+      </article>
+
+      <article>
+        <h3>Agenda</h3>
+        <ul>
+          <li>Overview of existing build system</li>
+          <li>Performance evaluation of existing build system</li>
+          <li>Reinventing build configs</li>
+          <li>Better tools and automation through mach</li>
+          <li>Other build efforts</li>
+          <li>Q&amp;A</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>What is the Build System</h3>
+        <ul>
+          <li><tt>Build System</tt> is overloaded</li>
+          <li>Different meanings to different people</li>
+        </ul>
+      </article>
+
+      <article>
+        <q>A subset of the tasks between deciding you want to build Firefox and running it.</q>
+        <div class="author">Me</div>
+      </article>
+
+      <article>
+        <h3 style="margin-bottom: 20px;">The Spectrum Perspective</h3>
+        <!--Posed as a user experience problem. Users first! -->
+        <div id="devspectrum-slider"></div>
+        <div id="devspectrum-0" class="devspectrum">
+          <h4>Realization</h4>
+          <ul>
+            <li>I want to fix a bug.</li>
+            <li>I want to code a new feature.</li>
+            <li>I want to build it for myself.</li>
+          </ul>
+        </div>
+        <div id="devspectrum-1" class="devspectrum">
+          <h4>Research</h4>
+          <ul>
+            <li>Ask Google: &quot;build Firefox&quot; -&gt; <a href="https://developer.mozilla.org/en-US/docs/Developer_Guide/Build_Instructions">Build Instructions</a></li>
+            <li>Start reading</li>
+            <li>... keep reading</li>
+          </ul>
+        </div>
+        <div id="devspectrum-2" class="devspectrum">
+          <h4>Prepare Yourselves</h4>
+          <ul>
+            <li>Install build dependencies</li>
+          </ul>
+        </div>
+        <div id="devspectrum-3" class="devspectrum">
+          <h4>Grab the Source</h4>
+          <ul>
+            <li><tt>hg clone https://hg.mozilla.org/mozilla-central</tt></li>
+            <li><tt>git clone git://github.com/mozilla/mozilla-central.git</tt></li>
+          </ul>
+        </div>
+        <div id="devspectrum-4" class="devspectrum">
+          <h4>Configure the Build</h4>
+          <ul>
+            <li>Create a <tt>mozconfig</tt> file</li>
+            <li>Configure Mercurial and/or Git</li>
+          </ul>
+        </div>
+        <div id="devspectrum-5" class="devspectrum">
+          <h4>Start a Build</h4>
+          <ul>
+            <li><tt>./mach build</tt></li>
+            <li><tt>make -f client.mk</tt></li>
+          </ul>
+        </div>
+        <div id="devspectrum-6" class="devspectrum">
+          <h4>Wait</h4>
+          <img src="images/scrambling-cat.gif" width="775" />
+        </div>
+        <div id="devspectrum-7" class="devspectrum">
+          <h4>Relief</h4>
+          <p>It's over!</p>
+          <img src="images/strongbad.jpg" height="400">
+        </div>
+        <div id="devspectrum-8" class="devspectrum">
+          <h4>Testing</h4>
+          <ul>
+            <li>mochitest</li>
+            <li>reftest</li>
+            <li>xpcshell</li>
+            <li>Marionette</li>
+            <li>...</li>
+          </ul>
+        </div>
+        <div id="devspectrum-9" class="devspectrum">
+          <h4>Packaging</h4>
+          <ul>
+            <li>Windows installer</li>
+            <li>OS X dmg</li>
+            <li>Archives (for binaries and even test files)</li>
+          </ul>
+        </div>
+        <div id="devspectrum-10" class="devspectrum">
+          <h4>Development Tasks</h4>
+          <ul>
+            <li>Create, submit, apply patches</li>
+            <li>Pull new tree revisions</li>
+            <li>Repeat</li>
+          </ul>
+        </div>
+      </article>
+
+      <article>
+        <h3>What I Consider the Build System</h3>
+        <ul>
+          <li>System bootstrapping</li>
+          <li>Build configuration (mozconfigs)</li>
+          <li>Actual building</li>
+          <li>Running tests</li>
+          <li>Packaging</li>
+        </ul>
+      </article>
+
+      <article class="nobackground">
+        <h3>Coordinated by a Driver</h3>
+        <div style="margin-top: 20px; width: 350px;">
+          <p>Dawn of time - 2012: <code>client.mk</code></p>
+        </div>
+        <div class="build" style="width: 300px; margin-top: 20px;">
+          <p>2012 and beyond:</p>
+        </div>
+        <div id="driver-heygirl" class="build">
+          <img src="images/driver-heygirl.jpg" width="350" />
+        </div>
+        <div class="build" style="width: 100px;">
+          <p><code>mach</code></p>
+        </div>
+      </article>
+
+      <article>
+        <h2>What Happens When You Type <tt>Build</tt>?</h3>
+      </article>
+
+      <article>
+        <h3>1. mozconfig evaluated</h3>
+        <ul>
+          <li>a <code>mozconfig</code> file is any shell script</li>
+          <li><code>mk_add_options</code> registers make statements to be executed by client.mk</li>
+          <li><code>ac_add_options</code> registers arguments to <tt>configure</tt></li>
+          <li>Everything else sourced as part of configure</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>2. Verification and Configuration</h3>
+        <ul>
+          <li>autoconf2.13: <code>configure.in</code> -&gt; <code>configure</code></li>
+          <li><code>configure</code> -&gt; <code>config.status</code></li>
+        </ul>
+        <img src="images/die-gnu-autotools.jpg" height="400" />
+      </article>
+
+      <article class="nobackground">
+        <h3>config.status: Computed Tree Config</h3>
+        <iframe src="config.status" style="height: 500px;"></iframe>
+      </article>
+
+      <article>
+        <h3>3. Build Preparation</h3>
+        <table>
+          <tr><th>Input</th><th>Output</th></tr>
+          <tr><td><tt>mozilla-config.h.in</tt></td><td><tt>mozilla-config.h</tt></td></tr>
+          <tr><td><tt>autoconf.mk.in</tt></td><td><tt>autoconf.mk</tt></td></tr>
+          <tr><td><tt>Makefile.in</tt>'s</td><td><tt>Makefile</tt>'s</td></tr>
+          <tr><td><tt>*.gyp</tt></td><td><tt>Makefile</tt>'s</td></tr>
+        </table>
+      </article>
+
+      <article class="nobackground">
+        <h3 style="margin-bottom: 20px">4. Invoke the Build Backend</h3>
+        <iframe src="mach.log" style="height: 500px"></iframe>
+      </article>
+
+      <article class="smaller">
+        <h3>Example Makefile.in</h3>
+        <pre>
+DEPTH = @DEPTH@
+topsrcdir = @top_srcdir@
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+include $(DEPTH)/config/autoconf.mk
+
+DIRS = tests
+
+CPPSRCS = nsFoo.cpp nsBar.cpp
+LOCAL_INCLUDES += -I$(srcdir)/../build
+
+EXTRA_COMPONENTS = toolkitplaces.manifest nsLivemarkService.js
+
+ifdef MOZ_XUL
+EXTRA_COMPONENTS += nsPlacesAutoComplete.js nsPlacesAutoComplete.manifest
+endif
+
+include $(topsrcdir)/config/rules.mk
+        </pre>
+      </article>
+
+      <article class="smaller nobackground">
+        <h3>The Header</h3>
+        <pre>
+DEPTH = @DEPTH@
+topsrcdir = @top_srcdir@
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+include $(DEPTH)/config/autoconf.mk
+        </pre>
+        <iframe src="autoconf.mk" style="height: 350px;"></iframe>
+      </article>
+
+      <article class="smaller">
+        <h3>The Body</h3>
+        <pre>
+DIRS = tests
+
+CPPSRCS = nsFoo.cpp nsBar.cpp
+LOCAL_INCLUDES += -I$(srcdir)/../build
+
+EXTRA_COMPONENTS = toolkitplaces.manifest nsLivemarkService.js
+
+ifdef MOZ_XUL
+EXTRA_COMPONENTS += nsPlacesAutoComplete.js nsPlacesAutoComplete.manifest
+endif
+        </pre>
+
+        <ul>
+          <li>In theory you <i>just</i> define a bunch of variables</li>
+          <li>In practice lots of other things</li>
+        </ul>
+      </article>
+
+      <article class="smaller nobackground">
+        <h3>The Footer</h3>
+        <pre>
+include $(topsrcdir)/config/rules.mk
+        </pre>
+        <iframe src="rules.mk" style="height: 400px;"></iframe>
+      </article>
+
+      <article class="nobackground">
+        <h3>Tier Traversal</h3>
+        <div class="centered" id="tier_tree"></div>
+      </article>
+
+      <article class="nobackground">
+        <h3 onclick="toggleMakefileHierarchy();">Makefile Map (click me)</h3>
+        <div class="centered" id="build_targets_graph"></div>
+      </article>
+
+      <article class="nobackground">
+        <h3>Makefile Tree Map</h3>
+        <select id="makefile_tree_map_select" style="float: left;">
+          <option value="none">None</option>
+          <option value="makefile_count">Tree Map: Makefile Count</option>
+          <option value="cpp_count">Tree Map: C++ File Count</option>
+          <option value="slider_count">Slider: Makefile Count</option>
+          <option value="slider_cpp_count">Slider: C++ File Count</option>
+          <option value="slider_idl_count">Slider: IDL File Count</option>
+        </select>
+        <div class="centered" id="makefile_tree_map"></div>
+        <div class="centered" id="makefile_slider"></div>
+      </article>
+
+      <article>
+        <h3>On Recursive Make</h3>
+        <ul>
+          <li>~1160 Makefile for a browser build on OS X</li>
+          <li>Generally only 1 Makefile active at a time</li>
+          <li>Parallel execution (-j) occurs within a <i>single</i> Makefile</li>
+          <li>If <tt>Makefile</tt> has <tt>N &lt; -j</tt> tasks, CPU starved</li>
+          <li>Can't build dependencies not defined in current Makefile</li>
+        </ul>
+      </article>
+
+      <article>
+        <h2>Benchmarks</h2>
+        <p style="font: 1000px sans-serif;">*</p>
+      </article>
+
+      <article class="smaller">
+        <h3>Resource Usage - Effects of -j on Clobber Builds</h3>
+        <table>
+          <caption>Ubuntu 12.10 x64 on i7-2600K 12GB RAM, 7200 RPM HD, empty page cache</caption>
+          <tr>
+            <th>Build</th>
+            <th>Wall Time</th>
+            <th>CPU Time</th>
+            <th>Speedup</th>
+            <th>Overall CPU %</th>
+            <th>CPU Efficiency</th>
+            <th>Read (MB)</th>
+            <th>Write (MB)</th>
+            <th>I/O Wait Read (s?)</th>
+            <th>I/O Wait Write (s?)</th>
+          </tr>
+          <tr>
+            <td>-j1</td>
+            <td>66:10</td>
+            <td>63:52</td>
+            <td>1.00x</td>
+            <td>12.6</td>
+            <td>96.5%</td>
+            <td>382</td>
+            <td>4,898</td>
+            <td>247</td>
+            <td>3,321</td>
+          </tr>
+          <tr>
+            <td>-j2</td>
+            <td>38:16</td>
+            <td>68:44</td>
+            <td>1.73x</td>
+            <td>23.2</td>
+            <td>89.8%</td>
+            <td>372</td>
+            <td>4,856</td>
+            <td>296</td>
+            <td>2,614</td>
+          </tr>
+          <tr>
+            <td>-j3</td>
+            <td>28:10</td>
+            <td>70:17</td>
+            <td>2.35x</td>
+            <td>32.6</td>
+            <td>83.2%</td>
+            <td>370</td>
+            <td>4,869</td>
+            <td>317</td>
+            <td>3,124</td>
+          </tr>
+          <tr>
+            <td>-j4</td>
+            <td>23:39</td>
+            <td>73:14</td>
+            <td>2.80x</td>
+            <td>40.5</td>
+            <td>77.4%</td>
+            <td>401</td>
+            <td>4,861</td>
+            <td>339</td>
+            <td>2,920</td>
+          </tr>
+          <tr>
+            <td>-j5</td>
+            <td>23:02</td>
+            <td>85:38</td>
+            <td>2.87x</td>
+            <td>48.6</td>
+            <td>74.4%</td>
+            <td>372</td>
+            <td>4,862</td>
+            <td>331</td>
+            <td>3,464</td>
+          </tr>
+          <tr>
+            <td>-j6</td>
+            <td>22:19</td>
+            <td>97:27</td>
+            <td>2.96x</td>
+            <td>56.8</td>
+            <td>72.8%</td>
+            <td>372</td>
+            <td>4,839</td>
+            <td>342</td>
+            <td>3,329</td>
+          </tr>
+          <tr>
+            <td>-j7</td>
+            <td>21:49</td>
+            <td>108:51</td>
+            <td>3.03x</td>
+            <td>64.4</td>
+            <td>71.3%</td>
+            <td>355</td>
+            <td>4,828</td>
+            <td>287</td>
+            <td>4,000</td>
+          </tr>
+          <tr>
+            <td>-j8</td>
+            <td>21:40</td>
+            <td>120:35</td>
+            <td>3.05x</td>
+            <td>71.8</td>
+            <td>69.6%</td>
+            <td>356</td>
+            <td>4,865</td>
+            <td>300</td>
+            <td>4,413</td>
+          </tr>
+          <tr>
+            <td>-j9</td>
+            <td>21:44</td>
+            <td>121:46</td>
+            <td>3.04x</td>
+            <td>71.9</td>
+            <td>70.0%</td>
+            <td>355</td>
+            <td>4,859</td>
+            <td>306</td>
+            <td>4,090</td>
+          </tr>
+          <tr>
+            <td>-j10</td>
+            <td>21:25</td>
+            <td>120:39</td>
+            <td>3.09x</td>
+            <td>72.2</td>
+            <td>70.4%</td>
+            <td>366</td>
+            <td>4,832</td>
+            <td>377</td>
+            <td>3,781</td>
+          </tr>
+
+        </table>
+      </article>
+
+      <article class="smaller">
+        <h3>Resource Usage - Effects of Caches on Clobber Builds</h3>
+        <table>
+          <caption>Ubuntu 12.10 x64 on i7-2600K 12GB RAM, 7200 RPM HD. All builds -j8.</caption>
+          <tr>
+            <th>Page Cache State</th>
+            <th>ccache State</th>
+            <th>Wall Time</th>
+            <th>Read Bytes (MB)</th>
+            <th>Write Bytes (MB)</th>
+            <th>I/O Wait Read (s)</th>
+            <th>I/O Wait Write (s)</th>
+          </tr>
+          <tr>
+            <td>Empty</th>
+            <td>Disabled</td>
+            <td>21:38</td>
+            <td>356</td>
+            <td>4,865</td>
+            <td>300</td>
+            <td>4,413</td>
+          </tr>
+          <tr>
+            <td>Populated</td>
+            <td>Disabled</td>
+            <td>20:45</td>
+            <td>0</td>
+            <td>4,842</td>
+            <td>0</td>
+            <td>4,200</td>
+          </tr>
+          <tr>
+            <td>Empty</td>
+            <td>Empty</td>
+            <td>23:59</td>
+            <td>361</td>
+            <td>7,982</td>
+            <td>425</td>
+            <td>8,097</td>
+          </tr>
+
+          <tr>
+            <td>Empty</td>
+            <td>Populated</td>
+            <td>9:34</td>
+            <td>3,185</td>
+            <td>4,904</td>
+            <td>3,401</td>
+            <td>7,591</td>
+          </tr>
+
+          <tr>
+            <td>Populated</td>
+            <td>Populated</td>
+            <td>4:04</td>
+            <td>1</td>
+            <td>4,317</td>
+            <td>2</td>
+            <td>11,921</td>
+          </tr>
+        </table>
+      </article>
+
+      <article class="smaller">
+        <h3>Resource Usage - Linux Other</h3>
+        <table>
+          <tr>
+            <th>Build</th>
+            <th>Wall Time</th>
+            <th>CPU %</th>
+            <th>Read Bytes</th>
+            <th>Write Bytes</th>
+            <th>I/O Wait Read</th>
+            <th>I/O Wait Write</th>
+          </tr>
+          <tr>
+            <td>-j8</td>
+            <td>21:40</td>
+            <td>71.8</td>
+            <td>356</td>
+            <td>4,865</td>
+            <td>300</td>
+            <td>4,413</td>
+          </tr>
+          <tr>
+            <td>-j12 RAM disk</td>
+            <td>21:12</td>
+            <td>75.2</td>
+            <td>N/A</td>
+            <td>N/A</td>
+            <td>N/A</td>
+            <td>N/A</td>
+          </tr>
+          <tr>
+            <td>GCC 4.7 -j8</td>
+            <td>24:11</td>
+            <td>72.2</td>
+            <td>353</td>
+            <td>5,242</td>
+            <td>359</td>
+            <td>3,904</td>
+          </tr>
+          <tr>
+            <td>2GB RAM -j12</td>
+            <td>26:35</td>
+            <td>59.82</td>
+            <td>4,681MB</td>
+            <td>5,252MB</td>
+            <td>1,495</td>
+            <td>4,837</td>
+          </tr>
+          <tr>
+            <td>-j12 (Flush Page Cache Every 30s)</td>
+            <td>62:39</td>
+            <td>51.71</td>
+            <td>15,455MB</td>
+            <td>5,392MB</td>
+            <td>19,375</td>
+            <td>3,767</td>
+          </tr>
+        </table>
+      </article>
+
+      <article class="smaller nobackground">
+        <h3>Resource Usage - Try Servers</h3>
+        <table>
+          <caption>All builds performed using -j12 without ccache enabled</caption>
+          <tr>
+            <th>Type</th>
+            <th>Host</th>
+            <th>Wall Time</th>
+            <th>CPU %</th>
+            <th>Read MB</th>
+            <th>Write MB</th>
+            <th>Read Wait</th>
+            <th>Write Wait</th>
+          </tr>
+          <tr>
+            <td>Linux64 #1</td>
+            <td>bld-centos6-hp-032</td>
+            <td>19:32</td>
+            <td>82.5</td>
+            <td>50</td>
+            <td>4,351</td>
+            <td>12</td>
+            <td>6,641</td>
+          </tr>
+          <tr>
+            <td>Linux64 #2</td>
+            <td>bld-centos6-hp-029</td>
+            <td>19:36</td>
+            <td>82.5</td>
+            <td>45</td>
+            <td>4,452</td>
+            <td>17</td>
+            <td>8,722</td>
+          </tr>
+          <tr>
+            <td>Linux64 #3</td>
+            <td>try-linux64-ec2-316</td>
+            <td>26:17</td>
+            <td>61.3</td>
+            <td>111</td>
+            <td>4,421</td>
+            <td>43</td>
+            <td>10,830</td>
+          </tr>
+          <tr>
+            <td>Linux64 #4</td>
+            <td>try-linux64-ec2-607</td>
+            <td>26:26</td>
+            <td>61.2</td>
+            <td>47</td>
+            <td>4,423</td>
+            <td>34</td>
+            <td>16,902</td>
+          </tr>
+          <tr>
+            <td>OS X 64 #1</td>
+            <td>bld-lion-r5-036</td>
+            <td>21:42</td>
+            <td>75.9</td>
+            <td>374</td>
+            <td>3,669</td>
+            <td>91</td>
+            <td>265</td>
+          </tr>
+          <tr>
+            <td>OS X 64 #2</td>
+            <td>bld-lion-r5-026</td>
+            <td>21:55</td>
+            <td>75.8</td>
+            <td>366</td>
+            <td>3,385</td>
+            <td>99</td>
+            <td>321</td>
+          </tr>
+          <tr>
+            <td>OS X 64 #3</td>
+            <td>bld-lion-r5-022</td>
+            <td>21:30</td>
+            <td>74.8</td>
+            <td>368</td>
+            <td>3,373</td>
+            <td>129</td>
+            <td>339</td>
+          </tr>
+          <tr>
+            <td>OS X 64 #4</td>
+            <td>bld-lion-r5-020</td>
+            <td>21:34</td>
+            <td>75.5</td>
+            <td>378</td>
+            <td>3,380</td>
+            <td>109</td>
+            <td>309</td>
+          </tr>
+        </table>
+        </article>
+
+      <article class="smaller">
+        <h3>Resource Usage - 2011 MacBook Pro</h3>
+        <table>
+          <caption>2011 MacBook Pro, 8GB RAM, factory magnetic hard drive</caption>
+          <tr>
+            <th>Build</th>
+            <th>Wall Time</th>
+            <th>CPU %</th>
+            <th>Read Bytes</th>
+            <th>Write Bytes</th>
+            <th>I/O Wait Read</th>
+            <th>I/O Wait Write</th>
+          </tr>
+          <tr>
+            <td>-j4</td>
+            <td>26:33</td>
+            <td>46.48</td>
+            <td>738MB</td>
+            <td>3,674MB</td>
+            <td>223</td>
+            <td>2,023</td>
+          </tr>
+
+           <tr>
+            <td>-j12 #1</td>
+            <td>23:19</td>
+            <td>73.85</td>
+            <td>1000MB</td>
+            <td>3,710MB</td>
+            <td>270</td>
+            <td>1,998</td>
+          </tr>
+
+           <tr>
+            <td>-j12 #2</td>
+            <td>22:44</td>
+            <td>74.03</td>
+            <td>705MB</td>
+            <td>3,582MB</td>
+            <td>271</td>
+            <td>2,106</td>
+          </tr>
+        </table>
+      </article>
+
+      <article class="nobackground">
+        <h3>Pretty Graphs</h3>
+
+        <select id="build-measurements" onchange="updateMeasurementGraph();">
+          <option value="linux-j1.tsv">Linux -j1</option>
+          <option value="linux-j2.tsv">Linux -j2</option>
+          <option value="linux-j3.tsv">Linux -j3</option>
+          <option value="linux-j4.tsv">Linux -j4</option>
+          <option value="linux-j5.tsv">Linux -j5</option>
+          <option value="linux-j6.tsv">Linux -j6</option>
+          <option value="linux-j7.tsv">Linux -j7</option>
+          <option value="linux-j8.tsv">Linux -j8</option>
+          <option value="linux-j9.tsv">Linux -j9</option>
+          <option value="linux-j10.tsv">Linux -j10</option>
+
+          <option value="linux-j8-gcc.tsv">Linux -j8 GCC 4.7</option>
+          <option value="linux-j8-page-cache-populated.tsv">Linux -j8 Page Cache Populated</option>
+          <option value="linux-j8-ccache-empty-page-cache-empty.tsv">Linux -j8 ccache Empty, Page Cache Empty</option>
+          <option value="linux-j8-ccache-populated-page-cache-empty.tsv">Linux -j8 ccache Populated, Page Cache Empty</option>
+          <option value="linux-j8-ccache-populated-page-cache-full.tsv">Linux -j8 ccache Populated, Page Cache Populated</option>
+
+          <option value="linux-j12-x8-clearing-page-cache.tsv">Linux Periodic Page Cache Flushing</option>
+
+          <option value="try-linux-1.tsv">Try Linux #1</option>
+          <option value="try-linux-2.tsv">Try Linux #2</option>
+          <option value="try-linux-3.tsv">Try Linux #3 (EC2)</option>
+          <option value="try-linux-4.tsv">Try Linux #4 (EC2)</option>
+
+          <option value="try-osx-1.tsv">Try OS X #1</option>
+          <option value="try-osx-2.tsv">Try OS X #2</option>
+          <option value="try-osx-3.tsv">Try OS X #3</option>
+          <option value="try-osx-4.tsv">Try OS X #4</option>
+
+          <option value="mbp-j12-hd-cached">MBP -j12 Page Cache Populated</option>
+          <option value="mbp-j4">MBP -j4 Unknown</option>
+
+          <option value="try-linux-ec2-ccache-0">Try Linux ccache ec2 #1</option>
+          <option value="try-linux-ec2-ccache-1">Try Linux ccache ec2 #2</option>
+          <option value="try-osx-ccache-1">Try OS X ccache #1</option>
+          <option value="try-osx-ccache-2">Try OS X ccache #2</option>
+        </select>
+
+        <select id="graph_type" onchange="updateMeasurementGraph();">
+          <option value="cpu">CPU</option>
+          <option value="read_bytes">Disk Read Bytes</option>
+          <option value="write_bytes">Disk Write Bytes</option>
+          <option value="read_time">Disk Read Wait (ms)</option>
+          <option value="write_time">Disk Write Wait (ms)</option>
+          <option value="read_count">Disk Read Count</option>
+          <option value="write_count">Disk Write Count</option>
+        </select>
+        <div class="centered graph" id="measurement_graph" />
+      </article>
+
+      <article>
+        <h3>Build Observations</h3>
+        <ul>
+          <li>Builds use a lot of CPU!</li>
+          <li>Mostly CPU heavy except in known areas</li>
+          <li>... but we don't scale with # of cores in use!</li>
+          <li>Page cache is important</li>
+          <li>ccache adds significant I/O</li>
+          <li>GCC uses ~10% more CPU, per-process memory, and ~400MB objdir output</li>
+          <li>Hyperthreading: meh</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Where Do the Resources Go?</h3>
+        <ul>
+          <li>63:52 i7-2600K core time to clobber</li>
+          <li>~400MB read I/O (srcdir + toolchain)</li>
+          <li>~5GB write I/O (objdir output)</li>
+          <li>~4.2GB in objdir (Clang), 4.4GB (GCC)</li>
+          <li>~4.6GB in page cache (Clang), 4.8GB (GCC)</li>
+          <li>~3.4GB in page cache just for ccache files!</li>
+          <li>~7.3GB in page cache when ccache enabled</li>
+          <li>1-2GB memory linking libXUL</li>
+          <li>30-300MB per compiler process</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Why We Build Slow: Things in Your Control</h3>
+        <ul>
+          <li>Your mozconfig. Don't do debug builds unless you need them.</li>
+          <li>Your CPU is slow</li>
+          <li>Limited memory causes excessive disk I/O</li>
+          <li>Slow disk stalls work</li>
+          <li>GCC slower and larger memory consumer than Clang</li>
+          <li>ccache adds significant I/O load</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Build System Recommendations</h3>
+        <ul>
+          <li>Modern CPU with 4+ physical cores (Core i5 Sandy Bridge or newer)</li>
+          <li>8+GB RAM. 12+ if using ccache or not a headless builder</li>
+          <li>A real SSD</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Why We Build Slow: Things (Likely) Not in Your Control</h3>
+        <ul>
+          <li>C++ takes a lot of CPU to compile. We have a ton of C++</li>
+          <li>Build system not invoking enough commands in parallel</li>
+          <ul>
+            <li>configure is single process (20-40s)</li>
+            <li>NSS -j1 (70s)</li>
+            <li>linking not performed in parallel (10-120s)</li>
+            <li>sqlite.c not compiled in parallel (20s)</li>
+          </ul>
+          <li>Excessive rebuilding</li>
+          <li>New process overhead on Windows</li>
+          <li>pymake slower than GNU make</li>
+        </ul>
+      </article>
+
+      <article class="nobackground">
+        <h3>Dependency Hell</h3>
+        <iframe src="dep-counts.txt"></iframe>
+      </article>
+
+      <article>
+        <h3>Thoughts on ccache</h3>
+        <ul>
+          <li>In the ideal build system, ccache isn't needed</li>
+          <li>... if you've compiled already, you don't invoke the compiler!</li>
+          <li>Fixing excessive rebuilding should make ccache useless</li>
+          <li>... unless you build multiple trees (RelEng)</li>
+          <li>Until then, watch out for I/O overhead of ccache</li>
+          <li>... consider disabling on magnetic hard drives</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>What Should We Optimize?</h3>
+        <ul>
+          <li>Eliminate the troughs (single core bottlenecks)</li>
+          <li>Minimize total CPU requirements</li>
+          <ul>
+            <li>Precompiled headers</li>
+            <li>Smarter C++ template usage?</li>
+            <li>Other compiler hacks?</li>
+          </ul>
+          <li><strong>Prevent excessive rebuilding</strong></li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Takeaways / Reflection Point</h3>
+        <ul>
+          <li>Overall build system structure and process</li>
+          <li>Building Firefox takes a lot of resources</li>
+          <li>... and we don't even use everything available!</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>More Make Non-Awesomeness</h3>
+        <ul>
+          <li>Hard to maintain</li>
+          <li>Simple things are hard. Hard things are really hard</li>
+          <li>... in all fairness, simple dependencies are easy!</li>
+          <li>mtime is is only out of date detection</li>
+          <li>Lots of foot guns</li>
+          <li>Difficult to bulk refactor build config</li>
+          <li>Recursive make won't scale into the future</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Goals for a Better Build System</h3>
+        <ul>
+          <li>Build faster</li>
+          <li>Easier to maintain</li>
+          <li>Support multiple build backends (make, Tup, Visual Studio, Eclipse, Ninja, etc)</li>
+          <li>Foster new awesomeness</li>
+          <li>Curb the foot guns</li>
+        </ul>
+      </article>
+
+      <article>
+        <q>All problems in computer science can be solved by another level of indirection.</q>
+      </article>
+
+      <article class="smaller">
+        <h3>Goodbye Makefile.in, Hello moz.build</h3>
+        <pre>
+DIRS += [
+    'external',
+    'component',
+    'bug656331_component',
+    'component_no_aslr',
+]
+
+if CONFIG.OS_ARCH == 'WINNT':
+    DIRS += ['windows']
+
+if CONFIG.DEHYDRA_PATH:
+    DIRS += ['static-checker']
+
+CPP_SOURCES = ['nsFoo.cpp', 'nsBar.cpp']
+
+add_xpcom_manifest('MyXPCOMService.manifest', test_only=True)
+        </pre>
+      </article>
+
+      <article>
+        <h3>Python With a Twist</h3>
+        <ul>
+          <li><tt>moz.build</tt> files are actually Python files</li>
+          <li>But running in a highly specialized execution sandbox</li>
+          <li>Can't import Python modules</li>
+          <li>Can't do I/O</li>
+          <li>Python globals/built-ins must be whitelisted to be exposed</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>moz.build Example: Locals and Globals</h3>
+        <pre>
+local_variable = 'dir_a'
+
+DIRS = [local_variable]
+        </pre>
+        <ul>
+          <li><code>DIRS</code> is available after execution because it is UPPERCASE</li>
+          <li><code>local_variable</code> is local to the execution environment</li>
+          <li><code>DIRS</code> is defined in a central manifest, with all the other UPPERCASE variables</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>moz.build Example: Non-Available Built-ins</h3>
+        <pre>
+# Runtime error because import is not available
+import os
+
+# Runtime error because OrderedDict is not exposed to the sandbox.
+d = OrderedDict()
+
+# Runtime error because open() is not exposed to the sandbox.
+fh = open('xpcshell.ini')
+        </pre>
+      </article>
+
+      <article>
+        <h3>moz.build Example: Bad Variable Access</h3>
+        <pre>
+# Runtime error because DIRS expects a list, not a string.
+DIRS = 'dir_a'
+        </pre>
+
+        <pre>
+# Runtime error because FOO is not a known UPPERCASE variable.
+FOO = 'bar'
+        </pre>
+
+        <pre>
+# Runtime error because BAR is not a known UPPERCASE variable.
+local_variable = BAR
+      </article>
+
+      <article class="smaller">
+        <h3>ZOMG Useful Error Messages!</h3>
+        <pre>
+==============================
+ERROR PROCESSING MOZBUILD FILE
+==============================
+
+The error occurred while processing the following file:
+
+    /home/gps/src/mozilla-central/services/moz.build
+
+The error was triggered on line 6 of that file.
+
+The underlying problem is an attempt to write a reserved UPPERCASE
+variable that does not exist.
+
+The variable write causing the error is:
+
+    FOO
+
+Please change the file to not use this variable.
+
+You can view the list of UPPERCASE variables by running:
+
+    ./mach mozbuild-reference
+        </pre>
+      </article>
+
+      <article>
+        <h3>So What Can We Do?</h3>
+        <ul>
+          <li>Not that much (at least if you expect a <i>real</i> Python environment)</li>
+          <li><strong>And that's the point</strong></li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>moz.build Traversal</h3>
+        <ul>
+          <li>Traversal is like <code>Makefile</code>s. Start at root file, recurse into children.</li>
+          <li>Execute each <code>moz.build</code> file in isolation.</li>
+          <li>Output of individual <code>moz.build</code> is dictionary of UPPERCASE variable values:</li>
+        </ul>
+        <div class="build">
+          <pre>
+{
+  DIRS: ['dir_a', 'dir_b'],
+  CPP_SOURCES: ['nsFoo.cpp', 'nsBar.cpp'],
+  XPCOM_MANIFEST_FILES: {
+    MyXPCOMService.manifest: {test_only: True}
+  },
+}
+          </pre>
+        </div>
+      </article>
+
+      <article>
+        <h3>Processing the Output</h3>
+        <ul class="build">
+          <li>Build config is a stream of dictionaries. 1 dict for each <code>moz.build</code> file.</li>
+          <li>... massaged into Python classes</li>
+          <li>... class instances define specific aspect of the build config or tree. e.g. <code>XPCOMComponent</code>, <code>DirectoryTraversal</code>, <code>CPPCompilation</code></li>
+          <li>Additional validation performed when converting to classes. Missing file detection, enforcement of higher-level rules and conventions, etc.</li>
+          <li>Ultimate output is a stream of class instances</li>
+        </ul>
+      </article>
+
+      <article class="smaller">
+        <h3>Enter Consumers</h3>
+        <pre>
+from mozbuild.backend.base import BuildDataConsumer
+
+class MyBuildDataConsumer(BuildDataConsumer):
+    """Writes the set of all XPCOM component files to a text file."""
+
+    def __init__(self):
+        self.component_files = set()
+
+    def handle_xpcom_component(self, component):
+        """Called for every XPCOMComponent instance in the output stream."""
+        self.component_files.add(component.path)
+
+    def finished(self):
+        """Called when all emitted classes have been consumed."""
+        with open('all_xpcom_manifest_files.txt', 'w') as fh:
+            for path in self.component_files:
+                fh.write(path + '\n')
+        </pre>
+      </article>
+
+      <article>
+        <h3>Build Backends</h3>
+        <ul class="build">
+          <li>Just a consumer that facilitates building the tree!</li>
+          <li>A make build backend writes out <code>Makefile</code>s.</li>
+          <li>A Visual Studio backend writes out Visual Studio <code>.vsproj</code> files</li>
+          <li>A Tup backend writes out <code>Tupfile</code>s</li>
+          <li><code>moz.build</code> files allow us to more easily create and experiment with build backends</li>
+          <li><strong>New build backends will enable faster builds</strong></li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Other Consumer Possibilities</h3>
+        <ul>
+          <li>Generate Clang compilation databases</li>
+          <li>Generate code autocomplete databases</li>
+          <li>One-off build backends (static analysis, address sanitizer)</li>
+          <li>Capture Valgrind or GDB macros, settings</li>
+          <li>Analyze C/C++ with Clang Python bindings</li>
+          <li>Build system dependency analysis</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>More Radical Ideas for moz.build Files</h3>
+        <ul>
+          <li>Replace <code>xpcshell.ini</code>?</li>
+          <li>Replace packaging files like <code>removed-files.in</code>, <code>package-manifest.in</code>?</li>
+          <li>Record module owners, peers and/or reviewers for directories?</li>
+          <li>Define static analysis and auditing policies?</li>
+          <li>Define Bugzilla components?</li>
+          <li>Any metadata could be captured by <code>moz.build</code> files!</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>moz.build Transition Plan</h3>
+        <ul>
+          <li>Identify Makefile functionality/variables to be ported</li>
+          <li>Remove variables from <code>Makefile.in</code>, add to <code>moz.build</code></li>
+          <li>Implement consumer that outputs a <code>.mk</code> file</li>
+          <li>Recursive make build backend works as it does today. Data just comes from <code>moz.build</code> files instead of <code>Makefile.in</code></li>
+          <li>Repeat until everything defined in <code>moz.build</code> files</li>
+          <li>Eventually implement alternate build backends (like non-recursive make or Tup)</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Implications of Transition</h3>
+        <ul>
+          <li>For recursive make, not much</li>
+          <li>As we roll out new backends, <code>make</code> will no longer build the tree</li>
+          <li>... you'll have to do everything through a more intelligent build driver (<code>mach</code>)</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>moz.build When?</h3>
+        <ul>
+          <li>Patches written and preliminary r+</li>
+          <li>DIRS conversion first</li>
+          <li>In holding pattern because B2G backport concerns</li>
+          <li>Rinse and repeat with many flag days until <code>Makefile.in</code> eliminated</li>
+          <li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">Bug 784841</a> tracks</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Concluding with Build Config</h3>
+        <ul>
+          <li>Essentially we're creating an API for the build/tree config</li>
+          <li>... and that API will enable awesomeness</li>
+        </ul>
+
+        <div class="build" style="margin-top: 100px;">
+          <p>Any questions?</p>
+        </div>
+      </article>
+
+      <article>
+        <h3>Python Versions Today</h3>
+        <ul>
+          <li>Python is our tooling language</li>
+          <li>Currently require Python 2.6 to <i>build</i> the tree</li>
+          <li>Some test suites may still run on 2.5 (Talos is even 2.4!)</li>
+          <li>Version chaos makes authoring difficult, prevents progress</li>
+          <ul>
+            <li>Difficult to write Python 3 compatible code</li>
+            <li>Lack of handy newer language features</li>
+            <li>Numerous bugs in older Pythons</li>
+          </ul>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Python Versions Tomorrow</h3>
+        <ul>
+          <li>Days to weeks: Python 2.7 to build, preferably 2.7.3</li>
+          <li>Weeks to months: Python 2.7 for ALL OF THE THINGS</li>
+          <li>Many months: Python 2.7/3.x dual compatibility (no rush)</li>
+          <li>A few years: Require Python 3</li>
+        </ul>
+      </article>
+
+      <article class="nobackground">
+        <h3>mozboot</h3>
+        <ul>
+          <li><i>Bootstrap</i> your machine to build the tree</li>
+          <li>Execute a Python script and <i>it just works</i> on OS X and popular Linux distros, some BSD</li>
+          <li><i>May</i> eventually replace MozillaBuild (Windows development environment)</li>
+          <li>Please test this and file bugs!</li>
+        </ul>
+        <pre>$ wget https://hg.mozilla.org/.../bootstrap.py && python bootstrap.py</pre>
+        <p>Or if you have the tree:</p>
+        <pre>$ ./mach bootstrap </pre>
+      </article>
+
+      <article>
+        <q>[I] just started using mach today. I approve heartily. Way less voodoo.</q>
+        <div class="author">mconley</div>
+      </article>
+
+      <article>
+        <h3>Mach</h3>
+        <ul class="build">
+          <li>... is <strong>not</strong> a build system!</li>
+          <li><strong>is</strong> a generic driver to common developer tasks</li>
+          <li>All your make targets in one place</li>
+          <li>Goal: better user experience</li>
+          <li>Goal: enable better, faster, stronger (but not harder) tools and automation</li>
+          <li>Current state: young, but improving all the time</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Advantages of mach</h3>
+        <ul class="build">
+          <li>Python &gt;&gt; make and shell</li>
+          <li>Increased tools cohesion</li>
+          <li>Friendlier tools = happier developers = increased community engagement</li>
+        </ul>
+      </article>
+
+      <article class="smaller nobackground">
+        <h3>Usability Comparison: Run Single xpcshell Test</h3>
+        <table>
+          <tr>
+            <th>What</th>
+            <th>make</th>
+            <th>mach</th>
+          </tr>
+          <tr>
+            <td>Command</td>
+            <td><code>$ SOLO_FILE=test_load_modules.js make -C services/sync/tests check-one</code></td>
+            <td><code>$ ./mach xpcshell-test services/common/tests/unit/test_load_modules.js</code<></td>
+          </tr>
+          <tr>
+            <td>Required Knowledge</td>
+            <td>
+              <ul>
+                <li><code>services/common/tests/unit/test_load_modules.js</code> is an xpcshell test file</li>
+                <li>make target to run a single xpcshell test is <tt>check-one</tt></li>
+                <li>Must define <code>SOLO_FILE</code> variable to run an individual test</li>
+                <li>Must execute make within the directory containing the <code>XPCSHELL_TESTS</code> variable</li>
+              </ul>
+            </td>
+            <td>
+              <ul>
+                <li><code>services/common/tests/unit/test_load_modules.js</code> is an xpcshell test file</li>
+                <li>mach command to run an xpcshell test is <code>xpcshell-test</code></li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td>Misc</td>
+            <td>
+              <ul>
+                <li>No <code>make help</code></li>
+                <li>Realistically requires docs on MDN</li>
+              </ul>
+            </td>
+            <td>
+              <ul>
+                <li><code>mach help</code> can educate!</li>
+                <li>Shell tab-complete test paths!</li>
+                <li>You can do everything with <i>just</i> the tree</li>
+              </ul>
+            </td>
+          </tr>
+        </table>
+      </article>
+
+      <article>
+        <h3>Even Better Usability</h3>
+        <pre>$ mach test test_load_modules.js</pre>
+        <ul class="build">
+          <li><code>mach</code> is in <code>$PATH</code> and you can run it from anywhere</li>
+          <li><code>mach</code> can deduce file is an xpcshell test and it does the right thing</li>
+          <li>Requires some improvements to mach (I'm working on them)</li>
+          <li>Requires richer and more consistent metadata (<code>moz.build</code> files!)</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Ever Betterer Usability</h3>
+        <pre>$ mach test_load_modules.js</pre>
+        <ul class="build">
+          <li>Argument is a file!</li>
+          <li>That file is an xpcshell test - let me invoke the xpcshell test runner!</li>
+          <li>...And I'll be sure the tree is built before I try it and will either build it for you or tell you what to do in order to build it</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>mach Opens Doors</h3>
+        <ul class="build">
+          <li>Much more flexible than make</li>
+          <li>Deep integration with test runners</li>
+          <li>Unified logging bus</li>
+          <li>Forcing tools to be written as libraries, not standalone scripts</li>
+          <li>Conveniently brokers all interaction and can make intelligent decisions</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>mach Ideas</h3>
+        <ul class="build">
+          <li>Configure Mercurial and/or Git with sane defaults</li>
+          <li>Easily submit [proper] patches to Bugzilla</li>
+          <li>Find reviewers for patch</li>
+          <li>Incorporate all those great tools that are floating around</li>
+          <li>Organize mach commands into categories</li>
+          <li>Shell completion support</li>
+          <li>Record and report metrics from building</li>
+          <li>... add stuff to <code>moz.build</code> files, consume with mach</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Adding a mach Command</h3>
+        <pre>
+from __future__ import print_function, unicode_literals
+
+from mach.decorators import (
+    CommandArgument,
+    CommandProvider,
+    Command,
+)
+
+@CommandProvider
+class MyCommandClass(object):
+    @Command('doit', help='Run it!')
+    @CommandArgument('--debug', '-d', action='store_true',
+        help='Do it in debug mode.')
+    def doit(self, debug=False):
+        print('I did it!')
+</pre>
+      <p>See <a href="https://developer.mozilla.org/en-US/docs/Developer_Guide/mach">MDN</a> for more.</p>
+      </article>
+
+      <article>
+        <h3>Other In-Progress Improvements</h3>
+        <ul>
+          <li>Custom Python importer so tree isn't littered with <tt>.pyc</tt> files</li>
+          <li>Port driver logic from <tt>client.mk</tt> to Python</li>
+          <li>Eliminate client.mk</li>
+        </ul>
+      </article>
+
+      <article>
+        <h3>Potential Improvements and Ideas</h3>
+        <ul>
+          <li>Rewrite parts of configure in Python and/or parallelize</li>
+          <li>Replace <tt>mozconfigs</tt> with <tt>moz.build</tt>-like files?</li>
+          <li>mach config file?</li>
+          <li>Streaming logs from TBPL (possibly with <a href="https://wiki.mozilla.org/Services/Sagrada/Metlog">metlog</a>)</li>
+          <li>Structured logging from mach eliminates log parsing</li>
+          <li>Parallel test runners and/or unify test harness code</li>
+          <li>Invent MFBT acronym for <tt>moz.build</tt> files</li>
+        </ul>
+      </article>
+
+      <article class="smaller">
+        <h3>Vision: Bootstrap</h3>
+        <p>Linux, OS X, BSDs, etc</p>
+        <pre>wget https://www.mozilla.org/build_firefox.py && python build_firefox.py</pre>
+
+        <p>Windows</p>
+        <pre>Download and run https://www.mozilla.org/build_firefox.vbs</pre>
+
+        <ul>
+          <li>All required system dependencies are installed.</li>
+          <li>Source tree is cloned automatically</li>
+          <li>Bootstrap info in tree and always in sync with the tree you are building (unlike a wiki)</li>
+        </ul>
+      </article>
+
+      <article class="smaller">
+        <h3>Vision: Development Workflow</h3>
+        <p>We <i>activate</i> a shell tied to a source tree and an output directory:</p>
+        <pre>./mach activate obj-firefox</pre>
+
+        <ul>
+          <li>First time wizard guides you through</li>
+          <li>Automatically configure Git/Mercurial if needed</li>
+          <li>Help you create a tree configuration file (mozconfig?)</li>
+          <li><tt>mach</tt> added to <tt>$PATH</tt></li>
+        </ul>
+        <pre>
+mach build
+# wait through faster build, complete with progress indicator
+
+mach run
+# Firefox starts!</pre>
+      </article>
+
+      <article>
+        <h3>Future Crazy Ideas</h3>
+        <ul>
+          <li>What about running a background service with an HTML interface?</li>
+          <ul>
+            <li>web UI easier to target than terminal</li>
+            <li>background building of the tree</li>
+            <li>push-button interface</li>
+            <li>yo dawg, I hear you like to use Firefox to build Firefox</li>
+          </ul>
+        </ul>
+      </article>
+
+      <article>
+        <h3>How Can I Help?</h3>
+        <ul class="build">
+          <li>Learn Python</li>
+          <li>squash <a href="https://bugzilla.mozilla.org/buglist.cgi?field0-0-0=component;type0-0-1=substring;field0-0-1=status_whiteboard;resolution=---;query_format=advanced;bug_status=UNCONFIRMED;bug_status=NEW;bug_status=READY;bug_status=ASSIGNED;bug_status=REOPENED;value0-0-1=[mach;type0-0-0=equals;value0-0-0=mach">mach bugs</a></li>
+          <li>Write mach commands - incorporate tools into tree</li>
+          <li>Give test runners some API love</li>
+          <li><tt>#pymake</tt>, <tt>#mach</tt> on irc.mozilla.org</li>
+        </ul>
+      </article>
+
+      <article>
+        <h2>It's Over!</h2>
+      </article>
+
+    </section>
+
+  </body>
+</html>

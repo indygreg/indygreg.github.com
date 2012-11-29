@@ -1,0 +1,73 @@
+-j9 x 4 fresh boot
+
+22:56.09 total CPU Utilization: 81.8948652586
+22:56.09 total I/O - Reads: 19499; Writes: 64913; Read Bytes: 240730112; Write Bytes: 4969660416; Read Time (ms): 166984; Write time 
+
+-j9 x 4 cached
+
+22:27.57 total CPU Utilization: 82.9961895911
+22:27.58 total I/O - Reads: 420; Writes: 58239; Read Bytes: 1720320; Write Bytes: 4944601088; Read Time (ms): 3932; Write time (ms): 5480944
+
+-j12 x 4 + 4 fresh boot
+
+21:34.47 total CPU Utilization: 71.4395299145
+21:34.48 total I/O - Reads: 34015; Writes: 65875; Read Bytes: 360103936; Write Bytes: 4965130240; Read Time (ms): 397972; Write time (ms): 6316212
+
+-j12 x 4 + 4 cached
+
+20:38.08 total CPU Utilization: 73.9669302514
+20:38.08 total I/O - Reads: 69; Writes: 63055; Read Bytes: 282624; Write Bytes: 4973465600; Read Time (ms): 1348; Write time (ms): 6015188
+
+-j12 x 4 + 4 ramfs
+
+21:11.73 total CPU Utilization: 75.1554545455
+21:11.73 total I/O - Reads: 532; Writes: 21731; Read Bytes: 10448896; Write Bytes: 140660736; Read Time (ms): 4480; Write time (ms): 173304
+
+-j12 x 4 + 4 x 2GB RAM x fresh boot
+
+26:34.86 total CPU Utilization: 59.8176952141
+26:34.87 total I/O - Reads: 129862; Writes: 101804; Read Bytes: 4680409088; Write Bytes: 5252468736; Read Time (ms): 1495136; Write time (ms): 4836592
+
+-j12 x 4 + 4 x 8GB x clearing page cache
+62:38.78 total CPU Utilization: 51.7130893383
+62:38.78 total I/O - Reads: 828976; Writes: 119779; Read Bytes: 15455354880; Write Bytes: 5392474112; Read Time (ms): 19374572; Write time (ms): 3767332
+
+-j12 x 4 + 4 x 8GB x ccache x cleared page
+25:16.98 total CPU Utilization: 69.1728448276
+25:16.98 total I/O - Reads: 62460; Writes: 114683; Read Bytes: 973377536; Write Bytes: 8062382080; Read Time (ms): 912624; Write time (ms): 8304544
+
+cache hit (direct)                   121
+cache hit (preprocessed)               0
+cache miss                          5175
+called for link                      156
+preprocessor error                     1
+unsupported source language            4
+autoconf compile/link                 14
+unsupported compiler option            2
+files in cache                     16050
+cache size                           2.5 Gbytes
+max cache size                       3.0 Gbytes
+
+-j12 x 4 + 4 x 8GB x ccache populated x cleared page
+11:15.56 total CPU Utilization: 48.1018843284
+11:15.56 total I/O - Reads: 86871; Writes: 65749; Read Bytes: 2733596672; Write Bytes: 5543874560; Read Time (ms): 3056164; Write time (ms): 9883996
+
+cache hit (direct)                  3796
+cache hit (preprocessed)             717
+cache miss                           783
+called for link                      156
+preprocessor error                     1
+cache file missing                     1
+unsupported source language            4
+autoconf compile/link                 14
+unsupported compiler option            2
+files in cache                     17392
+cache size                           2.6 Gbytes
+max cache size                       3.0 Gbytes
+
+-j12 x 4 + 4 x 8GB x ccache populated x populated page
+
+ 8:29.85 total CPU Utilization: 47.2055555556
+ 8:29.85 total I/O - Reads: 11582; Writes: 61805; Read Bytes: 592584704; Write Bytes: 5418037248; Read Time (ms): 467308; Write time (ms): 13023376
+
+
