@@ -10,10 +10,33 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 27 Sep 2012 00:30:50 GMT</pubDate>
+    <pubDate>Fri, 30 Nov 2012 22:12:40 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Firefox Build System Presentation</title>
+      <link>http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation</link>
+      <pubDate>Fri, 30 Nov 2012 14:00:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <category><![CDATA[build system]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation</guid>
+      <description>Firefox Build System Presentation</description>
+      <content:encoded><![CDATA[<p>In case you missed it, I gave a presentation on the state of Firefox's
+build system yesterday.</p>
+<p>You can <a href="https://air.mozilla.org/the-future-of-the-firefox-build-system/">watch</a>
+it and <a href="http://gregoryszorc.com/presentations/2012-11-29-firefox-build-system/#1">view</a>
+the slides online.</p>
+<p>If you build Firefox from source regularly, you should definitely at
+least skim through the slide deck.</p>
+<p>I'm not an HTML expert, so my apogolies for bad UI on the interactive
+slides. You may need to press <strong>enter</strong> to select items in
+dropdown menus. Also, the interactive slides are a bit resource
+intensive. If the slide deck is really slow, turn off those elements.
+I've also only tested the slides in Firefox 19 and 20. My apologies if
+they don't work everywhere.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Visual Studio Project Generation for mozilla-central</title>
       <link>http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central</link>

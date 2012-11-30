@@ -7,12 +7,40 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2012-09-27T00:30:50Z</updated>
+  <updated>2012-11-30T22:12:40Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Firefox Build System Presentation]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation" />
+    <id>http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation</id>
+    <updated>2012-11-30T14:00:00Z</updated>
+    <published>2012-11-30T14:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <summary type="html"><![CDATA[Firefox Build System Presentation]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation"><![CDATA[<p>In case you missed it, I gave a presentation on the state of Firefox's
+build system yesterday.</p>
+<p>You can <a href="https://air.mozilla.org/the-future-of-the-firefox-build-system/">watch</a>
+it and <a href="http://gregoryszorc.com/presentations/2012-11-29-firefox-build-system/#1">view</a>
+the slides online.</p>
+<p>If you build Firefox from source regularly, you should definitely at
+least skim through the slide deck.</p>
+<p>I'm not an HTML expert, so my apogolies for bad UI on the interactive
+slides. You may need to press <strong>enter</strong> to select items in
+dropdown menus. Also, the interactive slides are a bit resource
+intensive. If the slide deck is really slow, turn off those elements.
+I've also only tested the slides in Firefox 19 and 20. My apologies if
+they don't work everywhere.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
