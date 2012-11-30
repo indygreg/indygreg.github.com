@@ -104,6 +104,19 @@
   <body style='display: none'>
     <script type="application/javascript;version=1.8">
 
+function URIIntoPre(uri, preId) {
+  $.ajax({
+    dataType: "text",
+    success: function onSuccess(data) {
+      let e = document.getElementById(preId);
+      e.innerHTML = data;
+      e.style.font = "14px monospace";
+      e.style.overflow = "auto";
+    },
+    url: uri,
+  });
+}
+
 function addGraph(id, data, yProp, ceiling=null) {
   let margin = {top: 20, right: 20, bottom: 40, left: 80};
   let width = 800 - margin.left - margin.right;
@@ -507,6 +520,12 @@ function drawMakefileSlider(valueFunc) {
 }
 
 $(function() {
+  URIIntoPre("config.status", "config_status_pre");
+  URIIntoPre("mach.log", "mach_log_pre");
+  URIIntoPre("autoconf.mk", "autoconf_mk_pre");
+  URIIntoPre("rules.mk", "rules_mk_pre");
+  URIIntoPre("dep-counts.txt", "dep_counts_pre");
+
   $("#devspectrum-slider").slider({
     value: 0,
     min: 0,
@@ -736,7 +755,7 @@ $(function() {
 
       <article class="nobackground">
         <h3>config.status: Computed Tree Config</h3>
-        <iframe src="config.status" content-type="test/plain" style="height: 500px;"></iframe>
+        <pre id="config_status_pre" style="height: 500px;"></pre>
       </article>
 
       <article>
@@ -752,7 +771,7 @@ $(function() {
 
       <article class="nobackground">
         <h3 style="margin-bottom: 20px">4. Invoke the Build Backend</h3>
-        <iframe src="mach.log" style="height: 500px"></iframe>
+        <pre id="mach_log_pre" style="height: 500px;"></pre>
       </article>
 
       <article class="smaller">
@@ -790,7 +809,7 @@ VPATH = @srcdir@
 
 include $(DEPTH)/config/autoconf.mk
         </pre>
-        <iframe src="autoconf.mk" style="height: 350px;"></iframe>
+        <pre id="autoconf_mk_pre" style="height: 350px;"></pre>
       </article>
 
       <article class="smaller">
@@ -819,7 +838,7 @@ endif
         <pre>
 include $(topsrcdir)/config/rules.mk
         </pre>
-        <iframe src="rules.mk" style="height: 400px;"></iframe>
+        <pre id="rules_mk_pre" style="height: 400px;"></pre>
       </article>
 
       <article class="nobackground">
@@ -1389,7 +1408,7 @@ include $(topsrcdir)/config/rules.mk
 
       <article class="nobackground">
         <h3>Dependency Hell</h3>
-        <iframe src="dep-counts.txt"></iframe>
+        <pre id="dep_counts_pre"></pre>
       </article>
 
       <article>
