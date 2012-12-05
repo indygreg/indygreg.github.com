@@ -102,7 +102,7 @@
 
 </style>
   <body style='display: none'>
-    <script type="application/javascript;version=1.8">
+    <script>
 
 function URIIntoPre(uri, preId) {
   $.ajax({
@@ -117,7 +117,7 @@ function URIIntoPre(uri, preId) {
   });
 }
 
-function addGraph(id, data, yProp, ceiling=null) {
+function addGraph(id, data, yProp, ceiling) {
   var margin = {top: 20, right: 20, bottom: 40, left: 80};
   var width = 800 - margin.left - margin.right;
   var height = 500 - margin.top - margin.bottom;
