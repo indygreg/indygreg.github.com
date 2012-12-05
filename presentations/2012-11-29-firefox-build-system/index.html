@@ -108,7 +108,7 @@ function URIIntoPre(uri, preId) {
   $.ajax({
     dataType: "text",
     success: function onSuccess(data) {
-      let e = document.getElementById(preId);
+      var e = document.getElementById(preId);
       e.innerHTML = data;
       e.style.font = "14px monospace";
       e.style.overflow = "auto";
@@ -118,23 +118,23 @@ function URIIntoPre(uri, preId) {
 }
 
 function addGraph(id, data, yProp, ceiling=null) {
-  let margin = {top: 20, right: 20, bottom: 40, left: 80};
-  let width = 800 - margin.left - margin.right;
-  let height = 500 - margin.top - margin.bottom;
-  let x = d3.scale.linear().range([0, width]);
-  let y = d3.scale.linear().range([height, 0]);
+  var margin = {top: 20, right: 20, bottom: 40, left: 80};
+  var width = 800 - margin.left - margin.right;
+  var height = 500 - margin.top - margin.bottom;
+  var x = d3.scale.linear().range([0, width]);
+  var y = d3.scale.linear().range([height, 0]);
 
-  let xAxis = d3.svg.axis().scale(x).orient("bottom");
-  let yAxis = d3.svg.axis().scale(y).orient("left");
+  var xAxis = d3.svg.axis().scale(x).orient("bottom");
+  var yAxis = d3.svg.axis().scale(y).orient("left");
 
-  let area = d3.svg.area()
+  var area = d3.svg.area()
     .x(function(d) { return x(d.time); })
     .y0(height)
     .y1(function(d) { return y(d[yProp]); });
 
   document.getElementById(id).innerHTML = "";
 
-  let svg = d3.select("#" + id).append("svg")
+  var svg = d3.select("#" + id).append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
     .append("g")
@@ -163,31 +163,31 @@ function addGraph(id, data, yProp, ceiling=null) {
 }
 
 function dendrogram(id, dataFile) {
-  let width = 750;
-  let height = 600;
+  var width = 750;
+  var height = 600;
 
-  let cluster = d3.layout.cluster().size([height, width - 100]);
+  var cluster = d3.layout.cluster().size([height, width - 100]);
 
-  let diagonal = d3.svg.diagonal()
+  var diagonal = d3.svg.diagonal()
     .projection(function(d) { return [d.y, d.x]; });
 
-  let svg = d3.select("#" + id).append("svg")
+  var svg = d3.select("#" + id).append("svg")
       .attr("width", width)
       .attr("height", height)
     .append("g")
       .attr("transform", "translate(40,0)");
 
   d3.json(dataFile, function(error, root) {
-    let nodes = cluster.nodes(root);
-    let links = cluster.links(nodes);
+    var nodes = cluster.nodes(root);
+    var links = cluster.links(nodes);
 
-    let link = svg.selectAll(".link")
+    var link = svg.selectAll(".link")
       .data(links)
       .enter().append("path")
         .attr("class", "link")
         .attr("d", diagonal);
 
-    let node = svg.selectAll(".node")
+    var node = svg.selectAll(".node")
         .data(nodes)
       .enter().append("g")
         .attr("class", "node")
@@ -202,11 +202,11 @@ function dendrogram(id, dataFile) {
 }
 
 function updateMeasurementGraph() {
-  let selected = document.getElementById("build-measurements");
-  let file = selected[selected.selectedIndex].value;
+  var selected = document.getElementById("build-measurements");
+  var file = selected[selected.selectedIndex].value;
 
-  let typeElem = document.getElementById("graph_type");
-  let type = typeElem[typeElem.selectedIndex].value;
+  var typeElem = document.getElementById("graph_type");
+  var type = typeElem[typeElem.selectedIndex].value;
 
   d3.tsv("resource-usage/" + file, function(error, data) {
     addGraph("measurement_graph", data, type);
@@ -214,9 +214,9 @@ function updateMeasurementGraph() {
 }
 
 function drawMakefileHierarchy() {
-  let width = 800;
-  let height = 600;
-  let root;
+  var width = 800;
+  var height = 600;
+  var root;
 
   function tick() {
     link.attr("x1", function(d) { return d.source.x; })
@@ -228,20 +228,20 @@ function drawMakefileHierarchy() {
         .attr("cy", function(d) { return d.y; });
   }
 
-  let force = d3.layout.force()
+  var force = d3.layout.force()
       .on("tick", tick)
       .linkDistance(function(d) { return 4; })
       .charge(function(d) { return -10; })
       .size([width, height]);
 
-  let vis = d3.select("#build_targets_graph").append("svg:svg")
+  var vis = d3.select("#build_targets_graph").append("svg:svg")
     .attr("width", width)
     .attr("height", height);
 
   // Returns a list of all nodes under the root.
   function flatten(root, cpp) {
-    let nodes = [];
-    let i = 0;
+    var nodes = [];
+    var i = 0;
 
     function recurse(node) {
       if (node.children) {
@@ -271,7 +271,7 @@ function drawMakefileHierarchy() {
       nodes.push(node);
 
       if (cpp && node.cpp) {
-        for (let cpp in node.cpp) {
+        for (var cpp in node.cpp) {
           nodes.push({
             id: ++i,
             size: 1
@@ -287,8 +287,8 @@ function drawMakefileHierarchy() {
   }
 
   function updateHierarchy() {
-    let nodes = flatten(root, false);
-    let links = d3.layout.tree().links(nodes);
+    var nodes = flatten(root, false);
+    var links = d3.layout.tree().links(nodes);
 
     force.nodes(nodes).links(links).start();
 
@@ -364,7 +364,7 @@ function drawMakefileHierarchy() {
 }
 
 function toggleMakefileHierarchy() {
-  let e = document.getElementById("build_targets_graph");
+  var e = document.getElementById("build_targets_graph");
   if (e.childElementCount) {
     e.innerHTML = "";
   } else {
@@ -373,7 +373,7 @@ function toggleMakefileHierarchy() {
 }
 
 function drawMakefileTreeMap(valueFunc) {
-  let w = 800,
+  var w = 800,
     h = 550,
     x = d3.scale.linear().range([0, w]),
     y = d3.scale.linear().range([0, h]),
@@ -381,13 +381,13 @@ function drawMakefileTreeMap(valueFunc) {
     root,
     node;
 
-  let treemap = d3.layout.treemap()
+  var treemap = d3.layout.treemap()
       .round(false)
       .size([w, h])
       .sticky(true)
       .value(valueFunc);
 
-  let svg = d3.select("#makefile_tree_map").append("div")
+  var svg = d3.select("#makefile_tree_map").append("div")
       .attr("class", "chart")
       .style("width", w + "px")
       .style("height", h + "px")
@@ -400,10 +400,10 @@ function drawMakefileTreeMap(valueFunc) {
   $.getJSON("makefile-hierarchy.json", function(data) {
     node = root = data;
 
-    let nodes = treemap.nodes(root)
+    var nodes = treemap.nodes(root)
         .filter(function(d) { return !d.children; });
 
-    let cell = svg.selectAll("g")
+    var cell = svg.selectAll("g")
         .data(nodes)
       .enter().append("svg:g")
         .attr("class", "cell")
@@ -427,11 +427,11 @@ function drawMakefileTreeMap(valueFunc) {
   });
 
   function zoom(d) {
-    let kx = w / d.dx, ky = h / d.dy;
+    var kx = w / d.dx, ky = h / d.dy;
     x.domain([d.x, d.x + d.dx]);
     y.domain([d.y, d.y + d.dy]);
 
-    let t = svg.selectAll("g.cell").transition()
+    var t = svg.selectAll("g.cell").transition()
         .duration(d3.event.altKey ? 7500 : 750)
         .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
 
@@ -450,12 +450,12 @@ function drawMakefileTreeMap(valueFunc) {
 }
 
 function drawMakefileSlider(valueFunc) {
-  let w = 800,
+  var w = 800,
     h = 550,
     x = d3.scale.linear().range([0, w]),
     y = d3.scale.linear().range([0, h]);
 
-  let vis = d3.select("#makefile_slider").append("div")
+  var vis = d3.select("#makefile_slider").append("div")
       .attr("class", "chart")
       .style("width", w + "px")
       .style("height", h + "px")
@@ -463,17 +463,17 @@ function drawMakefileSlider(valueFunc) {
       .attr("width", w)
       .attr("height", h);
 
-  let partition = d3.layout.partition()
+  var partition = d3.layout.partition()
       .value(valueFunc);
 
   $.getJSON("makefile-hierarchy.json", function(root) {
-    let g = vis.selectAll("g")
+    var g = vis.selectAll("g")
         .data(partition.nodes(root))
       .enter().append("svg:g")
         .attr("transform", function(d) { return "translate(" + x(d.y) + "," + y(d.x) + ")"; })
         .on("click", click);
 
-    let kx = w / root.dx,
+    var kx = w / root.dx,
         ky = h / 1;
 
     g.append("svg:rect")
@@ -498,7 +498,7 @@ function drawMakefileSlider(valueFunc) {
       x.domain([d.y, 1]).range([d.y ? 40 : 0, w]);
       y.domain([d.x, d.x + d.dx]);
 
-      let t = g.transition()
+      var t = g.transition()
           .duration(d3.event.altKey ? 7500 : 750)
           .attr("transform", function(d) { return "translate(" + x(d.y) + "," + y(d.x) + ")"; });
 
@@ -543,9 +543,9 @@ $(function() {
   updateMeasurementGraph();
 
   d3.select("#makefile_tree_map_select").on("change", function() {
-    let value;
-    let showSlider = false;
-    let showTreeMap = false;
+    var value;
+    var showSlider = false;
+    var showTreeMap = false;
 
     if (this.value == "makefile_count") {
       value = function(d) { return 1; }
@@ -1416,8 +1416,9 @@ include $(topsrcdir)/config/rules.mk
         <ul>
           <li>In the ideal build system, ccache isn't needed</li>
           <li>... if you've compiled already, you don't invoke the compiler!</li>
-          <li>Fixing excessive rebuilding should make ccache useless</li>
+          <li>Fixing excessive rebuilding should marginalize ccache</li>
           <li>... unless you build multiple trees (RelEng)</li>
+          <li>... unless you toggle between significantly differing trees (some devs)</li>
           <li>Until then, watch out for I/O overhead of ccache</li>
           <li>... consider disabling on magnetic hard drives</li>
         </ul>
