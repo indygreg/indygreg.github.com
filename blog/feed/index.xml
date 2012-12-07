@@ -10,10 +10,249 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Wed, 05 Dec 2012 18:38:59 GMT</pubDate>
+    <pubDate>Fri, 07 Dec 2012 05:53:23 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Thoughts on Logging - Part 1 - Structured Logging</title>
+      <link>http://gregoryszorc.com/blog/2012/12/06/thoughts-on-logging---part-1---structured-logging</link>
+      <pubDate>Thu, 06 Dec 2012 21:55:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[logging]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/12/06/thoughts-on-logging---part-1---structured-logging</guid>
+      <description>Thoughts on Logging - Part 1 - Structured Logging</description>
+      <content:encoded><![CDATA[<h2>Forward</h2>
+<p>For reasons I can't explain, I have a keen interest in computer logging
+systems. Perhaps it stems from my frustration that such a
+seemingly trivial task can often be quite complicated. Perhaps it's from
+the scaling challenges inherent with inevitably needing to analyze
+terabytes of logged data. Perhaps it's from my experience designing
+highly-available distributed server application and needing to use
+logging for real-time monitoring and decision making. Whatever the
+root causes, I've always wanted to create a brain dump of my thoughts
+on logging. So, here we go!</p>
+<h2>Introduction</h2>
+<p>Logging. Practically every computer program does it in some form or
+another. The standard libraries for many programming languages provide
+a logging facility. But, have you ever stopped to think about the side
+effects of logging or why you log the way you do?</p>
+<p>In this first post, I will briefly define what I consider logging and
+will talk about something called <em>structured logging</em>.</p>
+<h2>The Definition of Logging</h2>
+<p>For the scope of these posts, I will define logging to be:</p>
+<pre><code>An emitted stream of distinct messages from a running application
+</code></pre>
+<p>A <em>message</em> can be pretty much anything. They are often strings. But,
+they could be binary data. The transport mechanism is undefined.
+Although, most logging systems typically write to a file (eventually).</p>
+<p>I should also call out the difference between <em>reading</em>/<em>interpreting</em>
+logs and <em>transporting</em> them. When I say <em>reading a log</em>, I'm referring
+to a process where an entity (either human or machine) <em>reads</em> the
+individual message content and infers something from it. By contrast, a
+<em>transporter</em> treats messages as a black box and just shuffles bits
+around. <em>Transporters</em> also typically send or store logging messages
+somewhere.</p>
+<p>It's worth explicitly noting that this definition encompasses both
+tradtional <em>print()</em> based logging (writing a line to a file or output)
+as well as things like transaction logs or recording events as new rows
+in a database.</p>
+<h2>The Multiple Use Cases of Logging</h2>
+<p>Before I get to some of the interesting aspects of logging, let's
+identify <em>some</em> of the use cases of logging (in no particular order):</p>
+<ol>
+<li>Recording application errors (e.g. exceptions and stack traces)</li>
+<li>Low-level information to aid in debugging or human observation</li>
+<li>Application monitoring (includes metrics and alerting)</li>
+<li>Business analytics (use the logged data to help make decisions)</li>
+<li>Security auditing</li>
+</ol>
+<p>Now that we have the basics out of the way, let's move on to the crux of
+this post.</p>
+<h2>Logging for Humans or Machines</h2>
+<p>I would argue that every log message is intended to be <em>interpreted</em>
+by either a human or a machine.</p>
+<p>If a log message is only going to be used to help a human debug a system
+or casually see what's going on, it's intended for humans. If a log
+message is going to be used for machine analysis later (e.g. monitoring,
+alerting, business analytics, security auditing, etc), it's intended for
+machines.</p>
+<p>This is an important distinction. If it isn't clear, please re-read the
+prior paragraphs. Now might also be a good time for you to audit the
+logs in your life and assign <em>human</em> or <em>machine</em> labels to them.</p>
+<h2>The Problem</h2>
+<p><strong>The problem with logging as most of us know it is that it is optimized
+for human consumption, even if machines are the intended consumer.</strong></p>
+<p>At the heart of most logging systems we log a string, a char *, an
+array of characters that can easily be read by humans. For example, a
+simple web application might produce log files containing lines like:</p>
+<pre><code>2012:11:24T17:32:23.3435 INFO gps@mozilla.com successfully logged in
+</code></pre>
+<p>Human readability is a great feature to have. However, it comes at a
+price: more difficult machine consumption.</p>
+<p><strong>By optimizing for human consumption, we've introduced a new problem:
+log parsing.</strong></p>
+<p>In the above example log message, what the program has done is combined
+a few distinct fields of data (an event - <em>logged in</em>, the
+username, and the time) into a single text string. This is great for
+humans glancing at a log file. But that decision now necessitates
+downstream machine consumers to <em>parse</em>/<em>decode</em> that text back into its
+original, distinct fields.</p>
+<p>I call this style of logging <em>destructured</em> or <em>unstructured</em> logging. We
+start with distinct fields of data and then <em>destructure</em> them into a
+fully free-form or semi-formed text. By doing so, we lose part
+of the original data structure and necessitate the need to reconstruct
+it (via parsing).</p>
+<p>This seems silly to me.</p>
+<p>Why are we formatting distinct fields of data into unified strings only
+to have them parsed into their original components again? If lossless
+and simple round-trip encoding/decoding is your goal, there are much
+better ways than freely-formed text! Going <em>to</em> text is easy
+(<em>printf()</em> or string concatenation are how it is commonly performed).
+Getting back to the original representation is the real problem.</p>
+<p>Every persisted log message destined for machines will need to be decoded
+to some degree to facilitate analysis. However, by using destructured
+text, nearly every program and logging system forces this decoding
+problem onto its users by using an encoding that is difficult to code.</p>
+<p>Every time you are analyzing a log file containing destructured text you
+need to solve the parsing/decoding problem. Every time you write an
+<em>awk</em>, <em>grep</em>, <em>sed</em>, <em>perl</em>, etc script, use regular expressions, etc
+to scrape logs you are solving this problem. <strong>How much time do you
+spend decoding/parsing logs versus actually doing something useful with
+the data?</strong> From my personal experience, a lot. And, parsing
+destructured text is a very fragile solution. What happens when the
+string changes, even by just a little? Does that throw off your
+decoder/parser?</p>
+<p>Decoding log messages is a hard problem. Furthermore, it's a problem I'd
+rather not have.</p>
+<h2>Structured Logging to the Rescue</h2>
+<p><img alt="What if I told you there's a better way to log" src="/images/morpheus_logging.jpg" /></p>
+<p>One of my early professional mentors taught me that one of the best ways
+to solve a problem is to change the requirements so that the problem no
+longer exists or becomes easier to solve. (If that didn't immediately
+click with you, you might want to read it again because I feel it's an
+invaluable skill and one that many engineers don't employ).
+Applying that lesson here, how do we eliminate the problem of
+parsing destructured textual data back into its original fields?  Simple:
+we don't emit destructured text! Instead, we emit data that is easily
+machine readable, where each individual field is preserved. <strong>This is
+called structured logging.</strong></p>
+<p>The primary benefit of structured logging is that you eliminate the
+parsing problem (or at least you change it to be a solved problem by
+using a common or well-defined encoding format). No tedious searching
+for data within free-form text and extracting it. Instead, the fields
+from the event-producing application are seamlessly preserved and
+loaded into downstream machine consumers.</p>
+<h3>A Closer Look</h3>
+<p>What does structured logging look like? Well, it depends. There is no
+standard for structured logging. When I first started writing this post
+in June 2011, a Google search for <em>structured logging</em> didn't yield
+much. Today, things aren't that much better. Although, there has been
+significant activity in the last 15 months. rsyslog has launched
+<a href="http://blog.gerhards.net/2012/02/announcing-project-lumberjack.html">project Lumberjack</a>,
+which has structured logging as a pillar. There is even someone sitting
+10 ft from me at Mozilla's SF office doing structured logging for server
+applications (<a href="https://wiki.mozilla.org/Services/Sagrada/Metlog">metlog</a>).</p>
+<p>All structured logging systems are different. But, the concepts
+are mostly the same.</p>
+<p>From the perspective of a log-producing application, a function call to
+produce an unstructured message may look something like:</p>
+<div class="pygments_murphy"><pre><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">username</span> <span class="o">+</span> <span class="s">&quot; successfully logged in&quot;</span><span class="p">)</span>
+</pre></div>
+
+<p>Whereas a call to produce that same message in structured form may look
+like:</p>
+<div class="pygments_murphy"><pre><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;successful_login&quot;</span><span class="p">,</span> <span class="n">who</span><span class="o">=</span><span class="n">username</span><span class="p">)</span>
+</pre></div>
+
+<p>You'll immediately notice that the API retains the original pieces of
+data. In this example, we just have the event name (<em>successful_login</em>)
+and <em>who</em> (some variable value).</p>
+<p>This will look different in every programming language, of course. And,
+depending on the structured logging mechanism, the common metadata
+produced with each message (e.g. time and log level) may differ. But the
+general idea is you preserve the rich data fields as they cross over
+into the logging facility rather than <em>casting</em> them to a string.
+Behind the scenes, the structured logger retains the fields (the
+original structure) and encodes them into something machine readable.</p>
+<p>Put another way, structured loggers log objects, not strings.</p>
+<p>How objects are encoded again depends on the structured logger
+implementation. JSON is a well-understood encoding format. An example
+JSON encoding of our example message might look like:</p>
+<div class="pygments_murphy"><pre><span class="p">[</span><span class="mf">1354317157.034534</span><span class="p">,</span> <span class="s">&quot;INFO&quot;</span><span class="p">,</span> <span class="s">&quot;sucessful_login&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s">&quot;who&quot;</span><span class="p">:</span> <span class="s">&quot;gps@mozilla.com&quot;</span><span class="p">}]</span>
+</pre></div>
+
+<p>That's an array of current time, log level, event name/message type, and
+a mapping of the data fields.</p>
+<p>Or, you could opt for a more efficient encoding format, such as
+protocol buffers (which is binary).</p>
+<p>The actual encoding theoretically doesn't really matter as long as it can
+easily be decoded back into its original data. A good way to identify this
+trait is whether you need to implement a decoder/parser more than once
+per programming language or if you need to apply different decoding
+mechanisms based on the content of a message. If you do, you probably
+don't have a generic enough encoding format.</p>
+<p>Going back to implementation details, what about a consumer? In
+JavaScript, our JSON structured logger from above might look something
+like:</p>
+<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">let</span> <span class="p">[</span><span class="nx">time</span><span class="p">,</span> <span class="nx">level</span><span class="p">,</span> <span class="nx">action</span><span class="p">,</span> <span class="nx">fields</span><span class="p">]</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">line</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;successful_login&quot;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">let</span> <span class="nx">who</span> <span class="o">=</span> <span class="nx">fields</span><span class="p">.</span><span class="nx">who</span><span class="p">;</span>
+
+    <span class="c1">// Do something interesting.</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;XXX&quot;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>Compare this with a destructured parser:</p>
+<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">endsWith</span><span class="p">(</span><span class="s2">&quot;successfully logged in&quot;</span><span class="p">))</span> <span class="p">{</span>
+    <span class="c1">// Find username.</span>
+    <span class="kd">let</span> <span class="nx">spaceIndex</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>
+    <span class="kd">let</span> <span class="nx">username</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">substr</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">spaceIndex</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+
+    <span class="c1">// Do something interesting.</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(...))</span> <span class="p">{</span>
+    <span class="c1">//</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>This example admittedly isn't very complex. But, you can already see
+some differences. Notably, it takes 1 line to completely parse <em>any</em>
+message using the structured logger. The unstructured text parser
+requires multiple lines of code <em>per message type</em>. One of those scales
+better than the other.</p>
+<p>Before I conclude, it's worth mentioning something about event
+names/enumerations. You may notice I gave <em>event name</em> a dedicated
+field in my example. This is intentional. In a subsequent post,
+I will talk about the importance of event names/enumerations and
+schemas. Until then, just assume that having a unique event name is
+an important aspect of a well-designed structured logging system.
+Hence its inclusion in my examples above.</p>
+<h2>Conclusion</h2>
+<p>I think the vast majority of application logging is done suboptimally
+because it forces a <strong>hard</strong> problem of decoding/parsing onto consumers.
+Given that many logs are intended for machines, I think this is a
+problem that shouldn't need to exist and the software industry should
+rethink its current approach to logging by offering first-class
+structured logging facilities and subsequently encouraging their use.</p>
+<p>If application logging retained the data behind messages, the problem
+of parsing/decoding log messages would largely vanish and we would be
+left with the real problem: actually doing something useful with
+logged data. That is the point of logging after all, isn't it?</p>
+<p>Now, this may sound like I'm waiving my hands a bit. You are right:
+structured logging by itself is no silver bullet. There are many ways to
+do it suboptimally and to use it when you shouldn't. In subsequent posts
+to this series, I will dive deeper into how to properly design a
+(structured) logging system. I will also investigate some of the
+performance implications associated with different logging mechanisms.
+Stay tuned.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Changes to How mach Loads mozconfigs</title>
       <link>http://gregoryszorc.com/blog/2012/12/05/changes-to-how-mach-loads-mozconfigs</link>
@@ -1524,250 +1763,6 @@ build times. Win!</p>
 make evaluates make files faster than pymake (C is generally faster than
 python). Therefore, reducing the size of <em>rules.mk</em> should make GNU make
 faster. By how much, I have no clue.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Mozilla Build System Plan of Attack</title>
-      <link>http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack</link>
-      <pubDate>Wed, 25 Jul 2012 23:30:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[build system]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack</guid>
-      <description>Mozilla Build System Plan of Attack</description>
-      <content:encoded><![CDATA[<p>Since I published my <a href="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla%27s-build-system/">brain dump
-post</a>
-on improving Mozilla's build system for Gecko applications (including
-Firefox and Firefox OS), there has been some exciting progress.</p>
-<p>It wasn't stated in that original post, but the context for that post
-was to propose a plan in preparation of a meeting between the core
-contributors to the build system at Mozilla. I'm pleased to report that
-the plan was generally well-received.</p>
-<p>We pretty much all agreed that parts 1, 2, and 3 are all important and
-we should actively work towards them. Parts 4, 5, and 6 were a bit more
-contentious. There are some good parts and some bad parts. We're not
-ready to adopt them just quite yet. (Don't bother reading the original
-post to look up what these parts corresponded to - I'll cover that
-later.)</p>
-<p>Since that post and meeting, there has also been additional discussion
-around more specifics. I am going to share with you now where we stand.</p>
-<h2>BuildSplendid</h2>
-<p><strong>BuildSplendid</strong> is an umbrella term associated with projects/goals to
-make the developer experience (including building) better - more
-splendid if you will.</p>
-<p><strong>BuildSplendid</strong> started as the name of my personal Git branch for
-hacking on the build system. I'm encouraging others to adopt the term
-because, well, it is easier to refer to (people like project codenames).
-If it doesn't stick, that's fine by me - there are other terms that
-will.</p>
-<h2>BuildFaster</h2>
-<p>An important project inside <em>BuildSplendid</em> is <strong>BuildFaster</strong>.</p>
-<p><em>BuildFaster</em> focuses on the following goals:</p>
-<ol>
-<li>Making the <em>existing</em> build system faster, better, stronger (but not
-   harder).</li>
-<li>Making changes to the build system to facilitate the <em>future</em> use of
-   alternate build backends (like Tup or Ninja). Work to enable Visual
-   Studio, Xcode, etc project generation also falls here.</li>
-</ol>
-<p>The distinction between these goals can be murky. But, I'll try.</p>
-<p>Falling squarely in #1 are:</p>
-<ul>
-<li>Switching the buildbot infrastructure to use pymake on Windows</li>
-</ul>
-<p>Falling in #2 are:</p>
-<ul>
-<li>Making Makefile.in's data-centric</li>
-<li>Supporting multiple build backends</li>
-</ul>
-<p>Conflated between the two are:</p>
-<ul>
-<li>Ensuring Makefile's no-op if nothing has changed</li>
-<li>Optimizing existing make rules. This involves merging related
-  functionality as well as eliminating clown shoes in existing rules.</li>
-</ul>
-<p>The two goals of <em>BuildFaster</em> roughly map to the short-term and long-term
-strategies, respectively. There is consensus that recursive make (our
-existing build backend) does not scale and we will plateau in terms of
-performance no matter how optimal we make it. That doesn't mean we are
-giving up on it: there are things we can and should do so our existing
-non-recursive make backend builds faster.</p>
-<p>In parallel, we will also work towards the longer-term solution of
-supporting alternate build backends. <strong>This includes non-recursive
-make</strong> as well as things like Tup, Ninja, and even Visual Studio and
-Xcode. (I consider non-recursive make to be a separate build backend
-because changing our existing Makefile.in's to support non-recursive
-execution effectively means rewriting the input files (Makefile.in's).
-At that point, you've invented a new build backend.)</p>
-<p>For people who casually interact with the build system, these two goals
-will blend together. It is not important for most to know what bucket
-something falls under.</p>
-<h3>BuildFaster Action Items</h3>
-<p><em>BuildFaster</em> action items are being tracked in Bugzilla using the
-[BuildFaster:*] whiteboard annotation.</p>
-<p>There is no explicit tracking bug for the short-term goal (#1). Instead,
-we are relying on the whiteboard annotation.</p>
-<p>We are tracking the longer-term goal of supporting alternate build
-backends at <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774049">bug 774049</a>.</p>
-<p>The most important task to help us reach the goals is to make our
-Makefile.in's data centric. This means:</p>
-<ul>
-<li>Makefile.in's <strong>must</strong> consist of only simple variable assignment</li>
-<li>Makefile.in's <strong>must</strong> not rely on being evaluated to perform variable
-  assignment.</li>
-</ul>
-<p>Basically, our build config should be defined by static key-value pairs.</p>
-<p>This translates to:</p>
-<ul>
-<li>Move all rules out of Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">bug 769378</a></li>
-<li>Remove use of $(shell) from Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769390">bug 769390</a></li>
-<li>Remove filesystem functions from Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769407">bug 769407</a></li>
-<li>And more, as we identify the need</li>
-</ul>
-<p>While we have these tracking bugs on file, we still don't have bugs
-filed that track individual Makefile.in's that need updated. <strong>If you
-are a contributor, you can help by doing your part to file bugs for your
-Makefile.in's.</strong> If your Makefile.in violates the above rules, please
-file a bug in the <strong>Build Config</strong> component of the product it is under
-(typically <strong>Core</strong>). See the tree of the above bugs for examples.</p>
-<p>Also part of <em>BuildFaster</em> (but not relevant to most) is the task of
-changing the build system to support multiple backends. Currently,
-pieces like <em>configure</em> assume the Makefile.in to Makefile conversion is
-always what is wanted. These parts will be worked on by core
-contributors to the build system and thus aren't of concern to most.</p>
-<p>I will be the first to admit that a lot of the work to <em>purify</em>
-Makefile.in's to be data centric will look like a lot of busy work with
-little immediate gain. The real benefits to this work will manifest
-down the road. That being said, removing rules from Makefile.in's and
-implementing things as rules in rules.mk helps ensure that the
-implementation is proper (rules.mk is coded by make ninjas and thus
-probably does things <em>right</em>). This can lead to faster build times.</p>
-<h2>mozbuild</h2>
-<p><strong>mozbuild</strong> is a Python package that provides an API to the build system.</p>
-<p>What <em>mozbuild</em> will contain is still up in the air because it hasn't
-landed in mozilla-central yet. In the code I'm waiting on review to
-uplift to mozilla-central, <em>mozbuild</em> contains:</p>
-<ul>
-<li>An API for invoking the build system backend (e.g. launching make). It
-  basically reimplements client.mk because client.mk sucks and needs to
-  be replaced.</li>
-<li>An API for launching tests easily. This reimplements functionality in
-  testsuite-targets.mk, but in a much cleaner way. Running a single test
-  can now be done with a single Python function call. This may sound
-  boring, but it is very useful. You just import a module and pass a
-  filesystem path to a test file to a function and a test runs. Boom!</li>
-<li>Module for extracting compiler warnings from build output and storing
-  in a persisted database for post-build retrieval. Compiler warning
-  tracking \o/</li>
-<li>Module for converting build system output into structured logs. It
-  records things like time spent in different directories, etc. We could
-  use this for tracking build performance regressions. We just need a
-  arewe*yet.com domain...</li>
-<li>A replacement for .mozconfig's that sucks less (stronger validation,
-  settings for not just build config, convenient Python API, etc).</li>
-</ul>
-<p>And, upcoming features which I haven't yet tried to land in
-mozilla-central include:</p>
-<ul>
-<li>API for extracting metadata from Makefile.in's and other frontend
-  files. Want a Python class instance describing the IDLs defined in an
-  individual Makefile.in or across the entire tree? <em>mozbuild</em> can provide
-  that. This functionality will be used to configure alternate build
-  backends.</li>
-<li>Build backend API which allows for different build backends to be
-  configured (e.g. recursive make, Tup, Ninja, etc). When we support
-  multiple build backends, they'll live in <em>mozbuild</em>.</li>
-</ul>
-<p><em>mozbuild</em> can really be thought of as a clean backend to the build
-system and related functionality (like running tests). Everything in
-<em>mozbuild</em> could exist in make files or in .py files littered in
-<em>build/</em>, <em>config/</em>, etc. But, that would involve maintaining make files
-and/or not having a cohesive API. I wanted a clean slate that was free
-from the burdens of the existing world. <em>mozbuild</em> was born.</p>
-<p>I concede that there will be non-clear lines of division between
-<em>mozbuild</em> and other Python packages and/or Mozilla modules. For
-example, is <em>mozbuild</em> the appropriate location to define an API for
-taking the existing build configuration and launching a Mochitest? I'm
-not sure. For now, I'm stuffing functionality inside <em>mozbuild</em> unless
-there is a clear reason for it to exist elsewhere. If we want to
-separate (because of module ownership issues, for example), we can do
-that.</p>
-<p>My vision for <em>mozbuild</em> is for it to be the answer to the question
-<em>how does the Mozilla build system work?</em> You should be able to say,
-<em>look at the code in python/mozbuild and you will have all the answers.</em></p>
-<h3>mozbuild Action Items</h3>
-<p>The single action item for <em>mozbuild</em> is getting it landed. I have code
-written that I think is good enough for an initial landing (with obvious
-shortcomings being addressed in follow-up bugs). It just needs some love
-from reviewers.</p>
-<p>Landing <em>mozbuild</em> is tracked in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a>. I
-initially dropped a monolithic patch. I have since started splitting
-bits up into bite-sized patches to facilitate faster, smaller reviews.
-(See the blocking bugs.)</p>
-<h2>mach</h2>
-<p><em>mozbuild</em> is just a Python package - an API. It has no frontend.</p>
-<p>Enter <strong>mach</strong>.</p>
-<p><strong>mach</strong> is a command-line frontend to <em>mozbuild</em> and beyond.</p>
-<p>Currently, <em>mach</em> provides some convenient shortcuts for performing
-common tasks. e.g. you can run a test by tab-completing to its filename
-using your shell. It also provides nifty output in supported terminals,
-including colorizing and a basic progress indicator during building.</p>
-<p>You can think of <em>mach</em> as a replacement for <em>client.mk</em> and other make
-targets. But, <em>mach</em>'s purpose doesn't end there. My vision for <em>mach</em>
-is for it to be the one-stop shop for all your mozilla-central
-interaction needs.</p>
-<p>From a mozilla-central tree, you should be able to type
-<strong>./mach <action></strong> and do whatever you need to do. This could be
-building Firefox, running tests, uploading a patch to Bugzilla, etc.</p>
-<p>I'm capturing ideas for <em>mach</em> features in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774108">bug 774108</a>.</p>
-<h3>mach Action Items</h3>
-<p><em>mach</em> is in the same boat as <em>mozbuild</em>: it's waiting for reviewer
-love. If you are interested in reviewing it, please let me know.</p>
-<p>Once <em>mach</em> lands, I will be looking to the larger community to improve
-it. I want people to go wild implementing features. I believe that
-<em>mach</em> will have a significant positive impact on driving contributions
-to Mozilla because it will make the process much more streamlined and
-less prone to error. I think it is a no-brainer to check in <em>mach</em> as
-soon as possible so these wins can be realized.</p>
-<p>There is an open question of who will own <em>mach</em> in terms of module
-ownership. <em>mach</em> isn't really part of anything. Sure, it interacts with
-the build system, testing code, tools, etc. But, it isn't actually part
-of any of that. Maybe a new module will be created for it. I'm not
-familiar with how the modules system works and I would love to chat with
-someone about options here.</p>
-<h2>Project Interaction</h2>
-<p>How are all of these projects related?</p>
-<p><em>BuildFaster</em> is what everyone is working on today. It currently focuses
-on making the existing recursive make based build backend faster using
-whatever means necessary. <em>BuildFaster</em> could theoretically evolve to
-cover other build backends (like non-recursive make). Time will tell
-what falls under the <em>BuildFaster</em> banner.</p>
-<p><em>mozbuild</em> is immediately focused on providing the functionality to
-enable <em>mach</em> to land.</p>
-<p><em>mach</em> is about improving the overall developer experience when
-it comes to contributing to Firefox and other in-tree applications (like
-Firefox OS). It's related to the build system in that it provides a nice
-frontend to it. That's the only relationship. <em>mach</em> isn't part of the
-build system (at least not yet - it may eventually be used to perform
-actions on buildbot machines).</p>
-<p>Down the road, <em>mozbuild</em> will gain lots of new features core to the
-build system. It will learn how to extract metadata from Makefile.in's
-which can be used by other build backends. It will define a build
-backend interface and the various build backends will be implemented
-in mozbuild. Aspects of the existing build system currently implemented in
-make files or in various Python files scattered across the tree will be
-added to <em>mozbuild</em> and exposed with a clean, reusable, and testable
-API.</p>
-<p>Today, <em>BuildFaster</em> is the important project with all the attention.
-When <em>mach</em> lands, it will (hopefully) gather a lot of attention. But,
-it will be from a different group (the larger contributor community -
-not just build system people).</p>
-<p><em>mozbuild</em> today is only needed to support <em>mach</em>. But, once <em>mozbuild</em>
-lands and <em>mach</em> is on its own, <em>mozbuild</em>'s purpose  will shift to support
-<em>BuildFaster</em> and other activities under the <em>BuildSplendid</em> banner.</p>
-<h2>Conclusion</h2>
-<p>We have a lot of work ahead of us. Please look at the bugs linked above
-and help out in any way you can.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

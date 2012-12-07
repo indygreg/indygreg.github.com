@@ -50,6 +50,75 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="better-sharing-of-test-code-in-mozilla-projects"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects" rel="bookmark" title="Permanent Link to Better Sharing of Test Code in Mozilla Projects">Better Sharing of Test Code in Mozilla Projects</a></h2>
+  <small>May 10, 2012 at 10:35 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/testing'>testing</a>
+ | <a href="http://gregoryszorc.com/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Just <a href="https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=b063ba6dd084">landed</a>
+in mozilla-inbound (Firefox's integration tree) is
+support for test-only JavaScript modules. That is, JavaScript modules
+that are utilized by just test code. This is being tracked in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=748490">bug 748490</a>.</p>
+<p>The use case for this feature is sharing common test code, mock types,
+etc between tests. For example, in the Services code, we have a number
+of mock types (like a JS implementation of the Sync HTTP server) that
+need to be utilized across sub-modules. With test-only modules, it is
+now possible to publish these modules to a common location and import
+them using the familiar Cu.import() syntax. Previously, you had to
+perform the equivalent of a <em>#include</em> (possibly by utilizing the
+<em>[head]</em> section of xpcshell.ini files). The previous method of
+importing is dirty because you pollute the global object. Furthermore,
+it is really inconvenient when you wish to utilize shared files from
+different directories. See
+<a href="https://hg.mozilla.org/mozilla-central/file/f80568dba010/services/sync/tests/unit/xpcshell.ini#l2">this file</a>
+for an example.</p>
+<p>The new method of publishing and consuming test-only JavaScript modules
+is clean and simple. From your Makefile, define <strong>TESTING_JS_MODULES</strong> to
+a list of (JavaScript) files to publish. Optionally, define
+<strong>TESTING_JS_MODULE_DIR</strong> to the relative path they should be published
+to. If the directory variable is not defined, they will be published to
+the root directory. Here is an example Makefile.in:</p>
+<pre><code>DEPTH     = ../..
+topsrcdir = @top_srcdir@
+srcdir    = @srcdir@
+
+include $(DEPTH)/config/autoconf.mk
+
+TESTING_JS_MODULES = mockserver.js common.js
+TESTING_JS_MODULE_DIR = foobar
+</code></pre>
+<p>All test modules are installed to a common directory somewhere in the
+object directory. Where is not relevant. Just know it is outside the
+normal distribution directory, so the test modules aren't packaged. This
+common directory is registered with the resource manager under
+<em>resource://testing/</em>. So, once a build is performed, you can import these
+files via Components.utils.import():</p>
+<pre><code>Cu.import("resource://testing-common/foobar/mockserver.js");
+</code></pre>
+<p>I hope this feature facilitates better reuse of test code. So, next time
+you are writing test code, please consider writing writing and publishing it
+as a module so others can utilize it.</p>
+<p>One more thing. Currently, integration with the resource manager is only
+implemented for xpcshell tests. I'd like to see this supported in all
+the test runners eventually. I implemented xpcshell support because a)
+that is the test harness I use almost exclusively and b) it is the only
+one I'm comfortable modifying. If you want to implement support in
+another test runner, please have a go at it!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="improving-the-mozilla-build-system-experience"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/05/07/improving-the-mozilla-build-system-experience" rel="bookmark" title="Permanent Link to Improving the Mozilla Build System Experience">Improving the Mozilla Build System Experience</a></h2>
   <small>May 07, 2012 at 04:45 PM | categories: 
@@ -669,6 +738,7 @@ iteration.</p>
                 <li><a href="/blog/category/build-system">build system</a></li>
                 <li><a href="/blog/category/compilers">compilers</a></li>
                 <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
                 <li><a href="/blog/category/make">make</a></li>
                 <li><a href="/blog/category/misc">misc</a></li>
                 <li><a href="/blog/category/movies">movies</a></li>
