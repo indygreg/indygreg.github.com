@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2013-03-01T03:42:20Z</updated>
+  <updated>2013-03-01T04:09:38Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -174,7 +174,7 @@ and fewer empty <em>moz.build</em> files. We'll also see fewer and fewer
 validation. If we allowed <em>moz.build</em> files to be optional, how would
 you detect a typo in a directory name? Directory exists? What if that
 directory exists but isn't supposed to have a <em>moz.build</em> file?</p>
-<h4>You bit rotted my patches!</h4>
+<h4>You bitrotted my patches!</h4>
 <p>Yes. I'm sorry. The transition period to <em>moz.build</em> files could be a
 little messy. There will be lots of changes to <em>Makefile.in</em> and
 <em>moz.build</em> files and lots of chances for bit rot. Uplifts could be
@@ -207,6 +207,36 @@ to HTML for reading in your browser).</p>
 <p>A lot of work has gone into making the output of moz.build errors human
 friendly and actionable. If you do something wrong, it won't just
 complain: it will tell you how to fix it!</p>
+<h4>Besides build times, how else will this improve the build system?</h4>
+<p>There are several ways!</p>
+<p>As mentioned above, moz.build are more strict about what data is allowed
+to be defined. If you assign to an UPPERCASE variable, that variable
+must be known to the sandbox or else the assignment will error. This
+means that if you assign to an UPPERCASE variable, you know it has a
+side-effect. No more cargo culting of old, meaningless variables!</p>
+<p>To change the behavior of moz.build files (add new variables or
+functions, change how makefile generation works, etc) will require
+changes to the code in /python/mozbuild. This code belongs squarely to
+the build module and requires appropriate review. A problem with
+Makefiles is that they have lots of foot guns by default and its easy
+for self-inflicted wounds to land in the tree without explicit build
+peer review. This problem largely goes away with moz.build files because
+the sandbox takes away all of make's foot guns.</p>
+<p>The output of a moz.build execution is essentially a static data
+structure. It's easy to validate them for conformance. If we discover
+bad practices in our build definition, we can centrally add tests for
+them and enforce best practices.</p>
+<p>We will also see user experience wins by moving data to moz.build files.
+Take mochitests for an example. We currently have several flavors
+(plain, browser, chrome, etc). Sometimes you cannot distinguish the
+flavor by the filename alone. With moz.build files, it will be easier to
+answer questions like "what mochitest flavor is this file?" mach could
+hook into this so you can type |mach mochitest path/to/file.html|
+instead of |mach mochitest-plain path/to/file.html|. Even better, you
+should just be able to type |mach path/to/test.html| and mach knows from
+the build definition that path/to/test.html is a plain mochitest file
+and assumes you want to run it. There are dozens of small development
+workflow wins to be gained here!</p>
 <h4>If I change a moz.build file, what happens?</h4>
 <p>If you change a moz.build file, then make should detect that it
 has changed and it will update the dynamically generated <em>backend.mk</em>
