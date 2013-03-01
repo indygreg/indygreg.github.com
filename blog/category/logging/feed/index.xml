@@ -10,7 +10,7 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 07 Dec 2012 05:53:23 GMT</pubDate>
+    <pubDate>Fri, 01 Mar 2013 03:42:20 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -195,11 +195,11 @@ don't have a generic enough encoding format.</p>
 <p>Going back to implementation details, what about a consumer? In
 JavaScript, our JSON structured logger from above might look something
 like:</p>
-<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
-  <span class="kd">let</span> <span class="p">[</span><span class="nx">time</span><span class="p">,</span> <span class="nx">level</span><span class="p">,</span> <span class="nx">action</span><span class="p">,</span> <span class="nx">fields</span><span class="p">]</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">line</span><span class="p">)</span>
+<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="nx">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">let</span> <span class="p">[</span><span class="nx">time</span><span class="p">,</span> <span class="nx">level</span><span class="p">,</span> <span class="nx">action</span><span class="p">,</span> <span class="nx">fields</span><span class="p">]</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">line</span><span class="p">)</span>
 
   <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;successful_login&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">let</span> <span class="nx">who</span> <span class="o">=</span> <span class="nx">fields</span><span class="p">.</span><span class="nx">who</span><span class="p">;</span>
+    <span class="nx">let</span> <span class="nx">who</span> <span class="o">=</span> <span class="nx">fields</span><span class="p">.</span><span class="nx">who</span><span class="p">;</span>
 
     <span class="c1">// Do something interesting.</span>
   <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;XXX&quot;</span><span class="p">)</span> <span class="p">{</span>
@@ -209,11 +209,11 @@ like:</p>
 </pre></div>
 
 <p>Compare this with a destructured parser:</p>
-<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="nx">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">endsWith</span><span class="p">(</span><span class="s2">&quot;successfully logged in&quot;</span><span class="p">))</span> <span class="p">{</span>
     <span class="c1">// Find username.</span>
-    <span class="kd">let</span> <span class="nx">spaceIndex</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>
-    <span class="kd">let</span> <span class="nx">username</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">substr</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">spaceIndex</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+    <span class="nx">let</span> <span class="nx">spaceIndex</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>
+    <span class="nx">let</span> <span class="nx">username</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">substr</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">spaceIndex</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
 
     <span class="c1">// Do something interesting.</span>
   <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(...))</span> <span class="p">{</span>

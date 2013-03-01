@@ -7,12 +7,270 @@
   <title type="text">Gregory Szorc'c Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2012-12-07T05:53:23Z</updated>
+  <updated>2013-03-01T03:42:20Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[moz.build Files and the Firefox Build System]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system" />
+    <id>http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system</id>
+    <updated>2013-02-28T19:45:00Z</updated>
+    <published>2013-02-28T19:45:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <summary type="html"><![CDATA[moz.build Files and the Firefox Build System]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system"><![CDATA[<p>The next time you update mozilla-central you may notice some significant
+changes with the build system. That's because this morning we finally
+landed the start of a massive overhaul of the build system! There are
+many end goals to this effort. The important ones for most will be
+faster build times and a build system that is friendlier to make changes
+to.</p>
+<h2>Introducing moz.build Files</h2>
+<p>If you look in the tree, you'll notice that nearly every directory
+now has a <em>moz.build</em> file.</p>
+<p><em>moz.build</em> files are what we are using to define the build system. Think of
+them each as a descriptor that describes how to build its own part of the
+tree. An individual <em>moz.build</em> file will contain the C++ sources to
+compile, the headers to export, the tests to run, etc. Eventually.
+Currently, they are limited to directory traversal information.</p>
+<p><em>moz.build</em> files essentially add a level of indirection between the
+build system definition and how the tree is actually built. Before
+<em>moz.build</em> files, the same metadata we are now capturing in <em>moz.build</em>
+files (or plan to capture) was captured in <em>Makefile.in</em> files. We
+performed simple variable substitution on these <em>Makefile.in</em> files to
+produce <em>Makefile</em> files in the object directory. These <em>Makefile</em> files
+were used by GNU Make (or Pymake on Windows) to build the tree.</p>
+<p>As I outlined in <a href="/blog/2012/06/25/improving-mozilla's-build-system/">Improving Mozilla's Build System</a>,
+<em>Makefile.in</em> are suboptimal for a number of reasons. The important
+bit is they essentially tie us to the use of make (recursive or otherwise).
+We are very interested in supporting modern build systems such as Tup
+(the theory being they will build the tree faster).</p>
+<p>Enter <em>moz.build</em> files. Storing our build configuration in
+<em>moz.build</em> files allows us to decouple the definition of the build
+system from the tool used to build it.</p>
+<h2>How moz.build Files Work</h2>
+<p>At the tail end of <em>configure</em>, the build system invokes the
+<em>config.status</em> script in the object directory. The role of
+<em>config.status</em> is to combine the information collected during
+<em>configure</em> with the build configuration obtained from <em>moz.build</em> files
+and take the necessary actions to ensure the build backend (make) can
+build the tree.</p>
+<p>Before today, <em>config.status</em> essentially iterated over the source tree
+and converted <em>Makefile.in</em> files to <em>Makefile</em> in the object directory.
+Things are now slightly more complicated with <em>moz.build</em> files.</p>
+<p>When <em>config.status</em> runs, it starts with the
+<a href="https://hg.mozilla.org/mozilla-central/file/87de54667483/moz.build">root moz.build</a>
+from the source tree. It feeds this file into a Python interpreter. It
+then looks for special variables like <em>DIRS</em> and <em>PARALLEL_DIRS</em> to determine
+which directories contain additional <em>moz.build</em> files. It then descends
+into all the referenced directories, reading their <em>moz.build</em> files.
+While this is happening, we are converting the results of each
+<em>moz.build</em> file execution into <em>backend.mk</em> files that make knows how
+to build. It also performs the <em>Makefile.in</em> to <em>Makefile</em> conversion
+like it always has. When the whole process has finished, the object
+directory contains a bunch of <em>Makefile</em> and <em>backend.mk</em> files. make
+runs like it always has. The only real difference is some variables are
+coming from the <em>moz.build</em>-derived <em>backend.mk</em> files instead of
+<em>Makefile</em>.</p>
+<p>This is just a brief overview, of course. If you want to know more,
+see the code in <em>/python/mozbuild/mozbuild/frontend</em> and
+<em>/python/mozbuild/mozbuild/backend</em>.</p>
+<h2>Build System Future</h2>
+<p>With the introduction of <em>moz.build</em> files, the intent is to <strong>eventually
+completely eliminate Makefile.in and have all the build definition live
+in moz.build files.</strong></p>
+<p>Doing this all at once would have been next to impossible. So, we
+decided to eliminate <em>Makefile.in</em> gradually. The first step is what
+landed today: essentially moving <em>DIRS</em> variables out of <em>Makefile.in</em>
+and into <em>moz.build</em> files. Next, we will be eliminating empty
+<em>Makefile.in</em> (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844635">bug 844635</a>)
+and will be moving more parts of the build definition from <em>Makefile.in</em>
+to <em>moz.build</em> files. The next part to move over will likely be IDLs
+(<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=818246">bug 818246</a>).
+After that, it may be exported files (<em>EXPORTS</em> in <em>Makefile.in</em>
+parlance). And repeat until we have no more <em>Makefile.in</em> in the tree.</p>
+<p>Each migration of build definition data to <em>moz.build</em> files will likely
+occur in two phases:</p>
+<ol>
+<li>A largely mechanical move of the variables from <em>Makefile.in</em> to
+   <em>moz.build</em>.</li>
+<li>Better build backend integration resulting from the move.</li>
+</ol>
+<p>In phase #1, we will essentially cut and paste variable assignments to
+<em>moz.build</em> files. make will read the same variables it does today and
+perform the same actions. The only difference is the values in these
+variables will be defined in <em>moz.build</em> files.</p>
+<p>In phase #2, we will leverage the fact that our build definition now has
+an API. We will change our existing make backend to be more efficient.
+For example, we should soon be able to compile IDLs and copy exported
+headers without make traversing through the directory tree at build time.
+We will be able to do this because the <em>moz.build</em> traversal at
+pre-build time sees data from all <em>moz.build</em> files and with this
+<em>complete world view</em> is able to produce more optimal make files than
+what you would get if you recursed into multiple directories. In short:
+it will make the build faster.</p>
+<p>Once we have a sufficient portion of the build definition moved to
+<em>moz.build</em> files we will be able to experiment with new build backends
+(like Tup), look into automatic Visual Studio project generation, and
+more easily experiment with different ways of building (such as
+precompiled headers, fewer compiler process invocations, etc). These
+should all contribute to faster build times.</p>
+<h2>Frequently Asked Questions</h2>
+<h4>What impact will I see from this change?</h4>
+<p>If you never touched <em>Makefile.in</em> files in the tree, you should not
+notice anything different about how the tree builds or how the build
+system works. You should have nothing to fear.</p>
+<p>The most obvious changes to the source tree are:</p>
+<ol>
+<li>There is a <em>moz.build</em> file in almost every directory now.</li>
+<li>The variables related to directory traversal (those containing <em>DIRS</em>
+   in their name) are now defined in <em>moz.build</em> files instead of
+   <em>Makefile.in</em>.</li>
+<li>If your <em>Makefile.in</em> contains a variable that has been moved to
+   <em>moz.build</em> files, make will spew an error when processing that file
+   and the build will fail.</li>
+</ol>
+<h4>Will this change how I build?</h4>
+<p>It shouldn't. You should build the tree just like you always have. Most
+of you won't notice any differences.</p>
+<p>If you see something weird, speak up in #build or file a bug if you are
+really confident it is wrong.</p>
+<h4>What are the risks to this change?</h4>
+<p>The migration of variables from <em>Makefile.in</em> to <em>moz.build</em> files is
+largely mechanical and significant portions are done manually. This can
+be a mind-numbing and tedious process. Not helping things is the fact
+that Splinter's review interface for these kinds of patches is hard to
+read.</p>
+<p>This all means that there is a non-trivial risk for <em>transcription</em>
+errors. All it takes is an inverted conditional block and all of a
+sudden large parts of the tree are no longer built, for example.</p>
+<p>We have established <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=846425">bug 846825</a>
+to investigate any oddities from the initial transfer. Developers are
+encouraged to help with the effort. Please spot check that your
+directories are still being built, tests run, etc. Pay special attention
+to changes made in the last 4 months as these parts of <em>Makefile.in</em>
+would have been bit rotted and more prone to data loss.</p>
+<p>Parts of the tree not enabled in standard configurations are more prone
+to breakage due to less testing. i.e. build configurations not captured
+by TBPL have a higher chance of breaking.</p>
+<h4>Will this make the tree build faster?</h4>
+<p>Not yet. But eventually it will. This initial landing paves the
+groundwork to making the tree build faster (see the <em>Future</em> section
+above).</p>
+<h4>I see a lot of empty moz.build files!</h4>
+<p>Yes. Sorry about that. The good news is they shouldn't be empty for
+long. As things move from <em>Makefile.in</em> to <em>moz.build</em> we'll see fewer
+and fewer empty <em>moz.build</em> files. We'll also see fewer and fewer
+<em>Makefile.in</em> files once we start deleting empty <em>Makefile.in</em>.</p>
+<p>If you want to know why we must have empty files, it's mainly for
+validation. If we allowed <em>moz.build</em> files to be optional, how would
+you detect a typo in a directory name? Directory exists? What if that
+directory exists but isn't supposed to have a <em>moz.build</em> file?</p>
+<h4>You bit rotted my patches!</h4>
+<p>Yes. I'm sorry. The transition period to <em>moz.build</em> files could be a
+little messy. There will be lots of changes to <em>Makefile.in</em> and
+<em>moz.build</em> files and lots of chances for bit rot. Uplifts could be
+especially nasty. (Although I don't believe many uplifts involve
+significant changes to the build configuration.)</p>
+<p>This all means there is a strong incentive for us to complete the
+transition as quickly as possible.</p>
+<h4>Can I help with the transition to moz.build files?</h4>
+<p>Yes!</p>
+<p>The transition is largely mechanical (at least phase #1). If you are
+interested in moving a variable or set of variables, hop in #build on
+IRC and speak up!</p>
+<h4>You said moz.build files are actually Python files?!</h4>
+<p>Yes they are! However, they are executed in a very tightly controlled
+sandbox. You can't import modules, open files, etc. UPPERCASE variable
+names are reserved and only a few functions are exposed. If you attempt
+to assign to an unknown UPPERCASE variable or assign an invalid value,
+an error will occur. This is already much better than Makefile because
+we can now detect errors earlier in the build process (rather than 15
+minutes into a build).</p>
+<h4>What variables and functions are available in moz.build files?</h4>
+<p>If you run |./mach mozbuild-reference| you will see a print-out of
+all the variables, functions, and symbols that are exposed to the Python
+sandbox that moz.build files execute in. There are even tests that will
+fail the build if the sandbox contains symbols not in this output!</p>
+<p>The output should be valid reSTructuredText (in case you want to convert
+to HTML for reading in your browser).</p>
+<h4>What if a moz.build file contains an error?</h4>
+<p>The build will break.</p>
+<p>A lot of work has gone into making the output of moz.build errors human
+friendly and actionable. If you do something wrong, it won't just
+complain: it will tell you how to fix it!</p>
+<h4>If I change a moz.build file, what happens?</h4>
+<p>If you change a moz.build file, then make should detect that it
+has changed and it will update the dynamically generated <em>backend.mk</em>
+file and reinvoke the requested build action. This should all happen
+automatically (just like <em>Makefile.in</em> to <em>Makefile</em> conversion works
+automatically).</p>
+<h4>My build seems to pause for a few seconds before starting!</h4>
+<p>A change to <em>any</em> moz.build file will cause a full traversal of the
+entire moz.build tree. On modern machines, this should only take 1-3
+seconds. If your source tree is not in the page cache (and you need
+to load moz.build files from disk) or if you are on older hardware, this
+could be a little slower.</p>
+<p>This is an unfortunate side-effect of having a whole world view of the
+build definition. The build delay incurred by these full scans should
+eventually be cancelled out by build backend optimizations resulting
+from having this whole world view, however.</p>
+<p>The good news is this full scan should only occur if a mozbuild file
+changes. And, if you are performing make recursion, it should only
+happen once (not in every directory). If you notice multiple moz.build
+scanning-related pauses during builds, please file a bug in Core ::
+Build Config!</p>
+<p>Finally, we are performing the reads on a single thread currently. We
+can throw more cores at the task if someone codes up a patch.</p>
+<h4>What happened to allmakefiles.sh?</h4>
+<p>It has been sacked. allmakefiles.sh was an optimization to perform all
+the Makefile.in to Makefile conversion in one go. The directory
+traversal performed by moz.build reading effectively replaces the role
+of allmakefiles.sh. Not only that, but the moz.build build definition is
+always up to date! allmakefiles.sh was typically out of sync with
+reality and was a burden to maintain.</p>
+<h4>Did we just invent our own build system?</h4>
+<p>Kinda. We invented a generic Python sandboxing infrastructure. Then we
+hooked up code to populate it with variables from our build system and
+told it how to perform file traversal by reading specific variables set
+during file execution. Then we hooked up code for taking the evaluated
+results of all those sandboxes and convert them into make files.</p>
+<p>Conceptually, what we invented is like GYP but with a different config
+file format. We have dabbled with the idea of converting the parsed
+build definition into GYP classes and then leveraging GYP to produce
+Makefiles, Ninja files, Visual Studio Projects, etc. This would an
+interesting experiment!</p>
+<p>If you want to call it a build system, call it a build system. However,
+it is currently tightly coupled to Mozilla's needs, so you can't just
+use it anywhere. The concept might be worth exploring, however.</p>
+<h4>Is there anything else you'd like to share?</h4>
+<p>I think we set the record for most parts in a bug: 61. Although, they
+are numbered 1-17, 19-20. Part 18 has 30+ sub-parts using letters from
+the English and Greek alphabet for identifiers. Part 61 uses the
+infinity symbol as its number. See the
+<a href="https://hg.mozilla.org/mozilla-central/pushloghtml?changeset=c65d59d33aa8">pushlog</a>.</p>
+<p>Finally, I'd like to thank everyone who helped with this effort. The bug
+itself was <em>only</em> 6 months old and had active development off and on for
+a lot of it. Ted Mielczarek and Mike Hommey provided invaluable feedback
+on the core build system patches. A number of module owners stepped in
+to lend eyes to the mechanical conversion of their files. Last but not
+least, Ms2ger provided invaluable review aid on many of the patches. The
+work was so good that we all agreed that an Ms2ger f+ was good enough
+for a build peer rs! If reviewing the patches wasn't enough, Ms2ger
+also oversaw the tree closure and merging of the landing. I don't know
+how I will repay this debt.</p>
+<h4>Any more questions?</h4>
+<p>If you have more questions, drop in #build on irc.mozilla.org and ask
+away.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -199,11 +457,11 @@ don't have a generic enough encoding format.</p>
 <p>Going back to implementation details, what about a consumer? In
 JavaScript, our JSON structured logger from above might look something
 like:</p>
-<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
-  <span class="kd">let</span> <span class="p">[</span><span class="nx">time</span><span class="p">,</span> <span class="nx">level</span><span class="p">,</span> <span class="nx">action</span><span class="p">,</span> <span class="nx">fields</span><span class="p">]</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">line</span><span class="p">)</span>
+<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="nx">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">let</span> <span class="p">[</span><span class="nx">time</span><span class="p">,</span> <span class="nx">level</span><span class="p">,</span> <span class="nx">action</span><span class="p">,</span> <span class="nx">fields</span><span class="p">]</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">line</span><span class="p">)</span>
 
   <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;successful_login&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">let</span> <span class="nx">who</span> <span class="o">=</span> <span class="nx">fields</span><span class="p">.</span><span class="nx">who</span><span class="p">;</span>
+    <span class="nx">let</span> <span class="nx">who</span> <span class="o">=</span> <span class="nx">fields</span><span class="p">.</span><span class="nx">who</span><span class="p">;</span>
 
     <span class="c1">// Do something interesting.</span>
   <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;XXX&quot;</span><span class="p">)</span> <span class="p">{</span>
@@ -213,11 +471,11 @@ like:</p>
 </pre></div>
 
 <p>Compare this with a destructured parser:</p>
-<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="nx">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">endsWith</span><span class="p">(</span><span class="s2">&quot;successfully logged in&quot;</span><span class="p">))</span> <span class="p">{</span>
     <span class="c1">// Find username.</span>
-    <span class="kd">let</span> <span class="nx">spaceIndex</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>
-    <span class="kd">let</span> <span class="nx">username</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">substr</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">spaceIndex</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+    <span class="nx">let</span> <span class="nx">spaceIndex</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>
+    <span class="nx">let</span> <span class="nx">username</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">substr</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">spaceIndex</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
 
     <span class="c1">// Do something interesting.</span>
   <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(...))</span> <span class="p">{</span>
@@ -1692,125 +1950,5 @@ fixing this bad practice.</p>
 system works!</p>
 <p>In my next post, I will shed some light onto how much times goes into
 different parts of the build system.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Makefile Execution Times]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times" />
-    <id>http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times</id>
-    <updated>2012-07-28T00:45:00Z</updated>
-    <published>2012-07-28T00:45:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="pymake" />
-    <category scheme="http://gregoryszorc.com/blog" term="build system" />
-    <summary type="html"><![CDATA[Makefile Execution Times]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times"><![CDATA[<p>In my course of hacking about with Mozilla's build system, I've been
-using pymake (a Python implementation of GNU make) to parse, examine,
-and manipulate make files. In doing so, I've learned some interesting
-things, dispelling myths in the process.</p>
-<p>People often say that parsing make files is slow and that the sheer
-number of Makefile.in's in mozilla-central (Firefox's source tree) is
-leading to lots of overhead in make execution. This statement is only
-partially correct.</p>
-<p><em>Parsing</em> make files is actually pretty fast. Using pymake's parser API,
-I'm able to parse every Makefile.in in mozilla-central in under 5
-seconds on my 2011 generation MacBook Pro using a single core. Not too
-shabby, especially considering that there are about 82,500 lines in all
-the Makefile.in's.</p>
-<p>Evaluation of make files, however, is a completely different story. You
-see, parsing a string containing make file directives is only part of
-what needs to be done. Once you've parsed a make file into a statement
-list (essentially an AST), you need to load that into a data structure
-fit for evaluation. Because of the way make files are evaluated,
-you need to iterate through every parsed statement and evaluate it
-for side-effects. This occurs before you actually evaluate specific
-targets in the make file itself. As I found out, this process can be
-time-consuming.</p>
-<p>For mozilla-central, the cost of loading the statement list into a data
-structure ready for target evaluation takes about 1 minute in aggregate.
-And, considering we effectively iterate through every Makefile in
-mozilla-central 3 times when building (once for every tier state of
-export, libs, and tools), you can multiply this figure by 3.</p>
-<p>Put another way, <em>parsing</em> Makefile's is fast: loading them for
-target evaluation is slow.</p>
-<p>Digging deeper, I uncovered the main source of the additional overhead:
-<em>rules.mk</em>.</p>
-<p>Nearly every Makefile in mozilla-central has a pattern that looks like:</p>
-<pre><code>DEPTH = ../..
-topsrcdir = @top_srcdir@
-srcdir = @srcdir@
-VPATH = @srcdir@
-
-include $(DEPTH)/config/autoconf.mk
-
-&lt;LOCAL MAKE FILE DECLARATIONS&gt;
-
-include $(topsrcdir)/config/rules.mk
-</code></pre>
-<p>We have a header boilerplate, followed by a bunch of Makefile-specific
-variables definitions and rules. Finally, we include the <em>rules.mk</em>
-file. This is the make file that takes specially-named variables and
-converts them to rules (actions) for make to perform.</p>
-<p>A typical Makefile.in is a few dozen lines or so. This often reduces to
-maybe a dozen parsed statements. By contrast, <em>rules.mk</em> is massive. It
-is currently 1770 lines and may include other make files, bringing the
-total to ~3000 lines.</p>
-<p>Pymake has an LRU cache that caches the results of <em>parsing</em> make files.
-This means it only has to parse a single make file into a statement list
-once (assuming no cache eviction). <em>rules.mk</em> is frequently used, so it
-should have no eviction. Even if it were evicted, I've measured that
-<em>parsing</em> is pretty fast.</p>
-<p>Unfortunately, the cache doesn't help with evaluation. For every
-Makefile in mozilla-central, pymake will need to evaluate rules.mk
-within the context of that specific Makefile. It's impossible to cache
-the results of a previous evaluation because the side-effects of rules.mk
-are determined by what is defined in the Makefile that includes it.</p>
-<p>I performed an experiment where I stripped the <em>include rules.mk</em>
-statement from all parsed Makefile.in's. This essentially isolates the
-overhead of loading <em>rules.mk</em>. It turns out that all but ~2 seconds
-of evaluation time is spent in <em>rules.mk</em>. In other words,
-without <em>rules.mk</em>, the Makefile.in's are loaded and ready for evaluation
-in just a few seconds (over parsing time), not ~1 minute!</p>
-<p>What does this all mean?</p>
-<p>Is <em>parsing</em> make files slow? Technically no. <em>Parsing</em> itself is not slow.
-It is actually quite fast! Pymake even surprised me at how fast it can
-parse all the Makefile.in's in mozilla-central.</p>
-<p><em>Loading</em> parsed make file statements to be ready for evaluation is
-actually the bit that is slow - at least in the case of mozilla-central.
-Specifically, the loading of <em>rules.mk</em> is what constitutes the
-overwhelming majority of the time spent loading Makefile's.</p>
-<p>That being said, <em>parsing</em> and <em>loading</em> go hand in hand. You almost
-never parse a make file without loading and evaluating it. So, if you
-consider <em>parsing</em> to include parsing <em>and</em> readying the make file for
-execution, there is some truth to the statement that parsing make files
-is slow. Someone splitting hairs may say differently.</p>
-<p>Is there anything we can do? Good question.</p>
-<p>I believe that build times of mozilla-central can be reduced by reducing
-the size of <em>rules.mk</em>. Obviously, the content of <em>rules.mk</em> is
-important, so we can't just delete content. But, we can be more
-intelligent about how it is loaded. For example, we can move pieces of
-<em>rules.mk</em> into separate <em>.mk</em> files and conditionally include these
-files based on the presence of specific variables. We already do this
-today, but only partially: there are still a number of bits of rules.mk
-that could be factored out into separate files. By conditionally loading
-make file content from <em>rules.mk</em>, we would be reducing the number of
-statements that need to be loaded before evaluating each Makefile. And,
-this should, in turn, make build times faster. Keep in mind that any
-savings will be multiplied by roughly 3 since we do 3 passes over
-Makefile's during a build.</p>
-<p>To my knowledge, there aren't any bugs yet on file to do this. Given the
-measurements I've obtained, I encourage somebody to do this work. Even
-if it doesn't reduce build times, I think it will be a win since it will
-make the make rules easier to understand since they will be contained in
-function-specific files rather than one monolithic file. At worse, we
-have better readability. At best, we have better readability and faster
-build times. Win!</p>
-<p>Finally, I don't know what the impact on GNU make is. Presumably, GNU
-make evaluates make files faster than pymake (C is generally faster than
-python). Therefore, reducing the size of <em>rules.mk</em> should make GNU make
-faster. By how much, I have no clue.</p>]]></content>
   </entry>
 </feed>
