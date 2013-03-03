@@ -10,10 +10,43 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 01 Mar 2013 04:09:38 GMT</pubDate>
+    <pubDate>Sun, 03 Mar 2013 20:33:54 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Omnipresent mach</title>
+      <link>http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach</link>
+      <pubDate>Sun, 03 Mar 2013 12:30:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <category><![CDATA[mach]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach</guid>
+      <description>Omnipresent mach</description>
+      <content:encoded><![CDATA[<p>Matt Brubeck recently landed an awesome patch for mach in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=840588">bug 840588</a>:
+it allows mach to be used by any directory. I'm calling it
+<em>omnipresent mach</em>.</p>
+<p>Essentially, Matt changed the <em>mach</em> driver (the script in the root
+directory of mozilla-central) so instead of having it look in hard-coded
+relative paths for all its code, it walks up the directory tree and
+looks for signs of the source tree or the object directory.</p>
+<p>What this all means is that if you have the <em>mach</em> script installed in
+your $PATH and you just type <em>mach</em> in your shell from within any source
+directory or object directory, <em>mach</em> should just work. So, no more
+typing <em>./mach</em>: just copy <em>mach</em> to <em>~/bin</em>, <em>/usr/local/bin</em> or some
+other directory on your $PATH and you should just be able to type
+<em>mach</em>.</p>
+<p>Unfortunately, there are bound to be bugs here. Since <em>mach</em>
+traditionally was only executed with the current working directory as
+the top source directory, some commands are not prepared to handle a
+variable current working directory. Some commands will likely get
+confused when it comes resolving relative paths, etc. If you find
+an issue, please report it! A temporary workaround is to just invoke
+mach from the top source directory like you've always been doing.</p>
+<p>If you enjoy the feature, thank Matt: this was completely his idea and
+he saw it through from conception to implementation.</p>]]></content:encoded>
+    </item>
     <item>
       <title>moz.build Files and the Firefox Build System</title>
       <link>http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system</link>
@@ -1045,66 +1078,6 @@ files as well.</p>
 the server faster because they are smaller.</p>
 <p>If you were parsing this data before and are impacted by this, please
 leave a comment on the aforementioned bug and we'll go from there.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Better Sharing of Test Code in Mozilla Projects</title>
-      <link>http://gregoryszorc.com/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects</link>
-      <pubDate>Thu, 10 May 2012 10:35:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Firefox]]></category>
-      <category><![CDATA[testing]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects</guid>
-      <description>Better Sharing of Test Code in Mozilla Projects</description>
-      <content:encoded><![CDATA[<p>Just <a href="https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=b063ba6dd084">landed</a>
-in mozilla-inbound (Firefox's integration tree) is
-support for test-only JavaScript modules. That is, JavaScript modules
-that are utilized by just test code. This is being tracked in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=748490">bug 748490</a>.</p>
-<p>The use case for this feature is sharing common test code, mock types,
-etc between tests. For example, in the Services code, we have a number
-of mock types (like a JS implementation of the Sync HTTP server) that
-need to be utilized across sub-modules. With test-only modules, it is
-now possible to publish these modules to a common location and import
-them using the familiar Cu.import() syntax. Previously, you had to
-perform the equivalent of a <em>#include</em> (possibly by utilizing the
-<em>[head]</em> section of xpcshell.ini files). The previous method of
-importing is dirty because you pollute the global object. Furthermore,
-it is really inconvenient when you wish to utilize shared files from
-different directories. See
-<a href="https://hg.mozilla.org/mozilla-central/file/f80568dba010/services/sync/tests/unit/xpcshell.ini#l2">this file</a>
-for an example.</p>
-<p>The new method of publishing and consuming test-only JavaScript modules
-is clean and simple. From your Makefile, define <strong>TESTING_JS_MODULES</strong> to
-a list of (JavaScript) files to publish. Optionally, define
-<strong>TESTING_JS_MODULE_DIR</strong> to the relative path they should be published
-to. If the directory variable is not defined, they will be published to
-the root directory. Here is an example Makefile.in:</p>
-<pre><code>DEPTH     = ../..
-topsrcdir = @top_srcdir@
-srcdir    = @srcdir@
-
-include $(DEPTH)/config/autoconf.mk
-
-TESTING_JS_MODULES = mockserver.js common.js
-TESTING_JS_MODULE_DIR = foobar
-</code></pre>
-<p>All test modules are installed to a common directory somewhere in the
-object directory. Where is not relevant. Just know it is outside the
-normal distribution directory, so the test modules aren't packaged. This
-common directory is registered with the resource manager under
-<em>resource://testing/</em>. So, once a build is performed, you can import these
-files via Components.utils.import():</p>
-<pre><code>Cu.import("resource://testing-common/foobar/mockserver.js");
-</code></pre>
-<p>I hope this feature facilitates better reuse of test code. So, next time
-you are writing test code, please consider writing writing and publishing it
-as a module so others can utilize it.</p>
-<p>One more thing. Currently, integration with the resource manager is only
-implemented for xpcshell tests. I'd like to see this supported in all
-the test runners eventually. I implemented xpcshell support because a)
-that is the test harness I use almost exclusively and b) it is the only
-one I'm comfortable modifying. If you want to implement support in
-another test runner, please have a go at it!</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

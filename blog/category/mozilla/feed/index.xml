@@ -10,10 +10,43 @@
     <title>Gregory Szorc'c Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 01 Mar 2013 04:09:38 GMT</pubDate>
+    <pubDate>Sun, 03 Mar 2013 20:33:54 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Omnipresent mach</title>
+      <link>http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach</link>
+      <pubDate>Sun, 03 Mar 2013 12:30:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <category><![CDATA[mach]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach</guid>
+      <description>Omnipresent mach</description>
+      <content:encoded><![CDATA[<p>Matt Brubeck recently landed an awesome patch for mach in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=840588">bug 840588</a>:
+it allows mach to be used by any directory. I'm calling it
+<em>omnipresent mach</em>.</p>
+<p>Essentially, Matt changed the <em>mach</em> driver (the script in the root
+directory of mozilla-central) so instead of having it look in hard-coded
+relative paths for all its code, it walks up the directory tree and
+looks for signs of the source tree or the object directory.</p>
+<p>What this all means is that if you have the <em>mach</em> script installed in
+your $PATH and you just type <em>mach</em> in your shell from within any source
+directory or object directory, <em>mach</em> should just work. So, no more
+typing <em>./mach</em>: just copy <em>mach</em> to <em>~/bin</em>, <em>/usr/local/bin</em> or some
+other directory on your $PATH and you should just be able to type
+<em>mach</em>.</p>
+<p>Unfortunately, there are bound to be bugs here. Since <em>mach</em>
+traditionally was only executed with the current working directory as
+the top source directory, some commands are not prepared to handle a
+variable current working directory. Some commands will likely get
+confused when it comes resolving relative paths, etc. If you find
+an issue, please report it! A temporary workaround is to just invoke
+mach from the top source directory like you've always been doing.</p>
+<p>If you enjoy the feature, thank Matt: this was completely his idea and
+he saw it through from conception to implementation.</p>]]></content:encoded>
+    </item>
     <item>
       <title>moz.build Files and the Firefox Build System</title>
       <link>http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system</link>
@@ -1778,159 +1811,6 @@ silliness in rules.mk. Therefore,
 again seems to be one of the most important things we can do to make the
 build system faster. It also prepares us for implementing newer build
 backends, so it is a win-win!</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Mozilla Build System Overview</title>
-      <link>http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview</link>
-      <pubDate>Sun, 29 Jul 2012 13:15:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[build system]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview</guid>
-      <description>Mozilla Build System Overview</description>
-      <content:encoded><![CDATA[<p>Mozilla's build system is a black box to many. This post attempts to
-shed some light onto how it works.</p>
-<h2>Configuration File</h2>
-<p>The first part of building is creating a configuration file. This
-defines what application to build (Firefox, Firefox OS, Fennec, etc) as
-well as build options, like to create a release or debug build. This
-step isn't technically required, but most people do it.</p>
-<p>Configuration files currently exist as <em>mozconfig</em> files. By default,
-most people create a <em>.mozconfig</em> file in the root directory of
-mozilla-central.</p>
-<h2>Interaction</h2>
-<p>All interaction with the build system is currently gated through the
-<em>client.mk</em> file in the root directory of mozilla-central. Although, I'm
-trying to land an alternate (and eventual replacement) to <em>client.mk</em>
-called <em>mach</em>. You can read about it in previous posts on this blog.</p>
-<p>When you run <em>make -f client.mk</em>, you are invoking the build system and
-telling it to do whatever it needs to do build the tree.</p>
-<h2>Running Configure</h2>
-<p>The first thing <em>client.mk</em> does to a fresh tree is invoke <em>configure</em>.
-<em>configure</em> is a shell script in the root directory of the repository.
-It is generated from the checked-in <em>configure.in</em> file using the GNU
-<em>autoconf</em> utility. I won't go into detail on how autoconf works because
-I don't have a beard.</p>
-<p><em>configure</em> accomplishes some important tasks.</p>
-<p>First, it validates that the build environment is sane. It performs some
-sanity testing on the directory tree then looks at the system and build
-configuration to make sure everything should work.</p>
-<p>It identifies the active compiler, locations of common tools and
-utilities, and ensures everything works as needed. It figures out how to
-convert desired traits into system-specific options. e.g. the exact
-argument to pass to the compiler to enable warnings.</p>
-<p>Once <em>configure</em> determines the environment is sane, it writes out what
-it learned.</p>
-<p>Currently, <em>configure</em> takes what it has learned and invokes the
-<em>allmakefiles.sh</em> script in the root directory. This script prints out
-the set of Makefile's that will be used to build the tree for the
-current configuration. <em>configure</em> takes the output of filenames and
-then procedes to generate those files.</p>
-<p>Generation of Makefile's is rather simple. In the source tree are a
-bunch of <em>.in</em> files, typically <em>Makefile.in</em>. These contain special
-markers. <em>configure</em> takes the set of determined configuration variables
-and performs substitution of the variable markers in the <em>.in</em> files with
-them. The <em>.in</em> files with variables substitutes are written out in the
-object directory. There are also some GYP files in the source tree.
-<em>configure</em> invokes a tool to convert these into Mozilla-style
-Makefile's.</p>
-<p><em>configure</em> also invokes <em>configure</em> for other managed projects
-in mozilla-central, such as the SpiderMonkey source in <em>js/src</em>.</p>
-<p><em>configure</em> finishes by writing out other miscellaneous files in the
-object directory.</p>
-<h2>Running Make</h2>
-<p>The next step of the build is running make. <em>client.mk</em> simply points
-GNU make (or pymake) at the <em>Makefile</em> in the top-level directory of the
-object directory and essentially says <em>evaluate</em>.</p>
-<h3>Build System Tiers</h3>
-<p>The build system is broken up into different tiers. Each tier represents
-a major phase or product in the build system. Most builds have the
-following tiers:</p>
-<ol>
-<li>base - Builds global dependencies</li>
-<li>nspr - Builds NSPR</li>
-<li>js - Builds SpiderMonkey</li>
-<li>platform - Builds the Gecko platform</li>
-<li>app - Builds the configured application (e.g. Firefox, Fennec,
-   Firefox OS)</li>
-</ol>
-<p>Inside each tier are the distinct sub-tiers:</p>
-<ol>
-<li>export</li>
-<li>libs</li>
-<li>tools</li>
-</ol>
-<p>A Makefile generally belongs to 1 main tier. Inside Makefile's or in
-other included .mk files (make files that are not typically called
-directly by make) are statements which define which directories
-belong to which tiers. See
-<a href="https://mxr.mozilla.org/mozilla-central/source/toolkit/toolkit-tiers.mk">toolkit-tiers.mk</a>
-for an example.</p>
-<p>When the top-level Makefile is invoked, it iterates through every tier
-and every sub-tier within it. It starts at the first tier and evaluates
-the <em>export</em> target on every Makefile/directory defined in it. It then
-moves on to the <em>libs</em> target then finally the <em>tools</em> target. When it's
-done with the <em>tools</em> target, it moves on to the next tier and does the
-same iteration.</p>
-<p>For example, we first start by evaluating the <em>export</em> target of the
-<em>base</em> tier. Then we evaluate <em>base</em>'s <em>libs</em> and <em>tools</em> tiers. We then
-move on to <em>nspr</em> and do the same. And, we keep going. In other words,
-the build system makes 3 passes through each tier.</p>
-<p>Tiers are composed of directory members. e.g. <em>dom</em> or <em>layout</em>. When
-make descends into a tier member directory, it looks for specially named
-variables that tell it what sub-directories are also part of this
-directory. The <em>DIRS</em> variable is the most common. But, we also use
-<em>TEST_DIRS</em>, <em>PARALLEL_DIRS</em>, <em>TOOL_DIRS</em>, and a few others. make will
-invoke make for all defined child directories and for the children of
-the children, and so on. This is what we mean by <em>recursive make</em>. make
-essentially recurses into directory trees, evaluating all the
-directories linearly.</p>
-<p>Getting back to the tiers, the sub-tiers <em>export</em>, <em>libs</em>, and <em>tools</em>
-can be thought of as <em>pre-build</em>, <em>build</em>, and <em>post-build</em> events.
-Although, this analogy is far from perfect.</p>
-<p><em>export</em> generally prepares the object directory for more comprehensive
-building. It copies C/C++ header files into a unified object directory,
-generates header files from IDLs files, etc.</p>
-<p><em>libs</em> does most of the work. It compiles C++ code and performs lots of
-other main work, such as Jar manifest creation.</p>
-<p><em>tools</em> does a lot of miscellaneous work. If you have tests enabled,
-this is where tests are typically compiled and/or installed, for
-example.</p>
-<h3>Processing a Makefile</h3>
-<p>For each directory inside a tier, make evaluates the Makefile in that
-directory for the target/sub-tier specified.</p>
-<p>The basic gist of Makefile execution is actually pretty simple.</p>
-<p>Mozilla's Makefiles typically look like:</p>
-<pre><code>DEPTH := .
-topsrcdir := @top_srcdir@
-srcdir := @srcdir@
-VPATH := @srcdir@
-
-include $(DEPTH)/config/autoconf.mk
-
-IDLSRCS := foo.idl bar.idl
-CPPSRCS := hello.cpp world.cpp
-
-include $(topsrcdir)/config/rules.mk
-</code></pre>
-<p>All the magic in Makefile processing happens in <em>rules.mk</em>. This make file
-simply looks for specially named variables (like <em>IDLSRCS</em> or <em>CPPSRCS</em>)
-and magically converts them into targets for make to evaluate.</p>
-<p>In the above sample Makefile, the <em>IDLSRCS</em> variable will result in an
-implicit <em>export</em> target which copies IDLs into the object directory and
-compiles them to .h files. <em>CPPSRCS</em> will result in a <em>libs</em> target that
-results in each .cpp file being compiled into a .o file.</p>
-<p>Of course, there is nothing stopping you from defining targets/rules in
-Makefile's themselves. This practice is actually quite widespread.
-Unfortunately, it is a bad practice, so you shouldn't do it. The
-preferred behavior is to define variables in a Makefile and have
-rules.mk magically provide the make targets/rules to do stuff with them.
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">Bug 769378</a> tracks
-fixing this bad practice.</p>
-<h2>Conclusion</h2>
-<p>So, there you have it: a very brief overview of how Mozilla's build
-system works!</p>
-<p>In my next post, I will shed some light onto how much times goes into
-different parts of the build system.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

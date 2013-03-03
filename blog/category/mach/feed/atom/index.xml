@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed
+  xmlns="http://www.w3.org/2005/Atom"
+  xmlns:thr="http://purl.org/syndication/thread/1.0"
+  xml:lang="en"
+   >
+  <title type="text">Gregory Szorc'c Digital Home</title>
+  <subtitle type="text">Rambling on</subtitle>
+
+  <updated>2013-03-03T20:33:54Z</updated>
+  <generator uri="http://blogofile.com/">Blogofile</generator>
+
+  <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
+  <id>http://gregoryszorc.com/blog/feed/atom/</id>
+  <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Omnipresent mach]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach" />
+    <id>http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach</id>
+    <updated>2013-03-03T12:30:00Z</updated>
+    <published>2013-03-03T12:30:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
+    <category scheme="http://gregoryszorc.com/blog" term="mach" />
+    <summary type="html"><![CDATA[Omnipresent mach]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach"><![CDATA[<p>Matt Brubeck recently landed an awesome patch for mach in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=840588">bug 840588</a>:
+it allows mach to be used by any directory. I'm calling it
+<em>omnipresent mach</em>.</p>
+<p>Essentially, Matt changed the <em>mach</em> driver (the script in the root
+directory of mozilla-central) so instead of having it look in hard-coded
+relative paths for all its code, it walks up the directory tree and
+looks for signs of the source tree or the object directory.</p>
+<p>What this all means is that if you have the <em>mach</em> script installed in
+your $PATH and you just type <em>mach</em> in your shell from within any source
+directory or object directory, <em>mach</em> should just work. So, no more
+typing <em>./mach</em>: just copy <em>mach</em> to <em>~/bin</em>, <em>/usr/local/bin</em> or some
+other directory on your $PATH and you should just be able to type
+<em>mach</em>.</p>
+<p>Unfortunately, there are bound to be bugs here. Since <em>mach</em>
+traditionally was only executed with the current working directory as
+the top source directory, some commands are not prepared to handle a
+variable current working directory. Some commands will likely get
+confused when it comes resolving relative paths, etc. If you find
+an issue, please report it! A temporary workaround is to just invoke
+mach from the top source directory like you've always been doing.</p>
+<p>If you enjoy the feature, thank Matt: this was completely his idea and
+he saw it through from conception to implementation.</p>]]></content>
+  </entry>
+</feed>

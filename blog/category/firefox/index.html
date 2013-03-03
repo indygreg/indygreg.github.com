@@ -50,6 +50,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="omnipresent-mach"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/03/03/omnipresent-mach" rel="bookmark" title="Permanent Link to Omnipresent mach">Omnipresent mach</a></h2>
+  <small>March 03, 2013 at 12:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/mach'>mach</a>
+ | <a href="http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Matt Brubeck recently landed an awesome patch for mach in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=840588">bug 840588</a>:
+it allows mach to be used by any directory. I'm calling it
+<em>omnipresent mach</em>.</p>
+<p>Essentially, Matt changed the <em>mach</em> driver (the script in the root
+directory of mozilla-central) so instead of having it look in hard-coded
+relative paths for all its code, it walks up the directory tree and
+looks for signs of the source tree or the object directory.</p>
+<p>What this all means is that if you have the <em>mach</em> script installed in
+your $PATH and you just type <em>mach</em> in your shell from within any source
+directory or object directory, <em>mach</em> should just work. So, no more
+typing <em>./mach</em>: just copy <em>mach</em> to <em>~/bin</em>, <em>/usr/local/bin</em> or some
+other directory on your $PATH and you should just be able to type
+<em>mach</em>.</p>
+<p>Unfortunately, there are bound to be bugs here. Since <em>mach</em>
+traditionally was only executed with the current working directory as
+the top source directory, some commands are not prepared to handle a
+variable current working directory. Some commands will likely get
+confused when it comes resolving relative paths, etc. If you find
+an issue, please report it! A temporary workaround is to just invoke
+mach from the top source directory like you've always been doing.</p>
+<p>If you enjoy the feature, thank Matt: this was completely his idea and
+he saw it through from conception to implementation.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="moz.build-files-and-the-firefox-build-system"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/02/28/moz.build-files-and-the-firefox-build-system" rel="bookmark" title="Permanent Link to moz.build Files and the Firefox Build System">moz.build Files and the Firefox Build System</a></h2>
   <small>February 28, 2013 at 07:45 PM | categories: 
@@ -586,63 +628,6 @@ mach:</p>
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/09/26/mach-has-landed#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="bootstrap-your-system-to-build-firefox"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/09/18/bootstrap-your-system-to-build-firefox" rel="bookmark" title="Permanent Link to Bootstrap Your System to Build Firefox">Bootstrap Your System to Build Firefox</a></h2>
-  <small>September 18, 2012 at 05:00 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
- | <a href="http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>If you've looked at the
-<a href="https://developer.mozilla.org/en-US/docs/Simple_Firefox_build">build instructions</a>
-for Firefox lately, you may have noticed something new: support for
-system bootstrapping!</p>
-<p>Now checked in to mozilla-central is a
-<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mozboot/">framework</a>
-for ensuring your system is capable of building mozilla-central and
-Firefox. You just need to download and run a single Python script and it
-performs magic.</p>
-<p>Kudos go out to a community contributor, kmm (name wasn't revealed) for
-doing the legwork for tracking down and verifying things worked on all
-the Linux distros. Richard Newman and Jeff Hammel also helped with code
-reviews. Just hours after it landed, Landry Breuil contributed support
-for OpenBSD!</p>
-<p>Currently, bootstrapping works for the following:</p>
-<ul>
-<li>Ubuntu Linux</li>
-<li>Mint</li>
-<li>CentOS 6.x</li>
-<li>Fedora</li>
-<li>OS X 10.6, 10.7, and 10.8</li>
-<li>OpenBSD</li>
-</ul>
-<p>If you want to add support for an additional OS, please file a
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=Build%20Config">Core : Build Config</a>
-bug. Likewise, if you encounter an issue, please file a bug so others
-don't get tripped up by it!</p>
-<p>Bootstrap support is definitely in its infancy. It still needs features
-like better prompting and opportunities for user choice (e.g. support
-MacPorts on OS X - currently it only works with Homebrew). But, I think
-it is much better than what existed previously, especially on OS X.</p>
-<p>I consider this bootstrapping component just one piece in a larger
-mission to make developing and building Firefox (and other Gecko
-applications) easier. This should (hopefully) lead to more development
-involvement. The next component to land will likely be
-<a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack">mach</a>.
-It's (finally) been getting some review love (thanks Jeff Hammel!), so
-I'm optimistic it will land in the next few weeks.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
  <a href="/blog/category/firefox/2">Next Page »</a>
 
               </div>
@@ -662,6 +647,7 @@ I'm optimistic it will land in the next few weeks.</p>
                 <li><a href="/blog/category/compilers">compilers</a></li>
                 <li><a href="/blog/category/internet">internet</a></li>
                 <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
                 <li><a href="/blog/category/make">make</a></li>
                 <li><a href="/blog/category/misc">misc</a></li>
                 <li><a href="/blog/category/movies">movies</a></li>
