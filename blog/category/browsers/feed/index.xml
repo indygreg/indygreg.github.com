@@ -7,10 +7,10 @@
      xmlns:wfw="http://wellformedweb.org/CommentAPI/"
      >
   <channel>
-    <title>Gregory Szorc'c Digital Home</title>
+    <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 03 Mar 2013 20:33:54 GMT</pubDate>
+    <pubDate>Mon, 01 Apr 2013 20:12:02 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>

@@ -7,13 +7,66 @@
      xmlns:wfw="http://wellformedweb.org/CommentAPI/"
      >
   <channel>
-    <title>Gregory Szorc'c Digital Home</title>
+    <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 03 Mar 2013 20:33:54 GMT</pubDate>
+    <pubDate>Mon, 01 Apr 2013 20:12:02 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Bulk Analysis of Mozilla's Build and Test Data</title>
+      <link>http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data</link>
+      <pubDate>Mon, 01 Apr 2013 13:12:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data</guid>
+      <description>Bulk Analysis of Mozilla's Build and Test Data</description>
+      <content:encoded><![CDATA[<p>When you push code changes to Firefox and other similar Mozilla
+projects, a flood of automated jobs is triggered on Mozilla's
+infrastructure. It works like any other continuous integration
+system. First you build, then you run tests, etc. What sets it
+apart from other continuous integration systems is the size:
+Mozilla runs thousands of jobs per week and the combined output
+sums into the tens of gigabytes.</p>
+<p>Most of the data from Mozilla's continuous integration is
+available on public servers, notably ftp.mozilla.org. This includes
+compiled binaries, logs, etc.</p>
+<p>While there are tools that can sift through this mountain of data
+(like <a href="https://tbpl.mozilla.org">TBPL</a>), they don't allow ad-hoc
+queries over the raw data. Furthermore, these tools are very
+function-specific and there are many data views they don't expose.
+This <em>missing</em> data has always bothered me because, well, there
+are cool and useful things I'd like to do with this data.</p>
+<p>This itch has been bothering me for well over a year. The
+persistent burning sensation coupled with rain over the weekend
+caused me to scratch it.</p>
+<p>The <a href="https://github.com/indygreg/mozilla-build-analyzer">product of my weekend labor</a>
+is a system facilitating bulk storage and analysis of Mozilla's
+build data. While it's currently very alpha, it's already showing
+promise for more throrough data analysis.</p>
+<p>Essentially, the tool works by collecting the dumps of all the jobs
+executed on Mozilla's infrastructure. It can optionally supplement
+this with the raw logs from those jobs. Then, it combs through this
+data, extracts useful bits, and stores them. Once the initial
+fetching has completed, you simply need to re-"parse" the data set
+into useful data. And, since all data is stored locally, the
+performance of this is not bound by Internet bandwidth. In practice,
+this means that you can obtain a new metric faster than would have
+been required before. The downside is you will likely be storing
+gigabytes of raw data locally. But, disks are cheap. And, you have
+control over what gets pulled in, so you can limit it to what you
+need.</p>
+<p>Please note the project is very alpha and is only currently serving
+my personal interests. However, I know there is talk about <em>TBPL2</em>
+and what I have built could evolve into the data store for the next
+generation TBPL tool. Also, most of the work so far has centered on
+data import. There is tons of analysis code waiting to be written.</p>
+<p>If you are interested in improving the tool, please file a GitHub
+pull request.</p>
+<p>I hope to soon blog about useful information I've obtained through this
+tool.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Omnipresent mach</title>
       <link>http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach</link>
@@ -1053,31 +1106,6 @@ will retain the optimum security and privacy settings of the existing
 product while extending usability at nearly-comparable security and
 ofer data recovery to the vast majority of our users. <strong>This is huge.</strong></p>
 <p>Yeah, I'm pretty damn excited about my next year at Mozilla.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Smaller Firefox Build Logs</title>
-      <link>http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs</link>
-      <pubDate>Wed, 23 May 2012 08:50:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Firefox]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs</guid>
-      <description>Smaller Firefox Build Logs</description>
-      <content:encoded><![CDATA[<p>The other day I looked at a full Firefox build log from TBPL and noticed
-that ~84,000 of the ~170,000 lines in the log I looked at was output
-from archive processes. We were printing thousands of lines showing the
-files that were being added and extracted from the archives that contain
-test files!</p>
-<p>I thought this was wasteful, so I filed
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=757397">bug 757397</a> and
-coded up a patch. Ted agreed that these lines were rather worthless and
-the patch has landed in mozilla-inbound.</p>
-<p>The result of the patch is build logs are about half as big in terms of
-lines. And, it appears at least 500kb is shaved off the compressed log
-files as well.</p>
-<p>The real world impact is you should be able to load build logs from
-the server faster because they are smaller.</p>
-<p>If you were parsing this data before and are impacted by this, please
-leave a comment on the aforementioned bug and we'll go from there.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

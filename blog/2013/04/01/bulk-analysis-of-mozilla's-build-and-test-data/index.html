@@ -1,0 +1,168 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="bulk-analysis-of-mozilla's-build-and-test-data"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data" rel="bookmark" title="Permanent Link to Bulk Analysis of Mozilla's Build and Test Data">Bulk Analysis of Mozilla's Build and Test Data</a></h2>
+  <small>April 01, 2013 at 01:12 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
+ | <a href="http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>When you push code changes to Firefox and other similar Mozilla
+projects, a flood of automated jobs is triggered on Mozilla's
+infrastructure. It works like any other continuous integration
+system. First you build, then you run tests, etc. What sets it
+apart from other continuous integration systems is the size:
+Mozilla runs thousands of jobs per week and the combined output
+sums into the tens of gigabytes.</p>
+<p>Most of the data from Mozilla's continuous integration is
+available on public servers, notably ftp.mozilla.org. This includes
+compiled binaries, logs, etc.</p>
+<p>While there are tools that can sift through this mountain of data
+(like <a href="https://tbpl.mozilla.org">TBPL</a>), they don't allow ad-hoc
+queries over the raw data. Furthermore, these tools are very
+function-specific and there are many data views they don't expose.
+This <em>missing</em> data has always bothered me because, well, there
+are cool and useful things I'd like to do with this data.</p>
+<p>This itch has been bothering me for well over a year. The
+persistent burning sensation coupled with rain over the weekend
+caused me to scratch it.</p>
+<p>The <a href="https://github.com/indygreg/mozilla-build-analyzer">product of my weekend labor</a>
+is a system facilitating bulk storage and analysis of Mozilla's
+build data. While it's currently very alpha, it's already showing
+promise for more throrough data analysis.</p>
+<p>Essentially, the tool works by collecting the dumps of all the jobs
+executed on Mozilla's infrastructure. It can optionally supplement
+this with the raw logs from those jobs. Then, it combs through this
+data, extracts useful bits, and stores them. Once the initial
+fetching has completed, you simply need to re-"parse" the data set
+into useful data. And, since all data is stored locally, the
+performance of this is not bound by Internet bandwidth. In practice,
+this means that you can obtain a new metric faster than would have
+been required before. The downside is you will likely be storing
+gigabytes of raw data locally. But, disks are cheap. And, you have
+control over what gets pulled in, so you can limit it to what you
+need.</p>
+<p>Please note the project is very alpha and is only currently serving
+my personal interests. However, I know there is talk about <em>TBPL2</em>
+and what I have built could evolve into the data store for the next
+generation TBPL tool. Also, most of the work so far has centered on
+data import. There is tons of analysis code waiting to be written.</p>
+<p>If you are interested in improving the tool, please file a GitHub
+pull request.</p>
+<p>I hope to soon blog about useful information I've obtained through this
+tool.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
