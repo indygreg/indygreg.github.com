@@ -1,0 +1,158 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="sqlite.jsm---sqlite-done-betterer"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer" rel="bookmark" title="Permanent Link to SQLite.jsm - SQLite Done Betterer">SQLite.jsm - SQLite Done Betterer</a></h2>
+  <small>April 14, 2013 at 11:55 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Did you know there is now a better way to interact with SQLite from
+JavaScript in Firefox? It's called
+<a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Sqlite.jsm">SQLite.jsm</a>
+and it's available in Firefox 20 and later.</p>
+<p>SQLite.jsm is an abstraction around the low-level Storage APIs that you
+would have used before. However, it eliminates most of the footguns and
+makes it easier to write code that doesn't jank the browser and is less
+prone to memory leaks. It even has an API to free as much memory as
+possible from the current connection!</p>
+<p>If you currently use SQLite via Storage, I highly recommend taking a
+look at SQLite.jsm - especially if you are using synchronous APIs.</p>
+<p>If you are investigating SQLite for the storage needs of your add-on or
+browser feature, please keep in mind that SQLite can incur lots of
+filesystem I/O and may run slowly on old machines (especially with
+magnetic hard drives) and especially with its default configuration.
+You may be interested in low-level file I/O using
+<a href="https://developer.mozilla.org/en-US/docs/JavaScript_OS.File">OS.File</a>
+instead.</p>
+<p>If you insist on using SQLite, please educate yourself on and then
+seriously consider using
+<a href="https://www.sqlite.org/wal.html">Write-Ahead Logging</a> mode on your
+database. Some detailed discussion on SQLite behavior as it pertains to
+Firefox can be found in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=830492">bug 830492</a>.
+I hope to eventually incorporate more <em>sane by default</em> connection
+options into SQLite.jsm to make it easier for add-ons and browser
+features to have the least-impactful behavior by default (e.g. enable
+WAL by default). Until then, please, please, please research
+<a href="https://www.sqlite.org/pragma.html">PRAGMA</a> statements to optimize
+how your SQLite database runs so it has as little performance overhead
+as possible. Also consider dropping into an IRC channel on
+irc.mozilla.org and asking for advice from one of the many who have
+fallen into SQLite's many performance pitfalls (including me).</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

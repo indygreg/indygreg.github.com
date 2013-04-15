@@ -50,6 +50,57 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="sqlite.jsm---sqlite-done-betterer"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer" rel="bookmark" title="Permanent Link to SQLite.jsm - SQLite Done Betterer">SQLite.jsm - SQLite Done Betterer</a></h2>
+  <small>April 14, 2013 at 11:55 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Did you know there is now a better way to interact with SQLite from
+JavaScript in Firefox? It's called
+<a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Sqlite.jsm">SQLite.jsm</a>
+and it's available in Firefox 20 and later.</p>
+<p>SQLite.jsm is an abstraction around the low-level Storage APIs that you
+would have used before. However, it eliminates most of the footguns and
+makes it easier to write code that doesn't jank the browser and is less
+prone to memory leaks. It even has an API to free as much memory as
+possible from the current connection!</p>
+<p>If you currently use SQLite via Storage, I highly recommend taking a
+look at SQLite.jsm - especially if you are using synchronous APIs.</p>
+<p>If you are investigating SQLite for the storage needs of your add-on or
+browser feature, please keep in mind that SQLite can incur lots of
+filesystem I/O and may run slowly on old machines (especially with
+magnetic hard drives) and especially with its default configuration.
+You may be interested in low-level file I/O using
+<a href="https://developer.mozilla.org/en-US/docs/JavaScript_OS.File">OS.File</a>
+instead.</p>
+<p>If you insist on using SQLite, please educate yourself on and then
+seriously consider using
+<a href="https://www.sqlite.org/wal.html">Write-Ahead Logging</a> mode on your
+database. Some detailed discussion on SQLite behavior as it pertains to
+Firefox can be found in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=830492">bug 830492</a>.
+I hope to eventually incorporate more <em>sane by default</em> connection
+options into SQLite.jsm to make it easier for add-ons and browser
+features to have the least-impactful behavior by default (e.g. enable
+WAL by default). Until then, please, please, please research
+<a href="https://www.sqlite.org/pragma.html">PRAGMA</a> statements to optimize
+how your SQLite database runs so it has as little performance overhead
+as possible. Also consider dropping into an IRC channel on
+irc.mozilla.org and asking for advice from one of the many who have
+fallen into SQLite's many performance pitfalls (including me).</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="making-hg-git-faster"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/04/14/making-hg-git-faster" rel="bookmark" title="Permanent Link to Making hg-git Faster">Making hg-git Faster</a></h2>
   <small>April 14, 2013 at 09:45 PM | categories: 
