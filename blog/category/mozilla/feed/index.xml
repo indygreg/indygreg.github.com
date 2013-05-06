@@ -10,10 +10,22 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 15 Apr 2013 17:04:03 GMT</pubDate>
+    <pubDate>Mon, 06 May 2013 18:39:41 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Mozilla Automation Load Over Time</title>
+      <link>http://gregoryszorc.com/blog/2013/05/06/mozilla-automation-load-over-time</link>
+      <pubDate>Mon, 06 May 2013 11:45:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/05/06/mozilla-automation-load-over-time</guid>
+      <description>Mozilla Automation Load Over Time</description>
+      <content:encoded><![CDATA[<p><a href="/images/mozilla-automation-load-1.png">This chart</a> plots per-month sums
+of total time of jobs in Mozilla's automation in days. The line running
+through it is a best fit linear regression.</p>
+<p>The raw data is <a href="https://gist.github.com/indygreg/5527091">available</a>.</p>]]></content:encoded>
+    </item>
     <item>
       <title>SQLite.jsm - SQLite Done Betterer</title>
       <link>http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer</link>
@@ -1221,53 +1233,6 @@ mach:</p>
   have and has been supportive of it.</li>
 </ul>
 <p>I hope you find mach useful!</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Bootstrap Your System to Build Firefox</title>
-      <link>http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox</link>
-      <pubDate>Tue, 18 Sep 2012 17:00:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Firefox]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox</guid>
-      <description>Bootstrap Your System to Build Firefox</description>
-      <content:encoded><![CDATA[<p>If you've looked at the
-<a href="https://developer.mozilla.org/en-US/docs/Simple_Firefox_build">build instructions</a>
-for Firefox lately, you may have noticed something new: support for
-system bootstrapping!</p>
-<p>Now checked in to mozilla-central is a
-<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mozboot/">framework</a>
-for ensuring your system is capable of building mozilla-central and
-Firefox. You just need to download and run a single Python script and it
-performs magic.</p>
-<p>Kudos go out to a community contributor, kmm (name wasn't revealed) for
-doing the legwork for tracking down and verifying things worked on all
-the Linux distros. Richard Newman and Jeff Hammel also helped with code
-reviews. Just hours after it landed, Landry Breuil contributed support
-for OpenBSD!</p>
-<p>Currently, bootstrapping works for the following:</p>
-<ul>
-<li>Ubuntu Linux</li>
-<li>Mint</li>
-<li>CentOS 6.x</li>
-<li>Fedora</li>
-<li>OS X 10.6, 10.7, and 10.8</li>
-<li>OpenBSD</li>
-</ul>
-<p>If you want to add support for an additional OS, please file a
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=Build%20Config">Core : Build Config</a>
-bug. Likewise, if you encounter an issue, please file a bug so others
-don't get tripped up by it!</p>
-<p>Bootstrap support is definitely in its infancy. It still needs features
-like better prompting and opportunities for user choice (e.g. support
-MacPorts on OS X - currently it only works with Homebrew). But, I think
-it is much better than what existed previously, especially on OS X.</p>
-<p>I consider this bootstrapping component just one piece in a larger
-mission to make developing and building Firefox (and other Gecko
-applications) easier. This should (hopefully) lead to more development
-involvement. The next component to land will likely be
-<a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack">mach</a>.
-It's (finally) been getting some review love (thanks Jeff Hammel!), so
-I'm optimistic it will land in the next few weeks.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
