@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2013-05-12T18:56:23Z</updated>
+  <updated>2013-05-12T23:17:03Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -245,48 +245,10 @@ likely depend on what hosting sites like GitHub and Bitbucket do
 (I wouldn't be surprised if GitHub rebranded as <em>CodeHub</em> or
 something some day). Time will tell.</p>
 <h2>Extending case study</h2>
-<p>To reinforce the differences between Mercurial and Git when it comes to
-extensibility, I want to present a basic case study.</p>
-<p>The <em>status</em> command tells you how the current state of your checked out
-tree differs from what's in version control. This command suffers a
-scaling problem: the work of the comparison operation is proportional to
-the number of files in the repository.</p>
-<p>By default, Mercurial and Git both implement a simple brute force
-algorithm: they crawl the directory tree and inspect every file, looking
-for changes against the known last state. And, it's plain to see that
-this doesn't scale well into many thousands of files. Try it yourself:
-run <em>status</em> on a small repository versus a large repository, like
-<em>mozilla-central</em>. Notice how the small repository is nearly
-instantaneous but the large one feels sluggish. Now flush your page
-cache. Notice the large repository now taking forever? This is a real
-problem for large projects.</p>
-<p>A solution to making <em>status</em> faster that works on most filesystems and
-operating systems is to have a background agent subscribe to file
-changes in a repository as they are made by the filesystem. When a
-change is made, it is recorded. When the user runs <em>status</em>, you simply
-query the agent for what files have changed and get a result nearly
-instantly.</p>
-<p>Because Git's <em>status</em> command is implemented in C and there is no way
-for extensions to override the behavior of <em>status</em>, the only way for
-Git to solve this problem will be for someone to implement <em>status</em> as a
-new Git command (reinventing the wheel in the process) or for
-the Git core to grow the ability to watch the filesystem (via inotify,
-etc). The former is a non-starter (I think). And, the latter requires
-not only acceptance in the core Git repository, but also support for
-your operating system (since filesystem notifications differ between
-operating system). While I'm sure Git will support inotify on Linux,
-will they support similar functionality on Windows? On OS X? On Solaris?</p>
-<p>With Mercurial, supplementing <em>status</em> to watch the filesystem is doable
-with an extension. And, this extension (<em>inotify</em>) even exists and is
-shipped with the core Mercurial distribution! The extension injects
-itself into <em>hg status</em>. The first time you run <em>status</em>, it will start
-a background server that listens for changes. Subsequent times you run
-<em>status</em> and results are instantaneous. While this extension only
-supports Linux, it would be possible to extend it to work on other
-operating systems. Since this functionality can be implemented as an
-extension, you don't have to push for inclusion in the core distribution
-and can use the feature is soon as it is developed.</p>
-<p>Victory in this case study goes to Mercurial.</p>
+<p><em>I have removed the case study that appeared in the original article
+because as Mike Hommey observed in the comments, it wasn't a totally
+accurate comparison. I don't believe the case study significantly added
+much to the post, so I likely won't write a new one.</em></p>
 <h2>Conclusion</h2>
 <p>From where I started with Mercurial, I never thought I'd say this. But
 here it goes: I like Mercurial.</p>
