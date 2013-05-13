@@ -10,10 +10,106 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 12 May 2013 23:17:03 GMT</pubDate>
+    <pubDate>Mon, 13 May 2013 20:31:28 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>The State of Mercurial at Mozilla</title>
+      <link>http://gregoryszorc.com/blog/2013/05/13/the-state-of-mercurial-at-mozilla</link>
+      <pubDate>Mon, 13 May 2013 13:25:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/05/13/the-state-of-mercurial-at-mozilla</guid>
+      <description>The State of Mercurial at Mozilla</description>
+      <content:encoded><![CDATA[<p>I have an opinion on the usage of Mercurial at Mozilla: it stinks.</p>
+<p>Here's why.</p>
+<h2>The server is configured poorly</h2>
+<p>Our Mozilla server, hg.mozilla.org, is currently running Mercurial 2.0.2.
+In terms of Mercurial features, stability, and performance, we are light
+years behind.</p>
+<p>You know that annoying phases configuration you need to set when pushing
+to Try? That's because the server isn't new enough to tell the client the
+same thing the configuration option does. It
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=725362">will be fixed</a>
+when the server is upgraded to 2.1+.</p>
+<p>Furthermore, we are running the server over NFS, which introduces known
+badness, including slowness.</p>
+<p>I believe we blame Mercurial for issues that would go away if we
+configured the Mercurial server properly.</p>
+<p>Fortunately, it appears the
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=781012">upgrade to 2.5</a>
+is near and I've heard we're moving from NFS to local disk storage as
+part of that. This should go a long way to making the server better.
+The upgrade can't happen soon enough.</p>
+<h2>User education is poor</h2>
+<p>I think a lot of people are ignorant on the features and abilities of
+Mercurial.</p>
+<p>I commonly hear people are dissatisfied with the behavior of their
+Mercurial client. They encounter performance issues, bugs, corruption,
+etc. Nine times out of ten this is due to running an old Mercurial
+release. Just last Friday someone on my team asked me about
+weird behavior involving file case. My first question: <em>what version
+of Mercurial are you using?</em> He was running 2.0.2. I told him to
+upgrade to 2.5+. It fixed his problem. <strong>If you aren't running
+Mercurial 2.5 or newer, upgrade immediately.</strong></p>
+<p>I've heard people say we should switch to Git because Git has feature X.
+Most of the time, Mercurial has these features. Unfortunately, people
+just don't realize it. When I point them at
+<a href="http://mercurial.selenic.com/wiki/UsingExtensions">Mercurial's extensions list</a>
+their eyes light up and they thank me for making their lives easier.</p>
+<p>I think a problem is a lot of new Mozilla contributors knew Git
+before and only pick up the bare essentials of Mercurial that allow them
+to land patches. They prefer Git because it is familiar and just don't
+bother to pick up Mercurial. The potential of Mercurial is thus lost on
+them.</p>
+<p>Perhaps we should have a brown bag and/or better documentation on
+getting the most out of Mercurial?</p>
+<h2>The branching model is far from ideal</h2>
+<p>For Gecko/Firefox development, we maintain separate repositories for the
+trunk and release branches. This introduces all kinds of annoying.</p>
+<p>We should not have separate repositories for <em>central</em>, <em>inbound</em>,
+<em>aurora</em>, <em>beta</em>, <em>release</em>, etc. We should be using some combination of
+branches and bookmarks and have all the release heads in one
+repository, just like how the
+<a href="https://github.com/mozilla/mozilla-central/">GitHub mirror</a> is
+configured.</p>
+<p>As an experiment, I created a
+<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko">unified Mercurial repository</a>.
+Each current repository is tracked as a bookmark (there are
+<a href="https://developer.mozilla.org/en-US/docs/Developer_Guide/Source_Code/Mercurial">instructions</a>
+for reproducing this). Unfortunately, the web interface isn't showing
+bookmarks (perhaps because the version of Mercurial is too old?), so
+you'll have to clone the repository to play around. Just run
+<em>hg bookmarks</em> and e.g. <em>hg up aurora</em> after cloning.
+<em>Warning: I'm not actively synchronizing this repository, so don't rely
+on it being up to date</em>.</p>
+<p>A Mercurial contributor (who is familiar with Mozilla's
+development model) suggested we use Mercurial branches for every Gecko
+release (20, 21, 22, etc). I think this and other uses of branches and
+bookmarks are ideas worth exploring.</p>
+<h2>We're failing to harness the extensibility</h2>
+<p>Gecko/Firefox has a complicated code lifecycle and landing process.
+This could be significantly streamlined if we fully harnessed and
+embraced the extensibility of Mercurial. While there are some
+Mozilla-centric extensions (details in my
+<a href="/blog/2013/05/12/thoughts-on-mercurial-%28and-git%29/">recent post</a>),
+I don't think they are well known nor used.</p>
+<p>I think Mozilla should embrace the functionality of extensions like
+these (whether they be for Mercurial, Git, or something else) and invest
+resources in improving the workflows for all developers. Until these
+tools are obviously superior and advertised, I believe many developers
+will unknowingly continue to toil without them. And, it's likely hurting
+our ability to attract and retain new contributors as well.</p>
+<h2>Conclusion</h2>
+<p>Mozilla's current usage of Mercurial is far from ideal. It's no wonder
+people don't like Mercurial (and why some want to switch to Git).</p>
+<p>Fortunately, little has to do with shortcomings of Mercurial itself (at
+least with newer versions). If you want to know why Mercurial isn't
+working too well for Gecko/Firefox development, most of the problems
+are self-inflicted or the solutions reside within each of us. Time
+will tell if we as a community have the will to address these issues.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Thoughts on Mercurial (and Git)</title>
       <link>http://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-(and-git)</link>
