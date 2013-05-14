@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 14 May 2013 16:42:54 GMT</pubDate>
+    <pubDate>Tue, 14 May 2013 16:46:48 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -243,7 +243,7 @@ through a more intelligent tool and that productivity suffers as a
 result. For example, when you type <em>make</em> in inside the object
 directory you need to know to pass <em>-j8</em>, use make vs pymake,
 and that you also need to build <em>toolkit/library</em>, etc.
-Also, by invoking make directory, you bypass other handy features,
+Also, by invoking make directly, you bypass other handy features,
 such as automatic compiler warning aggregation (which only happens
 if you invoke the build system through mach). If you go through a
 tool like <em>mach</em>, you <em>should</em> automatically get the most ideal
