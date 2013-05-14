@@ -7,12 +7,462 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2013-05-14T00:28:07Z</updated>
+  <updated>2013-05-14T02:38:50Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Build System Status Update 2013-05-14]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/05/13/build-system-status-update-2013-05-14" />
+    <id>http://gregoryszorc.com/blog/2013/05/13/build-system-status-update-2013-05-14</id>
+    <updated>2013-05-13T19:35:00Z</updated>
+    <published>2013-05-13T19:35:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <summary type="html"><![CDATA[Build System Status Update 2013-05-14]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/05/13/build-system-status-update-2013-05-14"><![CDATA[<p>I'd like to make an attempt at delivering regular status updates on the
+Gecko/Firefox build system and related topics. Here we go with the
+first instance. I'm sure I missed awesomeness. Ping me and I'll add it
+to the next update.</p>
+<h2>MozillaBuild Windows build environment updated</h2>
+<p>Kyle Huey
+<a href="https://groups.google.com/d/msg/mozilla.dev.platform/XRecAHF-H28/aSbrdKJLUNoJ">released version 1.7</a>
+of our Windows build environment. It contains a newer version of Python
+and a modern version of Mercurial among other features.</p>
+<p><strong>I highly recommend every Windows developer update ASAP.</strong> Please note
+that you will likely encounter Python errors unless you clobber your
+build.</p>
+<h2>New submodule and peers</h2>
+<p>I used my power as module owner to create a submodule of the build
+config module whose scope is the (largely mechanical) transition of
+content from Makefile.in to moz.build files. I granted Joey Armstrong
+and Mike Shal peer status for this module. I would like to eventually
+see both elevated to build peers of the main build module.</p>
+<h2>moz.build transition</h2>
+<p>The following progress has been made:</p>
+<ul>
+<li>Mike Shal has converted variables related to defining XPIDL files in
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=818246">bug 818246</a>.</li>
+<li>Mike Shal converted MODULE in
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844654">bug 844654</a>.</li>
+<li>Mike Shal converted EXPORTS in
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=846634">bug 846634</a>.</li>
+<li>Joey Armstrong converted xpcshell test manifests in
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844655">bug 844655</a>.</li>
+<li>Brian O'Keefe converted PROGRAM in
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=862986">bug 862986</a>.</li>
+<li>Mike Shal is about to land conversion of CPPSRCS in
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=864774">bug 864774</a>.</li>
+</ul>
+<h2>Non-recursive XPIDL generation</h2>
+<p>In <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=850380">bug 850380</a>
+I'm trying to land non-recursive building of XPIDL files. As part of
+this I'm trying to combine the generation of .xpt and .h for each input
+.idl file into a single process call because profiling revealed that
+parsing the IDL consumes most of the CPU time. This shaves a few dozen
+seconds off of build times.</p>
+<p>I have encounterd multiple pymake bugs when developing this patch, which
+is the primary reason it hasn't landed yet.</p>
+<h2>WebIDL refactoring</h2>
+<p>I was looking at my build logs and noticed WebIDL generation was taking
+longer than I thought it should. I filed
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=861587">bug 861587</a> to
+investigate making it faster. While my initial profiling turned out to
+be wrong, Boris Zbarsky looked into things and discovered that the
+serialization and deserialization of the parser output was extremely
+slow. He is currently trying to land a refactor of how WebIDL bindings
+are handled. The early results look <strong>very</strong> promising.</p>
+<p>I think the bug is a good example of the challenges we face improving
+the build system, as Boris can surely attest.</p>
+<h2>Test directory reorganization</h2>
+<p>Joel Maher is injecting sanity into the naming scheme of test
+directories in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=852065">bug 852065</a>.</p>
+<h2>Manifests for mochitests</h2>
+<p>Jeff Hammel, Joel Maher, Ted Mielczarek, and I are working out using
+manifests for mochitests (like xpcshell tests) in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=852416">bug 852416</a>.</p>
+<h2>Mach core is now a standalone package</h2>
+<p>I extracted the mach core to a
+<a href="https://github.com/indygreg/mach">standalone repository</a> and
+<a href="https://pypi.python.org/pypi/mach/">added it to PyPI</a>.</p>
+<p>Mach now <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=856392">categorizes</a>
+commands in its help output.</p>
+<h2>Requiring Python 2.7.3</h2>
+<p>Now that the Windows build environment ships with Python 2.7.4, I've
+filed <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=870420">bug 870420</a>
+to require Python 2.7.3+ to build the tree. We already require
+Python 2.7.0+. I want to bump the point release because there are
+<a href="http://hg.python.org/cpython/file/d46c1973d3c4/Misc/NEWS">many</a> small
+bug fixes in 2.7.3, especially around Python 3 compatibility.</p>
+<p>This is currently blocked on RelEng rolling out 2.7.3 to all the
+builders.</p>
+<h2>Eliminating master xpcshell manifest</h2>
+<p>Now that xpcshell test manifests are defined in moz.build files, we
+theoretically don't need the master manifest. Joshua Cranmer is working
+on removing them in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=869635">bug 869635</a>.</p>
+<h2>Enabling GTests and dual linking libxul</h2>
+<p>Benoit Gerard and Mike Hommey are working in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844288">bug 844288</a> to
+dual link libxul so GTests can eventually be enabled and executed as
+part of our automation.</p>
+<p>This will regress build times since we need to link libxul twice. But,
+giving C++ developers the ability to write unit tests with a real
+testing framework is worth it, in my opinion.</p>
+<h2>ICU landing</h2>
+<p>ICU was briefly enabled in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=853301">bug 853301</a> but
+then backed out because it broke cross-compiling. It should be on track
+for enabling in Firefox 24.</p>
+<h2>Resource monitoring in mozbase</h2>
+<p>I <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=802420">gave mozbase</a>
+a class to record system resource usage. I plan to eventually hook this
+up to the build system so the build system records how long it took to
+perform key events. This will give us better insight into slow and
+inefficient parts of the build and will help us track build system speed
+improvements over time.</p>
+<h2>Sorted lists in moz.build files</h2>
+<p>I'm working on requiring lists in moz.build be sorted. Work is happening
+in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=863069">bug 863069</a>.</p>
+<p>This idea started as a suggestion on the dev-platform list. If anyone
+has more great ideas, don't hold them back!</p>
+<h2>Smartmake added to mach</h2>
+<p>Nicholas Alexander
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=677452">taught mach</a> how
+to build intelligently by importing some of Josh Matthews' smartmake
+tool's functionality into the tree.</p>
+<h2>Source server fixed</h2>
+<p>Kyle Huey and Ted Mielczarek
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=846864">collaborated</a> to
+fix the source server.</p>
+<h2>Auto clobber functionality</h2>
+<p>Auto clobber functionality was added to the tree. After flirting briefly
+with on-by-default, we changed it to opt-in. When you encounter it, it
+will tell you how to enable it.</p>
+<h2>Faster clobbers on automation</h2>
+<p>I was looking at build logs and identified we were inefficiently
+performing clobber.</p>
+<p>Massimo Gervasini and Chris AtLee
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=851270">deployed changes</a>
+to automation to make it more efficient. My measurements showed a
+Windows try build that took 15 fewer minutes to start - a <em>huge</em>
+improvement.</p>
+<h2>Upgrading to Mercurial 2.5.4</h2>
+<p>RelEng is <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=741353">tracking</a>
+the global deployment of Mercurial 2.5.4. hg.mozilla.org is
+currently running 2.0.2 and automation is all over the map. The upgrade
+should make Mercurial operations faster and more robust across the
+board.</p>
+<p>I'm considering adding code to mach or the build system that prompts the
+user when her Mercurial is out of date (since an out of date Mercurial
+can result in a sub-par user experience).</p>
+<h2>Parallelize reftests</h2>
+<p>Nathan Froyd is
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=813742">leading an effort</a>
+to parallelize reftest execution. If he pulls this off, it could shave
+hours off of the total automation load per checkin. Go Nathan!</p>
+<h2>Overhaul of MozillaBuild in the works</h2>
+<p>I am mentoring a pair of interns this summer. I'm still working out the
+final set of goals, but I'm keen to have one of them overhaul the
+MozillaBuild Windows development environment. Cross your fingers.</p>]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mozilla Build System Brain Dump]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump" />
+    <id>http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump</id>
+    <updated>2013-05-13T17:25:00Z</updated>
+    <published>2013-05-13T17:25:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="build system" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
+    <category scheme="http://gregoryszorc.com/blog" term="mach" />
+    <summary type="html"><![CDATA[Mozilla Build System Brain Dump]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump"><![CDATA[<p>I hold a lot of context in my head when it comes to the future of
+Mozilla's build system and the interaction with it. I wanted to
+perform a brain dump of sorts so people have an idea of where I'm
+coming from when I inevitably propose radical changes.</p>
+<h2>The sad state of build system interaction and the history of mach</h2>
+<p>I believe that Mozilla's build system has had a poor developer
+experience for as long as there has been a Mozilla build system.
+Getting started with Firefox development was a right of passage. It
+required following (often out-of-date) directions on MDN. It
+required finding pages through MDN search or asking other people
+for info over IRC. It was the kind of process that turned away
+potential contributors because it was just too damn hard.</p>
+<p>mach - while born out of my initial efforts to radically change
+the build system proper - morphed into a generic command
+dispatching framework by the time it landed in mozilla-central.
+It has one overarching purpose: provide a single gateway point for
+performing common developer tasks (such as building the tree and
+running tests). The concept was nothing new - individual developers
+had long coded up scripts and tools to streamline workflows. Some
+even published these for others to use. What set mach apart was a
+unified interface for these <em>commands</em> (the mach script in the
+top directory of a checkout) and that these productivity gains
+were <strong>in the tree</strong> and thus easily discoverable and usable by
+<em>everybody</em> without significant effort (just run <em>mach help</em>).</p>
+<p>While mach doesn't yet satisfy everyone's needs, it's slowly
+growing new features and making developers' lives easier with
+every one. All of this is happening despite that there
+is not a single person tasked with working on mach full time.
+Until a few months ago, mach was largely my work. Recently, Matt
+Brubeck has been contributing a flury of enhancements - thanks
+Matt! Ehsan Akhgari and Nicholas Alexander have contributed a
+few commands as well! There are also a few people with a single
+command to their name. This is fulfilling my original vision of
+facilitating developers to scratch their own itches by
+contributing mach commands.</p>
+<p>I've noticed more people referencing mach in IRC channels. And,
+more people get angry when a mach command breaks or changes
+behavior. So, I consider the mach experiment a success. Is it
+perfect, no. If it's not good enough for you, please file a bug
+and/or code up a patch. If nothing else, please tell me: I love to
+know about everyone's subtle requirements so I can keep them in
+mind when refactoring the build system and hacking on mach.</p>
+<h2>The object directory is a black box</h2>
+<p>One of the ideas I'm trying to advance is that the object directory
+should be considered a black box for the majority of developers. In
+my ideal world, developers don't need to look inside the object
+directory. Instead, they interact with it through condoned and
+supported tools (like mach).</p>
+<p>I say this for a few reasons. First, as the build config module owner
+I would like the ability to massively refactor the <em>internals</em> of
+the object directory without disrupting workflows. If people are
+interacting directly with the object directory, I get significant
+push back if things change. This inevitably holds back much-needed
+improvements and triggers resentment towards me, build peers, and
+the build system. Not a good situation. Whereas if people are
+indirectly interacting with the object directory, we simply need to
+maintain a consistent interface (like mach) and nobody should care
+if things change.</p>
+<p>Second, I believe that the methods used when directly interacting
+with the object directory are often sub-par compared with going
+through a more intelligent tool and that productivity suffers as a
+result. For example, when you type <em>make</em> in inside the object
+directory you need to know to pass <em>-j8</em>, use make vs pymake,
+and that you also need to build <em>toolkit/library</em>, etc.
+Also, by invoking make directory, you bypass other handy features,
+such as automatic compiler warning aggregation (which only happens
+if you invoke the build system through mach). If you go through a
+tool like <em>mach</em>, you <em>should</em> automatically get the most ideal
+experience possible.</p>
+<p>In order for this vision to be realized, we need massive
+improvements to tools like mach to cover the missing workflows that
+still require direct object directory interaction. We also need people
+to start using mach. I think increased mach usage comes after mach
+has established itself as obviously superior to the alternatives
+(I already believe it offers this for tasks like running tests).</p>
+<h2>I don't want to force mach upon people but...</h2>
+<p>Nobody likes when they are forced to change a process that has been
+familiar for years. Developers especially. I get it. That's why
+I've always attempted to position mach as an alternative to
+existing workflows. If you don't like mach, you can always fall
+back to the previous workflow. Or, you can improve mach (patches
+more than welcome!). Having gone down the
+please-use-this-tool-it's-better road before at other
+organizations, I strongly believe that the best method to incur
+adoption of a new tool is to gradually sway people through
+obvious superiority and praise (as opposed to a mandate to switch).
+I've been trying this approach with mach.</p>
+<p>Lately, more and more people have been saying things like
+<em>we should have the build infrastructure build through mach
+instead of client.mk</em> and <em>why do we need testsuite-targets.mk when
+we have mach commands.</em> While I personally feel that client.mk
+and testsuite-targets.mk are antiquated as a developer-facing
+interface compared to mach, I'm reluctant to eliminate them because
+I don't like forcing change on others. That being said, there are
+compelling reasons to eliminate or at least refactor how they work.</p>
+<p>Let's take <em>testsuite-targets.mk</em> as an example. This is the make
+file that provides the targets to run tests (like <em>make xpcshell-test</em>
+and <em>make mochitest-browser-chrome</em>). What's interesting about this
+file is that it's only used in local builds: our automation
+infrastructure does not use <em>testsuite-targets.mk</em>! Instead,
+<em>mozharness</em> and the old buildbot configs manually build up the
+command used to invoke the test harnesses. Initially, the mach
+commands for running tests simply invoked make targets defined
+in <em>testsuite-targets.mk</em>. Lately, we've been converting the mach
+commands to invoke the Python test runners directly. I'd argue that
+the logic for <em>invoke the test runner</em> only needs to live in one
+place in the tree. Furthermore as a build module peer, I have little
+desire to support multiple implementations. Especially considering
+how fragile they can be.</p>
+<p>I think we're trending towards an outcome where mach (or the code
+behind mach commands) transitions into the authoratitive invocation
+method and <em>legacy</em> interfaces like <em>client.mk</em> and
+<em>testsuite-targets.mk</em> are reimplemented to either call mach
+commands or the same routine that powers them. Hopefully this
+will be completely transparent to developers.</p>
+<h2>The future of mozconfigs and environment configuration</h2>
+<p><em>mozconfig</em> files are shell scripts used to define variables consumed
+by the build system. They are the only officially supported mechanism
+for configuring how the build system works.</p>
+<p>I'd argue mozconfig files are a mediocre solution at best. First,
+there's the issue of mozconfig statements that don't actually do
+anything. I've seen no-op mozconfig content cargo culted into the
+in-tree mozconfigs (used for the builder configurations)! Oops.
+Second, doing things in mozconfig files is just awkward. Defining
+the object directory requires <em>mk_add_options MOZ_OBJDIR=some-path</em>.
+What's <em>mk_add_options</em>? If <em>some-path</em> is relative, what is it
+relative <em>to</em>? While certainly addressable, the documentation on
+how mozconfig files work is not terrific and fails to explain many
+pitfalls. Even with proper documentation, there's still the issue
+of the file format allowing no-op variable assignments to persist.</p>
+<p>I'm very tempted to reinvent build configuration as something not
+mozconfigs. What exactly, I don't know. mach has support for ini-like
+configuration files. We could certainly have mach and the build
+system pull configs from the same file.</p>
+<p>I'm not sure what's going to happen here. But deprecating mozconfig
+files as they are today is part of many of the options.</p>
+<h2>Handling multiple mozconfig files</h2>
+<p>A lot of developers only have a single mozconfig file (per source tree
+at least). For these developers, life is easy. You simply install
+your mozconfig in one of the default locations and it's automagically
+used when you use mach or client.mk. Easy peasy.</p>
+<p>I'm not sure what the relative numbers are, but many developers
+maintain multiple mozconfig files per source tree. e.g. they'll
+have one mozconfig to build desktop Firefox and another one for
+Android. They may have debug variations of each.</p>
+<p>Some developers even have a single mozconfig file but leverage the
+fact that mozconfig files are shell scripts and have their
+mozconfig dynamically do things depending on the current working
+directory, value of an environment variable, etc.</p>
+<p>I've also seen wrapper scripts that glorify setting environment
+variables, changing directory, etc and invoke a command.</p>
+<p>I've been thinking a lot about providing a common and well-supported
+solution for switching between active build configurations.
+<a href="https://developer.mozilla.org/en-US/docs/Developer_Guide/mach#Adding_mach_to_your_shell%27s_search_path">Installing mach on $PATH</a>
+goes a long way to facilitate this. If you are in an object
+directory, the mozconfig used when that object directory was
+created is automatically applied. Simple enough. However, I want
+people to start treating object directories as black boxes. So, I'd
+rather not see people have their shell inside the object directory.</p>
+<p>Whenever I think about solutions, I keep arriving at a
+virtualenv-like solution. Developers would potentially need to
+<em>activate</em> a Mozilla build environment (similar to how Windows
+developers need to launch MozillaBuild). Inside this environment,
+the shell prompt would contain the name of the current build
+configuration. Users could switch between configurations using
+<em>mach switch</em> or some other magic command on the $PATH.</p>
+<p>Truth be told, I'm skeptical if people would find this useful. I'm
+not sure it's that much better than exporting the MOZCONFIG
+environment variable to define the active config. This one requires
+more thought.</p>
+<h2>The integration between the build environment and Python</h2>
+<p>We use Python extensively in the build system and for common
+developer tasks. mach is written in Python. moz.build processing
+is implemented in Python. Most of the test harnesses are written in
+Python.</p>
+<p>Doing practically anything in the tree requires a Python
+interpreter that knows about all the Python code in the tree and
+how to load it.</p>
+<p>Currently, we have two very similar Python environments. One is
+a virtualenv created while running configure at the beginning of
+a build. The other is essentially a cheap knock-off that mach
+creates when it is launched.</p>
+<p>At some point I'd like to consolidate these Python environments.
+From any Python process we should have a way to automatically
+bootstrap/activate into a well-defined Python environment. This
+certainly sounds like establishing a unified Python virtualenv
+used by both the build system and mach.</p>
+<p>Unfortunately, things aren't straightforward. The virtualenv today
+is constructed in the object directory. How do we determine the
+current object directory? By loading the mozconfig file. How do we
+do that? Well, if you are mach, we use Python. And, how does mach
+know where to find the code to load the mozconfig file? You can
+see the dilemma here.</p>
+<p>A related issue is that of portable build environments. Currently, a
+lot of our automation recreates the build system's virtualenv from
+its own configuration (not that from the source tree). This has
+and will continue to bite us. We'd <em>really</em> like to package up the
+virtualenv (or at least its config) with tests so there is no
+potential for discrepancy.</p>
+<p>The inner workings of how we integrate with Python should be
+invisible to most developers. But, I figured I'd capture it
+here because it's an annoying problem. And, it's also related
+to an <em>activated</em> build environment. What if we required all
+developers to <em>activate</em> their shell with a Mozilla build
+environment (like we do on Windows)? Not only would this solve
+Python issues, but it would also facilitate simpler config
+switching (outlined above). Hmmm...</p>
+<h2>Direct interaction with the build system considered harmful</h2>
+<p>Ever since there was a build system developers have been typing
+<em>make</em> (or <em>make.py</em>) to build the tree. One of the goals of the
+transition to <em>moz.build</em> files is to facilitate building the tree
+with Tup. <em>make</em> will do nothing when you're not using Makefiles!
+Another goal of the <em>moz.build</em> transition is to start
+derecursifying the make build system such that we build things in
+parallel. It's likely we'll produce monolithic make files and then
+process <em>all</em> targets for a related class <em>IDLs</em>, <em>C++ compilation</em>,
+etc in one invocation of <em>make</em>. So, uh, what happens during a partial
+tree build? If a .cpp file from <em>/dom/src/storage</em> is being handled by
+a monolithic make file invoked by the Makefile at the top of the
+tree, how does a partial tree build pick that up? Does it build just
+that target or every target in the monolithic/non-recursive make file?</p>
+<p>Unless the build peers go out of our way to install redundant targets
+in leaf Makefiles, directly invoking <em>make</em> from a subdirectory of
+the tree won't do what it's done for years.</p>
+<p>As I said above, I'm sympathetic to forced changes in procedure, so
+it's likely we'll provide backwards-compatibile behavior. But, I'd
+prefer to not do it. I'd first prefer partial-tree builds are not
+necessary and a full tree build finishes quickly. But, we're not going
+to get there for a bit. As an alternative, I'll take people building
+through <em>mach build</em>. That way, we have an easily extensible interface
+on which to build partial tree logic. We saw this recently when
+dumbmake/smartmake landed. And, going through <em>mach</em> also reinforces my
+ideal that the object directory is a black box.</p>
+<h2>Semi-persistent state</h2>
+<p>Currently, most state as it pertains to a checkout or build is in the
+object directory. This is fine for artifacts from the build system.
+However, there is a whole class of state that arguably shouldn't be in
+the object directory. Specifically, it shouldn't be clobbered when you
+rebuild. This includes logs from previous builds, the warnings database,
+previously failing tests, etc. The list is only going to grow over time.</p>
+<p>I'd like to establish a location for semi-persistant state related to
+the tree and builds. Perhaps we change the clobber logic to ignore a
+specific directory. Perhaps we start storing things in the user's home
+directory. Perhaps we could establish a second <em>object directory</em> named
+the <em>state directory</em>? How would this interact with <em>build environments</em>?</p>
+<p>This will probably sit on the backburner until there is a compelling use
+case for it.</p>
+<h2>The battle against C++</h2>
+<p>Compiling C++ consumes the bulk of our build time. Anything we can do to
+speed up C++ compilation will work wonders for our build times.</p>
+<p>I'm optimistic things like precompiled headers and compiling multiple
+.cpp files with a single process invocation will drastically decrease
+build times. However, no matter how much work we put in to make C++
+compilation faster, we still have a giant issue: dependency hell.</p>
+<p>As <a href="/presentations/2012-11-29-firefox-build-system/#34">shown</a> in my
+build system presentation a few months back, we have dozens of header
+files included by hundreds if not thousands of C++ files. If you change
+one file: you invalidate build dependencies and trigger a rebuild. This
+is why whenever files like mozilla-config.h change you are essentially
+confronted with a full rebuild. ccache may help if you are lucky. But, I
+fear that as long as headers proliferate the way they do, there is
+little the build system by itself can do.</p>
+<p>My attitude towards this is to wait and see what we can get out of
+precompiled headers and the like. Maybe that makes it good enough. If
+not, I'll likely be making a lot of noise at Platform meetings
+requesting that C++ gurus brainstorm on a solution for reducing
+header proliferation.</p>
+<h2>Conclusion</h2>
+<p>Belive it or not, these are only some of the topics floating around in
+my head! But I've probably managed to bore everyone enough so I'll
+call it a day.</p>
+<p>I'm always interested in opinions and ideas, especially if they are
+different from mine. I encourage you to leave a comment if you have
+something to say.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1849,757 +2299,5 @@ lands and <em>mach</em> is on its own, <em>mozbuild</em>'s purpose  will shift t
 <h2>Conclusion</h2>
 <p>We have a lot of work ahead of us. Please look at the bugs linked above
 and help out in any way you can.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Improving Mozilla's Build System]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla's-build-system" />
-    <id>http://gregoryszorc.com/blog/2012/06/25/improving-mozilla's-build-system</id>
-    <updated>2012-06-25T10:15:00Z</updated>
-    <published>2012-06-25T10:15:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="make" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="pymake" />
-    <category scheme="http://gregoryszorc.com/blog" term="build system" />
-    <summary type="html"><![CDATA[Improving Mozilla's Build System]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla's-build-system"><![CDATA[<p>Makefiles. Love them or hate them, they are ubiquitous. For projects
-like Firefox (which has on the order of 1500 Makefiles), Makefiles
-aren't going away any time soon. This despite that newer - arguably
-better - build system (such as CMake and GYP) exist.</p>
-<p>Many have decried the numerous ways in which GNU make and make files
-suck. I won't pile on here. Instead, please read
-<a href="http://www.conifersystems.com/whitepapers/gnu-make/">What's Wrong with GNU make</a>
-for a great overview.</p>
-<p>Despite the many flaws with make, I would argue that the single most
-significant one is the slow speed often associated with it. People
-lauding make replacements (such as
-<a href="http://martine.github.com/ninja/">Ninja</a>) almost always emphasize this
-one aspect above all others. (OK, Ninja isn't exactly a make replacement,
-but the execution aspects are comparable.)</p>
-<p>Why is make slow? It is almost always due to the use of recursive make.
-This is make executing itself recursively, usually as it traverses a
-directory tree. This is how Mozilla's build system works. You start in
-one directory. Then, for each directory defined in the <em>DIRS</em> variable,
-make invokes make in that directory. In Mozilla's case, we amplify this
-by performing multiple passes over the directory tree - an <em>export</em> pass
-that installs header files, etc into a common directory, a <em>libs</em> pass
-that does most of the compilation, and a <em>tools</em> pass which performs
-other miscellaneous actions. Each of these is a recursive make
-iteration. As we say at Mozilla: clown shoes.</p>
-<p>The deficiencies of recursive make and a workaround are called out in
-the classic paper
-<a href="http://aegis.sourceforge.net/auug97.pdf">Recursive Make Considered Harmful</a>.
-Despite its age, it is still relevant - GNU make hasn't changed that
-much, after all. The thesis of the paper can be boiled down to the fact
-that make assembles a directed acyclic graph (DAG) and then executes it.
-Using recursive make, you are assembling N DAGs instead of of 1. Each DAG
-must be executed separately. This adds execution overhead. On top of
-that, since the DAGs are separate, you are either
-a) missing information from each DAG (it doesn't know about other
-DAGs) thus creating an incomplete and possibly error-prone dependency
-graph or b) duplicating information in multiple DAGs, creating more
-work for make in aggregate.</p>
-<p>The solution for this is non-recursive make. That's just a fancy way of
-saying <em>create 1 monolithic DAG and execute it once</em> (as opposed to N
-separate DAGs with at least N invocations of make). Modern build systems
-like Ninja do this. While these build systems have other properties that
-contribute to faster execution times, in my opinion the single feature
-that has the greatest impact is consolidating the build dependencies
-into a single graph. This minimizes the aggregate amount of work the
-driver needs to perform and all but eliminates redundant operations.</p>
-<p>Non-recursive make is typically achieved one of 2 ways:</p>
-<ol>
-<li>Create a single monolithic make file</li>
-<li>Concatenate all of your make files together (using the built-in
-<em>include</em> directive)</li>
-</ol>
-<p>Either way, you produce a single DAG and all is well. More on this
-later.</p>
-<h2>Transitioning to a Single DAG</h2>
-<p>A big problem with non-recursive make is transitioning to it. For
-projects like Firefox with its 1500 Makefiles, each existing in its own
-little universe, this is a Herculean effort. There is a reason why
-many (including Mozilla) haven't done it: it's just too hard.</p>
-<p>The problem of slow build times with Firefox is important to me because
-I suffer from it almost every day. So, I got to thinking of creative
-ways to solve this problem. How can we work towards a monolithic DAG? How
-can we do this incrementally so as to not cause too much disruption and
-so the effort isn't near impossible?</p>
-<p>I've come up with a plan that I believe Mozilla should pursue. The plan
-consists of many different parts, each of which is described in a separate
-section below. Each part is presented in roughly the order it needs to
-be addressed in.</p>
-<p>I want to emphasize that <strong>this is my personal opinion and what I'm about
-to propose is merely that: a proposal</strong>. For all I know, people will think
-I'm smoking crack and none of these ideas will be pursued.</p>
-<p>Let's begin.</p>
-<h2>Part 1: No Rules</h2>
-<p>Make files consist of
-<a href="https://www.gnu.org/software/make/manual/make.html#Rule-Introduction">rules</a>.
-These are, well, rules that tell make how to evaluate a target. A rule
-will say something like <em>to turn hello.cpp into hello.o, call the C++
-compiler with these arguments</em>.</p>
-<p>People naturally take advantage of the fact that the body of the rule
-(the <em>recipe</em> in make parlance) is often similar for many targets, so
-you make use of <a href="https://www.gnu.org/software/make/manual/make.html#Wildcards">wildcard rules</a>
-or by specifying multiple prerequisites and/or targets for a rule.</p>
-<p>Wildcard rules are great. Their problem is that the recipe is often
-useful across many make files. The solution here is to put the rule
-definition (and thus the recipe) in a common file and use make's
-<a href="https://www.gnu.org/software/make/manual/make.html#Include">include directive</a>
-to bring those rules into the current make file.</p>
-<p>This is the general approach Mozilla takes. All of the generic rules are
-defined in the (oh-it-hurts-my-eyes-to-look-at-so-much-make-syntax)
-<a href="https://hg.mozilla.org/mozilla-central/file/default/config/rules.mk">rules.mk</a>
-file. Individual Makefiles in the tree simply define specifically-named
-variables such as <em>CPPSRCS</em> or <em>XPIDLSRCS</em> and then include <em>rules.mk</em>.
-When make executes, <em>rules.mk</em> transforms these variables into
-rules which are automagically inserted into the DAG.</p>
-<p>From a user perspective, this is splendid. You simply define some variables
-and magic ensues. Instead of hairy looking make files, you literally
-have a file with simple variable assignments. If all goes to plan, you
-don't need to look at these rules definitions. Instead, you leave that
-up to professional dragon trainers, such as Ted Mielczarek, Joey
-Armstrong, and Kyle Huey.</p>
-<p>A large problem is that many make files define custom rules - things not
-using the magic from rules.mk. What's worse is that these custom rules
-are often <em>cargo culted</em> around. They work, yes, but there is redundancy.
-The installation of mochitest files is a perfect example of this.
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=370750">Bug 370750</a>)
-tracks establishing a rule for this
-<a href="https://mxr.mozilla.org/mozilla-central/search?string=TEST_FILES">absurd repetition</a>
-of make logic in Mozilla's tree. Even in the case of mochitest rules
-where the recipe is simple (it's just calling <em>$(INSTALL)</em>), the lack of
-a unified rule hurts us. If we wanted to change the directory the
-mochitest files were installed to, this would require editing scores of
-files. Not cool.</p>
-<p>Anyway, the first step towards improving the Mozilla build system (and
-any make file based build system really) is what I'm calling the <strong>no
-rules initiative</strong>.</p>
-<p>We should strive for no explicit rules in non-shared make files
-(things outside of <em>config/</em> and <em>build/</em> in the Mozilla source tree -
-basically all the files named <em>Makefile.in</em> or <em>Makefile</em>).
-Instead, individual make files should define variables that cause rules
-from a shared make file (like <em>rules.mk</em>) to be applied.</p>
-<p>In Mozilla's case, this will be a lot of manual effort and it will seem
-like there is no immediate gain. The benefits will be explained in
-subsequent sections.</p>
-<h2>Part 2: Eliminate Make File Content Not Related to Building</h2>
-<p>Mozilla's make files are riddled with content that isn't directly
-related to the action of building Mozilla applications. Not only does
-this contribute to the overhead of invoking make (these bits need to be
-evaluated when parsing, added to the DAG, etc, adding cost), but they
-also make the make files harder to read and thus edit.</p>
-<p><a href="https://hg.mozilla.org/mozilla-central/file/default/testing/testsuite-targets.mk">testsuite-targets.mk</a>
-is a good example of this. While it isn't included in every make file
-(just the top-level one), the code isn't related to building at
-all! Instead, it is essentially proxy code that maps make targets to
-commands. It is supposed to be convenient: type |make xpcshell-tests|
-and some tests run. OK, fine. I'll give you that.
-The main problem is this make file is just a glorified shell script.
-Make is great at constructing a dependency graph. As a DSL for shell
-scripts, I'd rather just write a script. Therefore, I would argue code
-like this belongs elsewhere - not in make files.</p>
-<p>Anyway, a problem for Mozilla is that our make files are riddled with
-pieces of content that aren't directly related to <em>building</em>. And, build
-system maintainers pay the price. Every time you see some part of a make
-file that doesn't appear to be directly related to the act of building,
-your mind is like, "wut ist das?" (That's High German for <em>WTF?</em>) You
-start asking questions. What's it for. Who uses it? Is it really needed?
-What happens if it breaks? How will I know? These questions all need
-answered and that adds overhead to editing these files. Oftentimes these
-little one-off gems are undocumented and the questions are nearly
-impossible to answer easily. The wise course of action is usually
-<em>preserve existing behavior</em>. Nobody wants to melt someone else's
-precious snowflake, after all. Thus, cargo cult programming prevails.</p>
-<p>The solution I propose is along the same vein as the <em>no rules
-initiative</em> - you can actually think of it as a specifically-tailored
-subset: <em>limit the make files to what's necessary for building.</em> If it
-doesn't relate to the act of building the application - if it is an
-island in the DAG - remove it.</p>
-<p>But where do you move it to? Good question. We don't have an obvious
-location today. But, in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a> I am
-creating what is essentially a frontend for the build system. That is
-where it should go. (I will publish more information about that project
-on this blog once it has landed.)</p>
-<h2>Part 3: Make File Style Conventions and Enforced Review Requirements</h2>
-<p>My first two points revolved around what is effectively a make file
-style convention. If we are serious about making that convention stick,
-we need to enforce it better.</p>
-<p>This can be done in two ways.</p>
-<p>First, we establish a review policy that any changes to make files must
-be signed off by a build system peer. Maybe we carve out an exception
-for simple cases, such as adding a file to a <em>XPIDLSRCS</em> variable. I
-don't know. We certainly don't allow people to add new make files or
-even targets without explicit sign-off. I <em>think</em> this is how it is
-supposed to be today. It isn't enforced very well if it is.</p>
-<p>To aid in enforcing the style convention, we arm people with a tool that
-checks the style so they can fix things before it lands on a build
-peer's plate. This is actually pretty trivial to implement (I even
-have code that does this). The hard part is coming to consensus on the
-rules. If there is a will, I can make this happen easily.</p>
-<p>Once you have the tool to check for convention/style violations, your
-checkin policy is amended to include: <em>no make file changes can be checked
-in unless the file passes the style checker.</em> This is sure to draw ire
-from some, I'm sure. But, the alternative is having a cat and mouse
-game between the build system maintainers making the build system suck
-less and other people undoing their work with new features, etc.</p>
-<p>Anyway, these rules wouldn't be absolute - there could always be
-exceptions, of course. If we're serious about making the build system
-better, we need it to be more consistent and have less variance. I'm
-open to other suggestions to accomplish this.</p>
-<h2>Part 4: Extracting Data from Make Files</h2>
-<p>Once we have make files which consist of simple variable assignments (not
-rules), it is possible to take the values of these variables, and extract
-them from the make files to some higher-level system. For
-example, we could scour all the make files for the <em>CPPSRCS</em> variable
-and assemble a unified list of all C++ source files defined by that
-variable across the entire build system. Then, we could do some really
-interesting things.</p>
-<p>What kind of things you ask? Well, one idea is you could write out a
-monolithic make file that explicitly listed every target from the
-extracted data. No recursive make necessary here! Another idea would
-be to produce Visual Studio project files.</p>
-<p>Think I'm crazy and this is impossible?
-<a href="https://raw.github.com/gist/1363034/b3d956a66e049e7624fbdb79762551202fe9a465/optimized.mk">Feast your eyes</a>.
-That make file was generated by parsing the existing Firefox make files,
-extracting statically-defined data, then transforming that data
-structure back into a single make file. I also have code somewhere that
-produces Visual Studio projects.</p>
-<p>Now, all of this is just a proof-of-concept. It works just well enough
-for me to prove it is feasible. (The linked example is 7 months old and
-won't work on the current tree.) Although, at one time, I did have have a
-functioning transformation of essentially the <em>make export</em> stage. All
-include files and IDL generation was in a single make file. It ran in a
-fraction of the time as recursive make. A no-op execution of the
-monolithic make file took about 0.5 seconds and - <em>gasp</em> - actually did
-no work (unlike the no-op builds in the Mozilla tree today which
-actually run many commands, even though nothing changed).</p>
-<p>My point is that by having your make files - your build system - be
-statically defined, you can extract and combine pieces of information.
-Then, with relative ease, you can transform it to something else. Instead
-of make files/build systems being a DSL for shell script execution, they
-are data structures. And, you can do a lot more with data structures
-(including generating shell scripts). Representing a build system as a
-unified, constant data structure is what I consider to be the <em>holy grail</em>
-of build systems. If you can do this, all you need to do is transform a
-data structure to a format some other build tool can read and you are
-set. If you do a good job designing your data structure, what you've
-essentially built is an intermediate language (IR) that can be
-compiled to different build tools (like make, Ninja, and Visual Studio).</p>
-<p>(The previous paragraph is important. You may want to read it again.)</p>
-<p>Getting back on point, our goal is to assemble aggregate data for
-Mozilla's build system so we can construct a monolithic DAG. We can work
-towards this by extracting variable values from our make files.</p>
-<p>Unfortunately, there are technical problems with naive data extraction
-from make files. Fortunately, I have solutions.</p>
-<p>The first problem is getting at individual variable values in make
-files. Simple parsing is ruled out, as make files can be more complex
-than you realize (all those pesky built-in functions). You don't want
-to burden people to add targets to print variable values and then
-execute make just to print variables. This would be violating steps
-1 and 2 from above! So, you somehow need to inject yourself into a
-make execution context.</p>
-<p>Fortunately, we have <a href="http://benjamin.smedbergs.us/pymake/">pymake</a>.
-Pymake is a mostly feature complete implementation of GNU make written
-in Python. You should be able to swap out GNU make for pymake and things
-just work. If they don't, there is a bug in pymake.</p>
-<p>pymake is useful because it provides an API for manipulating make and
-make files. Contrast this was GNU make, which is essentially a black
-box: make file goes in, process invocations come out. There's no really
-good way to inspect things. The closest is the <em>-p</em> argument, which
-dumps some metadata of the parsed file. But, this would require you to
-parse that output. As they say, <em>now you have two problems</em>.</p>
-<p>Using pymake, it's possible to get at the raw parser output and to poke
-around the assembled data structures before the make file is evaluated.
-This opens up some interesting possibilities.</p>
-<p>With pymake's API, you can query for the value of a variable, such as
-<em>XPIDLSRCS</em>. So, you just need to feed every make file into pymake,
-query for the value of a variable, then do cool things with the
-extracted data.</p>
-<p>Not so fast.</p>
-<p>The problem with simple extraction of variables from make files is that
-there is no guarantee of idempotence. You see, make files aren't static
-structures. You don't parse a make file into a read-only structure,
-build the DAG, and go. Oh no, because of how make files work, you have
-to constantly re-evaluate things, possibly modifying the DAG in the
-process.</p>
-<p>When you obtain the value of a variable in make, you need to evaluate it.
-In make parlance, this is called <em>expansion</em>.</p>
-<p>Expansion is easy when variables have simple string content. e.g.</p>
-<pre><code>CPPSRCS = foo.cpp bar.cpp
-</code></pre>
-<p>It gets more complicated when they have references to other variables:</p>
-<pre><code>FILES = foo.cpp bar.cpp
-CPPSRCS = $(FILES) other.cpp
-</code></pre>
-<p>Here the expansion of <em>CPPSRCS</em> must descend into <em>FILES</em> and expand
-that. If <em>FILES</em> contained a reference, make would descend into that.
-And so on.</p>
-<p>The problem of non-guaranteed idempotence is introduced when variable
-expansion interfaces with something that is non-deterministic, such as
-the file system. This almost always involve a call to one of make's
-built-in functions. For example:</p>
-<pre><code>CPPSRCS = $(wildcard *.cpp)
-SOURCES = $(shell find . -type f -name '*.cpp')
-</code></pre>
-<p>Here, the expanded value of <em>CPPSRCS</em> depends on the state of the
-filesystem at the time of expansion. This is obviously not
-deterministic. Since you can't guarantee the results of that expansion,
-doing something with the evaluated value (such as generating a new
-make file) is dangerous.</p>
-<p>It gets worse.</p>
-<p>The expansion of a variable can occur multiple times during the execution
-of a make file due to deferred evaluation. When you use the <em>=</em> operator
-in make files, the variable isn't actually expanded until it is accessed
-(make just stores a reference to the string literal on the right
-side of the assignment operator). Furthermore, the expansion occurs <em>every
-time</em> the variable is accessed. Seriously.</p>
-<p>The <em>:=</em> operator, however, expands the variable once - at assignment time.
-Instead of storing a string reference, make evaluates that string
-immediately and assigns the result to the variable.</p>
-<p>The distinction is important and can have significant implications. Use
-of <em>=</em> can lead to degraded performance via redundant work during multiple
-expansions (e.g. file system access or shell invocation). It can also
-cause the value of a variable to change during the course of execution
-from changes to systems not directly under the make file's control (such
-as the file system). For these reasons, <strong>I recommend to use the
-immediate assignment operator (:=) instead of the deferred assignment
-operator (=) unless you absolutely need deferred assignment</strong>. This is
-because immediate assignment approximates what most think assignment
-should be. Unfortunately, since <em>=</em> is the only assignment operator in the
-overwhelming majority of popular programming languages, most people don't
-even know that other assignment operators exist or that the deferred
-assignment operator comes with baggage. Now you do. I hope you use it
-properly.</p>
-<p>Anyway, if a variable's value changes while a make file is executing, what
-is the appropriate value to extract for external uses? In my opinion,
-the safe answer is there is none: don't extract the value of that
-variable. If you do, you are asking for trouble.</p>
-<p>It sounds like I just tore a giant hole in my idea to extract simple
-data from make files since I just said that the value may not be
-deterministic. Correct. But, the key word here is <em>may</em>. Again, pymake
-comes to the rescue.</p>
-<p>Using pymake, I was able to implement a prover that guarantees whether a
-variable is deterministic and thus idempotent. Basically, it examines
-the statement list generated by pymake's parser. It traces the
-assignment of a variable through the course of a statement list. If the
-variable itself, any variable referenced inside of it, or any variable
-that impacts the assignment (such as assignment inside a condition block)
-is tainted by a non-deterministic evaluation (notably file system querying
-and shell calls), that variable is marked as non-deterministic. Using
-this prover, we can identify which variables are guaranteed to be
-idempotent as long as the make file doesn't change. If you want to learn
-more, see the
-<a href="https://raw.github.com/indygreg/mozilla-central/build-splendid/build/buildsplendid/makefile.py">code</a>.</p>
-<p>Now that we have a way of proving that a variable in a make file is
-deterministic as long as the source make file doesn't change, we can
-extract data from make files with confidence, without having to worry
-about side-effects during execution of the make file. Essentially, the
-only thing we need to monitor is the original make file and any make
-files included by it. As long as they don't change, our static analysis
-holds.</p>
-<p>So, I've solved the technical problem of extracting data from make
-files. This allows us to emancipate build system data into a constant
-data structure. As mentioned above, this opens up a number of
-possibilities.</p>
-<p>It's worth noting that we can combine the prover with the style
-enforcer from part 3 to help ensure Mozilla's make files are statically
-defined. Over time, the make files will not only look like simple
-variable assignments (from part 1), but will also become static data
-structures. <strong>This will enable the Mozilla build system to be
-represented as a single, constant data structure.</strong> This opens up the
-transformation possibilities described above. It also allows for more
-radical changes, such as replacing the make files with something else.
-More on that later.</p>
-<h2>Part 5: Rewriting Make Files</h2>
-<p>Extracting data from make files to produce new build system data
-(possibly a unified make file) introduces a new problem: redundancy
-and/or fragmentation. You now have the original definition sitting
-around in the original make file and an optimized version in a derived
-file. What happens when the original file (still containing the original
-values) is evaluated? Do you want the targets (now defined elsewhere from
-the extracted data) to still work when executed from the original file?
-(Probably not.)</p>
-<p>There is also a concern for how to handle the partially converted build
-system scenario. In theory, porting the build system to the <em>new world
-order</em> would go something like this:</p>
-<p>1) Identify a variable/feature you want to extract from the make files
-2) Write routine to convert extracted data into an optimized builder
-(maybe it just prints out a new make file)
-3) For make files where that variable is defined but couldn't be safely
-extracted (because it wasn't determinant), continue to execute the old,
-inherited rule from <em>rules.mk</em> (as we do today).</p>
-<p>This acknowledges the reality that any particular transition of a
-variable to use an optimized build routine from extracted values will
-likely be difficult to do atomically. The flag day will be held up by
-stragglers. It would be much more convenient to accomplish the
-transition incrementally. Files that are ready see the benefit today,
-not only after everyone else is ready.</p>
-<p>My solution to this problem is make file rewriting. For variables that
-are deterministic and have their functionality replaced by some other
-system, we simply strip out references to these variables from the make
-files. No variable. No inherited rule. No redundancy. No extra burden.
-Of course, we're not altering the <em>original</em> make file. Instead,
-we take the input make file (<em>Makefile.in</em> in the Mozilla tree), do
-static analysis, remove variables handled elsewhere, then write out a
-new make file.</p>
-<p>Unfortunately, this invented a new problem: rewriting make files. As far
-as I can tell, nobody has done this before. At least not to the degree
-or robustness that I have (previous solutions are effectively sed +
-grep).</p>
-<p>Using pymake, I was able to create an API sitting between the
-parser and evaluator which allows high-level manipulation of the make
-file data structure. Want to delete a variable? Go for it. Want to delete
-a target? Sure! It's really the missing API from pymake (or any make
-implementation for that matter). I stopped short of writing a
-fully-featured API (things like adding rules, etc). Someday I would love
-to fill that in because then you could create new/anonymous make
-files/DAGS using just API calls. You would thus have a generic API for
-creating and evaluating a DAG using make's semantics. This is
-potentially very useful. For example, the optimized make files
-generated from static data extracted from other make files I've been
-talking about could be produced with this API. In my opinion, this
-would be much cleaner than printing make directives by hand (which is
-how I'm doing it today).</p>
-<p>This new make file manipulation API was relatively easy to write. The hard
-part was actually formatting the statement list back into a make file
-that was both valid <strong>and</strong> functionally equivalent to the original.
-(There's actually a lot of dark corners involving escaping, etc.) But, I
-eventually slayed this dragon. And, the best part is I can prove it is
-correct by feeding the output into the pymake parser and verifying the
-two statement lists are identical! Furthermore, after the first
-iteration (which doesn't preserve formatting of the original make file
-because a) it doesn't need to and b) it would be a <em>lot</em> of effort) I can
-even compare the generated string content of the make files as an added
-sanity check.</p>
-<p>If you are interested, the code for this lives alongside the
-deterministic proving code linked to in the previous section. I would
-like to land it as part of pymake someday. We'll see how receptive the
-pymake maintainers are to my crazy ideas.</p>
-<p>Anyway, we can now strip extracted variables handled by more efficient
-build mechanisms out of generated make files. That's cool. It gives us an
-incremental transition path for Mozilla's build system that bridges new
-and old.</p>
-<p>But wait - there's more!</p>
-<p>That deterministic prover I wrote for data extraction: I can actually
-use it for rewriting make files!</p>
-<p>Make files support
-<a href="https://www.gnu.org/software/make/manual/make.html#Conditionals">conditional directives</a>
-such as <em>ifeq</em>, <em>ifneq</em>, <em>ifdef</em>, <em>else</em>, etc. For each conditional
-directive, I can query the deterministic prover and ask whether an
-expansion of that directive is deterministic. If it is, I evaluate the
-conditional directive and determine which branch to take. And, I may
-have invented the first make file optimizer!</p>
-<p>I simply replace the condition block (and all the branches therein) with
-the statements constituting the branch that is guaranteed to be
-executed.</p>
-<p>As a contrived example:</p>
-<pre><code>DO_FOO := 1
-
-ifeq ($(DO_FOO), 1)
-foo.o: foo.cpp
-    clang++ -o foo.o foo.cpp
-endif
-</code></pre>
-<p>We can prove the <em>ifeq</em> branch will always be taken. So, using the
-deterministic prover, we can rewrite this as:</p>
-<pre><code>DO_FOO := 1
-
-foo.o: foo.cpp
-    clang++ -o foo.o foo.cpp
-</code></pre>
-<p>Actually, we can now see that the value of <em>DO_FOO</em> is not referenced
-and is free from side-effects (like a shell call), and can eliminate it!</p>
-<pre><code>foo.o: foo.cpp
-    clang++ -o foo.o foo.cpp
-</code></pre>
-<p>Cool!</p>
-<p>The practical implication of this is that it is shifting the burden of
-make file evaluation from once every time you run make to <em>some time
-before</em>. Put another way, we are reducing the amount of work make performs
-when evaluating a make file. As long as the original file and any files
-included by it don't change frequently, the cost of the static analysis
-and rewriting is repaid by simpler make files and the lower run-time
-cost they incur. This should translate to speedier make invocations.
-(Although, I have no data to prove this.)</p>
-<p>Another nice side-effect is that the rewritten and reduced make file is
-easy to read. You know exactly what is going to happen without having to
-perform the evaluation of (constant) conditional statements in your head
-(which likely involves consulting other files, like <em>autoconf.mk</em> in the
-case of Mozilla's make files). My subjective feeling is that this makes
-generated make files much easier to understand.</p>
-<p>So, not only does rewriting make files allow us to incrementally
-transition to a build system where work is offloaded to a more optimized
-execution model, but it also makes the evaluated make files smaller,
-easier to understand, and hopefully faster. As Charlie Sheen would say:
-winning!</p>
-<h2>Review Through Part 5</h2>
-<p>At this point, I've laid out effectively phase 1 of making Mozilla's
-build system suck much less. We now have make files that are:</p>
-<ul>
-<li>Reusing rule logic from rules.mk to do everything (specially-named
-  variables cause magic to ensure). No cargo culted rules.</li>
-<li>Devoid of cruft from targets not related to building the application.</li>
-<li>Variables defined such that they are deterministic (essentially no
-  shell and filesystem calls in make files)</li>
-<li>A review system in place to ensure we don't deviate from the above</li>
-<li>A higher-level tool to extract specific variables from make files
-  which also produces an optimized, non-recursive make file to evaluate
-  those targets. Ideally, this encompasses all rules inherited from
-  rules.mk and the need for recursion and to evaluate individual make
-  files is eliminated.</li>
-</ul>
-<p>If we wanted, we could stop here. This is about the limit we can take
-the existing build system while maintaining some resemblence to the
-current architecture.</p>
-<p>But, I'm not done.</p>
-<h2>Part 6: Transition Away from Make Files</h2>
-<p>If we've implemented the previous parts of this post, it is only
-natural for us to shift away from make files.</p>
-<p>If all we have in our make files are variable assignments, why are we
-using make files to define a static document? There are much better
-formats for static data representation. YAML and JSON come to mind.</p>
-<p>If we transition the build system definition to something actually
-declarative - not just something we shoehorn into being declarative
-(because that is how you make it fast and maintainable) - that cuts out
-a lot of the hacky-feeling middleware described above (static analysis,
-data extraction, and rewriting). It makes parsing simpler (no need for
-pymake). It also takes away a foot gun (non-deterministic make
-statements). Still not convinced? We could actually properly represent
-an array (make doesn't have arrays, just strings split on whitespace)!
-OK, just kidding - the array thing isn't that big of a deal.</p>
-<p>Anyway, the important characteristic of the build system is achieving
-that <em>holy grail</em> where the entire thing can be represented as a single
-generic (and preferably constant) data structure. As long as you can
-arrive at that (a state that can be transformed into something else),
-it doesn't matter the road you take. But, some roads are certainly
-cleaner than others.</p>
-<p>At the point where you are transitioning away from make files, I would
-argue the correct thing to do is convert the build definition to files
-understood by another build tool. Or, we should at least use a format
-that is easily loaded into another tool. If we don't, we've just invented
-a custom one-off build system. A project the size of Mozilla could
-probably justify it. But, I think the right thing to do is find an open
-source solution that fits the bill and run with that.</p>
-<p>While I'm far from an expert on it, I'll throw out
-<a href="https://code.google.com/p/gyp/">GYP</a> as a candidate. GYP defines the
-build system in JSON files (which can actually be directly evaluated in
-a Python interpreter). GYP consumes all of the individual .gyp/JSON
-files and assembles an aggregate representation of the <em>entire</em> build
-system. You then feed that representation into a generator, which
-produces make files, Ninja files, or even Visual Studio or Xcode
-project files. Sound familiar? It's essentially my <em>holy grail</em> where
-you transform a data structure into something consumed by a specific
-tool. I approve.</p>
-<p>Now, GYP is not perfect. No build system is perfect. I will say
-that GYP is good enough to build Chromium. And, if it can handle
-Chromium, surely it can handle Firefox.</p>
-<h2>Next Steps for Mozilla</h2>
-<p>I'm not sure what the next steps are. I've been trying to convince
-people for a while that a data-centric declarative build system is
-optimal and we should be working towards it. Specifically, we should be
-working towards a monolithic DAG, not separate DAGs in separate make
-files. I think people generally agree with me here. We obviously have a
-build system today that is very declarative (with variables turning into
-rules). And, I know people like Joey Armstrong understand why recursive
-make is so slow and are working on ways to switch away from it.</p>
-<p>I think the main problem is people are overwhelmed by what a transition
-plan would look like. There is a lot of crap in our make files and
-fixing it all in one go is next to impossible. Nobody wants to do it
-this way. And, I think the sheer scope of the overall problem along with
-a constant stream of new features (Fennec make files, ARM support,
-Windows 8, etc) has relegated people to merely chipping away at the
-fringe.</p>
-<p>Supplementing that, I think there has been doubt over some of what I've
-proposed, specifically around the scarier-sounding bits like performing
-static analysis and rewriting of make files. It scared me when I first
-realized it was possible, too. But, it's possible. It's real. I have
-code that does it. I'll admit the code is far from perfect. But, I've
-done enough that I've convinced my self it is possible. It just needs a
-little polish and everything I described above is a reality. We just
-need to commit to it. Let's do it.</p>
-<h2>Loose Ends</h2>
-<h3>What About "Sand-boxed" Make or Concatenating Make Files?</h3>
-<p>I anticipate that the main <em>competition</em> for my proposal will involve
-the following approaches:</p>
-<ol>
-<li>"sand-boxed" make files (described in the aforementioned <em>Recursive
-   Make Considered Harmful</em> paper)</li>
-<li>Concatenate all the make files together</li>
-</ol>
-<p>The concatenating one is definitely a non-controversial alternative to
-my proposal of extracting data then creating derived build files
-(possibly a monolithic make file) from it. And, if we go with
-concatenating, I'll generally be happy. We'll have a mostly
-statically-defined build system and it will exist in one monolithic DAG.
-This has desirable attributes.</p>
-<p>FWIW, the stalled
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=623617">bug 623617</a> has an
-amazing patch from Joey Armstrong which partially implements concatenated
-make files. If this lands, I will be extremely happy because it will make
-the build system much faster and thus make developers' lives less
-painful.</p>
-<p>That being said, I do have a complaint against the concatenating
-approach: it is still defined in make files.</p>
-<p>The problem isn't make itself: it's that at the point you have pulled off
-concatenating everything together, your build system is effectively static
-data declarations. Why not use something like GYP instead? That way, you
-get Ninja, Visual Studio, Xcode, Eclipse, or even make file generation
-<strong>for free</strong>. I think it would be silly to ignore this opportunity.</p>
-<p>If we continue to define everything in make files, we'll have to rely on
-data extraction from the concatenated make file to create project files for
-Visual Studio, Xcode, etc. This is possible (as I've proved above). And,
-I will gladly lend my time to implementing solutions (I've already
-performed a lot of work to get Visual Studio project generation working
-in this manner, but I abandoned work because I reached the long tail that
-is one-off targets and redundancy - which would be eliminated if we
-accomplish parts 1 and 2). Furthermore, we may have to reinvent the
-wheel of generating these project files (believe me, generating Visual
-Studio projects is not fun). Or, we could find a way to extract
-the make file data into something like GYP and have it do the generation
-for us. But, if we are going to end up in GYP (or similar), why don't we
-just start there?</p>
-<p>I will also throw out that if we are really intent on preserving our
-existing make rules, it would be possible to define the build system in
-GYP/other files and write a custom GYP/other generator which
-produced make files tailored for our existing make rules.</p>
-<p>In summary, the crux of my argument against concatenated make files is
-that it is a lot of work and that for roughly the same effort you could
-produce something else which has almost identical properties but has
-more features (which will make the end-developer experience better).</p>
-<p>You could say the additional complexity of my proposal is just to buy us
-Visual Studio, etc support. That is more or less accurate. I think I've
-put in more time than anyone to devise a solution that programmatically
-generates Visual Studio projects. (Manually tailored files out out of
-the question because the maintenance of keeping them in sync with build
-system changes would be too high and error prone.) From my perspective,
-if we want to provide Visual Studio, Xcode, etc files for Mozilla
-projects - if we want to provide developers access to amazing tools so
-they can be more productive - we need the build system defined in
-something <em>not make</em> so this is robust.</p>
-<h3>Eclipse Project Files</h3>
-<p>Jonathan Watt recently
-<a href="https://jwatt.org/blog/2012/06/10/the-new-eclipse-cdt-and-mozilla-development">posted instructions</a>
-on configuring Eclipse CDT to build Firefox. Awesome!</p>
-<p>Some may say that debunks my theory that it is difficult/impossible to
-generate build project files from just make files (without the sorcery I
-describe above). Perhaps.</p>
-<p>As cool as the Eclipse CDT integration is, the way it works is a giant
-hack. And, I don't mean to belittle Jonathan or his work here - it is
-very much appreciated and a large step in the right direction.</p>
-<p>The Eclipse CDT integration works by scanning the output of make,
-looking for compiler invocations. It parses these out, converting the
-arguments to Eclipse project data. Not only do you have to perform a
-standard make to configure Eclipse, but it also has to run without any
-parallelization so as to not confuse the parser (interleaved output,
-etc). And, Eclipse doesn't do everything for you - you still have to
-manage part of your build from the command line.</p>
-<p>So, Eclipse is really a hybrid solution - albeit a rather useful one
-and, importantly, one that seems to work. Yet, In my opinion, this is
-all a little fragile and less than ideal. I want the ability to build
-the whole thing from your build tool. This <em>is</em> possible with the
-solutions I've proposed above.</p>
-<h3>Improving GYP</h3>
-<p>Above, I recommended GYP as a build system which I think is a good
-example of my <em>holy grail</em> build system - one which represents
-everything as data and allows transformations to multiple build tools.</p>
-<p>While I like the concept of GYP, there are parts of the implementation I
-don't like. Every build system inevitably needs to deal with
-conditionals. e.g. <em>if on Windows, use this flag; if on Linux, use this
-one.</em> GYP represents conditions as specially crafted property names in
-JSON objects. For example:</p>
-<pre><code>{
-  'conditions': [
-    ['OS=="linux"', {
-      'targets': [
-        {
-          'target_name': 'linux_target'
-        },
-      ],
-    }],
-    ['OS=="win"', {
-      'targets': [
-        {
-          'target_name': 'windows_target',
-        },
-      ],
-    }]
-  ]
-}
-</code></pre>
-<p>That special string as a key name really rubs me the wrong way. You are
-using declarative data to represent procedural flow. Yuck. It reminds me
-of a horror from a previous life - VXML. Don't ever try to write a
-computer program complete with branching and functions in XML: you will
-just hate yourself.</p>
-<p>Anyway, despite the conflation of logic and data, it isn't too bad. As
-long as you limit the expressions that can be performed (or that
-actually are performed - I think I read they just feed it into eval),
-it's still readable. And, I'll happily sacrifice some purity to achieve
-the <em>holy grail</em>.</p>
-<p>Anyway, I think my optimal build system would look a lot like GYP except
-that the data definition language would be a little more powerful.
-Knowing that you will inevitably need to tackle conditionals and other
-simple logic, I would give up and give my build system files access to a
-real programming language. But, it would need to be a special language.
-One that doesn't allow foot guns (so you can preserve determinism) and
-one that can't be abused to allow people to stray too far from a
-data-first model.</p>
-<p>For this task, I would employ the <a href="http://www.lua.org/">Lua</a>
-programming language. I would use Lua because it is designed to be an
-embeddable and easily sandboxed programming language. These attributes
-are perfect for what I'd need it to do.</p>
-<p>Basically, files defining the build system would be Lua scripts. Some
-driver program would discover all these Lua files. It would create a new
-Lua context (an instance of the Lua interpreter) for each file. The
-context's global registry (namespace) would be populated
-with variables that defined the existing build
-configuration.  <em>IS_WINDOWS</em>, <em>HAVE_STRFTIME</em>, etc - the kind of stuff
-<em>exported</em> by configure. The Lua script would get executed in that
-context. It would do stuff. It would either set specially-named global
-variables to certain values or it would call functions installed in the
-global registry like <em>add_library</em>, etc. Then, the driving program would
-collect everything the Lua script did and merge that into a data
-structure representing the build system, achieving the <em>holy grail</em>.</p>
-<p>In the simple case, build files/Lua scripts would just look like simple
-variable assignments:</p>
-<pre><code>EXPORTED_INCLUDES = {"foo.h", "bar.h"]
-LIBRARY_NAME = "hello"
-</code></pre>
-<p>If the build system needed to do something conditional, you would have a
-real programming language to fall back on:</p>
-<pre><code>if IS_WINDOWS then
-    SOURCE_FILES = "windows.cpp"
-else
-    SOURCE_FILES = "other.cpp"
-end
-</code></pre>
-<p>To my eye, this is cleaner than hacking JSON while still readable.</p>
-<p>For people not familiar with Lua, new context instances are cheap, tiny,
-and have almost no features. Even the standard library must be
-explicitly added to a context! Contrast this with a batteries-included
-language like Python or JavaScript. So, while the build definition files
-would have a fully-featured programming language backing them, they
-would be severely crippled. I'm thinking I would load the <em>string</em> and
-<em>table</em> libraries from the <a href="http://www.lua.org/manual/5.2/manual.html#6">standard library</a>.
-Maybe I'd throw the <em>math</em> one in too. If I did, I'd disable the random
-function, because that's not deterministic!</p>
-<p>Anyway, I think that would get me to a happy place. Maybe I'll get bored
-on a weekend and implement it! I'm thinking I'll have a Python program
-drive Lua through the ctypes module (if someone hasn't written a binding
-already - I'm sure they have). Python will collect data from the Lua
-scripts and then translate that to GYP data structures. If someone beats
-me to it, please name it <em>Lancelot</em> and leave a comment linking to the
-source.</p>
-<h3>Using Code for Other Projects</h3>
-<p>The code I wrote for pymake can be applied to any make file, not just
-Mozilla's. I hope to have some of it integrated with the official pymake
-repository some day. If this interests you, please drop me a line in the
-comments and I'll see what I can do.</p>]]></content>
   </entry>
 </feed>
