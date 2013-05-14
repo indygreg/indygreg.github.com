@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 14 May 2013 02:38:50 GMT</pubDate>
+    <pubDate>Tue, 14 May 2013 16:42:54 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -186,7 +186,7 @@ coming from when I inevitably propose radical changes.</p>
 <h2>The sad state of build system interaction and the history of mach</h2>
 <p>I believe that Mozilla's build system has had a poor developer
 experience for as long as there has been a Mozilla build system.
-Getting started with Firefox development was a right of passage. It
+Getting started with Firefox development was a rite of passage. It
 required following (often out-of-date) directions on MDN. It
 required finding pages through MDN search or asking other people
 for info over IRC. It was the kind of process that turned away
@@ -208,7 +208,7 @@ growing new features and making developers' lives easier with
 every one. All of this is happening despite that there
 is not a single person tasked with working on mach full time.
 Until a few months ago, mach was largely my work. Recently, Matt
-Brubeck has been contributing a flury of enhancements - thanks
+Brubeck has been contributing a flurry of enhancements - thanks
 Matt! Ehsan Akhgari and Nicholas Alexander have contributed a
 few commands as well! There are also a few people with a single
 command to their name. This is fulfilling my original vision of
