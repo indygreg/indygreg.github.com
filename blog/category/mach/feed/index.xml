@@ -10,10 +10,294 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 13 May 2013 20:31:28 GMT</pubDate>
+    <pubDate>Tue, 14 May 2013 00:28:07 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Mozilla Build System Brain Dump</title>
+      <link>http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump</link>
+      <pubDate>Mon, 13 May 2013 17:25:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <category><![CDATA[mach]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump</guid>
+      <description>Mozilla Build System Brain Dump</description>
+      <content:encoded><![CDATA[<p>I hold a lot of context in my head when it comes to the future of
+Mozilla's build system and the interaction with it. I wanted to
+perform a brain dump of sorts so people have an idea of where I'm
+coming from when I inevitably propose radical changes.</p>
+<h2>The sad state of build system interaction and the history of mach</h2>
+<p>I believe that Mozilla's build system has had a poor developer
+experience for as long as there has been a Mozilla build system.
+Getting started with Firefox development was a right of passage. It
+required following (often out-of-date) directions on MDN. It
+required finding pages through MDN search or asking other people
+for info over IRC. It was the kind of process that turned away
+potential contributors because it was just too damn hard.</p>
+<p>mach - while born out of my initial efforts to radically change
+the build system proper - morphed into a generic command
+dispatching framework by the time it landed in mozilla-central.
+It has one overarching purpose: provide a single gateway point for
+performing common developer tasks (such as building the tree and
+running tests). The concept was nothing new - individual developers
+had long coded up scripts and tools to streamline workflows. Some
+even published these for others to use. What set mach apart was a
+unified interface for these <em>commands</em> (the mach script in the
+top directory of a checkout) and that these productivity gains
+were <strong>in the tree</strong> and thus easily discoverable and usable by
+<em>everybody</em> without significant effort (just run <em>mach help</em>).</p>
+<p>While mach doesn't yet satisfy everyone's needs, it's slowly
+growing new features and making developers' lives easier with
+every one. All of this is happening despite that there
+is not a single person tasked with working on mach full time.
+Until a few months ago, mach was largely my work. Recently, Matt
+Brubeck has been contributing a flury of enhancements - thanks
+Matt! Ehsan Akhgari and Nicholas Alexander have contributed a
+few commands as well! There are also a few people with a single
+command to their name. This is fulfilling my original vision of
+facilitating developers to scratch their own itches by
+contributing mach commands.</p>
+<p>I've noticed more people referencing mach in IRC channels. And,
+more people get angry when a mach command breaks or changes
+behavior. So, I consider the mach experiment a success. Is it
+perfect, no. If it's not good enough for you, please file a bug
+and/or code up a patch. If nothing else, please tell me: I love to
+know about everyone's subtle requirements so I can keep them in
+mind when refactoring the build system and hacking on mach.</p>
+<h2>The object directory is a black box</h2>
+<p>One of the ideas I'm trying to advance is that the object directory
+should be considered a black box for the majority of developers. In
+my ideal world, developers don't need to look inside the object
+directory. Instead, they interact with it through condoned and
+supported tools (like mach).</p>
+<p>I say this for a few reasons. First, as the build config module owner
+I would like the ability to massively refactor the <em>internals</em> of
+the object directory without disrupting workflows. If people are
+interacting directly with the object directory, I get significant
+push back if things change. This inevitably holds back much-needed
+improvements and triggers resentment towards me, build peers, and
+the build system. Not a good situation. Whereas if people are
+indirectly interacting with the object directory, we simply need to
+maintain a consistent interface (like mach) and nobody should care
+if things change.</p>
+<p>Second, I believe that the methods used when directly interacting
+with the object directory are often sub-par compared with going
+through a more intelligent tool and that productivity suffers as a
+result. For example, when you type <em>make</em> in inside the object
+directory you need to know to pass <em>-j8</em>, use make vs pymake,
+and that you also need to build <em>toolkit/library</em>, etc.
+Also, by invoking make directory, you bypass other handy features,
+such as automatic compiler warning aggregation (which only happens
+if you invoke the build system through mach). If you go through a
+tool like <em>mach</em>, you <em>should</em> automatically get the most ideal
+experience possible.</p>
+<p>In order for this vision to be realized, we need massive
+improvements to tools like mach to cover the missing workflows that
+still require direct object directory interaction. We also need people
+to start using mach. I think increased mach usage comes after mach
+has established itself as obviously superior to the alternatives
+(I already believe it offers this for tasks like running tests).</p>
+<h2>I don't want to force mach upon people but...</h2>
+<p>Nobody likes when they are forced to change a process that has been
+familiar for years. Developers especially. I get it. That's why
+I've always attempted to position mach as an alternative to
+existing workflows. If you don't like mach, you can always fall
+back to the previous workflow. Or, you can improve mach (patches
+more than welcome!). Having gone down the
+please-use-this-tool-it's-better road before at other
+organizations, I strongly believe that the best method to incur
+adoption of a new tool is to gradually sway people through
+obvious superiority and praise (as opposed to a mandate to switch).
+I've been trying this approach with mach.</p>
+<p>Lately, more and more people have been saying things like
+<em>we should have the build infrastructure build through mach
+instead of client.mk</em> and <em>why do we need testsuite-targets.mk when
+we have mach commands.</em> While I personally feel that client.mk
+and testsuite-targets.mk are antiquated as a developer-facing
+interface compared to mach, I'm reluctant to eliminate them because
+I don't like forcing change on others. That being said, there are
+compelling reasons to eliminate or at least refactor how they work.</p>
+<p>Let's take <em>testsuite-targets.mk</em> as an example. This is the make
+file that provides the targets to run tests (like <em>make xpcshell-test</em>
+and <em>make mochitest-browser-chrome</em>). What's interesting about this
+file is that it's only used in local builds: our automation
+infrastructure does not use <em>testsuite-targets.mk</em>! Instead,
+<em>mozharness</em> and the old buildbot configs manually build up the
+command used to invoke the test harnesses. Initially, the mach
+commands for running tests simply invoked make targets defined
+in <em>testsuite-targets.mk</em>. Lately, we've been converting the mach
+commands to invoke the Python test runners directly. I'd argue that
+the logic for <em>invoke the test runner</em> only needs to live in one
+place in the tree. Furthermore as a build module peer, I have little
+desire to support multiple implementations. Especially considering
+how fragile they can be.</p>
+<p>I think we're trending towards an outcome where mach (or the code
+behind mach commands) transitions into the authoratitive invocation
+method and <em>legacy</em> interfaces like <em>client.mk</em> and
+<em>testsuite-targets.mk</em> are reimplemented to either call mach
+commands or the same routine that powers them. Hopefully this
+will be completely transparent to developers.</p>
+<h2>The future of mozconfigs and environment configuration</h2>
+<p><em>mozconfig</em> files are shell scripts used to define variables consumed
+by the build system. They are the only officially supported mechanism
+for configuring how the build system works.</p>
+<p>I'd argue mozconfig files are a mediocre solution at best. First,
+there's the issue of mozconfig statements that don't actually do
+anything. I've seen no-op mozconfig content cargo culted into the
+in-tree mozconfigs (used for the builder configurations)! Oops.
+Second, doing things in mozconfig files is just awkward. Defining
+the object directory requires <em>mk_add_options MOZ_OBJDIR=some-path</em>.
+What's <em>mk_add_options</em>? If <em>some-path</em> is relative, what is it
+relative <em>to</em>? While certainly addressable, the documentation on
+how mozconfig files work is not terrific and fails to explain many
+pitfalls. Even with proper documentation, there's still the issue
+of the file format allowing no-op variable assignments to persist.</p>
+<p>I'm very tempted to reinvent build configuration as something not
+mozconfigs. What exactly, I don't know. mach has support for ini-like
+configuration files. We could certainly have mach and the build
+system pull configs from the same file.</p>
+<p>I'm not sure what's going to happen here. But deprecating mozconfig
+files as they are today is part of many of the options.</p>
+<h2>Handling multiple mozconfig files</h2>
+<p>A lot of developers only have a single mozconfig file (per source tree
+at least). For these developers, life is easy. You simply install
+your mozconfig in one of the default locations and it's automagically
+used when you use mach or client.mk. Easy peasy.</p>
+<p>I'm not sure what the relative numbers are, but many developers
+maintain multiple mozconfig files per source tree. e.g. they'll
+have one mozconfig to build desktop Firefox and another one for
+Android. They may have debug variations of each.</p>
+<p>Some developers even have a single mozconfig file but leverage the
+fact that mozconfig files are shell scripts and have their
+mozconfig dynamically do things depending on the current working
+directory, value of an environment variable, etc.</p>
+<p>I've also seen wrapper scripts that glorify setting environment
+variables, changing directory, etc and invoke a command.</p>
+<p>I've been thinking a lot about providing a common and well-supported
+solution for switching between active build configurations.
+<a href="https://developer.mozilla.org/en-US/docs/Developer_Guide/mach#Adding_mach_to_your_shell%27s_search_path">Installing mach on $PATH</a>
+goes a long way to facilitate this. If you are in an object
+directory, the mozconfig used when that object directory was
+created is automatically applied. Simple enough. However, I want
+people to start treating object directories as black boxes. So, I'd
+rather not see people have their shell inside the object directory.</p>
+<p>Whenever I think about solutions, I keep arriving at a
+virtualenv-like solution. Developers would potentially need to
+<em>activate</em> a Mozilla build environment (similar to how Windows
+developers need to launch MozillaBuild). Inside this environment,
+the shell prompt would contain the name of the current build
+configuration. Users could switch between configurations using
+<em>mach switch</em> or some other magic command on the $PATH.</p>
+<p>Truth be told, I'm skeptical if people would find this useful. I'm
+not sure it's that much better than exporting the MOZCONFIG
+environment variable to define the active config. This one requires
+more thought.</p>
+<h2>The integration between the build environment and Python</h2>
+<p>We use Python extensively in the build system and for common
+developer tasks. mach is written in Python. moz.build processing
+is implemented in Python. Most of the test harnesses are written in
+Python.</p>
+<p>Doing practically anything in the tree requires a Python
+interpreter that knows about all the Python code in the tree and
+how to load it.</p>
+<p>Currently, we have two very similar Python environments. One is
+a virtualenv created while running configure at the beginning of
+a build. The other is essentially a cheap knock-off that mach
+creates when it is launched.</p>
+<p>At some point I'd like to consolidate these Python environments.
+From any Python process we should have a way to automatically
+bootstrap/activate into a well-defined Python environment. This
+certainly sounds like establishing a unified Python virtualenv
+used by both the build system and mach.</p>
+<p>Unfortunately, things aren't straightforward. The virtualenv today
+is constructed in the object directory. How do we determine the
+current object directory? By loading the mozconfig file. How do we
+do that? Well, if you are mach, we use Python. And, how does mach
+know where to find the code to load the mozconfig file? You can
+see the dilemma here.</p>
+<p>A related issue is that of portable build environments. Currently, a
+lot of our automation recreates the build system's virtualenv from
+its own configuration (not that from the source tree). This has
+and will continue to bite us. We'd <em>really</em> like to package up the
+virtualenv (or at least its config) with tests so there is no
+potential for discrepancy.</p>
+<p>The inner workings of how we integrate with Python should be
+invisible to most developers. But, I figured I'd capture it
+here because it's an annoying problem. And, it's also related
+to an <em>activated</em> build environment. What if we required all
+developers to <em>activate</em> their shell with a Mozilla build
+environment (like we do on Windows)? Not only would this solve
+Python issues, but it would also facilitate simpler config
+switching (outlined above). Hmmm...</p>
+<h2>Direct interaction with the build system considered harmful</h2>
+<p>Ever since there was a build system developers have been typing
+<em>make</em> (or <em>make.py</em>) to build the tree. One of the goals of the
+transition to <em>moz.build</em> files is to facilitate building the tree
+with Tup. <em>make</em> will do nothing when you're not using Makefiles!
+Another goal of the <em>moz.build</em> transition is to start
+derecursifying the make build system such that we build things in
+parallel. It's likely we'll produce monolithic make files and then
+process <em>all</em> targets for a related class <em>IDLs</em>, <em>C++ compilation</em>,
+etc in one invocation of <em>make</em>. So, uh, what happens during a partial
+tree build? If a .cpp file from <em>/dom/src/storage</em> is being handled by
+a monolithic make file invoked by the Makefile at the top of the
+tree, how does a partial tree build pick that up? Does it build just
+that target or every target in the monolithic/non-recursive make file?</p>
+<p>Unless the build peers go out of our way to install redundant targets
+in leaf Makefiles, directly invoking <em>make</em> from a subdirectory of
+the tree won't do what it's done for years.</p>
+<p>As I said above, I'm sympathetic to forced changes in procedure, so
+it's likely we'll provide backwards-compatibile behavior. But, I'd
+prefer to not do it. I'd first prefer partial-tree builds are not
+necessary and a full tree build finishes quickly. But, we're not going
+to get there for a bit. As an alternative, I'll take people building
+through <em>mach build</em>. That way, we have an easily extensible interface
+on which to build partial tree logic. We saw this recently when
+dumbmake/smartmake landed. And, going through <em>mach</em> also reinforces my
+ideal that the object directory is a black box.</p>
+<h2>Semi-persistent state</h2>
+<p>Currently, most state as it pertains to a checkout or build is in the
+object directory. This is fine for artifacts from the build system.
+However, there is a whole class of state that arguably shouldn't be in
+the object directory. Specifically, it shouldn't be clobbered when you
+rebuild. This includes logs from previous builds, the warnings database,
+previously failing tests, etc. The list is only going to grow over time.</p>
+<p>I'd like to establish a location for semi-persistant state related to
+the tree and builds. Perhaps we change the clobber logic to ignore a
+specific directory. Perhaps we start storing things in the user's home
+directory. Perhaps we could establish a second <em>object directory</em> named
+the <em>state directory</em>? How would this interact with <em>build environments</em>?</p>
+<p>This will probably sit on the backburner until there is a compelling use
+case for it.</p>
+<h2>The battle against C++</h2>
+<p>Compiling C++ consumes the bulk of our build time. Anything we can do to
+speed up C++ compilation will work wonders for our build times.</p>
+<p>I'm optimistic things like precompiled headers and compiling multiple
+.cpp files with a single process invocation will drastically decrease
+build times. However, no matter how much work we put in to make C++
+compilation faster, we still have a giant issue: dependency hell.</p>
+<p>As <a href="/presentations/2012-11-29-firefox-build-system/#34">shown</a> in my
+build system presentation a few months back, we have dozens of header
+files included by hundreds if not thousands of C++ files. If you change
+one file: you invalidate build dependencies and trigger a rebuild. This
+is why whenever files like mozilla-config.h change you are essentially
+confronted with a full rebuild. ccache may help if you are lucky. But, I
+fear that as long as headers proliferate the way they do, there is
+little the build system by itself can do.</p>
+<p>My attitude towards this is to wait and see what we can get out of
+precompiled headers and the like. Maybe that makes it good enough. If
+not, I'll likely be making a lot of noise at Platform meetings
+requesting that C++ gurus brainstorm on a solution for reducing
+header proliferation.</p>
+<h2>Conclusion</h2>
+<p>Belive it or not, these are only some of the topics floating around in
+my head! But I've probably managed to bore everyone enough so I'll
+call it a day.</p>
+<p>I'm always interested in opinions and ideas, especially if they are
+different from mine. I encourage you to leave a comment if you have
+something to say.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Omnipresent mach</title>
       <link>http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach</link>
