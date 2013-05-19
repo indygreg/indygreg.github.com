@@ -274,6 +274,10 @@ img.aligncenter {
 	color: #FFFFFF;
 }
 
+.pygments_murphy > pre {
+  overflow: auto;
+}
+
 /* Sidebar */
 
 #sidebar {

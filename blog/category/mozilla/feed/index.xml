@@ -10,10 +10,126 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 14 May 2013 16:46:48 GMT</pubDate>
+    <pubDate>Sun, 19 May 2013 20:42:38 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Using Docker to Build Firefox</title>
+      <link>http://gregoryszorc.com/blog/2013/05/19/using-docker-to-build-firefox</link>
+      <pubDate>Sun, 19 May 2013 13:45:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[Firefox]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/05/19/using-docker-to-build-firefox</guid>
+      <description>Using Docker to Build Firefox</description>
+      <content:encoded><![CDATA[<p>I have the privilege of having my desk located around a bunch of
+really intelligent people from the Mozilla Services team. They've been
+talking a lot about all the new technologies around server provisioning.
+One that interested me is <a href="http://www.docker.io/">Docker</a>.</p>
+<p>Docker is a pretty nifty piece of software. It's essentially a glorified
+wrapper around <a href="http://lxc.sourceforge.net/">Linux Containers</a>. But,
+calling it that is doing it an injustice.</p>
+<p>Docker interests me because it allows simple environment isolation and
+repeatability. I can create a run-time environment
+once, package it up, then run it again on any other machine.
+Furthermore, everything that runs in that environment is isolated from
+the underlying host (much like a virtual machine). And best of all,
+everything is fast and simple.</p>
+<p>For my initial experimentation with Docker, I decided to create an
+environment for building Firefox.</p>
+<h2>Building Firefox with Docker</h2>
+<p>To build Firefox with Docker, you'll first need to
+<a href="http://www.docker.io/gettingstarted/">install</a> Docker. That's pretty
+simple.</p>
+<p>Then, it's just a matter of creating a new container with our build
+environment:</p>
+<div class="pygments_murphy"><pre>curl https://gist.github.com/indygreg/5608534/raw/30704c59364ce7a8c69a02ee7f1cfb23d1ffcb2c/Dockerfile | docker build
+</pre></div>
+
+<p>The output will look something like:</p>
+<div class="pygments_murphy"><pre>FROM ubuntu:12.10
+MAINTAINER Gregory Szorc &quot;gps@mozilla.com&quot;
+RUN apt-get update
+===&gt; d2f4faba3834
+RUN dpkg-divert --local --rename --add /sbin/initctl &amp;&amp; ln -s /bin/true /sbin/initctl
+===&gt; aff37cc837d8
+RUN apt-get install -y autoconf2.13 build-essential unzip yasm zip
+===&gt; d0fc534feeee
+RUN apt-get install -y libasound2-dev libcurl4-openssl-dev libdbus-1-dev libdbus-glib-1-dev libgtk2.0-dev libiw-dev libnotify-dev libxt-dev mesa-common-dev uuid-dev
+===&gt; 7c14cf7af304
+RUN apt-get install -y binutils-gold
+===&gt; 772002841449
+RUN apt-get install -y bash-completion curl emacs git man-db python-dev python-pip vim
+===&gt; 213b117b0ff2
+RUN pip install mercurial
+===&gt; d3987051be44
+RUN useradd -m firefox
+===&gt; ce05a44dc17e
+Build finished. image id: ce05a44dc17e
+ce05a44dc17e
+</pre></div>
+
+<p>As you can see, it is essentially <em>bootstrapping</em> an environment to
+build Firefox.</p>
+<p>When this has completed, you can activate a shell in the container by
+taking the image id printed at the end and running it:</p>
+<div class="pygments_murphy"><pre>docker run -i -t ce05a44dc17e /bin/bash
+<span class="c"># You should now be inside the container as root.</span>
+su - firefox
+hg clone https://hg.mozilla.org/mozilla-central
+<span class="nb">cd </span>mozilla-central
+./mach build
+</pre></div>
+
+<p>If you want to package up this container for distribution, you just find
+its ID then export it to a tar archive:</p>
+<div class="pygments_murphy"><pre>docker ps -a
+<span class="c"># Find ID of container you wish to export.</span>
+docker <span class="nb">export </span>2f6e0edf64e8 &gt; image.tar
+<span class="c"># Distribute that file somewhere.</span>
+docker import - &lt; image.tar
+</pre></div>
+
+<p>Simple, isn't it?</p>
+<h2>Future use at Mozilla</h2>
+<p>I think it would be rad if Release Engineering used Docker for managing
+their Linux builder configurations. Want to develop against the exact
+system configuration that Mozilla uses in its automation - you could do
+that. No need to worry about custom apt repositories, downloading
+custom toolchains, keeping everything isolated from the rest of your
+system, etc: Docker does that all automatically. Mozilla simply needs to
+publish Docker images on the Internet and anybody can come along and
+reproduce the official environment with minimal effort. Once we do that,
+there are few excuses for someone breaking Linux builds because of
+an environment discrepancy.</p>
+<p>Release Engineering could also use Docker to manage isolation of
+environments between builds. For example, it could spin up a new
+container for each build or test job. It could even save images from the
+results of these jobs. Have a weird build failure like a segmentation
+fault in the compiler? Publish the Docker image and have someone take a
+look! No need to take the builder offline while someone SSH's into it.
+No need to worry about the probing changing state because you can always
+revert to the state at the time of the failure! And, builds would likely
+start faster. As it stands, our automation <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=851294">spends minutes managing
+packages</a> before
+builds begin. This lag would largely be eliminated with Docker. If
+nothing else, executing automation jobs inside a container would allow
+us to extract accurate resource usage info (CPU, memory, I/O) since
+the Linux kernel effectively gives containers their own namespace
+independent of the global system's.</p>
+<p>I might also explore publishing Docker images that construct an ideal
+development environment (since getting recommended tools in the hands of
+everybody is a hard problem).</p>
+<p>Maybe I'll even consider hooking up build system glue to automatically
+run builds inside containers.</p>
+<p>Lots of potential here.</p>
+<h2>Conclusion</h2>
+<p>I encourage Linux users to play around with Docker. It enables some
+new and exciting workflows and is a really powerful tool despite its
+simplicity. So far, the only major faults I have with it are that the
+docs say it should not be used in production (yet) and it only works on
+Linux.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Build System Status Update 2013-05-14</title>
       <link>http://gregoryszorc.com/blog/2013/05/13/build-system-status-update-2013-05-14</link>
@@ -1282,289 +1398,6 @@ an issue, please report it! A temporary workaround is to just invoke
 mach from the top source directory like you've always been doing.</p>
 <p>If you enjoy the feature, thank Matt: this was completely his idea and
 he saw it through from conception to implementation.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>moz.build Files and the Firefox Build System</title>
-      <link>http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system</link>
-      <pubDate>Thu, 28 Feb 2013 19:45:00 PST</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Firefox]]></category>
-      <category><![CDATA[build system]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system</guid>
-      <description>moz.build Files and the Firefox Build System</description>
-      <content:encoded><![CDATA[<p>The next time you update mozilla-central you may notice some significant
-changes with the build system. That's because this morning we finally
-landed the start of a massive overhaul of the build system! There are
-many end goals to this effort. The important ones for most will be
-faster build times and a build system that is friendlier to make changes
-to.</p>
-<h2>Introducing moz.build Files</h2>
-<p>If you look in the tree, you'll notice that nearly every directory
-now has a <em>moz.build</em> file.</p>
-<p><em>moz.build</em> files are what we are using to define the build system. Think of
-them each as a descriptor that describes how to build its own part of the
-tree. An individual <em>moz.build</em> file will contain the C++ sources to
-compile, the headers to export, the tests to run, etc. Eventually.
-Currently, they are limited to directory traversal information.</p>
-<p><em>moz.build</em> files essentially add a level of indirection between the
-build system definition and how the tree is actually built. Before
-<em>moz.build</em> files, the same metadata we are now capturing in <em>moz.build</em>
-files (or plan to capture) was captured in <em>Makefile.in</em> files. We
-performed simple variable substitution on these <em>Makefile.in</em> files to
-produce <em>Makefile</em> files in the object directory. These <em>Makefile</em> files
-were used by GNU Make (or Pymake on Windows) to build the tree.</p>
-<p>As I outlined in <a href="/blog/2012/06/25/improving-mozilla's-build-system/">Improving Mozilla's Build System</a>,
-<em>Makefile.in</em> are suboptimal for a number of reasons. The important
-bit is they essentially tie us to the use of make (recursive or otherwise).
-We are very interested in supporting modern build systems such as Tup
-(the theory being they will build the tree faster).</p>
-<p>Enter <em>moz.build</em> files. Storing our build configuration in
-<em>moz.build</em> files allows us to decouple the definition of the build
-system from the tool used to build it.</p>
-<h2>How moz.build Files Work</h2>
-<p>At the tail end of <em>configure</em>, the build system invokes the
-<em>config.status</em> script in the object directory. The role of
-<em>config.status</em> is to combine the information collected during
-<em>configure</em> with the build configuration obtained from <em>moz.build</em> files
-and take the necessary actions to ensure the build backend (make) can
-build the tree.</p>
-<p>Before today, <em>config.status</em> essentially iterated over the source tree
-and converted <em>Makefile.in</em> files to <em>Makefile</em> in the object directory.
-Things are now slightly more complicated with <em>moz.build</em> files.</p>
-<p>When <em>config.status</em> runs, it starts with the
-<a href="https://hg.mozilla.org/mozilla-central/file/87de54667483/moz.build">root moz.build</a>
-from the source tree. It feeds this file into a Python interpreter. It
-then looks for special variables like <em>DIRS</em> and <em>PARALLEL_DIRS</em> to determine
-which directories contain additional <em>moz.build</em> files. It then descends
-into all the referenced directories, reading their <em>moz.build</em> files.
-While this is happening, we are converting the results of each
-<em>moz.build</em> file execution into <em>backend.mk</em> files that make knows how
-to build. It also performs the <em>Makefile.in</em> to <em>Makefile</em> conversion
-like it always has. When the whole process has finished, the object
-directory contains a bunch of <em>Makefile</em> and <em>backend.mk</em> files. make
-runs like it always has. The only real difference is some variables are
-coming from the <em>moz.build</em>-derived <em>backend.mk</em> files instead of
-<em>Makefile</em>.</p>
-<p>This is just a brief overview, of course. If you want to know more,
-see the code in <em>/python/mozbuild/mozbuild/frontend</em> and
-<em>/python/mozbuild/mozbuild/backend</em>.</p>
-<h2>Build System Future</h2>
-<p>With the introduction of <em>moz.build</em> files, the intent is to <strong>eventually
-completely eliminate Makefile.in and have all the build definition live
-in moz.build files.</strong></p>
-<p>Doing this all at once would have been next to impossible. So, we
-decided to eliminate <em>Makefile.in</em> gradually. The first step is what
-landed today: essentially moving <em>DIRS</em> variables out of <em>Makefile.in</em>
-and into <em>moz.build</em> files. Next, we will be eliminating empty
-<em>Makefile.in</em> (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844635">bug 844635</a>)
-and will be moving more parts of the build definition from <em>Makefile.in</em>
-to <em>moz.build</em> files. The next part to move over will likely be IDLs
-(<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=818246">bug 818246</a>).
-After that, it may be exported files (<em>EXPORTS</em> in <em>Makefile.in</em>
-parlance). And repeat until we have no more <em>Makefile.in</em> in the tree.</p>
-<p>Each migration of build definition data to <em>moz.build</em> files will likely
-occur in two phases:</p>
-<ol>
-<li>A largely mechanical move of the variables from <em>Makefile.in</em> to
-   <em>moz.build</em>.</li>
-<li>Better build backend integration resulting from the move.</li>
-</ol>
-<p>In phase #1, we will essentially cut and paste variable assignments to
-<em>moz.build</em> files. make will read the same variables it does today and
-perform the same actions. The only difference is the values in these
-variables will be defined in <em>moz.build</em> files.</p>
-<p>In phase #2, we will leverage the fact that our build definition now has
-an API. We will change our existing make backend to be more efficient.
-For example, we should soon be able to compile IDLs and copy exported
-headers without make traversing through the directory tree at build time.
-We will be able to do this because the <em>moz.build</em> traversal at
-pre-build time sees data from all <em>moz.build</em> files and with this
-<em>complete world view</em> is able to produce more optimal make files than
-what you would get if you recursed into multiple directories. In short:
-it will make the build faster.</p>
-<p>Once we have a sufficient portion of the build definition moved to
-<em>moz.build</em> files we will be able to experiment with new build backends
-(like Tup), look into automatic Visual Studio project generation, and
-more easily experiment with different ways of building (such as
-precompiled headers, fewer compiler process invocations, etc). These
-should all contribute to faster build times.</p>
-<h2>Frequently Asked Questions</h2>
-<h4>What impact will I see from this change?</h4>
-<p>If you never touched <em>Makefile.in</em> files in the tree, you should not
-notice anything different about how the tree builds or how the build
-system works. You should have nothing to fear.</p>
-<p>The most obvious changes to the source tree are:</p>
-<ol>
-<li>There is a <em>moz.build</em> file in almost every directory now.</li>
-<li>The variables related to directory traversal (those containing <em>DIRS</em>
-   in their name) are now defined in <em>moz.build</em> files instead of
-   <em>Makefile.in</em>.</li>
-<li>If your <em>Makefile.in</em> contains a variable that has been moved to
-   <em>moz.build</em> files, make will spew an error when processing that file
-   and the build will fail.</li>
-</ol>
-<h4>Will this change how I build?</h4>
-<p>It shouldn't. You should build the tree just like you always have. Most
-of you won't notice any differences.</p>
-<p>If you see something weird, speak up in #build or file a bug if you are
-really confident it is wrong.</p>
-<h4>What are the risks to this change?</h4>
-<p>The migration of variables from <em>Makefile.in</em> to <em>moz.build</em> files is
-largely mechanical and significant portions are done manually. This can
-be a mind-numbing and tedious process. Not helping things is the fact
-that Splinter's review interface for these kinds of patches is hard to
-read.</p>
-<p>This all means that there is a non-trivial risk for <em>transcription</em>
-errors. All it takes is an inverted conditional block and all of a
-sudden large parts of the tree are no longer built, for example.</p>
-<p>We have established <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=846425">bug 846825</a>
-to investigate any oddities from the initial transfer. Developers are
-encouraged to help with the effort. Please spot check that your
-directories are still being built, tests run, etc. Pay special attention
-to changes made in the last 4 months as these parts of <em>Makefile.in</em>
-would have been bit rotted and more prone to data loss.</p>
-<p>Parts of the tree not enabled in standard configurations are more prone
-to breakage due to less testing. i.e. build configurations not captured
-by TBPL have a higher chance of breaking.</p>
-<h4>Will this make the tree build faster?</h4>
-<p>Not yet. But eventually it will. This initial landing paves the
-groundwork to making the tree build faster (see the <em>Future</em> section
-above).</p>
-<h4>I see a lot of empty moz.build files!</h4>
-<p>Yes. Sorry about that. The good news is they shouldn't be empty for
-long. As things move from <em>Makefile.in</em> to <em>moz.build</em> we'll see fewer
-and fewer empty <em>moz.build</em> files. We'll also see fewer and fewer
-<em>Makefile.in</em> files once we start deleting empty <em>Makefile.in</em>.</p>
-<p>If you want to know why we must have empty files, it's mainly for
-validation. If we allowed <em>moz.build</em> files to be optional, how would
-you detect a typo in a directory name? Directory exists? What if that
-directory exists but isn't supposed to have a <em>moz.build</em> file?</p>
-<h4>You bitrotted my patches!</h4>
-<p>Yes. I'm sorry. The transition period to <em>moz.build</em> files could be a
-little messy. There will be lots of changes to <em>Makefile.in</em> and
-<em>moz.build</em> files and lots of chances for bit rot. Uplifts could be
-especially nasty. (Although I don't believe many uplifts involve
-significant changes to the build configuration.)</p>
-<p>This all means there is a strong incentive for us to complete the
-transition as quickly as possible.</p>
-<h4>Can I help with the transition to moz.build files?</h4>
-<p>Yes!</p>
-<p>The transition is largely mechanical (at least phase #1). If you are
-interested in moving a variable or set of variables, hop in #build on
-IRC and speak up!</p>
-<h4>You said moz.build files are actually Python files?!</h4>
-<p>Yes they are! However, they are executed in a very tightly controlled
-sandbox. You can't import modules, open files, etc. UPPERCASE variable
-names are reserved and only a few functions are exposed. If you attempt
-to assign to an unknown UPPERCASE variable or assign an invalid value,
-an error will occur. This is already much better than Makefile because
-we can now detect errors earlier in the build process (rather than 15
-minutes into a build).</p>
-<h4>What variables and functions are available in moz.build files?</h4>
-<p>If you run |./mach mozbuild-reference| you will see a print-out of
-all the variables, functions, and symbols that are exposed to the Python
-sandbox that moz.build files execute in. There are even tests that will
-fail the build if the sandbox contains symbols not in this output!</p>
-<p>The output should be valid reSTructuredText (in case you want to convert
-to HTML for reading in your browser).</p>
-<h4>What if a moz.build file contains an error?</h4>
-<p>The build will break.</p>
-<p>A lot of work has gone into making the output of moz.build errors human
-friendly and actionable. If you do something wrong, it won't just
-complain: it will tell you how to fix it!</p>
-<h4>Besides build times, how else will this improve the build system?</h4>
-<p>There are several ways!</p>
-<p>As mentioned above, moz.build are more strict about what data is allowed
-to be defined. If you assign to an UPPERCASE variable, that variable
-must be known to the sandbox or else the assignment will error. This
-means that if you assign to an UPPERCASE variable, you know it has a
-side-effect. No more cargo culting of old, meaningless variables!</p>
-<p>To change the behavior of moz.build files (add new variables or
-functions, change how makefile generation works, etc) will require
-changes to the code in /python/mozbuild. This code belongs squarely to
-the build module and requires appropriate review. A problem with
-Makefiles is that they have lots of foot guns by default and its easy
-for self-inflicted wounds to land in the tree without explicit build
-peer review. This problem largely goes away with moz.build files because
-the sandbox takes away all of make's foot guns.</p>
-<p>The output of a moz.build execution is essentially a static data
-structure. It's easy to validate them for conformance. If we discover
-bad practices in our build definition, we can centrally add tests for
-them and enforce best practices.</p>
-<p>We will also see user experience wins by moving data to moz.build files.
-Take mochitests for an example. We currently have several flavors
-(plain, browser, chrome, etc). Sometimes you cannot distinguish the
-flavor by the filename alone. With moz.build files, it will be easier to
-answer questions like "what mochitest flavor is this file?" mach could
-hook into this so you can type |mach mochitest path/to/file.html|
-instead of |mach mochitest-plain path/to/file.html|. Even better, you
-should just be able to type |mach path/to/test.html| and mach knows from
-the build definition that path/to/test.html is a plain mochitest file
-and assumes you want to run it. There are dozens of small development
-workflow wins to be gained here!</p>
-<h4>If I change a moz.build file, what happens?</h4>
-<p>If you change a moz.build file, then make should detect that it
-has changed and it will update the dynamically generated <em>backend.mk</em>
-file and reinvoke the requested build action. This should all happen
-automatically (just like <em>Makefile.in</em> to <em>Makefile</em> conversion works
-automatically).</p>
-<h4>My build seems to pause for a few seconds before starting!</h4>
-<p>A change to <em>any</em> moz.build file will cause a full traversal of the
-entire moz.build tree. On modern machines, this should only take 1-3
-seconds. If your source tree is not in the page cache (and you need
-to load moz.build files from disk) or if you are on older hardware, this
-could be a little slower.</p>
-<p>This is an unfortunate side-effect of having a whole world view of the
-build definition. The build delay incurred by these full scans should
-eventually be cancelled out by build backend optimizations resulting
-from having this whole world view, however.</p>
-<p>The good news is this full scan should only occur if a mozbuild file
-changes. And, if you are performing make recursion, it should only
-happen once (not in every directory). If you notice multiple moz.build
-scanning-related pauses during builds, please file a bug in Core ::
-Build Config!</p>
-<p>Finally, we are performing the reads on a single thread currently. We
-can throw more cores at the task if someone codes up a patch.</p>
-<h4>What happened to allmakefiles.sh?</h4>
-<p>It has been sacked. allmakefiles.sh was an optimization to perform all
-the Makefile.in to Makefile conversion in one go. The directory
-traversal performed by moz.build reading effectively replaces the role
-of allmakefiles.sh. Not only that, but the moz.build build definition is
-always up to date! allmakefiles.sh was typically out of sync with
-reality and was a burden to maintain.</p>
-<h4>Did we just invent our own build system?</h4>
-<p>Kinda. We invented a generic Python sandboxing infrastructure. Then we
-hooked up code to populate it with variables from our build system and
-told it how to perform file traversal by reading specific variables set
-during file execution. Then we hooked up code for taking the evaluated
-results of all those sandboxes and convert them into make files.</p>
-<p>Conceptually, what we invented is like GYP but with a different config
-file format. We have dabbled with the idea of converting the parsed
-build definition into GYP classes and then leveraging GYP to produce
-Makefiles, Ninja files, Visual Studio Projects, etc. This would an
-interesting experiment!</p>
-<p>If you want to call it a build system, call it a build system. However,
-it is currently tightly coupled to Mozilla's needs, so you can't just
-use it anywhere. The concept might be worth exploring, however.</p>
-<h4>Is there anything else you'd like to share?</h4>
-<p>I think we set the record for most parts in a bug: 61. Although, they
-are numbered 1-17, 19-20. Part 18 has 30+ sub-parts using letters from
-the English and Greek alphabet for identifiers. Part 61 uses the
-infinity symbol as its number. See the
-<a href="https://hg.mozilla.org/mozilla-central/pushloghtml?changeset=c65d59d33aa8">pushlog</a>.</p>
-<p>Finally, I'd like to thank everyone who helped with this effort. The bug
-itself was <em>only</em> 6 months old and had active development off and on for
-a lot of it. Ted Mielczarek and Mike Hommey provided invaluable feedback
-on the core build system patches. A number of module owners stepped in
-to lend eyes to the mechanical conversion of their files. Last but not
-least, Ms2ger provided invaluable review aid on many of the patches. The
-work was so good that we all agreed that an Ms2ger f+ was good enough
-for a build peer rs! If reviewing the patches wasn't enough, Ms2ger
-also oversaw the tree closure and merging of the landing. I don't know
-how I will repay this debt.</p>
-<h4>Any more questions?</h4>
-<p>If you have more questions, drop in #build on irc.mozilla.org and ask
-away.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
