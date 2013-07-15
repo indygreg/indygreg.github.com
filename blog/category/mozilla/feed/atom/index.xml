@@ -7,12 +7,105 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2013-06-25T03:59:59Z</updated>
+  <updated>2013-07-15T06:18:44Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Quantifying Mozilla's Automation Efficiency]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/07/14/quantifying-mozilla's-automation-efficiency" />
+    <id>http://gregoryszorc.com/blog/2013/07/14/quantifying-mozilla's-automation-efficiency</id>
+    <updated>2013-07-14T23:15:00Z</updated>
+    <published>2013-07-14T23:15:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Quantifying Mozilla's Automation Efficiency]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/07/14/quantifying-mozilla's-automation-efficiency"><![CDATA[<p>Mozilla's build and test automation
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=859573">now records</a>
+system resource usage (CPU, memory, and I/O) during mozharness jobs.
+It does this by adding a generic resource collection feature to
+mozharness. If a mozharness script inherits from a specific class, it
+magically performs system resource collection and reporting!</p>
+<p>I want to emphasize that the current state of the feature is far from
+complete. There are numerous shortcomings and areas for improvement:</p>
+<ul>
+<li>At the time I'm writing this, the mozharness patch is only
+  deployed on the Cedar tree. Hopefully it will be deployed to the
+  production infrastructure shortly.</li>
+<li>This feature only works for mozharness jobs. Notably absent are
+  desktop builds.</li>
+<li>psutil - the underlying Python package used to collect data - isn't
+  yet installable everywhere. As Release Engineering rolls it out to
+  other machine classes in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=893254">bug 893254</a>,
+  those jobs will magically start collecting resource usage.</li>
+<li>While detailed resource usage is captured during job execution, we
+  currently only report a very high-level summary at job completion
+  time. This will be addressed with
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=893388">bug 893388</a>.</li>
+<li>Jobs running on virtual machines appear to misreport CPU usage
+  (presumably due to CPU steal being counted as utilized CPU).
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=893391">Bug 893391</a>
+  tracks.</li>
+<li>You need to manually open logs to view resource usage. (e.g. open
+  <a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/cedar-macosx64/1373828505/cedar_mountainlion_test-xpcshell-bm77-tests1-macosx-build30.txt.gz">this log</a>
+  and search for <em>Total resource usage</em>.) I hope to one day have key
+  metrics reported in TBPL output and/or easily graphable.</li>
+<li>Resource collection operates at the system level. Because there is
+  only 1 job running on a machine and slaves typically do little else,
+  we assume system resource usage is a sufficient proxy for automation
+  job usage. This obviously isn't always correct. But, it was the
+  easiest to initially implement.</li>
+</ul>
+<p>Those are a lot of shortcomings! And, it essentially means only OS X
+test jobs are providing meaningful data now. But, you have to start
+somewhere. And, we have more data now than we did before. That's
+progress.</p>
+<h2>Purpose and Analysis</h2>
+<p>Collecting resource usage of automation jobs (something I'm quite frankly
+surprised we weren't doing before) should help raise awareness of
+inefficient machine utilization and other hardware problems. It will
+allow us to answer questions such as <em>are the machines working as hard
+as they can</em> or <em>is a particular hardware component contributing to
+slower automation execution.</em></p>
+<p>Indeed a casual look at the first days of the data has shown some
+alarming readings, notably the abysmal CPU efficiency of our test jobs.
+For an OS X 10.8 opt build, the
+<a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/cedar-macosx64/1373828505/cedar_mountainlion_test-xpcshell-bm77-tests1-macosx-build30.txt.gz">xpcshell</a>
+job only utilized an average of 10% CPU during execution. A
+<a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/cedar-macosx64/1373828505/cedar_mountainlion_test-mochitest-browser-chrome-bm77-tests1-macosx-build26.txt.gz">browser chrome</a>
+job only utilized 12% CPU on average. Finally, a
+<a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/cedar-macosx64/1373828505/cedar_mountainlion_test-reftest-bm77-tests1-macosx-build21.txt.gz">reftest</a>
+job only utilized 13%.</p>
+<p>Any CPU cycle not utilized by our automation infrastructure is forever
+lost and cannot be put to work again. So, to only utilize 10-13% of
+available CPU cycles during test jobs is wasting a lot of machine
+potential. This is the equivalent of buying 7.7 to 10 machines and only
+turning 1 of them on! Or, in terms of time, it would reduce the wall
+time execution of a 1 hour job to 6:00 to 7:48. Or in terms of
+overall automation load, it would significantly decrease the backlog and
+turnaround time. You get my drift. This is why parallelizing test
+execution within test suites - a means to increase CPU utilization - is
+such an exciting project to me. This work is all tracked in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=845748">bug 845748</a> and in
+my opinion it cannot complete soon enough. (I'd also like to see more
+investigation into bottlenecks in test execution. Even small
+improvements of 1 or 2% can have a measurable impact when multiplied by
+thousands of tests per suite and hundreds of test job runs per day.)</p>
+<p>Another interesting observation is that there is over 1 GB of write I/O
+during some test jobs. Browser chrome tests write close to 2GB! That is
+surprisingly high to me. Are the tests really incurring that much I/O?
+If so, which ones? Do they need to? If not tests, what background
+service is performing that much work? Could I/O wait be slowing tests
+down? Should we invest in more SSDs? More science is definitely needed.</p>
+<p>I hope people find this data useful and that we put it to use to
+make more data-driven decisions around Mozilla's automation
+infrastructure.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1572,63 +1665,5 @@ weekend.</p>
 significantly faster. If you thought it was too slow before, grab the
 latest code (from either the official repository or my personal branch)
 and enjoy.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Bulk Analysis of Mozilla's Build and Test Data]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data" />
-    <id>http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data</id>
-    <updated>2013-04-01T13:12:00Z</updated>
-    <published>2013-04-01T13:12:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
-    <summary type="html"><![CDATA[Bulk Analysis of Mozilla's Build and Test Data]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data"><![CDATA[<p>When you push code changes to Firefox and other similar Mozilla
-projects, a flood of automated jobs is triggered on Mozilla's
-infrastructure. It works like any other continuous integration
-system. First you build, then you run tests, etc. What sets it
-apart from other continuous integration systems is the size:
-Mozilla runs thousands of jobs per week and the combined output
-sums into the tens of gigabytes.</p>
-<p>Most of the data from Mozilla's continuous integration is
-available on public servers, notably ftp.mozilla.org. This includes
-compiled binaries, logs, etc.</p>
-<p>While there are tools that can sift through this mountain of data
-(like <a href="https://tbpl.mozilla.org">TBPL</a>), they don't allow ad-hoc
-queries over the raw data. Furthermore, these tools are very
-function-specific and there are many data views they don't expose.
-This <em>missing</em> data has always bothered me because, well, there
-are cool and useful things I'd like to do with this data.</p>
-<p>This itch has been bothering me for well over a year. The
-persistent burning sensation coupled with rain over the weekend
-caused me to scratch it.</p>
-<p>The <a href="https://github.com/indygreg/mozilla-build-analyzer">product of my weekend labor</a>
-is a system facilitating bulk storage and analysis of Mozilla's
-build data. While it's currently very alpha, it's already showing
-promise for more throrough data analysis.</p>
-<p>Essentially, the tool works by collecting the dumps of all the jobs
-executed on Mozilla's infrastructure. It can optionally supplement
-this with the raw logs from those jobs. Then, it combs through this
-data, extracts useful bits, and stores them. Once the initial
-fetching has completed, you simply need to re-"parse" the data set
-into useful data. And, since all data is stored locally, the
-performance of this is not bound by Internet bandwidth. In practice,
-this means that you can obtain a new metric faster than would have
-been required before. The downside is you will likely be storing
-gigabytes of raw data locally. But, disks are cheap. And, you have
-control over what gets pulled in, so you can limit it to what you
-need.</p>
-<p>Please note the project is very alpha and is only currently serving
-my personal interests. However, I know there is talk about <em>TBPL2</em>
-and what I have built could evolve into the data store for the next
-generation TBPL tool. Also, most of the work so far has centered on
-data import. There is tons of analysis code waiting to be written.</p>
-<p>If you are interested in improving the tool, please file a GitHub
-pull request.</p>
-<p>I hope to soon blog about useful information I've obtained through this
-tool.</p>]]></content>
   </entry>
 </feed>

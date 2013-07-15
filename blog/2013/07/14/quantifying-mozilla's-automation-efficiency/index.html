@@ -1,0 +1,208 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="quantifying-mozilla's-automation-efficiency"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/07/14/quantifying-mozilla's-automation-efficiency" rel="bookmark" title="Permanent Link to Quantifying Mozilla's Automation Efficiency">Quantifying Mozilla's Automation Efficiency</a></h2>
+  <small>July 14, 2013 at 11:15 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/07/14/quantifying-mozilla's-automation-efficiency#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mozilla's build and test automation
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=859573">now records</a>
+system resource usage (CPU, memory, and I/O) during mozharness jobs.
+It does this by adding a generic resource collection feature to
+mozharness. If a mozharness script inherits from a specific class, it
+magically performs system resource collection and reporting!</p>
+<p>I want to emphasize that the current state of the feature is far from
+complete. There are numerous shortcomings and areas for improvement:</p>
+<ul>
+<li>At the time I'm writing this, the mozharness patch is only
+  deployed on the Cedar tree. Hopefully it will be deployed to the
+  production infrastructure shortly.</li>
+<li>This feature only works for mozharness jobs. Notably absent are
+  desktop builds.</li>
+<li>psutil - the underlying Python package used to collect data - isn't
+  yet installable everywhere. As Release Engineering rolls it out to
+  other machine classes in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=893254">bug 893254</a>,
+  those jobs will magically start collecting resource usage.</li>
+<li>While detailed resource usage is captured during job execution, we
+  currently only report a very high-level summary at job completion
+  time. This will be addressed with
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=893388">bug 893388</a>.</li>
+<li>Jobs running on virtual machines appear to misreport CPU usage
+  (presumably due to CPU steal being counted as utilized CPU).
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=893391">Bug 893391</a>
+  tracks.</li>
+<li>You need to manually open logs to view resource usage. (e.g. open
+  <a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/cedar-macosx64/1373828505/cedar_mountainlion_test-xpcshell-bm77-tests1-macosx-build30.txt.gz">this log</a>
+  and search for <em>Total resource usage</em>.) I hope to one day have key
+  metrics reported in TBPL output and/or easily graphable.</li>
+<li>Resource collection operates at the system level. Because there is
+  only 1 job running on a machine and slaves typically do little else,
+  we assume system resource usage is a sufficient proxy for automation
+  job usage. This obviously isn't always correct. But, it was the
+  easiest to initially implement.</li>
+</ul>
+<p>Those are a lot of shortcomings! And, it essentially means only OS X
+test jobs are providing meaningful data now. But, you have to start
+somewhere. And, we have more data now than we did before. That's
+progress.</p>
+<h2>Purpose and Analysis</h2>
+<p>Collecting resource usage of automation jobs (something I'm quite frankly
+surprised we weren't doing before) should help raise awareness of
+inefficient machine utilization and other hardware problems. It will
+allow us to answer questions such as <em>are the machines working as hard
+as they can</em> or <em>is a particular hardware component contributing to
+slower automation execution.</em></p>
+<p>Indeed a casual look at the first days of the data has shown some
+alarming readings, notably the abysmal CPU efficiency of our test jobs.
+For an OS X 10.8 opt build, the
+<a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/cedar-macosx64/1373828505/cedar_mountainlion_test-xpcshell-bm77-tests1-macosx-build30.txt.gz">xpcshell</a>
+job only utilized an average of 10% CPU during execution. A
+<a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/cedar-macosx64/1373828505/cedar_mountainlion_test-mochitest-browser-chrome-bm77-tests1-macosx-build26.txt.gz">browser chrome</a>
+job only utilized 12% CPU on average. Finally, a
+<a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/cedar-macosx64/1373828505/cedar_mountainlion_test-reftest-bm77-tests1-macosx-build21.txt.gz">reftest</a>
+job only utilized 13%.</p>
+<p>Any CPU cycle not utilized by our automation infrastructure is forever
+lost and cannot be put to work again. So, to only utilize 10-13% of
+available CPU cycles during test jobs is wasting a lot of machine
+potential. This is the equivalent of buying 7.7 to 10 machines and only
+turning 1 of them on! Or, in terms of time, it would reduce the wall
+time execution of a 1 hour job to 6:00 to 7:48. Or in terms of
+overall automation load, it would significantly decrease the backlog and
+turnaround time. You get my drift. This is why parallelizing test
+execution within test suites - a means to increase CPU utilization - is
+such an exciting project to me. This work is all tracked in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=845748">bug 845748</a> and in
+my opinion it cannot complete soon enough. (I'd also like to see more
+investigation into bottlenecks in test execution. Even small
+improvements of 1 or 2% can have a measurable impact when multiplied by
+thousands of tests per suite and hundreds of test job runs per day.)</p>
+<p>Another interesting observation is that there is over 1 GB of write I/O
+during some test jobs. Browser chrome tests write close to 2GB! That is
+surprisingly high to me. Are the tests really incurring that much I/O?
+If so, which ones? Do they need to? If not tests, what background
+service is performing that much work? Could I/O wait be slowing tests
+down? Should we invest in more SSDs? More science is definitely needed.</p>
+<p>I hope people find this data useful and that we put it to use to
+make more data-driven decisions around Mozilla's automation
+infrastructure.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2013/07/14/quantifying-mozilla's-automation-efficiency";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
