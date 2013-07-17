@@ -10,10 +10,531 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 15 Jul 2013 06:18:44 GMT</pubDate>
+    <pubDate>Wed, 17 Jul 2013 01:20:49 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Analysis of Firefox's Build Automation</title>
+      <link>http://gregoryszorc.com/blog/2013/07/16/analysis-of-firefox's-build-automation</link>
+      <pubDate>Tue, 16 Jul 2013 18:15:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/07/16/analysis-of-firefox's-build-automation</guid>
+      <description>Analysis of Firefox's Build Automation</description>
+      <content:encoded><![CDATA[<p>Mozilla operates thousands of machines whose sole role is to build
+Firefox (and related applications), run tests, perform static analysis,
+etc. This is collectively referred to as the <em>Firefox/Mozilla build
+automation</em> or just <em>automation</em>. The output of all this automation
+can be seen at <a href="https://tbpl.mozilla.org/">tbpl.mozilla.org</a>.</p>
+<p>In this post, I'll give an overview of how all this automation works
+followed by a critical analysis identifying what I like and what I
+feel should be improved.</p>
+<h2>How Firefox automation works</h2>
+<p>Let's take a journey through what happens when you push a new revision
+of <a href="https://hg.mozilla.org/mozilla-central/">mozilla-central</a> (the main
+Firefox repository) to Mozilla's canonical Mercurial server. (For
+Mozilla people, this journey is roughly the same regardless of which
+automation-enabled project branch you push to.) While Firefox's
+automation infrastructure kicks off builds on
+<a href="https://tbpl.mozilla.org/">several platforms and operating systems</a>,
+for simplicity reasons, I'm going to limit low-level technical details
+to our 64-bit Linux builds.</p>
+<p>Before I begin, a disclaimer: I'm not a subject expert in much of
+what I'm about to say. There are people who spend a magnitude more time
+than myself touching the systems I'm about to describe. If I get
+something wrong, please contact me and I'll update this post.</p>
+<p>Let's begin.</p>
+<h3>Buildbot</h3>
+<p>The heart of Firefox's build automation is a piece of software called
+<a href="http://buildbot.net/">Buildbot</a>. Buildbot is essentially a glorified
+job scheduling system. I find the
+<a href="http://buildbot.net/#/basics">buildbot basics</a> covers, well, the basics
+pretty well. What you need to know is that Mozilla maintains a
+<a href="https://hg.mozilla.org/build/buildbot/">buildbot repository</a> that
+appears to contain the buildbot core plus basic customization for
+Mozilla.</p>
+<p>There are buildbot <em>masters</em> and <em>slaves</em>. <em>masters</em> do all
+the coordination and scheduling; <em>slaves</em> do all the real work (such as
+compiling Firefox). Mozilla operates a handful of masters and a few
+thousand slaves.</p>
+<p>When you push code to a project branch (like <em>mozilla-central</em>), a
+buildbot master sees the push then figures out what needs to happen. For
+<em>mozilla-central</em>, the push gets translated to a request to build on
+several different platforms. These requests then go to a scheduler
+(possibly getting collapsed into a single request). These requests then
+get turned into jobs that run on slaves.</p>
+<p>This logic mostly lives in the
+<a href="https://hg.mozilla.org/build/buildbot-configs/">buildbot-configs repository</a>.
+Of particular interest is the
+<a href="https://hg.mozilla.org/build/buildbot-configs/file/e8b27b8b7216/mozilla/config.py">config.py</a>
+file, which pretty much defines how buildbot is configured at Mozilla -
+at a high-level anyway.</p>
+<p>When a scheduled job executes, the high-level job request is converted into
+low-level actions (or <em>steps</em> in buildbot parlance) that get executed on
+slaves. For example, a request to build might clone the source
+repository, run client.mk, package the results, etc. This logic lives
+in the
+<a href="https://hg.mozilla.org/build/buildbotcustom/">buildbotcustom repository</a>.
+It's worth highlighting the
+<a href="https://hg.mozilla.org/build/buildbotcustom/file/bdcca6f7b6c2/process/factory.py">factory.py</a> file. This file contains the beef of the logic
+for converting high-level jobs into actions on slaves. Start at the
+<a href="https://hg.mozilla.org/build/buildbotcustom/file/bdcca6f7b6c2/process/factory.py#l379">MozillaBuildFactory class</a>
+class to see exactly what goes into performing a build. Then move on to
+<a href="https://hg.mozilla.org/build/buildbotcustom/file/bdcca6f7b6c2/process/factory.py#l1338">addDoBuildSteps()</a>,
+which contains the command for invoking the actual build system. As you
+can see, there's a lot that goes into building besides just invoking the
+build system (like most developers do)!</p>
+<p>For many automation jobs, there is an additional component that comes
+into play: <a href="https://hg.mozilla.org/build/mozharness/">mozharness</a>.
+<em>mozharness</em> is relatively new to the Firefox build automation
+landscape so you may not be familiar with it. A goal of <em>mozharness</em> is
+to largely migrate the low-level logic from <em>buildbotcustom</em> - the logic
+that converts a high-level job request into low-level buildbot <em>steps</em>
+(typically command invocations) - into a separate, standalone entity
+that doesn't depend on buildbot. A goal is to enable developers to run
+mozharness locally and run automation jobs just like the official
+automation infrastructure does. If you have time, I encourage you to
+read the
+<a href="https://developer.mozilla.org/en-US/docs/Mozharness_FAQ">mozharness FAQ</a>
+to learn more. My understanding is <em>mozharness</em> will eventually power
+<strong>all</strong> of the jobs currently defined in <em>buildbotcustom</em>, so I
+recommend getting acquainted with <em>mozharness</em>.</p>
+<p>In the <em>mozharness</em> world, automation jobs are defined as <em>scripts</em>.
+Here's the
+<a href="https://hg.mozilla.org/build/mozharness/file/84187194b050/scripts/marionette.py">marionette script</a>.
+You just execute a script (with ideally as few arguments as possible)
+and <em>mozharness</em> does the rest. In buildbot, instead of having a job
+with say 12 steps and this logic for configuring the steps live in
+buildbot, buildbot just says <em>run the marionette mozharness script</em>.
+Since very little business logic now lives in buildbot, this essentially
+reduces buildbot's role to just job scheduling.</p>
+<p>And that is essentially how the automation determines what to run. Now
+let's talk about the machines automation runs on.</p>
+<h3>Machine provisioning</h3>
+<p>Earlier, I said Mozilla operates thousands of buildbot slaves. Let's
+talk about how those slaves come into existence.</p>
+<p>A slave is just a fancy name for a machine, either physical or virtual.
+These machines are owned or operated by Mozilla. Mozilla either buys
+a physical machine or rents one from a <em>cloud provider</em>, like Amazon
+EC2.</p>
+<p>For hopefully obvious reasons, it is important for the configuration of
+these machines to be consistent. Let's talk about how that is done. Keep
+in mind I'm talking about Linux machines. OS X and Windows machines go
+through a different procedure.</p>
+<p>When a new machine is acquired, it needs an operating system. There is a
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/setup/centos6-kickstart.cfg.erb">kickstart config file</a>
+that installs CentOS 6.2. At the end of the base OS flash/install, it
+configures Puppet to talk to a central Puppet master. This Puppet
+infrastructure is called
+<a href="https://wiki.mozilla.org/ReleaseEngineering/PuppetAgain">PuppetAgain</a>
+and its files are stored in the
+<a href="https://hg.mozilla.org/build/puppet/">puppet repository</a>.</p>
+<p>Puppet is let loose on the fresh OS install and eventually the machine
+is configured so it is homogenous with other similar machines in the
+automation infrastructure. Presumably, Puppet continually polls the
+central Puppet master and applies the latest configuration.</p>
+<p>Part of the <em>puppetization</em> of this machine involves installing the
+buildbot client. The client eventually registers with the buildbot
+master and waits for jobs to process.</p>
+<p>So, we've described how machines are provisioned as buildbot slaves and
+how buildbot jobs are converted to actions/steps/commands to be
+performed on slaves. Let's examine a job in more detail.</p>
+<h3>Running a build job</h3>
+<p>Before I talk about the details of a build job, it's worth mentioning
+that nearly everything I described up until this point is largely hidden
+from view from most Firefox developers. As far as I know, things like
+Puppet logs are hidden from public view. And there shouldn't be anything
+terribly wrong with that: the Puppet configs are public, after all.
+Unless you are affiliated with Release Engineering or the Automation and
+Tools Team (A*Team) or hack on a component that warrants its own piece
+of automation, you probably aren't too concerned with how all of this
+works.</p>
+<p>Anyway, it's finally time to start talking about something almost every
+Firefox developer has done: build Firefox from source.</p>
+<p>As I mentioned above, code in <em>buildbotcustom</em> (to be replaced by
+<em>mozharness</em> someday) is responsible for turning a Firefox build job
+into a series of actions/steps/commands to run on a slave. And, lucky
+for us, the activity of a slave is captured and saved to text log files!
+If you've ever used <a href="https://tbpl.mozilla.org/">TBPL</a>, you've almost
+certainly clicked a link to view one of these logs.</p>
+<p>In this section, I'll describe the steps performed in
+<a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/mozilla-central-linux64/1371941584/mozilla-central-linux64-bm62-build1-build35.txt.gz">this log</a>
+from a recent <em>mozilla-central</em> build on a 64-bit Linux machine.
+I will be paying particular attention to steps that affect the
+build environment (for reasons that will be revealed in my critique
+below).</p>
+<p>If you load our log of interest next to
+<a href="https://hg.mozilla.org/build/buildbotcustom/file/bdcca6f7b6c2/process/factory.py#l764">factory.py</a>
+from <em>buildbotcustom</em>, you can start to see how they are related.
+You may notice <em>self.addStep()</em> calls in <em>factory.py</em> correspond to
+<em>========= Started</em> ... <em>========= Finished</em> sections in the log.
+That's no accident: every <em>addStep()</em> call produces a section like
+that in the log.</p>
+<p>Now let's look at some of those steps in detail.</p>
+<p>The job/log contains a number of <em>set property</em> steps. Search for
+<em>set props</em> and you'll find them in the log. These steps define named
+properties in a hash map buildbot uses to represent the current
+configuration/state. Think of these properties as a way for buildbot to
+communicate metadata between masters and slaves.</p>
+<p>One of the first interesting steps we see is the cloning of the
+<a href="https://hg.mozilla.org/build/tools">tools repository</a>. Search for
+<em>Started clone build tools</em> and you'll find it. This repository contains
+a lot of support tools and scripts used by all parts of automation.
+There's lots of useful tools in there!</p>
+<p>Skipping over the steps that check whether to clobber the builder or
+purge old content from disk, the next build steps relevant to our
+interests involve the population of a <em>mock</em> environment.
+Search for <em>Started mock-tgt mozilla-centos6-x86_64</em> to find it in the
+logs.</p>
+<p><a href="https://fedoraproject.org/wiki/Projects/Mock">Mock</a> is a piece of
+software that manages <a href="https://en.wikipedia.org/wiki/Chroot">chroots</a>.
+It was written by the Fedora project for creating isolated build
+environments for software packages. For reasons unknown to me,
+Mozilla runs a forked version of mock called
+<a href="https://github.com/jhford/mock_mozilla">mock_mozilla</a>.</p>
+<p>The build job creates a fresh mock environment on every build. (This is
+clearly indicated by the <em>INFO: chroot
+(/builds/mock_mozilla/mozilla-centos6-x86_64) unlocked and deleted</em>
+line in the log.) Later on, builds are performed inside this mock
+environment. This means that every build job is mostly isolated from
+both the underlying operating system and all build jobs that came
+before.</p>
+<p>You can see the creation of the new mock environment by looking for the
+<em>mock_mozilla -r mozilla-centos6-x86_64 --init</em> command in the log. This
+is using the <em>mozilla-centos6-x86_64</em> configuration file to create the new
+environment. This file is managed by Puppet, so you can
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/mockbuild/files/mozilla-centos6-x86_64.cfg">see it</a>
+in the <em>puppet</em> repository. The
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/mockbuild/files/mozilla-centos6-x86_64.cfg#l11">setup command</a>
+on line 11 is the most important line in this file: it defines what
+commands to run to initialize the new mock environment.</p>
+<p>Populating the mock environment takes a number of buildbot steps. After
+copying a bunch of files into the mock/chroot, the mock environment is
+further initialized by installing a number of packages. Search for
+<em>Started mock-install</em> in the log. Yum is being used to install a number
+of packages required to build Firefox. This package list appears to
+come from
+<a href="https://hg.mozilla.org/build/buildbot-configs/file/e8b27b8b7216/mozilla/config.py#l208">config.py</a>
+in the <em>buildbot-configs</em> repository. These packages are downloaded from
+a Yum repository hosted by Mozilla. Altogether, 249 new packages
+consuming 821 MB are installed during this step!</p>
+<p>After the <em>mock</em> environment is created, the <em>mozharness</em> repository is
+removed, re-cloned, and updated to the <em>production</em> branch. After that,
+we pull changes from <em>mozilla-central</em> and update the local checkout to
+the revision we've been told to build.</p>
+<p>If you search for <em>Started got mozconfig</em>, you'll find where the
+<em>mozconfig</em> file (the build system configuration file) is acquired.</p>
+<p>After that, the
+<a href="https://wiki.mozilla.org/ReleaseEngineering/Applications/Tooltool">tooltool</a>
+configuration is consulted. Tooltool is essentially a content-addressable
+file store: files are stored and retrieved by the hash value of their
+content. A manifest file inside <em>mozilla-central</em> defines the set of
+files to fetch from tooltool at build time. At this step of the build,
+that file is consulted and listed files are downloaded. While the Linux
+manifest is currently empty, the
+<a href="https://hg.mozilla.org/mozilla-central/file/e7e9726025da/browser/config/tooltool-manifests/macosx64/releng.manifest">OS X tooltool manifest</a>
+defines the digest of the Clang archive to use to build the tree.</p>
+<p>Since tooltool files are addressed by content (not merely by name), this
+means that the same file will be fetched no matter when the build runs.
+In other words, behavior is constant as the contents of the tooltool
+repository itself change (or at least it should be).</p>
+<p>After <em>tooltool</em> contents sync, we finally arrive at the actual build
+step. Search for <em>Started compile</em> in the log. The important detail here
+is that <em>mock_mozilla</em> is used to build firefox with <em>client.mk</em> inside
+the fresh mock/chroot environment.</p>
+<p>After building, we move on to other tasks, such as creating a
+distributable package, running tests, etc. I'm just going to glance over
+them because there's a lot going on and it would take a long time to
+explain it all! I encourage you to look at the steps in the log and
+learn.</p>
+<p>While these steps are going on, the buildbot master is notified that the
+build and packaging aspect of the job has completed (sometime before
+<em>make check</em> is executed). Upon receiving this success notification, the
+buildbot master scheduled derived jobs, notably all the test suites
+(reftests, mochitests, xpcshell tests, etc). This scheduling occurs
+before <em>make check</em> has completed so overall turnaround time is reduced
+as much as possible.</p>
+<p>Finally, at the end of the log, the slave/machine is rebooted. At this
+point, the job has finished. TBPL colors the <em>B</em> next to the job green
+to signal successul completion. The slave waits for its next job from
+the buildbot master.</p>
+<p>And that is how Firefox is built! I could go into details for all of the
+derived test jobs, but I won't, as that would take a lot of effort! I
+leave that as an exercise for the reader.</p>
+<h2>Analysis</h2>
+<p>The Firefox build automation is complex and composed of many pieces.
+It's a testament to a lot of people's hard work that it works as well as
+it does!</p>
+<p>From my experience at a previous job managing large numbers of servers
+in a production datacenter, I commend Release Engineering for deploying
+Puppet to help ensure the machines performing Firefox's build automation
+are in a consistent state. I also like how <em>mock</em> is used to mostly
+isolate build jobs from one another. These are both very important to
+ensure Firefox is built consistently over time.</p>
+<p>The on-going migration of automation logic from <em>buildbotcustom</em> to
+<em>mozharness</em> is a fantastic project and I hope it is completed soon.
+I hold hope that one day we can integrate <em>mozharness</em> into the local
+development workflow (likely transparently through tools like <em>mach</em>)
+and local developers can invoke actions using the same code path as the
+official automation infrastructure.</p>
+<h2>Areas for improvement</h2>
+<p>The Firefox build automation largely works well. And I don't mean to
+take away from that. However, there are a number of areas where
+things could be improved. In this section, I'll talk about some of them.</p>
+<p>Before I get into details, let me share an experience I had about a year
+ago.</p>
+<h3>A tale of modifying the xpcshell test harness</h3>
+<p>In April 2012, I was writing a lot of JavaScript testing code and was
+frustrated at how difficult it was to share test helper code between
+tests. I filed
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=748490">bug 748490</a>
+to request a new feature in the JavaScript test harnesses: the ability
+to create testing-only JavaScript modules that weren't shipped as part
+of Firefox. This would encourage code reuse among tests and make writing
+tests easier. I thought it would be a relatively simple feature to
+implement!</p>
+<p>And, it was. At first. The initial implementation landed two weeks after
+I filed the bug (it didn't require too much effort, but I was busy with
+others tasks). It landed without incident. Although, nothing was using
+it and there was no test coverage. However, my local development started
+relying on it and things were working just fine.</p>
+<p>When I <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755196">attempted</a>
+to actually land a test that made use of this new feature, it failed
+because the new directory for these shared modules
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339">wasn't being archived</a>.
+Simple enough to fix, right? Wrong. Start reading
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c4">bug 755339 from comment #4</a>.
+It is a trail of agony. I had to uplift my change to all
+the major branches. Then, once that was done, <em>buildbotcustom</em> could
+be updated. Uplifts were performed on May 24. <em>buildbotcustom</em> was
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c15">pushed out to production</a>
+a week later on May 31. It immediately
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c16">broke the world</a>.
+At the time, philor says it was the worst tree bustage he'd ever seen.
+Literally every tree was red. Achievement unlocked. A workaround
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c17">was quickly devised</a>
+on May 31 (after the <em>buildbotcustom</em> change was backed out to restore
+working automation) and landed. Again, it had to be uplifted to all the
+trees. This patch conflicted when applied on older trees and I
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c23">accidentally committed a typo</a>
+and broke beta, release, and esr in the process. I got an earful for
+breaking these trees and lost a lot of <em>street cred</em> with the sheriffs
+(who are charged with keeping law and order in the land of the source
+trees). The <em>buildbotcustom</em> change
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=757460#c21">finally landed</a>
+on June 7 and stuck.</p>
+<p>Finally, my initial idea of adding testing-only JavaScript modules had been
+implemented and was available for all to use. It only required uplifting
+a patch to all project branches, having Release Engineering reconfigure
+<em>buildbotcustom</em>, and breaking all the trees in the process. This
+experience was truly WTFOMGBBQ. And, the agony above was from adding a
+seemingly innocuous feature to a single test harness. Can you imagine
+what it's like to add a new test harness to automation?!</p>
+<h3>In-tree automation configs different from Release Engineering's</h3>
+<p>The above example demonstrates many shortcomings in the current
+automation infrastructure. The first one I will talk about is that the
+in-tree automation configs (how to perform a specific automation job,
+such as run an individual test harness) are almost completely different
+from what Release Engineering runs on the official infrastructure!</p>
+<p>A year ago, <em>mozilla-central</em> had
+<a href="https://hg.mozilla.org/mozilla-central/file/e24391ffbe7e/testing/testsuite-targets.mk">testsuite-targets.mk</a> -
+a make file defining targets like <em>xpcshell-tests</em> and
+<em>mochitest-plain</em> that allowed developers to run these test suites
+locally. Release Engineering had <em>buildbotcustom</em>, which didn't use
+<em>testsuite-targets.mk</em> at all. While invoking most test harnesses is
+simply a matter of formulating arguments for a Python script, that logic
+was duplicated between <em>testsuite-targets</em> and <em>buildbotcustom</em>.</p>
+<p>Today, <em>Release Engineering</em> has been porting job invocation code to
+<em>mozharness</em>. And, I have been encouraging people to locally run tests
+with <em>mach</em>. Initially, mach commands executed make. However, commands
+are now bypassing make and calling into the Python test harnesses
+natively. This allows more advanced behavior since mach has more control
+and insight into the underlying test harness. The downside is mach is
+now reinventing logic.</p>
+<p>So, we now have 3 or 4 separate implementations for performing many of
+our automation jobs. Medium term, you figure Release Engineering
+consolidates all the <em>buildbotcustom</em> logic into <em>mozharness</em>,
+eliminating 1. I also think it is inevitable that <em>testsuite-targets</em> is
+refactored to invoke mach commands or is just removed altogether. But
+that still leaves us with 2 independent implementations!</p>
+<p><strong>I believe we should work towards consolidating the logic for job
+invocation to inside mozilla-central.</strong> The commands developers run
+locally should be as similar as possible to what runs on official
+automation infrastructure. Any differences introduce potential for
+different results. Differences also increase the burden to roll out
+changes. I would argue that an in-tree change should be all that is
+necessary to change the behavior of official automation infrastructure.</p>
+<p>How this is accomplished, I'm not entirely certain. In my ideal world,
+I think <em>mozharness</em> would live in tree. Although, I understand that may
+not be practical because much of what <em>mozharness</em> does involves
+downloading just-built packages, uploading results to a server, etc. I
+think a middle ground that accomplishes most of what we seek is for the
+Release Engineering configs (<em>mozharness</em>) to contain as little logic as
+possible for actual job invocation and let something in-tree do the
+rest. For example, the <em>mozharness</em> job for the xpcshell test harness
+would simply be <em>execute the run-xpcshell-tests script from the tests
+archive.</em> <em>mozilla-central</em> could then have full domain over what
+exactly is done. If <em>mozilla-central</em> changes, everyone picks up those
+changes immediately.</p>
+<h3>Local run-time environments different from official ones</h3>
+<p>Similar in vein to the previous section is that there are discrepancies
+between local run-time environments and official ones. By run-time
+environment, I mean the state of the operating system (installed
+packages, configuration settings, etc). This plays an important role in
+determining how an automation job executes. An obvious example is the
+compiler toolchain. GCC 4.5 is obviously going to have different
+behavior from GCC 4.7.</p>
+<p>While Release Engineering has taken steps to ensure consistency in the
+configuration of the machines powering the official automation
+infrastructure, local machine configurations are effectively living in
+the wild west. Developers are effectively unable to recreate the
+official automation environment. This lowers the liklihood that a local
+build will have the same outcome when performed on official automation
+infrastructure.</p>
+<p>While supporting diverse run-time environments will result in greater
+compatibility and is thus a good thing, I think it is important that
+local developers have the ability to recreate the official run-time
+environment as closely as possible. This will raise confidence that
+local results can be trusted and should cut down on development
+cost by reducing the number of Try pushes and reducing development
+cycles.</p>
+<p>Recreating the official run-time environment varies in difficulty
+depending on the operating system. For Linux, it should actually be
+pretty easy! For the build environment, Mozilla simply needs to package
+the <em>mock</em> environment used to build or at least could publish a script
+used to create said environment. In
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=886226">bug 886226</a>, I
+made an initial stab at this by creating a Vagrantfile that will
+kinda/sorta recreate the official 64-bit Linux build environment. I even
+published an archive of the <em>mock</em> environment (which can be imported
+into <em>Docker</em>). As pointed out on the bug, my work isn't perfect. But
+it's a start. And it's better than what developers have today to
+reproduce the official environments.</p>
+<p>If we decide publishing archives of chroot environments is the way to
+go, I believe we could extend the Linux solution to OS X as well. OS X
+has chroot. It also has a sandboxing facility (<em>man sandbox</em>). There are
+also tools like <a href="http://freecode.com/projects/jailkit">jailkit</a>. Also,
+using chroot environments will also likely make our automation faster
+since using archives will almost surely be faster than recreating the
+environment on every job run.
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=851294">Bug 851294</a> has
+been filed to track this.</p>
+<p>What about Windows? Well, I don't know. We sort of have an environment
+with <a href="https://ftp.mozilla.org/pub/mozilla.org/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe">MozillaBuild</a>.
+But, it's not isolated from the rest of the operating system like chroot
+environments are. Modulo Windows, two out of three tier one platforms
+isn't too bad!</p>
+<p>Now, even if the software environment is similar, hardware differences
+can also affect results. Unfortunately, there's little that can be done
+on this front aside from having everybody use the same hardware models.
+That's not going to happen. So let's pretend we don't have that problem.</p>
+<h3>Configurations change over time</h3>
+<p>I recently wrote a
+<a href="/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration/">post on the importance of time on machine configurations</a>.
+The gist is that configurations always pulling from version control tip
+or relying on external resource often vary with time and aren't truly
+idempotent. This makes it difficult to reproduce specific configurations
+at future points in time.</p>
+<p>Unfortunately, Mozilla's build automation is highly susceptible to
+configuration variance over time. There are many examples.</p>
+<p>The buildbot configuration is periodically pushed to the
+infrastructure. A job will inherit the config that is currently
+deployed. If you make a backwards incompatible change to the buildbot
+configs and push an old revision of mozilla-central, things will blow
+up.</p>
+<p>There are two time-dependent aspects of Puppet bootstrapping. First, the
+Puppet configs (like buildbot configs) are periodically pushed to a
+central master server. Whichever version is deployed at a given time is
+the version picked up by the automation job. Second, we don't do a good
+job of pinning versions inside the Puppet config. Here are the
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/packages/manifests/mercurial.pp">Mercurial</a>,
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/packages/manifests/mock.pp">mock</a>,
+and <a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/packages/manifests/mozilla/py27_mercurial.pp">Python</a>
+manifests using the <em>latest</em> package version. This means if a new
+version of a package is added to
+<a href="http://puppetagain.pub.build.mozilla.org/data/repos/yum/">Mozilla's Yum repositories</a>
+that new package version will be deployed on the next Puppet sync.
+This is definitely not time independent. Fortunately, the base operating
+system configuration for Linux isn't terribly important because of the
+<em>mock</em> environment. But, it still varies.</p>
+<p>Like the base operating system, the mock environment is full of
+dependence on time. First, the config file itself is managed by Puppet
+and thus susceptible to its time-dependent behavior. Second, the
+packages installed in the mock environment aren't version pinned.
+This means that whatever packages deployed in
+<a href="http://puppetagain.pub.build.mozilla.org/data/repos/yum/">Mozilla's Yum repositories</a>
+will be used. So, every time the Yum package repository is updated, we
+potentially switch the configuration of our build environment. On the
+surface, this terrifies me. Maybe we have a strict update policy in
+place to prevent excessive package updates. The
+<a href="http://puppetagain.pub.build.mozilla.org/data/repos/yum/mirrors/centos/6/latest/os/x86_64/">modified times</a>
+of packages on the server seems to indicate that. Even if we didn't
+update the package repository, it still seems a bit fragile: I'd much
+prefer to pin package versions everywhere than rely on the content of
+a Yum server.</p>
+<p>The default branch of the <a href="https://hg.mozilla.org/build/tools">tools repository</a>
+is always checked out at build time. As new revisions are added to this
+repository, builds will pick them up immediately. If you make a
+backwards incompatible change to the tools repository, old revisions may
+no longer build.</p>
+<p>The production branch of the
+<a href="https://hg.mozilla.org/build/mozharness/">mozharness repository</a> is
+always used during jobs. Again, if <em>mozharness</em> changes, every future
+job sees these changes.</p>
+<p>The takeaway here is that many of the tightly-related
+systems/repositories aren't linked in any way. The automation
+configuration simply pulls the tip of each. We run into problems when we
+wish to make backwards incompatible changes. If you make one, you first
+have to update all repositories to be compatible. This is a huge pain
+(see my experience above). Furthermore, it makes it impossible to have
+successful automation runs from old revisions of those repositories!</p>
+<p>The solution to this mess is to pin versions and configs everywhere.
+The repositories being put through automation (namely <em>mozilla-central</em>)
+should contain revisions of the configs to use. It should say <em>I want to
+use revision X of mozharness, revision Y of the build machine
+configuration, etc.</em> This will enable much more consistent automation
+output over time. It cuts down on surprises (<em>did behavior change on July
+14 because of a change to mozilla-central or to a new automation config
+being rolled out to the server?</em>). It allows people to build very old
+packages. This means Mozilla wouldn't need to store terabytes of old
+builds around (we could just trigger the build again and get the same
+output).</p>
+<p>I recognize that deterministic automation configuration is likely not
+completely achievable. But, that doesn't mean we shouldn't work towards
+it. Having something better than today enables so many more useful
+scenarios and flexibility in our automation. Let me explain.</p>
+<p>Say you want to add or remove a test harness. Or, maybe you want to add
+a required argument or remove an obsolute argument from a test harness.
+The procedure from doing this today is far from trivial. It's not enough
+to simply land your change in mozilla-central and be done with it. Instead,
+you need to land support in <em>buildbotcustom</em> or <em>mozharness</em>, prepare to
+land in mozilla-central, then coordinate with Release Engineering to have your
+changes landed around the time of a server deployment. And since changes
+likely affect multiple trees, you're likely also landing things in
+inbound, fx-team, services-central, possibly aurora, beta, and release,
+etc. If you aren't landing in aurora, beta, release, esr, b2g, etc, you
+need to remember to have your change merged into these server configurations
+when those trees inherit your code (although Release Engineering is
+typically pretty good about tracking this and doing it for you).</p>
+<p>Contrast this with simply making a backwards incompatible change by
+checking in support in <em>mozharness</em> then making the change in
+<em>mozilla-central</em> along with a revision bump of the <em>mozharness</em>
+revision to use. When that changeset is pushed to the infrastructure, a
+compatible version of <em>mozharness</em> is used. When that change gets merged
+into other trees, the appropriate <em>mozharness</em> revision is used. No
+extra work needed. Utopia. You just made A*Team and Release Engineering
+much more productive by eliminating a lot of overhead.</p>
+<h2>Conclusion</h2>
+<p>The Mozilla automation infrastructure is a complex beast. There are many
+moving parts and separate systems. Any newcomer to Mozilla should simply
+stand in awe that so many systems seemlessly work so well together.</p>
+<p>There are improvements that can be made, sure (especially in the area of
+deterministic behavior over time). But, I think with the <em>mozharness</em>
+work and the <em>Puppetization</em> of the server infrastructure that Mozilla
+is on the right course. I look forward to a future where the source code
+in <em>mozilla-central</em> and the automation infrastructure are more tightly
+integrated. We're trending there. Give it time.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Quantifying Mozilla's Automation Efficiency</title>
       <link>http://gregoryszorc.com/blog/2013/07/14/quantifying-mozilla's-automation-efficiency</link>
@@ -1273,349 +1794,6 @@ how your SQLite database runs so it has as little performance overhead
 as possible. Also consider dropping into an IRC channel on
 irc.mozilla.org and asking for advice from one of the many who have
 fallen into SQLite's many performance pitfalls (including me).</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Making hg-git Faster</title>
-      <link>http://gregoryszorc.com/blog/2013/04/14/making-hg-git-faster</link>
-      <pubDate>Sun, 14 Apr 2013 21:45:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Git]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/04/14/making-hg-git-faster</guid>
-      <description>Making hg-git Faster</description>
-      <content:encoded><![CDATA[<p>When enterprising individuals at Mozilla
-<a href="http://bluishcoder.co.nz/2011/02/10/git-conversion-of-mozilla-central.html">started maintaining</a>
-a Git mirror of Firefox's main source repository (hosted in Mercurial),
-they ran into a significant problem: conversion was slow. The initial
-conversion apparently took over 6 days and used a lot of memory.
-Furthermore, each subsequent commit took many seconds, even on modern
-hardware. This meant that the they could only maintain a Git mirror of
-a few project branches and that updates would be slow. Furthermore,
-the slowness of the conversion significantly discouraged people
-from using the tool locally as part of regular development.</p>
-<p>I thought this was unacceptable. I wanted to enable people to use
-their tool of choice (Git) to develop Firefox. So, I did what annoyed
-engineers do when confronted with an itch: I scratched it.</p>
-<h2>Diagnosing the Problem</h2>
-<p>When I started tackling this problem, I had little knowledge of the
-problem space other than the problem statement: <em>converting from
-Mercurial to Git is prohibitively slow</em> and that the slow tool was
-<a href="http://hg-git.github.io/">hg-git</a>. My challenge was thus to make
-hg-git faster.</p>
-<p>When confronted with a performance problem, one of the first things you
-do is identify the source of the bad performance. Then, you need to
-acertain whether that is something you have the ability to change.</p>
-<p>This often starts by answering some high-level questions then drilling
-down into more detail as necessary. For a long-running system tool like
-hg-git, I start with the <em>top test</em>: how much CPU, memory, and I/O is
-the process utilizing?</p>
-<p>In the case of hg-git, we were CPU bound. The Python process was
-consistently pegging a single CPU core while periodically incurring I/O
-(but not nearly enough to saturate a magnetic disk). This told me a few
-things. First, I should look for bottlenecks inside Python. Second, I
-should investigate whether parallel execution would be possible. The
-latter is especially important these days because the trend in
-processors is towards more cores rather than higher clock speeds. It's
-no longer acceptable to let increases in clock speed or cycle efficiency
-bail you out: if you want a CPU bound process to run as fast as
-possible, it's often necessary to involve all available CPU cores.</p>
-<p>Once I diagnosed CPU as the limiting factor, I pulled out the next tool
-in the arsenal: a code profiler. I quickly discovered exactly where the
-conversion was taking the most CPU time. As feared, it was in the
-<em>export Mercurial changeset to Git commit</em> function.
-Specifically, profiling had flagged the conversion of Mercurial
-manifests to Git trees and blobs. Furthermore, most of the time was
-spent in functions in Mercurial itself (Mercurial is implemented in
-Python and hg-git calls into it natively) and Dulwich (a pure Python
-implementation of Git). So, I was either looking at deficiencies or
-Mercurial and/or Dulwich, a bad conversion algorithm in hg-git, or both.
-To know which, I would need a better grasp on the internal storage
-models of Mercurial and Git.</p>
-<h2>Learning about Mercurial's and Git's internal storage models</h2>
-<p>To understand why conversion from Mercurial to Git was slow, I needed to
-understand how each stored data internally. My hope was that if attained
-better understanding I could apply the knowledge to assess the algorithm
-hg-git was using and optimize it, hopefully introducing parallel
-execution along the way.</p>
-<h3>Git's internals</h3>
-<p>I already had a fairly good understanding of how Git works internally.
-And, it's quite simple really. The <a href="http://git-scm.com/book/en/Git-Internals">Git Internals</a>
-chapter of the <em>Pro Git</em> is extremely useful. While I encourage readers
-to read all of the <a href="http://git-scm.com/book/en/Git-Internals-Git-Objects">Git Objects</a>
-section, the gist is:</p>
-<ul>
-<li>Git's core storage is a key-value data store. Keys are SHA-1 checksums
-  of content. Each entity is storage in a <em>Git object</em>.</li>
-<li>A <em>blob</em> is an object holding the raw content of a file.</li>
-<li>A <em>tree</em> is an object holding a list of <em>tree entries</em>. Each tree entry
-  defines a blob, another tree object, etc. A tree is essentially a
-  directory listing.</li>
-<li>A <em>commit</em> object holds metadata about an individual Git commit. Each
-  commit object refers to a specific <em>tree</em> object.</li>
-</ul>
-<p>When you introduce a new file that hasn't been seen before, a new <em>blob</em>
-is added to storage. That blob is referenced by a <em>tree</em>. When you
-update a file, a new <em>tree</em> is created referring to the new <em>blob</em> that
-was created.</p>
-<p>Things get a little complicated when you consider directories. If you
-update the file <em>foo/bar/baz.c</em>, the tree for <em>foo/bar</em> changes (because
-the SHA-1 of <em>baz.c</em> changed). And, the SHA-1 for the <em>foo/bar</em> tree
-changes, so the <em>bar</em> entry in <em>foo</em>'s tree changes, changing the SHA-1
-for the root tree.</p>
-<p>That's essentially how Git addresses commits, directories, and files. If
-you don't grok this, please, please read the aforementioned page on it -
-it may even help you better grok Git!</p>
-<h3>Mercurial's internals</h3>
-<p>Unlike Git, I didn't really have a clue how Mercurial worked internally.
-So, I needed to do some self-education here.</p>
-<p>The best resource for Mercurial's storage model I've found is the
-<a href="http://hgbook.red-bean.com/read/behind-the-scenes.html">Behind the Scenes</a>
-chapter from <em>Mercurial: The Definitive Guide</em>. The gist is:</p>
-<ul>
-<li>History for an individual file is stored in a <em>filelog</em>. Each
-  <em>filelog</em> contains the history of a single file. Each file revision
-  has a hash based on the file contents.</li>
-<li>The <em>manifest</em> lists every file, its permissions, and its file
-  revision for each changeset in the repository.</li>
-<li>The <em>changelog</em> contains information about each changeset, including
-  the revision of the <em>manifest</em> to use.</li>
-<li>Each of these logs contain <em>revisions</em> and you can address an
-  individual revision within the log.</li>
-</ul>
-<p>From a high level, Mercurial's storage model is very similar to Git's.
-They both address files by hashing their content. Where Git uses
-multiple tree objects to define every file in a commit, Mercurial has a
-single manifest containing a flat list. Aside from that, the
-differences are mostly in implementation details. These are important,
-as we'll soon see.</p>
-<h2>Analyzing hg-git's conversion algorithm</h2>
-<p>Armed with knowledge of how Git and Mercurial internally store data, I
-was ready to analyze how hg-git was performing conversion from Mercurial
-to Git. Since profiling revealed it was the <em>convert a single changeset
-into Git commit</em> function that was taking all the time, I started there.</p>
-<p>In Python (but not the actual Python), the algorithm was essentially:</p>
-<div class="pygments_murphy"><pre><span class="k">def</span> <span class="nf">export_changeset_to_git</span><span class="p">(</span><span class="n">changeset</span><span class="p">,</span> <span class="n">git</span><span class="p">,</span> <span class="n">already_converted</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Receives the Mercurial changeset and a handle on a Git object storre.&quot;&quot;&quot;</span>
-    <span class="c"># This is an entity that helps us build Git tree objects from</span>
-    <span class="c"># paths and blobs. The logic is at</span>
-    <span class="c"># https://github.com/jelmer/dulwich/blob/2a8548be3b1fd4a1ae7d0436dce91611112c47c2/dulwich/index.py#L298</span>
-    <span class="n">tree_builder</span> <span class="o">=</span> <span class="n">TreeBuilder</span><span class="p">()</span>
-
-    <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">changeset</span><span class="o">.</span><span class="n">manifest</span><span class="p">:</span>
-        <span class="n">blob_id</span> <span class="o">=</span> <span class="n">already_converted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">blob_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">blob</span> <span class="o">=</span> <span class="n">Blob</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">data</span><span class="p">())</span>
-            <span class="n">git</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">blob</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">blob</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-            <span class="n">already_converted</span><span class="p">[</span><span class="nb">file</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
-            <span class="n">blob_id</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
-
-        <span class="n">tree_builder</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">blob_id</span><span class="p">,</span> <span class="nb">file</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">all_trees</span><span class="p">():</span>
-        <span class="n">git</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-
-    <span class="n">root_tree</span> <span class="o">=</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">root_tree</span>
-
-    <span class="c"># And proceed to build the Git commit and insert it.</span>
-</pre></div>
-
-<p>On the face of it, this code doesn't seem too bad. If I were writing the
-functionality from scratch, I'd likely do something very similar. So,
-why is it so slow?</p>
-<p>As I mentioned earlier, profiling results had identified Mercurial and
-Dulwich as the hot spots. The Mercurial hotspot was in iteration over
-the files in the manifest. And the Dulwich offender with Git <em>tree</em>
-object construction. By why?</p>
-<p>First, it turns out that iterating a manifest the way hg-git was isn't
-exactly performant. I never traced all the gory details, but I'm pretty
-sure every time it accessed the file context through the change context
-there was I/O involved. Not good, especially if you may not need the
-information contained if it was already cached!</p>
-<p>Second, it turns out that creating Git <em>tree</em> objects in Dulwich is
-rather slow. And, the problem is magnified when converting large
-repositories - like mozilla-central (Firefox's canonical repository).</p>
-<p>So, I was faced with a decision: make Mercurial and/or Dulwich faster or
-change hg-git. Since improving these would have benefits outside of
-hg-git, I initially went down those roads. However, I eventually
-abandonded the effort because of effort involved. And, in the case of
-Dulwich, improving things would likely require rewriting some pieces in
-C - not something I cared to do nor something that the Dulwich people
-would likely accept since Dulwich is all about being a pure Python
-implementation of Git! And in hindsight, this was the right call.
-Mercurial and Dulwich are fast enough - it's hg-git that was being
-suboptimal.</p>
-<p>I was faced with two problems: don't mass iterate over manifests and
-don't mass generate Git trees. Both were seemingly impossible to avoid
-because both are critical to converting a Mercurial changeset to Git.</p>
-<p>I thought about this problem for a while. I experimented with numerous
-micro benchmarks. I engaged the very helpful Mercurial developers on IRC
-(thanks everyone!). And, I eventually arrived at what I think is an
-elegant solution.</p>
-<p>When I took a step back and looked at the larger problem of exporting
-Mercurial changesets to Git, I realized it would be beneficial in terms
-of efficiency for the conversion to be more aware of what had occurred
-before. Before I came along, hg-git was asking Mercurial for the full
-state of each changeset for each changeset conversion. When you think
-about it in low-level operations, this is extremely inefficient. Let's
-take Git trees as an example.</p>
-<p>When you perform a commit, only the trees - and
-their parents - that had modified files will change. All the
-other trees will be identical across commits. For large repositories (in
-terms of files and directories) like mozilla-central, the number of
-<em>static</em> trees across small commits is quite significant compared to
-changed trees. The overhead of computing all these trees is not
-insignificant!</p>
-<p>Instead of throwing away all the trees and file context information
-between changeset exports, what if I preserved it and reused it for the
-next changeset? I think I'm on to something...</p>
-<h2>Implementing incremental changeset export</h2>
-<p>To minimize the work performed when exporting Mercurial changesets to
-Git, I <a href="https://github.com/indygreg/hg-git/commit/aef6eacf86fb08101ea98a7787f3b20dd67287c2">implemented</a>
-a standalone class that can emit Mercurial changeset deltas in terms of
-Git objects. Essentially, it caches a Git tree representation of a
-Mercurial manifest. When you feed a new Mercurial changeset into it, it
-asks Mercurial to compare those changesets using the same API used by
-<em>hg status</em>. This API is efficient and returns the information I care
-about: the paths that changed. Once we have the changed files, we
-<em>simply</em> reflect those changes in terms of updating Git trees.</p>
-<p>If a file changes or is added, we emit a <em>blob</em>. If a <em>tree</em> changes, we
-emit the new <em>tree</em> object. When the consumer has finished writing the
-set of new objects to Git, it asks for the SHA-1 of the root tree. (Up
-until this point the consumer is not aware of what any of the emitted
-objects actually are - just that they likely need to be added to
-storage.) It then uses the SHA-1 of the root tree to construct the
-commit. Then it moves on to the next changeset.</p>
-<p>The impact of this change is significant. On my computer, converting
-Mercurial's own Mercurial repository Git went from <strong>21:07</strong> to <strong>8:14</strong>
-on my i7-2600k. mozilla-central is even more drastic. The first 200
-commits (the first commit was a large dump from CVS) took <strong>8:17</strong>
-before and now take <strong>2:32</strong>. I don't have exact numbers from newer
-commits, but I do know they were at least twice as slow as the initial
-commits and showed an even more drastic speedup.</p>
-<p>But I was just getting started.</p>
-<p>The initial implementation wasn't very efficient in terms of reducing
-tree object calculations. I changed that earlier today when I
-<a href="https://groups.google.com/d/msg/hg-git/I5w_FscF6lw/LAc0pw1iilQJ">submitted a patch for consideration</a>
-that only calculates tree changes for trees that actually changed. I
-also removed some needless sorting on the order of export operations.
-This second patch reduced conversion of Mercurial's repository down to
-<strong>5:33</strong>. Even more impressive is that <strong>mozilla-central's changesets are
-now exporting almost 4x faster</strong> with this patch alone. The first 200
-changesets now export in <strong>42s</strong> (down from <strong>2:32</strong> which is down from
-<strong>8:17</strong>). This is mostly due to the overhead of reprocessing
-non-dirty trees on every export.</p>
-<p>And I'm not through.</p>
-<p>As part of building the standalone incremental changeset exporter, one
-of the goals in the back of my mind was to eventually have things
-execute in parallel.</p>
-<p>In my <a href="https://github.com/indygreg/hg-git/tree/performance-next">personal development branch</a>
-I have a <a href="https://github.com/indygreg/hg-git/commit/e74641284fecc928b0b8f8dcc01ef9b99e09c3cc">patch</a>
-to perform Mercurial changeset export on multiple cores. Essentially
-hg-git fires up a bunch of worker processes and asks each to export a
-consecutive range of changesets. The workers writes new Git objects into
-Git and then tells the coordinator process the root tree SHA-1
-corresponding to each Mercurial changeset. The coordinator process then
-uses these root tree SHA-1's to derive Git commit objects (you can't
-create the commit object until you know the SHA-1 of the commit's
-parents).</p>
-<p>The blob and tree exporting on separate processes makes Mercurial to Git
-export scale out to however many cores you feel like throwing at it.
-When 32 core machines come around, you can convert using all available
-cores and the speedup should roughly be linear with the number of cores.</p>
-<p>I'm still working out some kinks in the multiple processes patch
-(the <em>multiprocessing</em> module is very difficult to get working on all
-platforms and I don't want to break hg-git when it lands). But,
-<a href="http://ehsanakhgari.org/">Ehsan Akhgari</a> has been using it to power the
-<a href="https://github.com/mozilla/mozilla-central/">GitHub mirror</a> of
-mozilla-central for months without issue. (His use of these patches
-freed up the CPU required to support conversion of more project branches
-on the Git mirror. And, he's still not using the 4x improvement patch I
-wrote today - he will shortly - so who knows what improvements will stem
-from that.)</p>
-<p>With all the patches applied, hg-git now feels like a Ferrari when
-exporting Mercurial changesets to Git. Conversion of Mercurial's
-repository now takes <strong>1:25</strong> (down from <strong>21:07</strong>). <strong>Conversion of
-mozilla-central has gone from 6+ days to about 3 hours!</strong> More
-importantly, ongoing conversions feel somewhat snappy now.</p>
-<h2>Making Git export even faster</h2>
-<p>With the patch today, I'd say optimization of exporting Mercurial
-changesets is nearing its limits. There are a few things I could try
-that may net another 2 or 3x improvement. But, I think the ~50x
-improvement I've already attained (at least for mozilla-central) is
-pretty damn good and good enough for most users. (Part of performance
-optimization is knowing when is good enough and stopping before you
-invest excessive time in the long tail.)</p>
-<p>There is one giant refactor that could likely net a significant win for
-Git export. However, it requires optimizing for initial export over
-recurring incremental export (which is why I have little interest in
-it). Incremental export incurs a lot of <em>random</em> I/O accessing Mercurial
-filelogs and extracting specific file revisions as they are needed. An
-optimal export would iterate over the filelogs and export Git blobs from
-each filelog in the sequence they occur in within the filelogs. It would
-cache the file node to blob SHA-1. After all blobs are exported, the
-mappings would be combined and distributed to all workers. Then, tree
-export would occur in parallel largely under the existing model modulo
-blob writing. This would minimize overall I/O and work in Mercurial and
-would likely be significantly faster. However, it's mostly useful for
-initial export and IMO not worth implementing. (It's possible to employ
-a variation for incremental export that iterates over filelogs and
-exports not-yet-seen revisions. Perhaps I will investigate this some
-day.)</p>
-<h2>What about converting Git to Mercurial?</h2>
-<p>Now that I've tackled Mercurial to Git conversion, it's very tempting to
-work magic on the inverse: converting Git commits to Mercurial
-changesets. While I haven't looked at this problem in detail, I already
-know it will be at least slightly more challenging.</p>
-<p>The reason is parallelization. With Mercurial export, I have each child
-process reading directly from Mercurial and writing directly to Git.
-There are no locks involved. There is just a coordinator that ensures
-minimum redundant work among workers. There is some redundant
-work, sure. But, the alternative would be lots of locking and/or
-exchange of state across processes - not cheap operations! Furthermore,
-the writes into Git can occur in any order (since Git is just a
-key-value store). The only hard requirement is a child commit must
-come after its parent (because you need the parent commit's SHA-1).
-And, single-threaded insert of commit objects isn't a big deal because
-you can crank through hundreds of them per second (it might even be over
-1000/s on my machine).</p>
-<p>Mercurial's storage implementation does not afford me the same
-<em>carelessness</em> with regards to writing into storage. Since Mercurial
-uses shared files for individual file and manifest history, we have
-a contention problem. We <em>could</em> lock files when writing to them.
-However, these files (<em>revlogs</em> in Mercurial speak) also use
-transparent delta compression. You get the best performance/compression
-when changes are written in the order they actually occured in (at
-least in the typical case).</p>
-<p>To optimally write to Mercurial you need to order inserts. This means
-parallel reads from Git (in separate worker processes) would be very
-difficult to implement. Doable, sure, but you're looking at a lot of
-transferred state and ordering. This likely involves a lot more memory
-and CPU usage.</p>
-<p>The best idea I've come up with so far is a single process
-that reads off Git commits and iterates trees. It hashes the paths of
-seen files to a consistent worker process which then pulls the blob from
-Git's storage and inserts it into the filelog. You don't need to lock
-filelogs because only one worker owns a specific path. Workers report
-the blob's corresponding file node to another process which then
-assembles manifests, writes manifests in order, and finally creates
-and writes changesets. Unfortunately, the worker processes are just
-doing blob I/O. There is no parallel processing of Git tree calculation
-or Mercurial manifests. Given this was a significant source of slowness
-exporting <em>to</em> Git, I worry the inverse will be true. Although, the
-problem with Git was tree <em>creation</em> and it was due to the volume. Since
-there is only 1 manifest per changeset, perhaps it won't be as bad.</p>
-<p>While I've brainstormed a solution, I have no concrete plans to work on
-Git to Mercurial conversion. The impetus for me working on Mercurial to
-Git speedups was that I and a number of other Mozilla people were
-personally impacted. If the same is true for Git to Mercurial slowness,
-I could invest a few hours the next time I'm sick and bored over the
-weekend.</p>
-<h2>Conclusion</h2>
-<p>Converting Mercurial repositories to Git with hg-git is now
-significantly faster. If you thought it was too slow before, grab the
-latest code (from either the official repository or my personal branch)
-and enjoy.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
