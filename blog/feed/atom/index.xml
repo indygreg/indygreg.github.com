@@ -7,12 +7,102 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2013-07-17T01:20:49Z</updated>
+  <updated>2013-07-22T17:25:09Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mercurial Extension for Gecko Development]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development" />
+    <id>http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development</id>
+    <updated>2013-07-22T10:27:00Z</updated>
+    <published>2013-07-22T10:27:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Mercurial Extension for Gecko Development]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development"><![CDATA[<p>My weekend was spent hacking on Mercurial extensions. First, I worked on
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=827123">porting the pushlog extension off SQLite</a>.
+This will eventually enable Mozilla to move Mercurial hosting off NFS
+and should make <a href="https://hg.mozilla.org/">hg.mozilla.org</a> much faster as
+a result!</p>
+<p>But the main purpose of this blog post is to introduce a new Mercurial
+extension I wrote this weekend!</p>
+<p>Gecko developers perform a number of common tasks with Mercurial, so I
+thought it would be handy to package them up in an extension.</p>
+<p>To install the extension:</p>
+<pre><code>hg clone https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev
+</code></pre>
+<p>Then add this extension to your hgrc file (either the global or
+per-repository will suffice):</p>
+<pre><code>[extensions]
+mozext = /path/to/hgext-gecko-dev
+</code></pre>
+<p>Since I believe tools should be self-documenting, run the following for
+usage info:</p>
+<pre><code>$ hg help mozext
+</code></pre>
+<p>Here are some examples:</p>
+<div class="pygments_murphy"><pre><span class="c"># Clone mozilla-central into the mc directory.</span>
+hg clone central mc
+hg clone mc mc
+
+<span class="c"># Create a unified Mercurial repository containing changesets</span>
+<span class="c"># from all the release repositories.</span>
+hg cloneunified gecko
+
+<span class="c"># Pull changes from the central and inbound repositories.</span>
+hg pull central
+hg pull inbound
+
+<span class="c"># Update the working tree to the tip of inbound.</span>
+hg up inbound/default
+
+<span class="c"># View the tree open/closed status.</span>
+hg treestatus
+
+<span class="c"># Show a list of all known trees and their aliases.</span>
+hg moztrees
+
+<span class="c"># Open TBPL for the push containing a changeset.</span>
+hg tbpl inbound 821e984ef423
+hg tbpl inbound inbound/default
+
+<span class="c"># Push the tip of inbound to mozilla-central</span>
+hg pushtree -r inbound/default central
+</pre></div>
+
+<p>I've only tested this extension with Mercurial 2.6 (which every Mozilla
+developer should be running). I'm not willing to support older versions.
+Upgrade already!</p>
+<p>There are a number of features I'd like to implement:</p>
+<ul>
+<li><strong>hg importtry</strong> - Automatically import changesets for a Try push into
+  the repository.</li>
+<li><strong>hg land</strong> - Automatically land patches on an integration tree (like
+  inbound). Will handle rebasing automatically.</li>
+<li><strong>hg critic</strong> - Perform stlye checking and other analysis on a
+  changeset or group of changesets.</li>
+<li>Ability to integrate build status into changeset info. This will allow
+  things such as <em>pull only the last green changeset</em>. I'd also like a
+  <em>build status</em> field to appear in the log output. Unfortunately, I
+  believe the latency of the build lookup API is prohibitively high to
+  perform the kind of tight integration I'd like.</li>
+<li>Move <em>mozautomation</em> Python package into a standalone package or
+  integrate already existing code (did I reinvent the wheel?).</li>
+<li>Log fetching. Specify a changeset and fetch build/test logs.</li>
+<li>Possibly move code into mozilla-central.</li>
+<li>Possibly add mach commands for some of this functionality.</li>
+</ul>
+<p>There's no bug component for this extension (yet). If you find any
+issues or wish to add a feature, just email a patch to me at gps@mozilla.com.</p>
+<p>Please let me know if you find this useful or if you have any questions.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1798,50 +1888,5 @@ powerful extensions. The future is bright for this tool.</p>]]></content>
 of total time of jobs in Mozilla's automation in days. The line running
 through it is a best fit linear regression.</p>
 <p>The raw data is <a href="https://gist.github.com/indygreg/5527091">available</a>.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[SQLite.jsm - SQLite Done Betterer]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer" />
-    <id>http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer</id>
-    <updated>2013-04-14T23:55:00Z</updated>
-    <published>2013-04-14T23:55:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[SQLite.jsm - SQLite Done Betterer]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer"><![CDATA[<p>Did you know there is now a better way to interact with SQLite from
-JavaScript in Firefox? It's called
-<a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Sqlite.jsm">SQLite.jsm</a>
-and it's available in Firefox 20 and later.</p>
-<p>SQLite.jsm is an abstraction around the low-level Storage APIs that you
-would have used before. However, it eliminates most of the footguns and
-makes it easier to write code that doesn't jank the browser and is less
-prone to memory leaks. It even has an API to free as much memory as
-possible from the current connection!</p>
-<p>If you currently use SQLite via Storage, I highly recommend taking a
-look at SQLite.jsm - especially if you are using synchronous APIs.</p>
-<p>If you are investigating SQLite for the storage needs of your add-on or
-browser feature, please keep in mind that SQLite can incur lots of
-filesystem I/O and may run slowly on old machines (especially with
-magnetic hard drives) and especially with its default configuration.
-You may be interested in low-level file I/O using
-<a href="https://developer.mozilla.org/en-US/docs/JavaScript_OS.File">OS.File</a>
-instead.</p>
-<p>If you insist on using SQLite, please educate yourself on and then
-seriously consider using
-<a href="https://www.sqlite.org/wal.html">Write-Ahead Logging</a> mode on your
-database. Some detailed discussion on SQLite behavior as it pertains to
-Firefox can be found in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=830492">bug 830492</a>.
-I hope to eventually incorporate more <em>sane by default</em> connection
-options into SQLite.jsm to make it easier for add-ons and browser
-features to have the least-impactful behavior by default (e.g. enable
-WAL by default). Until then, please, please, please research
-<a href="https://www.sqlite.org/pragma.html">PRAGMA</a> statements to optimize
-how your SQLite database runs so it has as little performance overhead
-as possible. Also consider dropping into an IRC channel on
-irc.mozilla.org and asking for advice from one of the many who have
-fallen into SQLite's many performance pitfalls (including me).</p>]]></content>
   </entry>
 </feed>

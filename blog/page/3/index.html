@@ -50,6 +50,57 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="sqlite.jsm---sqlite-done-betterer"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer" rel="bookmark" title="Permanent Link to SQLite.jsm - SQLite Done Betterer">SQLite.jsm - SQLite Done Betterer</a></h2>
+  <small>April 14, 2013 at 11:55 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Did you know there is now a better way to interact with SQLite from
+JavaScript in Firefox? It's called
+<a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Sqlite.jsm">SQLite.jsm</a>
+and it's available in Firefox 20 and later.</p>
+<p>SQLite.jsm is an abstraction around the low-level Storage APIs that you
+would have used before. However, it eliminates most of the footguns and
+makes it easier to write code that doesn't jank the browser and is less
+prone to memory leaks. It even has an API to free as much memory as
+possible from the current connection!</p>
+<p>If you currently use SQLite via Storage, I highly recommend taking a
+look at SQLite.jsm - especially if you are using synchronous APIs.</p>
+<p>If you are investigating SQLite for the storage needs of your add-on or
+browser feature, please keep in mind that SQLite can incur lots of
+filesystem I/O and may run slowly on old machines (especially with
+magnetic hard drives) and especially with its default configuration.
+You may be interested in low-level file I/O using
+<a href="https://developer.mozilla.org/en-US/docs/JavaScript_OS.File">OS.File</a>
+instead.</p>
+<p>If you insist on using SQLite, please educate yourself on and then
+seriously consider using
+<a href="https://www.sqlite.org/wal.html">Write-Ahead Logging</a> mode on your
+database. Some detailed discussion on SQLite behavior as it pertains to
+Firefox can be found in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=830492">bug 830492</a>.
+I hope to eventually incorporate more <em>sane by default</em> connection
+options into SQLite.jsm to make it easier for add-ons and browser
+features to have the least-impactful behavior by default (e.g. enable
+WAL by default). Until then, please, please, please research
+<a href="https://www.sqlite.org/pragma.html">PRAGMA</a> statements to optimize
+how your SQLite database runs so it has as little performance overhead
+as possible. Also consider dropping into an IRC channel on
+irc.mozilla.org and asking for advice from one of the many who have
+fallen into SQLite's many performance pitfalls (including me).</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="making-hg-git-faster"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/04/14/making-hg-git-faster" rel="bookmark" title="Permanent Link to Making hg-git Faster">Making hg-git Faster</a></h2>
   <small>April 14, 2013 at 09:45 PM | categories: 
@@ -796,255 +847,6 @@ away.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="thoughts-on-logging---part-1---structured-logging"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/12/06/thoughts-on-logging---part-1---structured-logging" rel="bookmark" title="Permanent Link to Thoughts on Logging - Part 1 - Structured Logging">Thoughts on Logging - Part 1 - Structured Logging</a></h2>
-  <small>December 06, 2012 at 09:55 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/logging'>logging</a>
- | <a href="http://gregoryszorc.com/blog/2012/12/06/thoughts-on-logging---part-1---structured-logging#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <h2>Forward</h2>
-<p>For reasons I can't explain, I have a keen interest in computer logging
-systems. Perhaps it stems from my frustration that such a
-seemingly trivial task can often be quite complicated. Perhaps it's from
-the scaling challenges inherent with inevitably needing to analyze
-terabytes of logged data. Perhaps it's from my experience designing
-highly-available distributed server application and needing to use
-logging for real-time monitoring and decision making. Whatever the
-root causes, I've always wanted to create a brain dump of my thoughts
-on logging. So, here we go!</p>
-<h2>Introduction</h2>
-<p>Logging. Practically every computer program does it in some form or
-another. The standard libraries for many programming languages provide
-a logging facility. But, have you ever stopped to think about the side
-effects of logging or why you log the way you do?</p>
-<p>In this first post, I will briefly define what I consider logging and
-will talk about something called <em>structured logging</em>.</p>
-<h2>The Definition of Logging</h2>
-<p>For the scope of these posts, I will define logging to be:</p>
-<pre><code>An emitted stream of distinct messages from a running application
-</code></pre>
-<p>A <em>message</em> can be pretty much anything. They are often strings. But,
-they could be binary data. The transport mechanism is undefined.
-Although, most logging systems typically write to a file (eventually).</p>
-<p>I should also call out the difference between <em>reading</em>/<em>interpreting</em>
-logs and <em>transporting</em> them. When I say <em>reading a log</em>, I'm referring
-to a process where an entity (either human or machine) <em>reads</em> the
-individual message content and infers something from it. By contrast, a
-<em>transporter</em> treats messages as a black box and just shuffles bits
-around. <em>Transporters</em> also typically send or store logging messages
-somewhere.</p>
-<p>It's worth explicitly noting that this definition encompasses both
-tradtional <em>print()</em> based logging (writing a line to a file or output)
-as well as things like transaction logs or recording events as new rows
-in a database.</p>
-<h2>The Multiple Use Cases of Logging</h2>
-<p>Before I get to some of the interesting aspects of logging, let's
-identify <em>some</em> of the use cases of logging (in no particular order):</p>
-<ol>
-<li>Recording application errors (e.g. exceptions and stack traces)</li>
-<li>Low-level information to aid in debugging or human observation</li>
-<li>Application monitoring (includes metrics and alerting)</li>
-<li>Business analytics (use the logged data to help make decisions)</li>
-<li>Security auditing</li>
-</ol>
-<p>Now that we have the basics out of the way, let's move on to the crux of
-this post.</p>
-<h2>Logging for Humans or Machines</h2>
-<p>I would argue that every log message is intended to be <em>interpreted</em>
-by either a human or a machine.</p>
-<p>If a log message is only going to be used to help a human debug a system
-or casually see what's going on, it's intended for humans. If a log
-message is going to be used for machine analysis later (e.g. monitoring,
-alerting, business analytics, security auditing, etc), it's intended for
-machines.</p>
-<p>This is an important distinction. If it isn't clear, please re-read the
-prior paragraphs. Now might also be a good time for you to audit the
-logs in your life and assign <em>human</em> or <em>machine</em> labels to them.</p>
-<h2>The Problem</h2>
-<p><strong>The problem with logging as most of us know it is that it is optimized
-for human consumption, even if machines are the intended consumer.</strong></p>
-<p>At the heart of most logging systems we log a string, a char *, an
-array of characters that can easily be read by humans. For example, a
-simple web application might produce log files containing lines like:</p>
-<pre><code>2012:11:24T17:32:23.3435 INFO gps@mozilla.com successfully logged in
-</code></pre>
-<p>Human readability is a great feature to have. However, it comes at a
-price: more difficult machine consumption.</p>
-<p><strong>By optimizing for human consumption, we've introduced a new problem:
-log parsing.</strong></p>
-<p>In the above example log message, what the program has done is combined
-a few distinct fields of data (an event - <em>logged in</em>, the
-username, and the time) into a single text string. This is great for
-humans glancing at a log file. But that decision now necessitates
-downstream machine consumers to <em>parse</em>/<em>decode</em> that text back into its
-original, distinct fields.</p>
-<p>I call this style of logging <em>destructured</em> or <em>unstructured</em> logging. We
-start with distinct fields of data and then <em>destructure</em> them into a
-fully free-form or semi-formed text. By doing so, we lose part
-of the original data structure and necessitate the need to reconstruct
-it (via parsing).</p>
-<p>This seems silly to me.</p>
-<p>Why are we formatting distinct fields of data into unified strings only
-to have them parsed into their original components again? If lossless
-and simple round-trip encoding/decoding is your goal, there are much
-better ways than freely-formed text! Going <em>to</em> text is easy
-(<em>printf()</em> or string concatenation are how it is commonly performed).
-Getting back to the original representation is the real problem.</p>
-<p>Every persisted log message destined for machines will need to be decoded
-to some degree to facilitate analysis. However, by using destructured
-text, nearly every program and logging system forces this decoding
-problem onto its users by using an encoding that is difficult to code.</p>
-<p>Every time you are analyzing a log file containing destructured text you
-need to solve the parsing/decoding problem. Every time you write an
-<em>awk</em>, <em>grep</em>, <em>sed</em>, <em>perl</em>, etc script, use regular expressions, etc
-to scrape logs you are solving this problem. <strong>How much time do you
-spend decoding/parsing logs versus actually doing something useful with
-the data?</strong> From my personal experience, a lot. And, parsing
-destructured text is a very fragile solution. What happens when the
-string changes, even by just a little? Does that throw off your
-decoder/parser?</p>
-<p>Decoding log messages is a hard problem. Furthermore, it's a problem I'd
-rather not have.</p>
-<h2>Structured Logging to the Rescue</h2>
-<p><img alt="What if I told you there's a better way to log" src="/images/morpheus_logging.jpg" /></p>
-<p>One of my early professional mentors taught me that one of the best ways
-to solve a problem is to change the requirements so that the problem no
-longer exists or becomes easier to solve. (If that didn't immediately
-click with you, you might want to read it again because I feel it's an
-invaluable skill and one that many engineers don't employ).
-Applying that lesson here, how do we eliminate the problem of
-parsing destructured textual data back into its original fields?  Simple:
-we don't emit destructured text! Instead, we emit data that is easily
-machine readable, where each individual field is preserved. <strong>This is
-called structured logging.</strong></p>
-<p>The primary benefit of structured logging is that you eliminate the
-parsing problem (or at least you change it to be a solved problem by
-using a common or well-defined encoding format). No tedious searching
-for data within free-form text and extracting it. Instead, the fields
-from the event-producing application are seamlessly preserved and
-loaded into downstream machine consumers.</p>
-<h3>A Closer Look</h3>
-<p>What does structured logging look like? Well, it depends. There is no
-standard for structured logging. When I first started writing this post
-in June 2011, a Google search for <em>structured logging</em> didn't yield
-much. Today, things aren't that much better. Although, there has been
-significant activity in the last 15 months. rsyslog has launched
-<a href="http://blog.gerhards.net/2012/02/announcing-project-lumberjack.html">project Lumberjack</a>,
-which has structured logging as a pillar. There is even someone sitting
-10 ft from me at Mozilla's SF office doing structured logging for server
-applications (<a href="https://wiki.mozilla.org/Services/Sagrada/Metlog">metlog</a>).</p>
-<p>All structured logging systems are different. But, the concepts
-are mostly the same.</p>
-<p>From the perspective of a log-producing application, a function call to
-produce an unstructured message may look something like:</p>
-<div class="pygments_murphy"><pre><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">username</span> <span class="o">+</span> <span class="s">&quot; successfully logged in&quot;</span><span class="p">)</span>
-</pre></div>
-
-<p>Whereas a call to produce that same message in structured form may look
-like:</p>
-<div class="pygments_murphy"><pre><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;successful_login&quot;</span><span class="p">,</span> <span class="n">who</span><span class="o">=</span><span class="n">username</span><span class="p">)</span>
-</pre></div>
-
-<p>You'll immediately notice that the API retains the original pieces of
-data. In this example, we just have the event name (<em>successful_login</em>)
-and <em>who</em> (some variable value).</p>
-<p>This will look different in every programming language, of course. And,
-depending on the structured logging mechanism, the common metadata
-produced with each message (e.g. time and log level) may differ. But the
-general idea is you preserve the rich data fields as they cross over
-into the logging facility rather than <em>casting</em> them to a string.
-Behind the scenes, the structured logger retains the fields (the
-original structure) and encodes them into something machine readable.</p>
-<p>Put another way, structured loggers log objects, not strings.</p>
-<p>How objects are encoded again depends on the structured logger
-implementation. JSON is a well-understood encoding format. An example
-JSON encoding of our example message might look like:</p>
-<div class="pygments_murphy"><pre><span class="p">[</span><span class="mf">1354317157.034534</span><span class="p">,</span> <span class="s">&quot;INFO&quot;</span><span class="p">,</span> <span class="s">&quot;sucessful_login&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s">&quot;who&quot;</span><span class="p">:</span> <span class="s">&quot;gps@mozilla.com&quot;</span><span class="p">}]</span>
-</pre></div>
-
-<p>That's an array of current time, log level, event name/message type, and
-a mapping of the data fields.</p>
-<p>Or, you could opt for a more efficient encoding format, such as
-protocol buffers (which is binary).</p>
-<p>The actual encoding theoretically doesn't really matter as long as it can
-easily be decoded back into its original data. A good way to identify this
-trait is whether you need to implement a decoder/parser more than once
-per programming language or if you need to apply different decoding
-mechanisms based on the content of a message. If you do, you probably
-don't have a generic enough encoding format.</p>
-<p>Going back to implementation details, what about a consumer? In
-JavaScript, our JSON structured logger from above might look something
-like:</p>
-<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
-  <span class="kd">let</span> <span class="p">[</span><span class="nx">time</span><span class="p">,</span> <span class="nx">level</span><span class="p">,</span> <span class="nx">action</span><span class="p">,</span> <span class="nx">fields</span><span class="p">]</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">line</span><span class="p">)</span>
-
-  <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;successful_login&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">let</span> <span class="nx">who</span> <span class="o">=</span> <span class="nx">fields</span><span class="p">.</span><span class="nx">who</span><span class="p">;</span>
-
-    <span class="c1">// Do something interesting.</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;XXX&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// ...</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-
-<p>Compare this with a destructured parser:</p>
-<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">endsWith</span><span class="p">(</span><span class="s2">&quot;successfully logged in&quot;</span><span class="p">))</span> <span class="p">{</span>
-    <span class="c1">// Find username.</span>
-    <span class="kd">let</span> <span class="nx">spaceIndex</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>
-    <span class="kd">let</span> <span class="nx">username</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">substr</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">spaceIndex</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
-
-    <span class="c1">// Do something interesting.</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(...))</span> <span class="p">{</span>
-    <span class="c1">//</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-
-<p>This example admittedly isn't very complex. But, you can already see
-some differences. Notably, it takes 1 line to completely parse <em>any</em>
-message using the structured logger. The unstructured text parser
-requires multiple lines of code <em>per message type</em>. One of those scales
-better than the other.</p>
-<p>Before I conclude, it's worth mentioning something about event
-names/enumerations. You may notice I gave <em>event name</em> a dedicated
-field in my example. This is intentional. In a subsequent post,
-I will talk about the importance of event names/enumerations and
-schemas. Until then, just assume that having a unique event name is
-an important aspect of a well-designed structured logging system.
-Hence its inclusion in my examples above.</p>
-<h2>Conclusion</h2>
-<p>I think the vast majority of application logging is done suboptimally
-because it forces a <strong>hard</strong> problem of decoding/parsing onto consumers.
-Given that many logs are intended for machines, I think this is a
-problem that shouldn't need to exist and the software industry should
-rethink its current approach to logging by offering first-class
-structured logging facilities and subsequently encouraging their use.</p>
-<p>If application logging retained the data behind messages, the problem
-of parsing/decoding log messages would largely vanish and we would be
-left with the real problem: actually doing something useful with
-logged data. That is the point of logging after all, isn't it?</p>
-<p>Now, this may sound like I'm waiving my hands a bit. You are right:
-structured logging by itself is no silver bullet. There are many ways to
-do it suboptimally and to use it when you shouldn't. In subsequent posts
-to this series, I will dive deeper into how to properly design a
-(structured) logging system. I will also investigate some of the
-performance implications associated with different logging mechanisms.
-Stay tuned.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/12/06/thoughts-on-logging---part-1---structured-logging#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">« Previous Page</a>
   --  
