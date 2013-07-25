@@ -50,6 +50,64 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="track-pushes-and-train-riding-with-mercurial"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial" rel="bookmark" title="Permanent Link to Track pushes and train riding with Mercurial">Track pushes and train riding with Mercurial</a></h2>
+  <small>July 25, 2013 at 01:10 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>My <a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev">Mercurial extension for Firefox development</a>
+now has an initial implementation of pushlog aggregation and searching.</p>
+<p>You first start by synchronizing the pushlog data on Mozilla's servers
+with the local client:</p>
+<pre><code>hg pushlogsync
+</code></pre>
+<p>This takes a while the first time you run it because it has to download
+all the data. On subsequent runs, it only downloads new data, so it
+should be much faster.</p>
+<p>Then, you can search for the push history of a changeset:</p>
+<div class="pygments_murphy"><pre>$ hg changesetpushes -a b968708558b9
+133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
+
+Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
+http://krijnhoetmer.nl/irc-logs/css/20130205#l-1590
+http://lists.w3.org/Archives/Public/www-style/2013Feb/0392.html
+
+Note that this patch depends on signed integer overflow behavior in C++,
+which I believe is portable despite being unspecified.
+Tree      Date                Username              Build Info
+inbound   2013-02-21T18:12:57 dbaron@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=85b91048c1cd
+central   2013-02-22T09:43:12 ryanvm@gmail.com      https://tbpl.mozilla.org/?tree=Mozilla-Central&amp;rev=3a7d4085787e
+build     2013-02-22T14:31:42 gszorc@mozilla.com    https://tbpl.mozilla.org/?tree=Build-System&amp;rev=3a7d4085787e
+fx-team   2013-02-25T01:04:44 ttaubert@mozilla.com  https://tbpl.mozilla.org/?tree=Fx-Team&amp;rev=31466fd86eb7
+graphics  2013-02-25T20:02:57 mwoodrow@mozilla.com  https://tbpl.mozilla.org/?tree=Graphics&amp;rev=dcf53b7140cd
+ash       2013-02-26T13:50:41 armenzg@mozilla.com   https://tbpl.mozilla.org/?tree=Ash&amp;rev=201b64ad48d8
+services  2013-02-28T09:42:45 Ms2ger@gmail.com      https://tbpl.mozilla.org/?tree=Services-Central&amp;rev=31466fd86eb7
+aurora    2013-04-01T13:50:56 bbajaj@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Aurora&amp;rev=60a3f369ccf0
+beta      2013-05-13T09:59:38 lsblakk@mozilla.com   https://tbpl.mozilla.org/?tree=Mozilla-Beta&amp;rev=60a3f369ccf0
+release   2013-06-17T15:53:19 akeybl@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Release&amp;rev=c54e3363712e
+</pre></div>
+
+<p>(The <em>-a</em> argument prints all trees instead of just the release trees).</p>
+<p>I'd like to integrate bug tracking into the mix to facilitate
+answering questions like <em>when did bug 123456 ride the trains</em>.</p>
+<p>I'd also like to integrate release versions and build IDs into the mix.
+For example, when I look up a changeset, I want to know the first build
+on the Nightly, Aurora, Beta, and Release channels that change was
+included in.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mercurial-extension-for-gecko-development"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/07/22/mercurial-extension-for-gecko-development" rel="bookmark" title="Permanent Link to Mercurial Extension for Gecko Development">Mercurial Extension for Gecko Development</a></h2>
   <small>July 22, 2013 at 10:27 AM | categories: 
@@ -998,132 +1056,6 @@ you will take the necessary steps to ensure consistency over time
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="using-docker-to-build-firefox"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/05/19/using-docker-to-build-firefox" rel="bookmark" title="Permanent Link to Using Docker to Build Firefox">Using Docker to Build Firefox</a></h2>
-  <small>May 19, 2013 at 01:45 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
- | <a href="http://gregoryszorc.com/blog/2013/05/19/using-docker-to-build-firefox#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I have the privilege of having my desk located around a bunch of
-really intelligent people from the Mozilla Services team. They've been
-talking a lot about all the new technologies around server provisioning.
-One that interested me is <a href="http://www.docker.io/">Docker</a>.</p>
-<p>Docker is a pretty nifty piece of software. It's essentially a glorified
-wrapper around <a href="http://lxc.sourceforge.net/">Linux Containers</a>. But,
-calling it that is doing it an injustice.</p>
-<p>Docker interests me because it allows simple environment isolation and
-repeatability. I can create a run-time environment
-once, package it up, then run it again on any other machine.
-Furthermore, everything that runs in that environment is isolated from
-the underlying host (much like a virtual machine). And best of all,
-everything is fast and simple.</p>
-<p>For my initial experimentation with Docker, I decided to create an
-environment for building Firefox.</p>
-<h2>Building Firefox with Docker</h2>
-<p>To build Firefox with Docker, you'll first need to
-<a href="http://www.docker.io/gettingstarted/">install</a> Docker. That's pretty
-simple.</p>
-<p>Then, it's just a matter of creating a new container with our build
-environment:</p>
-<div class="pygments_murphy"><pre>curl https://gist.github.com/indygreg/5608534/raw/30704c59364ce7a8c69a02ee7f1cfb23d1ffcb2c/Dockerfile | docker build
-</pre></div>
-
-<p>The output will look something like:</p>
-<div class="pygments_murphy"><pre>FROM ubuntu:12.10
-MAINTAINER Gregory Szorc &quot;gps@mozilla.com&quot;
-RUN apt-get update
-===&gt; d2f4faba3834
-RUN dpkg-divert --local --rename --add /sbin/initctl &amp;&amp; ln -s /bin/true /sbin/initctl
-===&gt; aff37cc837d8
-RUN apt-get install -y autoconf2.13 build-essential unzip yasm zip
-===&gt; d0fc534feeee
-RUN apt-get install -y libasound2-dev libcurl4-openssl-dev libdbus-1-dev libdbus-glib-1-dev libgtk2.0-dev libiw-dev libnotify-dev libxt-dev mesa-common-dev uuid-dev
-===&gt; 7c14cf7af304
-RUN apt-get install -y binutils-gold
-===&gt; 772002841449
-RUN apt-get install -y bash-completion curl emacs git man-db python-dev python-pip vim
-===&gt; 213b117b0ff2
-RUN pip install mercurial
-===&gt; d3987051be44
-RUN useradd -m firefox
-===&gt; ce05a44dc17e
-Build finished. image id: ce05a44dc17e
-ce05a44dc17e
-</pre></div>
-
-<p>As you can see, it is essentially <em>bootstrapping</em> an environment to
-build Firefox.</p>
-<p>When this has completed, you can activate a shell in the container by
-taking the image id printed at the end and running it:</p>
-<div class="pygments_murphy"><pre>docker run -i -t ce05a44dc17e /bin/bash
-<span class="c"># You should now be inside the container as root.</span>
-su - firefox
-hg clone https://hg.mozilla.org/mozilla-central
-<span class="nb">cd </span>mozilla-central
-./mach build
-</pre></div>
-
-<p>If you want to package up this container for distribution, you just find
-its ID then export it to a tar archive:</p>
-<div class="pygments_murphy"><pre>docker ps -a
-<span class="c"># Find ID of container you wish to export.</span>
-docker <span class="nb">export </span>2f6e0edf64e8 &gt; image.tar
-<span class="c"># Distribute that file somewhere.</span>
-docker import - &lt; image.tar
-</pre></div>
-
-<p>Simple, isn't it?</p>
-<h2>Future use at Mozilla</h2>
-<p>I think it would be rad if Release Engineering used Docker for managing
-their Linux builder configurations. Want to develop against the exact
-system configuration that Mozilla uses in its automation - you could do
-that. No need to worry about custom apt repositories, downloading
-custom toolchains, keeping everything isolated from the rest of your
-system, etc: Docker does that all automatically. Mozilla simply needs to
-publish Docker images on the Internet and anybody can come along and
-reproduce the official environment with minimal effort. Once we do that,
-there are few excuses for someone breaking Linux builds because of
-an environment discrepancy.</p>
-<p>Release Engineering could also use Docker to manage isolation of
-environments between builds. For example, it could spin up a new
-container for each build or test job. It could even save images from the
-results of these jobs. Have a weird build failure like a segmentation
-fault in the compiler? Publish the Docker image and have someone take a
-look! No need to take the builder offline while someone SSH's into it.
-No need to worry about the probing changing state because you can always
-revert to the state at the time of the failure! And, builds would likely
-start faster. As it stands, our automation <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=851294">spends minutes managing
-packages</a> before
-builds begin. This lag would largely be eliminated with Docker. If
-nothing else, executing automation jobs inside a container would allow
-us to extract accurate resource usage info (CPU, memory, I/O) since
-the Linux kernel effectively gives containers their own namespace
-independent of the global system's.</p>
-<p>I might also explore publishing Docker images that construct an ideal
-development environment (since getting recommended tools in the hands of
-everybody is a hard problem).</p>
-<p>Maybe I'll even consider hooking up build system glue to automatically
-run builds inside containers.</p>
-<p>Lots of potential here.</p>
-<h2>Conclusion</h2>
-<p>I encourage Linux users to play around with Docker. It enables some
-new and exciting workflows and is a really powerful tool despite its
-simplicity. So far, the only major faults I have with it are that the
-docs say it should not be used in production (yet) and it only works on
-Linux.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/19/using-docker-to-build-firefox#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/page/2">Next Page »</a>
 

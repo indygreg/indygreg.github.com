@@ -1,0 +1,167 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="track-pushes-and-train-riding-with-mercurial"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial" rel="bookmark" title="Permanent Link to Track pushes and train riding with Mercurial">Track pushes and train riding with Mercurial</a></h2>
+  <small>July 25, 2013 at 01:10 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>My <a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev">Mercurial extension for Firefox development</a>
+now has an initial implementation of pushlog aggregation and searching.</p>
+<p>You first start by synchronizing the pushlog data on Mozilla's servers
+with the local client:</p>
+<pre><code>hg pushlogsync
+</code></pre>
+<p>This takes a while the first time you run it because it has to download
+all the data. On subsequent runs, it only downloads new data, so it
+should be much faster.</p>
+<p>Then, you can search for the push history of a changeset:</p>
+<div class="pygments_murphy"><pre>$ hg changesetpushes -a b968708558b9
+133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
+
+Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
+http://krijnhoetmer.nl/irc-logs/css/20130205#l-1590
+http://lists.w3.org/Archives/Public/www-style/2013Feb/0392.html
+
+Note that this patch depends on signed integer overflow behavior in C++,
+which I believe is portable despite being unspecified.
+Tree      Date                Username              Build Info
+inbound   2013-02-21T18:12:57 dbaron@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=85b91048c1cd
+central   2013-02-22T09:43:12 ryanvm@gmail.com      https://tbpl.mozilla.org/?tree=Mozilla-Central&amp;rev=3a7d4085787e
+build     2013-02-22T14:31:42 gszorc@mozilla.com    https://tbpl.mozilla.org/?tree=Build-System&amp;rev=3a7d4085787e
+fx-team   2013-02-25T01:04:44 ttaubert@mozilla.com  https://tbpl.mozilla.org/?tree=Fx-Team&amp;rev=31466fd86eb7
+graphics  2013-02-25T20:02:57 mwoodrow@mozilla.com  https://tbpl.mozilla.org/?tree=Graphics&amp;rev=dcf53b7140cd
+ash       2013-02-26T13:50:41 armenzg@mozilla.com   https://tbpl.mozilla.org/?tree=Ash&amp;rev=201b64ad48d8
+services  2013-02-28T09:42:45 Ms2ger@gmail.com      https://tbpl.mozilla.org/?tree=Services-Central&amp;rev=31466fd86eb7
+aurora    2013-04-01T13:50:56 bbajaj@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Aurora&amp;rev=60a3f369ccf0
+beta      2013-05-13T09:59:38 lsblakk@mozilla.com   https://tbpl.mozilla.org/?tree=Mozilla-Beta&amp;rev=60a3f369ccf0
+release   2013-06-17T15:53:19 akeybl@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Release&amp;rev=c54e3363712e
+</pre></div>
+
+<p>(The <em>-a</em> argument prints all trees instead of just the release trees).</p>
+<p>I'd like to integrate bug tracking into the mix to facilitate
+answering questions like <em>when did bug 123456 ride the trains</em>.</p>
+<p>I'd also like to integrate release versions and build IDs into the mix.
+For example, when I look up a changeset, I want to know the first build
+on the Nightly, Aurora, Beta, and Release channels that change was
+included in.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
