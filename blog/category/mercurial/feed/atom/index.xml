@@ -7,12 +7,54 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2013-07-25T20:11:17Z</updated>
+  <updated>2013-07-30T00:46:01Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mercurial setup wizard for Firefox development]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development" />
+    <id>http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development</id>
+    <updated>2013-07-29T17:45:00Z</updated>
+    <published>2013-07-29T17:45:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Mercurial setup wizard for Firefox development]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development"><![CDATA[<p>I'm a big fan of tools that encourage and/or enforce the following of
+best practices and that help people become more productive.</p>
+<p>One of the tools that Firefox developers interact with nearly daily is
+Mercurial. As I've observed from coworkers and from community
+contributors, many don't have Mercurial configured for optimal
+development. For first-time contributors, this can manifest in patch
+rejection - an experience that can be embarassing and demotivating. This
+is frustrating to me because most issues are easily identifiable and
+correctable. And, when addressed, everyone wins.</p>
+<p>Anyway, I'm pleased to announce that there is now a configuration wizard
+in the Firefox source tree to help with configuring Mercurial. To run it,
+just type:</p>
+<pre><code>./mach mercurial-setup
+</code></pre>
+<p>Currently, it's aimed for first-time contributors. So, it's missing
+things that more seasoned developers rely on. But you need to start
+somewhere, right?</p>
+<p>Currently, the tool isn't advertised anywhere other than <em>mach help</em>.
+Please run it and report issues in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=794580">bug 794580</a> or
+file a new report. Once things have baked in, I'd like to add some kind
+of notification/tips system to mach where it will encourage you to do
+things like automatically run <em>mach mercurial-setup</em>. Until then, I
+recommend trying to remember to run <em>mach mercurial-setup</em> every few
+weeks to ensure your Mercurial environment is up to date and properly
+configured.</p>
+<p>I'd like to thank Nick Alexander for sharing my enthusiasm for helping
+contributors and for taking the time to review this work.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>

@@ -50,6 +50,53 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-setup-wizard-for-firefox-development"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development" rel="bookmark" title="Permanent Link to Mercurial setup wizard for Firefox development">Mercurial setup wizard for Firefox development</a></h2>
+  <small>July 29, 2013 at 05:45 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I'm a big fan of tools that encourage and/or enforce the following of
+best practices and that help people become more productive.</p>
+<p>One of the tools that Firefox developers interact with nearly daily is
+Mercurial. As I've observed from coworkers and from community
+contributors, many don't have Mercurial configured for optimal
+development. For first-time contributors, this can manifest in patch
+rejection - an experience that can be embarassing and demotivating. This
+is frustrating to me because most issues are easily identifiable and
+correctable. And, when addressed, everyone wins.</p>
+<p>Anyway, I'm pleased to announce that there is now a configuration wizard
+in the Firefox source tree to help with configuring Mercurial. To run it,
+just type:</p>
+<pre><code>./mach mercurial-setup
+</code></pre>
+<p>Currently, it's aimed for first-time contributors. So, it's missing
+things that more seasoned developers rely on. But you need to start
+somewhere, right?</p>
+<p>Currently, the tool isn't advertised anywhere other than <em>mach help</em>.
+Please run it and report issues in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=794580">bug 794580</a> or
+file a new report. Once things have baked in, I'd like to add some kind
+of notification/tips system to mach where it will encourage you to do
+things like automatically run <em>mach mercurial-setup</em>. Until then, I
+recommend trying to remember to run <em>mach mercurial-setup</em> every few
+weeks to ensure your Mercurial environment is up to date and properly
+configured.</p>
+<p>I'd like to thank Nick Alexander for sharing my enthusiasm for helping
+contributors and for taking the time to review this work.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="track-pushes-and-train-riding-with-mercurial"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial" rel="bookmark" title="Permanent Link to Track pushes and train riding with Mercurial">Track pushes and train riding with Mercurial</a></h2>
   <small>July 25, 2013 at 01:10 PM | categories: 
