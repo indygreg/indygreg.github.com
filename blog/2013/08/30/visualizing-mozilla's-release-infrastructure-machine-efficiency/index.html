@@ -1,0 +1,153 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="visualizing-mozilla's-release-infrastructure-machine-efficiency"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/08/30/visualizing-mozilla's-release-infrastructure-machine-efficiency" rel="bookmark" title="Permanent Link to Visualizing Mozilla's release infrastructure machine efficiency">Visualizing Mozilla's release infrastructure machine efficiency</a></h2>
+  <small>August 30, 2013 at 12:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/08/30/visualizing-mozilla's-release-infrastructure-machine-efficiency#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Have you ever wondered what the machines in Mozilla's automation
+infrastructure are doing all the time? I have. So, I decided to create a
+visualization of this data. You can find it at
+<a href="http://automation-dashboard.paas.allizom.org/">http://automation-dashboard.paas.allizom.org/</a>.</p>
+<p>When you start looking at the visualizations, you notice something:
+there's a lot of time when machines aren't doing anything! All that
+white space between jobs is time machines are not processing jobs. This
+is capacity Mozilla is failing to utilize.</p>
+<p>While some may say Mozilla's automation infrastructure has a load or
+capacity problem, I say it has an efficiency problem. The average
+machine in our automation infrastructure is doing work less than 50% of
+the time <em>during weekdays</em>. Now, some of this might be VMs that are
+powered off (due to low demand). But considering physical machines are
+also under-utilized, I'd say it's a global problem.</p>
+<p>Oh, and don't get too hung up with a machine-job efficiency metric.
+While important, it's only part of the problem. When jobs are running,
+they are typically only using a fraction of the CPU available to them.
+From data <a href="/blog/2013/07/14/quantifying-mozilla's-automation-efficiency/">now available in mozharness</a>,
+we know that many test suites only use 10-15% CPU. If you combine this
+with sub-50% machine utilization in terms of jobs, I estimate we're only
+utilizing somewhere between 5-10% of available CPU cycles in our automation
+infrastructure. We have a magnitude more capacity in the machines we
+already have. <strong>We don't have a capacity problem, we have an efficiency
+problem.</strong> In my opinion we should throw less time and money at new
+hardware and invest in maximizing the return from what we have.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2013/08/30/visualizing-mozilla's-release-infrastructure-machine-efficiency";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
