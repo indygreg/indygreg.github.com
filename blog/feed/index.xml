@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 30 Aug 2013 19:23:49 GMT</pubDate>
+    <pubDate>Tue, 03 Sep 2013 19:16:04 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -45,7 +45,24 @@ utilizing somewhere between 5-10% of available CPU cycles in our automation
 infrastructure. We have a magnitude more capacity in the machines we
 already have. <strong>We don't have a capacity problem, we have an efficiency
 problem.</strong> In my opinion we should throw less time and money at new
-hardware and invest in maximizing the return from what we have.</p>]]></content:encoded>
+hardware and invest in maximizing the return from what we have.</p>
+<h2>Edit 2013-09-03</h2>
+<p>I started a thread about this data in another forum and others have
+pointed out that the data in this post is incomplete. Notably absent
+from this data is when on-demand EC2 instances are shut down, when there
+are or aren't jobs scheduled (if jobs aren't scheduled, poor machine
+utilization isn't such a big deal), and when some maintainence tasks are
+performed (e.g. Panda boards are checked for consistency between jobs).
+While we could probably hook job scheduling data up to the graph and
+numbers easily, I don't believe data on slave <em>uptime</em> or background
+tasks is publicly available. Perhaps we should publish this data to
+facilitate deeper analysis.</p>
+<p>A goal of this post was to shed light on how little we utilize some of
+the machines in our automation infrastructure in order to inspire a
+conversation and ultimately to address the perceived problem. It was
+not a goal to point fingers and cast blame. If I inadvertently
+performed the latter or seemed to jump to conclusions based on
+incomplete data, I apologize.</p>]]></content:encoded>
     </item>
     <item>
       <title>Mercurial setup wizard for Firefox development</title>
