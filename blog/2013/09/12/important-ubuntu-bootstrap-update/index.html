@@ -48,7 +48,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="important-ubuntu-bootstrap-update"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/09/12/important-ubuntu-bootstrap-update" rel="bookmark" title="Permanent Link to Important Ubuntu bootstrap update">Important Ubuntu bootstrap update</a></h2>
@@ -75,63 +75,12 @@ developing Firefox.</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/09/12/important-ubuntu-bootstrap-update#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="hosting-mozilla-services-with-stackato"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/09/04/hosting-mozilla-services-with-stackato" rel="bookmark" title="Permanent Link to Hosting Mozilla services with Stackato">Hosting Mozilla services with Stackato</a></h2>
-  <small>September 04, 2013 at 03:07 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/09/04/hosting-mozilla-services-with-stackato#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Many people have written custom web services related to Mozilla
-projects. Cool! However, many of these services live on random hosts
-scattered around the internets. These hosts can have frequent downtime,
-cost Mozilla contributors time and money to operate, and can be hard to
-discover and trust (I don't want to give my LDAP credentials to a
-non-Mozilla server).</p>
-<p>Did you know Mozilla operates a Platform-as-a-Service (PaaS)
-infrastructure that allows Mozillians to host web services and daemons
-on the internets (similar to how EC2 works). Until recently, I didn't
-either!</p>
-<p>If you are a Mozilla employee, learn more about
-<a href="https://mana.mozilla.org/wiki/display/websites/paas.allizom.org">paas.allizom.org</a>.
-(To non-employees, unfortunately it appears you can't use this yet. And
-I'm not sure what the plans for that are.)</p>
-<p>This service is actually a Mozilla-hosted <a href="http://www.activestate.com/stackato">Stackato</a>
-instance. You set up your client with your LDAP credentials, provision
-services such as PostgreSQL, memcache, MySQL, etc and deploy
-applications - either web applications or standalone daemons. The
-runtime environment supports nearly everything under the sun - Python,
-Node.js, Ruby, Perl, PHP, Java, etc. You write an application, drop a
-few files in the project to describe how to deploy it to Stackato, push
-it, and <em>it just works.</em> Web applications even get an HTTPS endpoint
-with a valid root CA chained certificate!</p>
-<p>I recently used this service to power my Django-based
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/automation-dashboard/">automation-dashboard</a>
-project. Aside from the initial hurdles figuring out how Django works
-(this was the first Django project I've written) and how to hook Django
-up to Stackato, I'm pretty impressed with the results. Free web hosting
-with database access!</p>
-<p>For me, the selling point of this service is that apparently the
-transition plan from Stackato-hosted service to IT-managed service is
-relatively pain free. Since you must perform all the steps to
-isolate/package your application for Stackato, it's relatively easy for
-IT to deploy your application.</p>
-<p>I encourage Mozillians to look into using this PaaS service for their
-Mozilla service hosting needs.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/09/04/hosting-mozilla-services-with-stackato#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2013/09/12/important-ubuntu-bootstrap-update";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               
