@@ -76,7 +76,8 @@ files, xpt processing, etc), so it was somewhat difficult to isolate the
 impact of compilation against all other build actions.</p>
 <p>Now that we have all compiling happening in one isolated phase, it's pretty
 obvious that compiling accounts for the majority of CPU and wall time in
-the build system (at least with non no-op builds).</p>
+the build system (at least with non no-op builds). We suspected this
+before, but we didn't have concrete numbers.</p>
 <p>As I've been pulling and rebuilding inbound since this change landed,
 it's become increasing clear to me the impact of header dependency hell
 on build times. Even simple changesets touching a few .h files are
