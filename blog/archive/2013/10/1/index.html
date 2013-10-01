@@ -1,0 +1,160 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+  
+<div class="blog_post">
+  <a name="why-firefox-builds-are-slow"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/10/01/why-firefox-builds-are-slow" rel="bookmark" title="Permanent Link to Why Firefox builds are slow">Why Firefox builds are slow</a></h2>
+  <small>October 01, 2013 at 01:30 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/10/01/why-firefox-builds-are-slow#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Many people ask/complain about Firefox builds being slow. They are slow.
+You have every right to complain.</p>
+<p>Now in the <a href="https://ci.mozilla.org/job/mozilla-central-docs/Build_Documentation/index.html">official build system docs</a>
+is a <a href="https://ci.mozilla.org/job/mozilla-central-docs/Build_Documentation/slow.html">page</a>
+explaining the major reasons why the build system is slow. I encourage
+everyone to read it. If you have any questions, ping me and I'll update
+the docs.</p>
+<p>Not yet documented there are some new insights we've been getting from
+Mike Hommey's <a href="https://groups.google.com/d/msg/mozilla.dev.platform/4dp9WTQ6F60/9ypVOMk55zkJ">terrific work</a>
+to optimize how make traversal works in the current build system.</p>
+<p>As part of that work, Mike established a new <em>compile</em> tier in the build
+system. This tier compiles C/C++ and little else. Before, C/C++
+compiling was interleaved with all the other build steps (install JS
+files, xpt processing, etc), so it was somewhat difficult to isolate the
+impact of compilation against all other build actions.</p>
+<p>Now that we have all compiling happening in one isolated phase, it's pretty
+obvious that compiling accounts for the majority of CPU and wall time in
+the build system (at least with non no-op builds).</p>
+<p>As I've been pulling and rebuilding inbound since this change landed,
+it's become increasing clear to me the impact of header dependency hell
+on build times. Even simple changesets touching a few .h files are
+resulting in hundreds or even thousands of C/C++ files being recompiled.
+This increases incremental build times from say 1.5 minutes to often
+over 10 minutes.</p>
+<p>With Mike Hommey's work, I feel we finally are on a path to make no-op
+build times reasonable for many developers. However, until the header
+dependency graph is significantly reduced, developers will continue to
+see excessively long build times for incremental builds, especially on
+pulls. (I notice that my daily inbound pulls take about as long as a
+clobber build, which means practically every .cpp file is invalidated
+every day due to .h changes.)</p>
+<p>Fortunately, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=785103">great work</a>
+has been happening to minimize C/C++ header dependency hell recently.
+To everyone working on that, everyone who builds Firefox owes you a
+giant <strong>thank you</strong>. However, there's much more that can be done. While
+you've made terrific progress, please don't slow down any time soon.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/01/why-firefox-builds-are-slow#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
