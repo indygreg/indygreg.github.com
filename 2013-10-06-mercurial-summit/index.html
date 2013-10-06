@@ -1,0 +1,570 @@
+<!DOCTYPE HTML>
+<html lang="en-US" class="fade">
+<!-- 
+  ^ You can control a few things with the <html> element's classes:
+
+  "fade"      - smooth fade between slides
+  "nonumbers" - remove the slide numbering after the progress bar
+-->
+
+<head>
+  <title>Mercurial at Mozilla</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1274, user-scalable=no">
+  <link rel="stylesheet" href="themes/mozilla/styles/style.css">
+</head>
+<body class="list">
+
+  <header class="caption">
+    <h1>Mercurial at Mozilla</h1>
+    <p class="footer">Gregory Szorc, <a href="http://twitter.com/">@indygreg</a> or
+      <a href="mailto:gps@mozilla.com">gps@mozilla.com</a></p>
+  </header>
+
+  <div id="cover" class="slide"><div>
+    <section>
+      <header>
+        <h2>Mercurial at Mozilla</h2>
+      </header>
+      <small class="byline">
+        Gregory Szorc, Mozilla, Summit Brussels, 2013-10-06
+      </small>
+    <footer class="notes">
+    </footer>
+    </section>
+  </div></div>
+
+  <div id="introduction" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Talk Overview</h2>
+        </header>
+        <ul>
+          <li>Mercurial concepts</li>
+          <li>Mercurial vs Git</li>
+          <li>Tapping Mercurial's potential</li>
+          <li>Open session</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mercurial-architecture" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Mercurial Storage Concepts</h2>
+        </header>
+        <ul>
+          <li>Files</li>
+          <li>Manifests</li>
+          <li>Changesets</li>
+          <li>Revlogs</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="revlogs" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Revlogs</h2>
+        </header>
+        <ul>
+          <li>Append only data structure used for most storage</li>
+          <li>Files - filelogs; changesets - changelog</li>
+          <li>Each entry is sequentially numbered revision</li>
+          <li>Primary identifier is SHA-1 of its content</li>
+          <li><a href="http://hgbook.red-bean.com/read/behind-the-scenes.html">Technical details</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="git-storage" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Git Storage</h2>
+        </header>
+        <ul>
+          <li>Blobs, trees, and commits</li>
+          <li><strong>Very</strong> similar to Mercurial</li>
+          <li>Differences are mostly storage format</li>
+          <li>This is why you can convert between Git and Mercurial</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="complaints" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Complaints about Mercurial</h2>
+        </header>
+        <ul>
+          <li>"Git is better"</li>
+          <li>Buggy</li>
+          <li>It's slow (Git is fast)<li>
+          <li>No lightweight branches (like Git)</li>
+          <li>mq is a horrible development model</li>
+          <li>No unified Gecko repository</li>
+          <li>No CVS history for Gecko</li>
+          <li>Patch merging is broken</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="complaints-solutions" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Solutions to Complaints</h2>
+        </header>
+        <ul>
+          <li>Upgrade your Mercurial! (2.7.2 newest today)</li>
+          <li>Learn how to use Mercurial properly</li>
+          <li>Take the time to customize Mercurial</li>
+          <li>No tool is perfect</li>
+          <li>"Mercurial is not Git"</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="branches-and-bookmarks" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Branches and Bookmarks</h2>
+        </header>
+        <ul>
+          <li>Branches - don't use them for local development</li>
+          <li>Bookmarks - lightweight <tt>branches</tt></li>
+          <li>Bookmarks just named heads</li>
+          <li>Use them like Git branches</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="phases" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Phases</h2>
+        </header>
+        <ul>
+          <li>Metadata tracking how changesets are to be <tt>shared</tt></li>
+          <li>public, draft, secret</li>
+          <li>Pushing moves phase to public - can't mutate public phases</li>
+          <li>Remember the Try server issue?</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="revision-sets" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Revision Sets</h2>
+        </header>
+        <ul>
+          <li>Powerful query language to select revisions</li>
+          <li>hg help revsets</li>
+        </ul>
+        <pre>
+          <code>hg log -r 'user(gps@mozilla.com)'</code>
+          <code>hg log -r 'date(-7) and file("**/Makefile.in")'</code>
+          <code>hg log -r 'transplanted()'</code>
+          <code>hg log -r 'date(-7) and (user(gps@mozilla.com) or keyword("r=gps"))'</code>
+        </pre>
+      </section>
+    </div>
+  </div>
+
+  <div id="more-querying" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>More Querying Awesomeness</h2>
+        </header>
+        <ul>
+          <li>Powerful querying not limited to revisions!</li>
+          <li>hg help dates</li>
+          <li>hg help filesets</li>
+          <li>Rich formatting language for printing results</li>
+          <li>hg help templates</li>
+        </ul>
+        <pre>
+          <code>hg locate 'set:eol(dos)'</code>
+          <code>hg log -r 'sort(date("2013-09-01 to 2013-10-01"), user)' --template '{author}\n' | uniq -c | sort -n</code>
+        </pre>
+      </section>
+    </div>
+  </div>
+
+  <div id="mq" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>mq extension</h2>
+        </header>
+        <ul>
+          <li>Manage a stack of patches</li>
+          <li>Commit and uncommit changesets (qpush/qpop)</li>
+          <li><strong>Pretty hacky</strong> (from architecture perspective)</li>
+          <li>Source of many of your problems</li>
+          <li>Demo of badness</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="changeset-evolution" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Changeset Evolution</h2>
+        </header>
+        <ul>
+          <li>Instead of destroying history, annotate it</li>
+          <li>Synchronize annotations during push/pull</li>
+          <li>Allow others to <tt>follow</tt> rebases!</li>
+          <li>-&gt; clean and user friendly repositories</li>
+          <li>Minimizes destructive repository operations</li>
+          <li>Unfortunately not ready yet. It should be worth the wait!</li>
+          <li><a href="http://mercurial.selenic.com/wiki/ChangesetEvolution">Learn more</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="extensions-intro" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Extensions - Mercurial's Secret Weapon</h2>
+        </header>
+        <ul>
+          <li>Mercurial extensions are insanely powerful</li>
+          <li>Monkeypatch functions, massage data structures, change
+          defaults, enforce options, new commands, disable commands,
+          provide new APIs, transfer extra files/metadata, alternative
+          development workflows, ...</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="extension-must-have-general" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Must Have Extensions (General)</h2>
+        </header>
+        <ul>
+          <li>color - colorize terminal output</li>
+          <li>pager - send long output through pager (less)</li>
+          <li>progress - progress bars in terminal</li>
+          <li>rebase - rebase command</li>
+          <li>record - interactive add command (git add -i)</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="extensions-power-users" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Extensions for Power Users</h2>
+        </header>
+        <ul>
+          <li><a
+            href="https://bitbucket.org/facebook/lz4revlog/">lz4revlog</a> - lz4 revlogs - faster but larger</li>
+          <li><a
+            href="https://bitbucket.org/facebook/hgwatchman">hgwatchman</a> - faster status command</li>
+          <li><a
+            href="https://bitbucket.org/durin42/histedit">histedit</a> - interactive rebase</li>
+          <li><a
+            href="http://mercurial.selenic.com/wiki/UsingExtensions">Full
+            list</a> - View it and find things for you</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="extensions-mozilla" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Extensions (Mozilla Development)</h2>
+        </header>
+        <ul>
+          <li><a
+            href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">bzexport</a>
+          - Easily upload patches to Bugzilla</li>
+          <li><a href="https://bitbucket.org/sfink/mqext">mqext</a> -
+          Automatically commit mq repo on change, find reviewers for
+          patch, etc.</li>
+          <li><a
+            href="https://hg.mozilla.org/users/robarnold_cmu.edu/qimportbz">qimportbz</a>
+          - Easily import patches from Bugzilla attachments</li>
+          <li><a
+            href="git://github.com/pbiggar/trychooser.git">trychooser</a>
+          - Easily perform try pushes</a></li>
+          <li><a
+            href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev/">mozext</a>
+          - Manage unified Gecko repo, query pushlog data and bugs,
+          Python style checking. Essentially gps's personal <tt>be
+            more productive</tt> features.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mercurial-other-tips" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Other Pro Tips</h2>
+        </header>
+        <ul>
+          <li><a
+            href="https://people.mozilla.org/~tschneidereit/wig">wig</a>
+          for dealing with .rej files</li>
+          <li><a
+            href="https://github.com/ggreer/the_silver_searcher">The
+            Silver Searcher</a> - insanely fast grep alternative</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="unified-repo" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Unified Gecko Repository</h2>
+        </header>
+        <ul>
+          <li>Separate clones for each project branch is silly</li>
+          <li>Use the <tt>mozext</tt> extension to operate a single
+          repo (like the GitHub mozilla-central repo)</li>
+        </ul>
+        <pre>
+          <code>hg pull central inbound</code>
+          <code>hg up central/default</code>
+          <code>hg merge inbound/default</code>
+          <code>hg pushtree central</code>
+        </pre>
+      </section>
+    </div>
+  </div>
+
+  <div id="mozext-other" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>mozext Commands</h2>
+        </header>
+        <ul>
+          <li>hg treestatus - Show open/close state of trees</li>
+          <li>hg buginfo 123456 - Show info for changesets referencing a bug
+            <ul>
+              <li>Includes which Firefox version changeset first landed
+              in!</li>
+            </ul>
+          </li>
+          <li>hg changesetpushes - See when a changeset hit all the
+          trees</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="workflow-today" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>My Workflow Today</h2>
+        </header>
+        <ul>
+          <li>Unified repo with mozext</li>
+          <li>mq repo under version control via mqext. Pushed to <a
+            href="hg.mozilla.org/users/gszorc_mozilla.com/gecko-patches">user
+            repo</a> and synced across devices</li>
+          <li>non-Gecko patches for Mozilla projects live in
+            <a
+              href="https://hg.mozilla.org/users/gszorc_mozilla.com/non-gecko-patches">a
+              separate repo</a> and exist in separate branches per
+            project (hacky)</a></li>
+          <li>I use bzexport and qimportbz heavily. Seldomly touch the
+          attachment UI in Bugzilla HTML.</li>
+          <li>To land, qfin and push</li>
+          <li>To share patches, send URL to my patches repo</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="workflow-tomorrow" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>My Workflow Tomorrow</h2>
+        </header>
+        <ul>
+          <li>Goodbye mq, hello changeset evolution!</li>
+          <li>Push unified repo to user repo on hg.mozilla.org and/or Bitbucket</li>
+          <li>Manage in-progress patches as bookmarks</li>
+          <li>hg review (submits try and uploads for review somewhere)</li>
+          <li>Sheriffs or some automated process rebases and lands for me</li>
+          <li>To share, someone just pulls my repo (like Git)</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mozilla-complaints" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Mozilla Complaints</h2>
+        </header>
+        <ul>
+          <li>Separate repos and branch management for Gecko is sub-par</li>
+          <li>No reliable way to track an uplifted changeset across
+          branches.
+            <ul>
+              <li>This is extremely useful for calculating e.g. the
+              first release a changeset was part of </li>
+            </ul>
+          </li>
+          <li>Metadata from changesets hard to extract because
+          inconsistent formatting</li>
+          <li>hg.mozilla.org hosted over NFS (slow server
+          performance) (we're working on it).</li>
+          <li>Bugzilla and try integration still a little rough</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mozilla-future" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Mozilla Future Directions?</h2>
+        </header>
+        <ul>
+          <li>More stringent requirements around changeset <tt>formatting</tt> to facilitate metadata
+          extraction</li>
+          <ul>
+            <li>No uplifts without ability to track original m-c changeset</li>
+            <li>Decide and enforce a single bug, part number, and reviewer syntax</li>
+          </ul>
+          <li>Make an awesome and unified patch review and landing
+          process
+            <ul>
+              <li>Unify bzexport, qimportbz</li>
+              <li>hg land command to automatically rebase on inbound and
+              push until it works</li>
+              <li>Go hardcore on static analysis</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="future2" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Future Directions? (Part 2)</h2>
+        </header>
+        <ul>
+          <li>try pushes must annotate the <tt>upstream</tt> changesets
+          from the ones you are pushing
+            <ul><li>Easier to automate cherry-picking from try
+              pushes</li></ul>
+          </li>
+          <li>try pushes should automatically recommend set of jobs to
+          run based on files changed in commits
+            <ul><li>I think this needs to live in the tree and be
+              integrated with the build system for the heuristic to be
+              decent</li></ul>
+          </li>
+          <li>Annotate commits with try info/results?</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="future3" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Future Directions? (Part 3)</h2>
+        </header>
+        <ul>
+          <li>hg should update Bugzilla at push time (mcMerge should be
+          automatic)</li>
+          <li>Tree watching service so people can subscribe to files of
+          interest?</li>
+          <li>Unify all of the things in one "gecko development"
+          extension [and require pushers to have it installed]?</li>
+          <li>Releng publishes unified Gecko repo?</li>
+          <li>Releng publishes repo with CVS history?</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="contributing" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Contributing</h2>
+        </header>
+        <ul>
+          <li>Learn Mercurial API and how to write extensions and hooks</li>
+          <li>Follow Release Engineering :: Repos and Hooks in Bugzilla</li>
+          <li>Complain loudly and often about inefficient workflows</li>
+          <li>... but please propose ideas for making it better</li>
+          <li>Contribute to the Mercurial project!</li>
+          <li>Don't be afraid to ask for Mercurial help</li>
+          <li>Share your Mercurial best practices with the world</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="open-floor" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Open Session</h2>
+        </header>
+        <ul>
+          <li>Ask questions</li>
+          <li>Share best practices</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div class="progress"><div></div></div>
+  <!-- 
+    ^ don't like a progress bar? just delete this DIV
+  -->
+  <script src="scripts/script.js"></script>
+</body>
+</html>

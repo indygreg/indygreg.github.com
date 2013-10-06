@@ -1,0 +1,238 @@
+<!DOCTYPE HTML>
+<html lang="en-US" class="fade">
+<head>
+  <title>Make the Firefox Build System Work for You</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1274, user-scalable=no">
+  <link rel="stylesheet" href="themes/mozilla/styles/style.css">
+</head>
+<body class="list">
+
+  <header class="caption">
+    <h1>Make the Firefox Build System Work for You</h1>
+    <p class="footer">Gregory Szorc, <a href="http://twitter.com/">@indygreg</a> or
+      <a href="mailto:gps@mozilla.com">gps@mozilla.com</a></p>
+  </header>
+
+  <div id="cover" class="slide"><div>
+    <section>
+      <header>
+        <h2>Make the Firefox Build System Work for You</h2>
+      </header>
+      <small class="byline">
+        Gregory Szorc, Mozilla, Summit Brussels, 2013-10-06
+      </small>
+    <footer class="notes">
+    </footer>
+    </section>
+  </div></div>
+
+  <div id="introduction" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Talk Overview</h2>
+        </header>
+        <ul>
+          <li>Why the Build System is Slow</li>
+          <li>What we're doing about it</li>
+          <li>Enabling better productivity through better tools</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="slow" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Why the Build System is Slow</h2>
+        </header>
+        <ul>
+          <li>It does a lot!</li>
+          <li>Your machine isn't fast enough</li>
+          <li>make isn't that fast</li>
+          <li>pymake is slower</li>
+          <li>New processes on Windows are slow (configure)</li>
+          <li>Header include hell</li>
+          <li>Many other reasons. Read the <a
+            href="https://ci.mozilla.org/job/mozilla-central-docs/Build_Documentation/slow.html">official docs</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="faster-builds-long" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Faster Builds (Long Term)</h2>
+        </header>
+        <ul>
+          <li>move off of make</li>
+          <li>Use other build backends (like Tup)</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="faster-builds-short" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Faster Builds (Short Term)</h2>
+        </header>
+        <ul>
+          <li>Optimize make directory traversal</li>
+          <li>Install manifests</li>
+          <li>Smarter build modes and defaults</li>
+          <li>Reduce C/C++ include hell</li>
+          <li>Unified sources</li>
+          <li>Precompiled headers?</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mozbuild-files" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>moz.build Files</h2>
+        </header>
+        <ul>
+          <li>Define the build config more consistently and in a format that can be read by machines</li>
+          <li>Don't make builds faster themselves</li>
+          <li>Enable multiple build backends</li>
+          <li>Have metadata for everything - enables new usages</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mach" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>mach</h2>
+        </header>
+        <ul>
+          <li>A generic command line dispatching tool</li>
+          <li>Started as alternative build frontend that wasn't client.mk</li>
+          <li>Grew commands for running tests, performing common tasks</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mach-advantages" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Advantages of mach</h2>
+        </header>
+        <ul>
+          <li>Commands easily discovered</li>
+          <li>Useful and accurate help output for command discovery</li>
+          <li>Commands filtered by what's relevant (new feature)</li>
+          <li>Commands are powerful because Python is powerful</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mach-build" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>mach build</h2>
+        </header>
+        <ul>
+          <li><strong>It's just a wrapper with extras!</strong></li>
+          <li>Parse compiler warnings</li>
+          <li>Resource monitoring</li>
+          <li>Progress bar in terminal</li>
+          <li>Finder CPU warning</li>
+          <li>We want people to build with mach</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="mach-future" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>mach Future</h2>
+        </header>
+        <ul>
+          <li>Config file integration</li>
+          <li>Nagging and alert mode</li>
+          <li>Progress bar API</li>
+          <li>Record and anonymously report usage info</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="longer-term-goals" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Other Build System Goals</h2>
+        </header>
+        <ul>
+          <li>Don't require *NIX shell to build on Windows</li>
+          <li>Visual Studio projects with easy debugging and rebuilding</li>
+          <li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=505582">Ship</a> a decent terminal in MozillaBuild</li>
+          <li>Use pre-built libXUL for local development</li>
+          <li>Fix Fennec build system</li>
+          <li>HTML interface for interacting</li>
+          <li>Reproducible build environments / idempotent builds</li>
+          <li>Fix mozconfigs / kill client.mk</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="build-help" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>Helping</h2>
+        </header>
+        <ul>
+          <li>Learn Python</li>
+          <li>Write mach commands</li>
+          <li>Add features to mach commands</li>
+          <li>Contribute new features to mach core</li>
+          <li>Help with <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=nomakefiles">moz.build conversion</a></li>
+          <li>Minimize <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=785103">#include dependencies</a></li>
+          <li>Write C++ that builds in unified mode</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="helping-more" class="slide">
+    <div>
+      <section>
+        <header>
+          <h2>More Helping</h2>
+        </header>
+        <ul>
+          <li>Help with mozharness conversion (RelEng)</li>
+          <li>Profile compiler, identify slow C++-isms</li>
+          <li>Contribute to Clang plugin for static analysis</li>
+          <li>Ask for build peer review early in patch lifecycle</li>
+          <li>Don't be a stalwart - welcome change</li>
+          <li>Make your development workflow known. Complain when it breaks.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div class="progress"><div></div></div>
+  <script src="scripts/script.js"></script>
+</body>
+</html>
