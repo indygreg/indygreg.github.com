@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 14 Oct 2013 17:54:57 GMT</pubDate>
+    <pubDate>Mon, 14 Oct 2013 17:59:09 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -250,6 +250,8 @@ mind:</p>
 <li>I could hook up authentication against Mozilla's LDAP server. However,
   I don't want your Mozilla credentials going to my personal server nor
   traveling over the wire in the clear.</li>
+<li>I'm not an expert on Phabricator. I'll try to help where appropriate.
+  But don't count on me being a support desk.</li>
 </ul>
 <h2>Next steps at Mozilla</h2>
 <p>How should we use Phabricator at Mozilla? Good question!</p>
@@ -264,7 +266,8 @@ out to IT shortly to see how feasible that is. But, I imagine it will
 get shuffled to the bottom of the priority queue unless people make
 noise. If you like Phabricator, tell other people about it. Let your
 management chain know how amazing it is. If enough of or the right
-people clamor for it, priorities can get changes.</p>]]></content:encoded>
+people clamor for it, priorities can get changed.</p>
+<p>I hope you enjoy Phabricator!</p>]]></content:encoded>
     </item>
     <item>
       <title>Why Firefox builds are slow</title>
