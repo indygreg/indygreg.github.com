@@ -10,10 +10,262 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 01 Oct 2013 15:00:40 GMT</pubDate>
+    <pubDate>Mon, 14 Oct 2013 17:54:57 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Phabricator is Awesome</title>
+      <link>http://gregoryszorc.com/blog/2013/10/14/phabricator-is-awesome</link>
+      <pubDate>Mon, 14 Oct 2013 11:00:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/10/14/phabricator-is-awesome</guid>
+      <description>Phabricator is Awesome</description>
+      <content:encoded><![CDATA[<p>When I talk to Mozillians who now work at Facebook, they all say
+something similar: <em>the tools at Facebook are amazing and put what
+Mozilla uses to shame</em>. Having worked at places with decent tools, I
+do know that Mozilla is behind the times. So it was easy for me to
+dismiss these observations as obvious. But, when you start asking them
+about specifics, one tool they are quick to name is
+<a href="http://phabricator.org/">Phabricator</a>.</p>
+<p>For those who don't want to follow the link, Phabricator is your
+all-in-on software engineering web application and platform. It has
+issue/bug tracking, code review, repository navigation, wikis, etc. It's
+the kitchen sink for software lifecycle management. And, it's open
+source and easy to extend. Sounds promising.</p>
+<p>After hearing Facebookers rave about Phabricator and having casually
+interacted with an instance to review patches to Clang, I was keen
+to have a closer look.</p>
+<p>So, I spent a lazy afternoon and installed Phabricator on an EC2
+instance (connection details below). Having interacted with the
+default setup for a few hours, I can say with high confidence
+that the Facebookers can back up their claim that Phabricator is
+pretty damn amazing. My initial impressions are that it's one of
+those tools that's so good that once you start using it, you'll
+never tolerate anything subpar again. Again, hearing the
+Mozillians-turned-Facebookers opine about Bugzilla, code review,
+etc, I think this initial impression might be right.</p>
+<p>In the sections below, I'll talk a bit about Phabricator and why I
+think it is superior to what Mozilla uses.</p>
+<h2>Integrated UI</h2>
+<p>One thing I really love about Phabricator is the integrated UI.
+Phabricator is essentially a collection of <em>applications</em> tied together
+by a single web interface. So, everything is readily available under one
+site/domain/service.</p>
+<p>This means everything is easier to find. You search for something and
+all the different components have their results surfaced. Contrast with
+Mozilla as of today, where you need separate searches for Bugzilla,
+MXR/DXR, wiki.mozilla.org, etherpad, MDN, etc.</p>
+<p>For IT, it means there is only a single service to run and scale. Less
+overhead to operate. Less effort to secure.</p>
+<h2>Arcanist command line tool</h2>
+<p>Phabricator ships with a command line tool called
+<a href="http://www.phabricator.com/docs/phabricator/article/Arcanist_User_Guide.html">Arcanist</a>.
+It is amazing.</p>
+<p>Projects put <em>.arcconfig</em> files under version control which contain the
+settings used to configure Arcanist for that project. They essentially
+point back towards the Phabricator instance for that project.</p>
+<p>You can do a lot with the Arcanism command line interface. Want to
+create a code review? <em>arc diff</em>. It opens up an editor and allows you
+to fill in details about the review. It then automatically publishes it
+for review. No leaving the command line necessary.</p>
+<p>You can download and apply patches undergoing code review by
+specifying their review identifier. e.g. <em>arc patch D1</em>.</p>
+<p>You can create tasks for yourself by running <em>arc todo</em>. The tasks are
+uploaded to Phabricator automatically and show up in your dashboard.</p>
+<p>If your repo has configured which tests apply to which paths, <em>arc unit</em>
+will run all tests impacted by the current patch. (If we ever get around
+to annotating this, it would significantly reduce load in automation by
+eliminating unnecessary tests.)</p>
+<p>There is an <em>arc land</em> command to land patches on the appropriate
+landing branch.</p>
+<p>Arcanist abstracts the differences between version control systems
+pretty well. You can use the same commands for Mercurial, Git, or
+Subversion.</p>
+<p>Arcanist is pretty nice. It reminds me a lot of mach and what I
+originally wanted mach to become with regard to helping to improve
+developer workflow.</p>
+<h2>Real Code Review</h2>
+<p>Phabricator features a real code review tool -
+<a href="http://www.phabricator.com/docs/phabricator/article/Differential_User_Guide.html">Differential</a>.</p>
+<p>Things like interdiff actually work. It integrates with the code
+repository, which means you can expand context right from the
+review interface. It can detect blocks
+of code that moved between files. It has a nice file tree for navigating
+changed files (optional feature). It hides whitespace only changes by
+default. You can specify a group of people for review and reviews will
+show up in the dashboard of individuals in that group. It has a flag
+to say whether a patch underwent <em>linting</em> before upload. (You can
+configure linting through Arcanist and have your patches linted before
+upload. If you properly deploy linting, style nits all but go away. As I
+like to say, every time I write a style nit in code review, my time is
+wasted and Mozilla is throwing away part of my salary.)</p>
+<p>Mozilla is apparently integrating ReviewBoard into Bugzilla. This is
+good. ReviewBoard's review features are infinitely better than Splinter
+(Bugzilla's current review interface). However, ReviewBoard is mostly a
+standalone tool. What makes Phabricator's approach better is that code
+review integrates tightly with everything else. This enables some pretty
+awesome scenarios. Keep reading for more.</p>
+<h2>Auditing</h2>
+<p>An interesting and potentially very useful feature of Phabricator is
+<a href="http://www.phabricator.com/docs/phabricator/article/Audit_User_Guide.html">auditing</a>.
+Where Differential handles pre-push code review, the Audit
+application supports post-push code review. You may say <em>but all changes
+at Mozilla must go through pre-push code review - there's no use for
+post-push code review</em>. Yes, but post-push review opens up a whole new
+realm of possibilities.</p>
+<p>It's possible for individual users or projects to set up rules to
+automatically trigger audits. For example, as build module owner, I'm
+very interested in ensuring people follow the code review policy of
+having a build peer review changes to make files. With Phabricator, I
+was able to easily configure a rule that automatically creates an audit
+every time a make file has changed but it wasn't signed off by a build
+peer. Front and center on my dashboard are a list of commits that I
+should probably look at. Neat!</p>
+<p>Audits are potentially useful for reviews that focus less on code. For
+example, Firefox Health Report and Telemetry are two Firefox features
+that collect data and send it (anonymously) to Mozilla. Audits could be
+used to flag a privacy review when probes are changed. We often don't
+want this privacy review to hold up code landing. But we do want to
+track that this review occurs before a patch is shipped to our Beta
+channel users. I think audits would be great for facilitating this.</p>
+<p>Of course, there is a web interface to create new audits. Any individual
+can watch anything they have access to. No process involved. Just log in
+and create a rule.</p>
+<p>Mozilla has audits today, but it isn't user intuitive. They commonly
+take the form of Bugzilla keywords or whiteboard entries. Phabricator's
+feature is much more powerful.</p>
+<h2>Creating rules as a result of actions</h2>
+<p>Phabricator has an application called <em>Herald</em> that allows users to
+install rules to do something as a result of an action.</p>
+<p>For example, I can create a rule against new review requests that will
+CC me or automatically add me as a reviewer if a certain file is touched
+by a patch.</p>
+<p>I can have Phabricator email me whenever a specific user makes a commit
+or when a commit touching a specific file is made.</p>
+<p>This feature is self-service. You just open the web interface and
+program custom rules to your heart's content.</p>
+<p>Herald is insanely useful. To my knowledge, Mozilla has nothing quite
+like it today. I wish we did. If Mozilla doesn't official deploy
+Phabricator, I may continue to run my own personal instance just so I
+can have this feature.</p>
+<p>Of course, there's an
+<a href="http://www.phabricator.com/docs/phabricator/article/Events_User_Guide_Installing_Event_Listeners.html">Event Listener API</a>
+so you can write your own events and rules. The sky is literally the
+limit here. For example, we could have all uploaded patches
+automatically submitted to Try so they run the release automation
+gamut. And, we could have Phabricator's background daemons poll for try
+results and report them directly in the web interface!</p>
+<h2>Module ownership defined inside Phabricator</h2>
+<p>Phabricator has a <em>modules</em> concept built into it called
+<a href="http://www.phabricator.com/docs/phabricator/article/Owners_Tool_User_Guide.html">Owners</a>. You
+create a <em>package</em> that has a single owner and a number of members. This
+package can be associated with multiple repositories and individual
+paths inside repositories.</p>
+<p>The power of this feature is realized when it is integrated with other
+components of Phabricator.</p>
+<p>For example, there is a checkbox for each <em>package</em> where you can
+automatically have Phabricator ensure that a package member is involved
+with code review touching files belonging to a package. It will also
+automatically report commits not reviewed by members of a package. How
+insanely useful is that!</p>
+<h2>Other applications and features.</h2>
+<p>Phabricator ships with a number of other applications and features.</p>
+<p>There's a blogging platform called
+<a href="http://www.phabricator.com/docs/phabricator/article/Phame_User_Guide.html">Phame</a>.</p>
+<p>There's a simple wiki called
+<a href="http://www.phabricator.com/docs/phabricator/article/Phriction_User_Guide.html">Phriction</a>.</p>
+<p>There's a simple polling application called
+<a href="http://www.phabricator.com/docs/phabricator/article/Slowvote_User_Guide.html">Slowvote</a>.</p>
+<p>There's a mechanism to upload and view files.</p>
+<p>There's a pastebin-like application called Paste. It integrates with
+authentication and authorization, so you can limit the audience of
+pastes.</p>
+<p>There's a JSON over HTTP API that allows you to do nearly everything.
+(I assume this is what Arcanist uses for everything.)</p>
+<p>There's a built-in badges mechanism called Tokens.</p>
+<p>You can exchange messages and chats with other users (similar to IRC)
+using Conpherence.</p>
+<p>There is a question and answer application called Ponder. People ask
+questions and other people answer them. You can search questions, of
+course. This helps build up a searchable knowledge base.</p>
+<p>There is a mockups viewing and collaboration tool called Pholio. You can
+upload mockups as photos and then annotate images through the web
+interface. e.g. you can create a rectangle and ask a question about what
+you see in that rectangle.</p>
+<p>There is a time tracking application called Phrequent.</p>
+<p>Phabricator can receive inbound email to update issues, reviews, etc.
+You can even file new bugs via email! Having used an email interface to
+Bugzilla at a previous job, I can say from experience this is extremely
+useful.</p>
+<p>Phabricator allows you to cherry pick which applications you have
+enabled. Want just code review and repository browsing without issue
+tracking? You can do that.</p>
+<h2>Test instance for Mozilla</h2>
+<p>As I alluded to above, I have installed an instance of Phabricator on
+EC2. My intention for this instance is for Mozillians to start playing
+with it and seeing if it's something they'll like.</p>
+<p>The test instance is available at
+<a href="http://phabricator.gregoryszorc.com/">http://phabricator.gregoryszorc.com/</a>.</p>
+<p>You can log in using OAuth with one of the configured service providers
+or by creating an account. Please note that I'm only serving on plain
+HTTP, so your password are sent in the clear.</p>
+<p>I have configured a few popular Mozilla repositories with the install.
+It's easy to configure new repositories. Send me their info and I'll add
+them!</p>
+<p>While the web UI is nice, Arcanist is essential to get the most out of
+Phabricator. To get <em>arc</em> working with your machine, follow the
+<a href="http://www.phabricator.com/docs/phabricator/article/Arcanist_Quick_Start.html">official instructions</a>
+to install Arcanist. For your <em>.arcconfig</em> file, use something like:</p>
+<pre><code>{
+  "project_id": "mozilla-central",
+  "conduit_uri": "http://phabricator.gregoryszorc.com/"
+}
+</code></pre>
+<p>Of course, you'll need to adjust the <em>project_id</em> when appropriate.</p>
+<p>When you use this Phabricator instance, please keep the following in
+mind:</p>
+<ul>
+<li>I'm hosting this on my own dime and have the most powerful EC2
+  instance I felt like paying out of pocket. That instance sadly isn't
+  powerful enough. I installed Phabricator on my desktop at home and it
+  flies like a rocket ship. Please don't blame slowness on Phabricator.</li>
+<li>I didn't even attempt to tune the HTTP or MySQL servers yet. Expect
+  more slowness.</li>
+<li>The service and all the data inside could go away at any time. I don't
+  have monitoring of the service (yet). <strong>Use at your own risk.</strong></li>
+<li>At the time I wrote this, Phabricator was still indexing some
+  repositories, notably mozilla-central. Anything interacting with
+  source navigation appears to be slow as a result.</li>
+<li>The install is effectively a vanilla, out-of-the-box install. Things
+  like Mozilla styling could presumably be added. There are likely also
+  many sub-par configuration settings. Leave comments and I'll see about
+  changing things.</li>
+<li>The front page insists on a sign-in. However, I believe all of the
+  content should be accessible to the public. Contact me if you know of
+  a way to fix this!</li>
+<li>This could be hooked up with Persona. I couldn't find a Persona auth
+  provider and coding one is beyond my current PHP skills. If someone
+  writes one, let me know and I'll install it!</li>
+<li>I could hook up authentication against Mozilla's LDAP server. However,
+  I don't want your Mozilla credentials going to my personal server nor
+  traveling over the wire in the clear.</li>
+</ul>
+<h2>Next steps at Mozilla</h2>
+<p>How should we use Phabricator at Mozilla? Good question!</p>
+<p>I encourage people to play around with my personal instance. Upload some
+patches. Perform some code reviews. Set up Herald rules to notify you of
+repository change events. Just keep in mind that I don't guarantee an
+SLA for my instance. So please don't rely on it.</p>
+<p>I anticipate that people will come to the conclusion that Phabricator is
+awesome and that Mozilla should install an officially supported instance
+on a mozilla.org domain with proper hardware. I'll likely be reaching
+out to IT shortly to see how feasible that is. But, I imagine it will
+get shuffled to the bottom of the priority queue unless people make
+noise. If you like Phabricator, tell other people about it. Let your
+management chain know how amazing it is. If enough of or the right
+people clamor for it, priorities can get changes.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Why Firefox builds are slow</title>
       <link>http://gregoryszorc.com/blog/2013/10/01/why-firefox-builds-are-slow</link>
@@ -949,222 +1201,6 @@ down? Should we invest in more SSDs? More science is definitely needed.</p>
 <p>I hope people find this data useful and that we put it to use to
 make more data-driven decisions around Mozilla's automation
 infrastructure.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>The Importance of Time on Automated Machine Configuration</title>
-      <link>http://gregoryszorc.com/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration</link>
-      <pubDate>Mon, 24 Jun 2013 21:00:00 PDT</pubDate>
-      <category><![CDATA[sysadmin]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Puppet]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration</guid>
-      <description>The Importance of Time on Automated Machine Configuration</description>
-      <content:encoded><![CDATA[<p>Usage of machine configuration management software like Puppet
-and Chef has taken off in recent years. And rightly so - these
-pieces of software make the lives of countless system
-administrators much better (in theory).</p>
-<p>In their default (and common) configuration, these pieces of
-software do a terrific job of ensuring a machine is provisioned with
-<em>today's</em> configuration. However, for many server provisioning
-scenarios, we actually care about <em>yesterday's</em> configuration.</p>
-<p>In this post, I will talk about the importance of time when configuring
-machines.</p>
-<h2>Describing the problem</h2>
-<p>If you've worked on any kind of server application, chances are
-you've had to deal with a rollback. Some new version of a package
-or web application is rolled out to production. However, due to
-unforeseen problems, it needed to be rolled back.</p>
-<p>Or, perhaps you operate a farm of machines that continuously build
-or compile software from version control. It's desirable to be able
-to reproduce the output from a previous build (ideally bit
-identical).</p>
-<p>In these scenarios, the wall time plays a crucial rule when dealing
-with a central, master configuration server (such as a Puppet
-master).</p>
-<p>Since a client will always pull the latest revision of its
-configuration from the server, it's very easy to define your
-configurations such that the result of machine provisioning
-today is different from yesterday (or last week or last month).</p>
-<p>For example, let's say you are running Puppet to manage a machine
-that sits in a continuous integration farm and recompiles a source
-tree over and over. In your Puppet manifest you have:</p>
-<pre><code>package {
-    "gcc":
-        ensure =&gt; latest
-}
-</code></pre>
-<p>If you run Puppet today, you may pull down GCC 4.7 from the remote
-package repository because 4.7 is the latest version available. But
-if you run Puppet tomorrow, you may pull down GCC 4.8 because the
-package repository has been updated! If for some reason you need
-to rebuild one of today's builds tomorrow (perhaps you want to
-rebuild that revision plus a minor patch), they'll use different
-compiler versions (or any package for that matter) and the output
-may not be consistent - it may not even work at all! So much for
-repeatability.</p>
-<p>File templates are another example. In Puppet, file templates are
-evaluated on the server and the results are sent to the client. So,
-the output of file template execution today might be different from
-the output tomorrow. If you needed to roll back your server to an
-old version, you may not be able to do that because the template
-on the server isn't backwards compatible! This can be worked around,
-sure (commonly by copying the template and branching differences),
-but over time these hacks accumulate in a giant pile of complexity.</p>
-<p>The common issue here is that time has an impact on the outcome of
-machine configuration. I refer to this issue as <strong>time-dependent
-idempotency</strong>. In other words, does time play a role in the
-supposedly idempotent configuration process? If the output is
-consistent no matter <em>when</em> you run the configuration, it is
-time-independent and truly idempotent. If it varies depending on
-when configuration is performed, it is time-dependent and thus
-not truly idempotent.</p>
-<h2>Solving the problem</h2>
-<p>My attitude towards machine configuration and automation is that
-it should be as time independent as possible. If I need to revert
-to yesterday's state or want to reproduce something that happened
-months ago, I want strong guarantees that it will be similar, if not
-identical. Now, this is just my opinion. I've worked in environments
-where we had these strong guarantees. And having had this luxury,
-I abhore the alternative where so many pieces of configuration vary
-over time as the central configuration moves forward without the
-ability to turn back the clock. As always, your needs may be
-different and this post may not apply to you!</p>
-<p>I said <em>as possible</em> a few times in the previous paragraph.
-While you could likely make all parts of your configuration time
-independent, it's not a good idea. In the real world, things
-change over time and making all configuration data static regardless
-of time will produce a broken or bad configuration.</p>
-<p>User access is one such piece of configuration. Employees come and
-go. Passwords and SSH keys change. You don't want to revert user
-access to the way it was two months ago, restoring access to a
-disgruntled former employee or allowing access via a compromised
-password. Network configuration is another. Say the network topology
-changed and the firewall rules need updating. If you reverted the
-networking configuration, the machine likely wouldn't work on the
-network!</p>
-<p>This highlights an important fact: <strong>if making your machine
-configuration time independent is a goal, you will need to
-bifurcate configuration by time dependency and solve for both.</strong>
-You'll need to identify every piece of configuration and
-ask <em>do I put this in the bucket that is constant over time or
-the bucket that changes over time?</em></p>
-<p>Machine configuration software can do a terrific job of ensuring
-an applied configuration is idempotent. The problem is it typically
-can't manage both time-dependent and time-independent attributes
-at the same time. Solving this requires a little brain power, but
-is achievable if there is will. In the next section, I'll describe
-how.</p>
-<h3>Technical implementation</h3>
-<p>Time-dependent machine configuration is a solved problem. Deploy
-Puppet master (or similar) and you are good to go.</p>
-<p>Time-independent configuration is a bit more complicated.</p>
-<p>As I mentioned above, the first step is to isolate all of the
-configuration you want to be time independent. Next, you need to
-ensure time dependency doesn't creep into that configuration. You
-need to identify things that can change over time and take
-measures to ensure those changes won't affect the configuration.
-I encourage you to employ the <em>external system
-test</em>: <em>does this aspect of configuration depend on an external
-system or entity? If so how will I prevent changes in it over
-time from affecting us?</em></p>
-<p>Package repositories are one such external system. New package
-versions are released all the time. Old packages are deleted.
-If your configuration says to install the <em>latest</em> package, there's
-no guarantee the package version won't change unless the package
-repository doesn't change. If you simply pin a package to a specific
-version, that version may disappear from the server. The solution:
-pin packages to specific versions <strong>and</strong> run your own package
-mirror that doesn't delete or modify existing packages.</p>
-<p>Does your configuration fetch a file from a remote server or use
-a file as a template? Cache that file locally (in case it
-disappears) and put it under version control. Have the configuration
-reference the version control revision of that file. As long as the
-repository is accessible, the exact version of the file can be
-retrieved at any time without variation.</p>
-<p>In my professional career, I've used two separate systems for
-managing time-independent configuration data. Both relied heavily
-on version control. Essentially, all the time-independent
-configuration data is collected into a single repository - an
-independent repository from all the time-dependent data
-(although that's technically an implementation detail). For Puppet,
-this would include all the manifests, modules, and files used
-directly by Puppet. When you want to <em>activate</em> a machine with
-a configuration, you simply say <em>check out revision X of this
-repository and apply its configuration.</em> Since <em>revision X</em> of
-the repository is constant over time, the set of configuration
-data being used to configure the machine is constant. And, if
-you've done things correctly, the output is idempotent over time.</p>
-<p>In one of these systems, we actually had two versions of Puppet
-running on a machine. First, we had the daemon communicating with a
-central Puppet master. It was continually applying time-dependent
-configuration (user accounts, passwords, networking, etc). We
-supplemented this was a manually executed standalone Puppet
-instance. When you ran a script, it asked the Puppet master for its
-configuration. Part of that configuration was the revision of the
-time-independent Git repository containing the Puppet configuration
-files the client should use. It then pulled the Git repo, checked
-out the specified revision, merged Puppet master's settings for the
-node with that config (not the manifests, just some variables),
-then ran Puppet locally to apply the configuration. While a
-machine's configuration typically referenced a SHA-1 of a specific
-Git commit to use, we could use anything <em>git checkout</em> understood.
-We had some machines running <em>master</em> or other branches if we didn't
-care about time-independent idempotency for that machine at that
-time. What this all meant was that if you wanted to roll back
-a machine's configuration, you simply specified an earlier Git
-commit SHA-1 and then re-ran local Puppet.</p>
-<p>We were largely satisfied with this model. We felt like we got
-the best of both worlds. And, since we were using the same
-technology (Puppet) for time-dependent and time-independent
-configuration, it was a pretty simple-to-understand system.
-A downside was there were two Puppet instances instead of one.
-With a little effort, someone could probably devise a way for
-the Puppet master to <em>merge</em> the two configuration trees. I'll
-leave that as an exercise for the reader. Perhaps someone has
-done this already! If you know of someone, please leave a comment!</p>
-<h3>Challenges</h3>
-<p>The solution I describe does not come without its challenges.</p>
-<p>First, deciding whether a piece of configuration is time dependent
-or time independent can be quiet complicated. For example,
-should a package update for a critical security fix be time
-dependent or time independent? It depends! What's the risk of
-the machine not receiving that update? How often is that machine
-rolled back? Is that package important to the operation/role
-of that machine (if so, I'd lean more towards time independent).</p>
-<p>Second, minimizing exposure to external entities is hard. While
-I recommend putting as much as possible under version control in a
-single repository and pinning versions everywhere when you interface
-with an external system, this isn't always feasible. It's probably
-a silly idea to have your 200 GB Apt repository under version
-control and distributed locally to every machine in your network.
-So, you end up introducing specialized one-off systems as necessary.
-For our package repository, we just ran an internal HTTP server that
-only allowed inserts (no deletes or mutates). If we were creative, we
-could have likely devised a way for the client to pass a <em>revision</em> with
-the request and have the server dynamically serve from that revision
-of an underlying repository. Although, that may not work for every
-server type due to limited control over client behavior.</p>
-<p>Third, ensuring compatibility between the time-dependent configuration
-and time-independent configuration is hard. This is a consequence of
-separating those configurations. Will a time-independent configuration
-from a revision two years ago work with the time-dependent
-configuration of today? This issue can be mitigated by first
-having as much configuration as possible be time independent and
-second not relying on wide support windows. If it's good enough
-to only support compatibility for time-independent configurations
-less than a month old, then it's good enough! With this issue, I feel
-you are trading long-term future incompatibility for well-defined
-and understood behavior in the short to medium term. That's
-a trade-off I'm willing to make.</p>
-<h2>Conclusion</h2>
-<p>Many machine configuration management systems only care about
-idempotency <em>today</em>. However, with a little effort, it's possible
-to achieve consistent state over time. This requires a little extra
-effort and brain power, but it's certainly doable.</p>
-<p>The next time you are programming your system configuration tool, I
-hope you take the time to consider the effects time will have and that
-you will take the necessary steps to ensure consistency over time
-(assuming you want that, of course).</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
