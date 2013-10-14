@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 14 Oct 2013 17:59:09 GMT</pubDate>
+    <pubDate>Mon, 14 Oct 2013 19:15:15 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -218,10 +218,14 @@ Phabricator. To get <em>arc</em> working with your machine, follow the
 <a href="http://www.phabricator.com/docs/phabricator/article/Arcanist_Quick_Start.html">official instructions</a>
 to install Arcanist. For your <em>.arcconfig</em> file, use something like:</p>
 <pre><code>{
-  "project_id": "mozilla-central",
+  "project_id": "gecko",
   "conduit_uri": "http://phabricator.gregoryszorc.com/"
 }
 </code></pre>
+<p>Then, have Arcanist fetch authentication credentials:</p>
+<pre><code>$ arc install-certificate
+</code></pre>
+<p>From there, run <em>arc help</em> and see what you can do!</p>
 <p>Of course, you'll need to adjust the <em>project_id</em> when appropriate.</p>
 <p>When you use this Phabricator instance, please keep the following in
 mind:</p>
