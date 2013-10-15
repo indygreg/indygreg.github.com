@@ -10,10 +10,295 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 14 Oct 2013 19:15:15 GMT</pubDate>
+    <pubDate>Tue, 15 Oct 2013 20:00:50 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>The State of the Firefox Build System (2013 Q3 Review)</title>
+      <link>http://gregoryszorc.com/blog/2013/10/15/the-state-of-the-firefox-build-system-(2013-q3-review)</link>
+      <pubDate>Tue, 15 Oct 2013 13:00:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[build system]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/10/15/the-state-of-the-firefox-build-system-(2013-q3-review)</guid>
+      <description>The State of the Firefox Build System (2013 Q3 Review)</description>
+      <content:encoded><![CDATA[<p>As we look ahead to Q4 planning for the Firefox build system, I wanted
+to take the time to reflect on what was accomplished in Q3 and to
+simultaneously look forward to Q4 and beyond.</p>
+<h2>2013 Q3 Build System Improvements</h2>
+<p>There were notable improvements in the build system during the last
+quarter.</p>
+<p>The issues our <em>customers</em> care most about is speed. Here is a list of
+accomplishments in that area:</p>
+<ul>
+<li>
+<p><em>MOZ_PSEUDO_DERECURSE</em> work to change how make directory traversal
+  works. This enabled the <em>binaries</em> make target, which can do no-op
+  libxul-only builds in just a few seconds. Of all the changes that
+  landed this quarter, this is the most impactful to local build
+  times. This change also enables C++ compilation to scale out to
+  as many cores as you have. Previously, the build system was
+  <em>starved</em> in many parts of the tree when compiling C++. Mike Hommey
+  is responsible for this work. I reviewed most of it.</p>
+</li>
+<li>
+<p>WebIDL and IPDL bindings are now compiled in <em>unified</em> mode,
+  reducing compile times and linker memory usage. Nathan Froyd wrote the
+  code. I reviewed the patches.</p>
+</li>
+<li>
+<p>XPIDL files are generated much more efficiently. This removed a
+  few minutes of CPU core time from builds. I wrote these patches and
+  Mike Hommey reviewed.</p>
+</li>
+<li>
+<p>Increased reliance on install manifests to process file installs.
+  They have drastically reduced the number of processes required to
+  build by performing all actions inside Python processes as system
+  calls and removing the clownshoes of having to delete parts of the
+  object directory at the beginning of builds. When many mochitests
+  were converted to manifests, no-op build times dropped by ~15%
+  on my machine. Many people are responsible for this work. Mike Hommey
+  wrote the original install code for packaging a few months ago. I
+  built in manifest file support, support for symlinks, and made the
+  code a bit more robust and faster. Mike Hommey reviewed these
+  patches.</p>
+</li>
+<li>
+<p>Many bugs and issues around dependency files on Windows have been
+  discovered and fixed. These were a common source of clobbers.
+  Mike Hommey found most of these, many during his work to make
+  MOZ_PSEUDO_DERECURSE work.</p>
+</li>
+<li>
+<p>The effort to reduce C++ include hell is resulting in significantly
+  shorter incremental builds. While this effort is largely outside the
+  build config module, it is worth mentioning. Ehsan Akhgari is leading
+  this effort. He's been assisted by too many people to mention.</p>
+</li>
+<li>
+<p>The build system now has different build modes favoring faster
+  building vs release build options depending on the environment. Mike
+  Hommey wrote most (all?) of the patches.</p>
+</li>
+</ul>
+<p>A number of other non-speed related improvements have been made:</p>
+<ul>
+<li>
+<p>The build system now monitors resource usage during builds and can
+  graph the results. I wrote the code. Ted Mielczarek, Mike Hommey,
+  and Mike Shal had reviews.</p>
+</li>
+<li>
+<p>Support for test manifests has been integrated with the build system.
+  This enabled some build speed wins and is paving the road for better
+  testing UX, such as the automagical <em>mach test</em> command, which will
+  run the appropriate test suite automatically. Multiple people were
+  involved in the work to integrate test manifests with the build
+  system. I wrote the patches. But Ted Mielczarek got primary review.
+  Joel Maher, Jeff Hammel, and Ms2ger provided excellent assistance
+  during the design and implementation phase. The work around
+  mochitest manifests likely wouldn't have happened this quarter if
+  all of us weren't attending an A*Team work week in August.</p>
+</li>
+<li>
+<p>There are now in-tree build system docs. They are
+  <a href="https://ci.mozilla.org/job/mozilla-central-docs/Build_Documentation/index.html">published automatically</a>.
+  Efforts have been made to purge MDN of cruft. I am responsible for
+  writing the code and most of the docs. Benjamin Smedberg and Mike Shal
+  performed code reviews.</p>
+</li>
+<li>
+<p>Improvements have been made to object directory detection in mach.
+  This was commonly a barrier to some users using mach. I am responsible
+  for the code. Nearly every peer has reviewed patches.</p>
+</li>
+<li>
+<p>We now require Python 2.7.3 to build, making our future Python 3
+  compatibility story much easier while eliminating a large class
+  of Python 2.7.2 and below bugs that we constantly found ourselves
+  working around.</p>
+</li>
+<li>
+<p>mach bootstrap has grown many new features and should be more robust
+  than ever. There are numerous contributors here, including many
+  community members that have found and fixed bugs and have added
+  support for additional distributions.</p>
+</li>
+<li>
+<p>The boilerplate from Makefile.in has disappeared. Mike Hommey is to
+  thank.</p>
+</li>
+<li>
+<p>dumbmake integrated with mach. Resulted in friendlier build interface
+  for a nice UX win. Code by Nick Alexander. I reviewed.</p>
+</li>
+<li>
+<p>Many variables have been ported from Makefile.in to moz.build. We
+  started Q3 with support for 47 variables and now support 73. We
+  started with 1226 Makefile.in and 1517 moz.build and currently
+  have 941 Makefile.in and 1568 moz.build. Many people contributed to
+  this work. Worth mentioning are Joey Armstrong, Mike Shal, Joshua
+  Cranmer, and Ms2ger.</p>
+</li>
+<li>
+<p>Many build actions are moving to Python packages. This enabled pymake
+  <em>inlining</em> (faster builds) and is paving the road towards no .pyc
+  files in the source directory. (pyc files commonly are the source of
+  clobber headaches and make it difficult to efficiently perform builds
+  on read-only filesystems.) I wrote most of the patches and Mike Shal
+  and Mike Hommey reviewed.</p>
+</li>
+<li>
+<p>moz.build is now more strict about what it accepts. We check for
+  missing files at config parse time rather than build time, causing
+  errors to surface faster. Many people are responsible for this work.
+  Mike Shal deserves kudos for work around C/C++ file validation.</p>
+</li>
+<li>
+<p>mach has been added to the B2G repo. Jonathan Griffin and Andrew
+  Halberstadt drove this.</p>
+</li>
+</ul>
+<h2>Current status of the build bystem</h2>
+<p>Q3 was a very significant quarter for the build system. For the first
+time in years, we made fundamental changes to how the build system
+goes about building. The moz.build work to free our build config from
+the shackles of make files had enabled us to consume that data and do
+new and novel things with it. This has enabled improvements in build
+robustness and - most importantly - speed.</p>
+<p>This is most evident with the MOZ_PSEUDO_DERECURSE work, which
+effectively replaces how make traverses directories. The work there
+has allowed Gecko developers focused on libxul to go from e.g. 50s
+no-op build times to less than 5s. Combined with optimized building
+of XPIDL, IPDL, and WebIDL files, processing of file installs via
+manifests, and C++ header dependency reduction, and a host of other
+changes, and we are finally turning a corner on build times! Much of
+this work wouldn't have been possible without moz.build files providing
+a whole world view of our build config.</p>
+<p>The quarter wasn't all roses. Unfortunately, we also broke things. A lot.
+The total number of required clobbers this quarter grew slightly from
+38 in Q2 to 43 in Q3. Many of these clobbers were regressions from
+supposed improvements to the build system. Too many of these
+regressions were Windows/pymake only and surely would have been found
+prior to landing if more build peers were actively building on Windows.
+There are various reasons we aren't. We should strive to fix them so
+more build development occurs on Windows and Windows users aren't
+unfairly punished.</p>
+<p>The other class of avoidable clobbers mostly revolves
+around the theme that <em>the build system is complicated</em>, particularly
+when it comes to integration with release automation. Build automation
+has its build logic currently coded in Buildbot config files. This means
+it's all but impossible for build peers to test and reproduce that build
+environment and flow without time-intensive, stop-energy abundant
+excessive try pushes or loading out build slaves. The RelEng effort
+to extract this code from buildbot to mozharness can't come soon enough. See
+<a href="/blog/2013/07/16/analysis-of-firefox%27s-build-automation/">my overview</a>
+on how automation works for more.</p>
+<p>This quarter, the sheriffs have been filing bugs whenever a clobber is
+needed. This has surfaced clobber issues to build peers better and I
+have no doubt their constant pestering caused clobber issues to be
+resolved sooner. It's a terrific incentive for us to fix the build
+system.</p>
+<p>I have mixed feelings on the personnel/contribution front in Q3. Kyle
+Huey no longer participates in active build system development or patch
+review. Ted Mielczarek is also starting to drift away from active coding
+and review. Although, he does constantly provide knowledge and historical
+context, so not all is lost. It is disappointing to see fantastic
+people and contributors no longer actively participating on the coding
+front. But, I understand the reasons behind it. Mozilla doesn't have a
+build team with a common manager and decree (a mistake if you ask me).
+Ted and Kyle are both insanely smart and talented and they work for
+teams that have other important goals. They've put in their time (and
+suffering). So I see why they've moved on.</p>
+<p>On the plus side, Mike Hommey has been spending a lot more time on build
+work. He was involved in many of the improvements listed above. Due to
+review load and Mike's technical brilliance, I don't think many of our
+accomplishments would have happened without him. If there is one
+Mozillian who should be commended for build system work in Q3, it should
+be Mike Hommey.</p>
+<p>Q3 also saw the addition of new build peers. Mike Shal is now a full
+build config module peer. Nick Alexander is now a peer of a submodule
+covering just the Fennec build system. Aside from his regular patch
+work, Mike Shal has been developing his review skills and
+responsibilities. Without him, we would likely be drowning in review
+requests and bug investigations due to the departures of Kyle and Ted.
+Nick is already doing what I'd hope he'd do when put in charge of the
+Fennec build system: looking at a proper build backend for Java (not
+make) and Eclipse project generation. (I still can't believe many of
+our Fennec developers code Java in vanilla text editors, not powerful
+IDEs. If there is one language that would miss IDEs the most, I'd think
+it would be Java. Anyway.)</p>
+<p>There was a steady stream of contributions from people not in the build
+config module. Joshua Cranmer has been keeping up with moz.build
+conversions for comm-central. Nathan Froyd and Boris Zbarsky have helped
+with all kinds of IDL work. Trevor Saunders has helped keep things
+clean. Ms2ger has been eager to provide assistance through code and
+reviews. Various community contributors have helped with moz.build
+conversion patches and improvements to mach and the bootstrapper. Thank
+you to everyone who contributed last quarter!</p>
+<h2>Looking to the future</h2>
+<p>At the beginning of the quarter, I didn't think it would be possible
+to attain no-op build speeds with make as quickly as <em>make binaries</em> now
+does. But, Mike Hommey worked some magic and this is now possible.
+This was a game changer. The code he wrote can be applied to other
+build actions. And, our other solutions involving moz.build files to
+autogenerated make files seems to be working pretty well too.
+This raises some interesting questions with regards to priortization.</p>
+<p>Long term, we know we want to move away from make. It is old
+and clumsy. It's easy to do things wrong. It doesn't scale to handle a
+single DAG as large as our build system. The latter is particularly
+important if we are to ever have a build system that doesn't require
+clobbers periodically.</p>
+<p>Up to this point we've prioritized work on moz.build conversion, with
+the rationale being that it would more soon enable a clean break from
+make and thus we'd arrive at drastically faster builds sooner. The assumption in that
+argument was that drastically faster builds weren't attainable with
+make. Between the directory traversal overhaul and the release of GNU
+make 4.0 last week (which actually seems to work on Windows, making the
+pymake slowness a non-issue), the importance of breaking away from make
+now seems much less pressing.</p>
+<p>While we would like to actively move off make, developments in the past
+few weeks seem to say that we can reassess priorities. I believe that we
+can drive down no-op builds with make to a time that satisfies many -
+let's say under 10s to be conservative. Using clever tricks optimizing
+for common developer workflows, we can probably get that under 5s
+everywhere, including Windows (people only caring about libxul can
+get 2.5s on mozilla-central today). This isn't the 250ms we could get
+with Tup. But it's much better than 45s. If we got there, I don't think
+many people would be complaining.</p>
+<p>So, the big question for goals setting this quarter will be whether we
+want to focus on a new build backend (likely Tup) or whether we should
+continue with an emphasis on make. Now, a lot of the work involved
+applies to both make and any other build backend. But, I have little
+doubt it would be less overall work to support one build backend (make)
+than two. On the other hand, we know we want to support multiple build
+backends eventually. Why wait? In the balance are
+<a href="https://etherpad.mozilla.org/build-system-goals">numerous other projects</a>
+that have varying impact for developers and release automation. While
+important in their own right, it is difficult to balance them against
+build speed. While we could strive towards instantaneous builds, at some
+point we'll hit <em>good enough</em> and the diminishing returns that accompany
+them. There is already a small vocal faction advocating for Ninja
+support, even though it would only decrease no-op libxul build times
+from ~2.5s to 250ms. While a factor of 10x improvement, I think this is
+dangerously close to diminishing returns territory and our time
+investment would be better spent elsehwere. (Of course, once we can
+support building libxul with Ninja, we could easily get it for Tup. And,
+I believe Tup wins that tie.). Anyway, I'm sure it will be an
+interesting discussion!</p>
+<p>Whatever the future holds, it was a good quarter for the build system and
+the future is looking brighter than ever. We have transitioned from a
+maintain-and-react mode (which I understand has largely been the norm
+since the dawn of Firefox) to a proactive and future-looking approach
+that will satisfy the needs of Firefox and its developers for the next
+ten years. All of this progress is even more impressive when you consider
+that we still react to an aweful lot of fire drills and unwanted
+maintenance!</p>
+<p>The Firefox build system is improving. I'm as anxioux as you are to see
+various milestones in terms of build speed and other features. But it's
+hard work. Wish us luck. Please help out where you can.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Build System Status Update 2013-05-14</title>
       <link>http://gregoryszorc.com/blog/2013/05/13/build-system-status-update-2013-05-14</link>
@@ -2006,250 +2291,6 @@ build times. Win!</p>
 make evaluates make files faster than pymake (C is generally faster than
 python). Therefore, reducing the size of <em>rules.mk</em> should make GNU make
 faster. By how much, I have no clue.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Mozilla Build System Plan of Attack</title>
-      <link>http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack</link>
-      <pubDate>Wed, 25 Jul 2012 23:30:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[build system]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack</guid>
-      <description>Mozilla Build System Plan of Attack</description>
-      <content:encoded><![CDATA[<p>Since I published my <a href="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla%27s-build-system/">brain dump
-post</a>
-on improving Mozilla's build system for Gecko applications (including
-Firefox and Firefox OS), there has been some exciting progress.</p>
-<p>It wasn't stated in that original post, but the context for that post
-was to propose a plan in preparation of a meeting between the core
-contributors to the build system at Mozilla. I'm pleased to report that
-the plan was generally well-received.</p>
-<p>We pretty much all agreed that parts 1, 2, and 3 are all important and
-we should actively work towards them. Parts 4, 5, and 6 were a bit more
-contentious. There are some good parts and some bad parts. We're not
-ready to adopt them just quite yet. (Don't bother reading the original
-post to look up what these parts corresponded to - I'll cover that
-later.)</p>
-<p>Since that post and meeting, there has also been additional discussion
-around more specifics. I am going to share with you now where we stand.</p>
-<h2>BuildSplendid</h2>
-<p><strong>BuildSplendid</strong> is an umbrella term associated with projects/goals to
-make the developer experience (including building) better - more
-splendid if you will.</p>
-<p><strong>BuildSplendid</strong> started as the name of my personal Git branch for
-hacking on the build system. I'm encouraging others to adopt the term
-because, well, it is easier to refer to (people like project codenames).
-If it doesn't stick, that's fine by me - there are other terms that
-will.</p>
-<h2>BuildFaster</h2>
-<p>An important project inside <em>BuildSplendid</em> is <strong>BuildFaster</strong>.</p>
-<p><em>BuildFaster</em> focuses on the following goals:</p>
-<ol>
-<li>Making the <em>existing</em> build system faster, better, stronger (but not
-   harder).</li>
-<li>Making changes to the build system to facilitate the <em>future</em> use of
-   alternate build backends (like Tup or Ninja). Work to enable Visual
-   Studio, Xcode, etc project generation also falls here.</li>
-</ol>
-<p>The distinction between these goals can be murky. But, I'll try.</p>
-<p>Falling squarely in #1 are:</p>
-<ul>
-<li>Switching the buildbot infrastructure to use pymake on Windows</li>
-</ul>
-<p>Falling in #2 are:</p>
-<ul>
-<li>Making Makefile.in's data-centric</li>
-<li>Supporting multiple build backends</li>
-</ul>
-<p>Conflated between the two are:</p>
-<ul>
-<li>Ensuring Makefile's no-op if nothing has changed</li>
-<li>Optimizing existing make rules. This involves merging related
-  functionality as well as eliminating clown shoes in existing rules.</li>
-</ul>
-<p>The two goals of <em>BuildFaster</em> roughly map to the short-term and long-term
-strategies, respectively. There is consensus that recursive make (our
-existing build backend) does not scale and we will plateau in terms of
-performance no matter how optimal we make it. That doesn't mean we are
-giving up on it: there are things we can and should do so our existing
-non-recursive make backend builds faster.</p>
-<p>In parallel, we will also work towards the longer-term solution of
-supporting alternate build backends. <strong>This includes non-recursive
-make</strong> as well as things like Tup, Ninja, and even Visual Studio and
-Xcode. (I consider non-recursive make to be a separate build backend
-because changing our existing Makefile.in's to support non-recursive
-execution effectively means rewriting the input files (Makefile.in's).
-At that point, you've invented a new build backend.)</p>
-<p>For people who casually interact with the build system, these two goals
-will blend together. It is not important for most to know what bucket
-something falls under.</p>
-<h3>BuildFaster Action Items</h3>
-<p><em>BuildFaster</em> action items are being tracked in Bugzilla using the
-[BuildFaster:*] whiteboard annotation.</p>
-<p>There is no explicit tracking bug for the short-term goal (#1). Instead,
-we are relying on the whiteboard annotation.</p>
-<p>We are tracking the longer-term goal of supporting alternate build
-backends at <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774049">bug 774049</a>.</p>
-<p>The most important task to help us reach the goals is to make our
-Makefile.in's data centric. This means:</p>
-<ul>
-<li>Makefile.in's <strong>must</strong> consist of only simple variable assignment</li>
-<li>Makefile.in's <strong>must</strong> not rely on being evaluated to perform variable
-  assignment.</li>
-</ul>
-<p>Basically, our build config should be defined by static key-value pairs.</p>
-<p>This translates to:</p>
-<ul>
-<li>Move all rules out of Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">bug 769378</a></li>
-<li>Remove use of $(shell) from Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769390">bug 769390</a></li>
-<li>Remove filesystem functions from Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769407">bug 769407</a></li>
-<li>And more, as we identify the need</li>
-</ul>
-<p>While we have these tracking bugs on file, we still don't have bugs
-filed that track individual Makefile.in's that need updated. <strong>If you
-are a contributor, you can help by doing your part to file bugs for your
-Makefile.in's.</strong> If your Makefile.in violates the above rules, please
-file a bug in the <strong>Build Config</strong> component of the product it is under
-(typically <strong>Core</strong>). See the tree of the above bugs for examples.</p>
-<p>Also part of <em>BuildFaster</em> (but not relevant to most) is the task of
-changing the build system to support multiple backends. Currently,
-pieces like <em>configure</em> assume the Makefile.in to Makefile conversion is
-always what is wanted. These parts will be worked on by core
-contributors to the build system and thus aren't of concern to most.</p>
-<p>I will be the first to admit that a lot of the work to <em>purify</em>
-Makefile.in's to be data centric will look like a lot of busy work with
-little immediate gain. The real benefits to this work will manifest
-down the road. That being said, removing rules from Makefile.in's and
-implementing things as rules in rules.mk helps ensure that the
-implementation is proper (rules.mk is coded by make ninjas and thus
-probably does things <em>right</em>). This can lead to faster build times.</p>
-<h2>mozbuild</h2>
-<p><strong>mozbuild</strong> is a Python package that provides an API to the build system.</p>
-<p>What <em>mozbuild</em> will contain is still up in the air because it hasn't
-landed in mozilla-central yet. In the code I'm waiting on review to
-uplift to mozilla-central, <em>mozbuild</em> contains:</p>
-<ul>
-<li>An API for invoking the build system backend (e.g. launching make). It
-  basically reimplements client.mk because client.mk sucks and needs to
-  be replaced.</li>
-<li>An API for launching tests easily. This reimplements functionality in
-  testsuite-targets.mk, but in a much cleaner way. Running a single test
-  can now be done with a single Python function call. This may sound
-  boring, but it is very useful. You just import a module and pass a
-  filesystem path to a test file to a function and a test runs. Boom!</li>
-<li>Module for extracting compiler warnings from build output and storing
-  in a persisted database for post-build retrieval. Compiler warning
-  tracking \o/</li>
-<li>Module for converting build system output into structured logs. It
-  records things like time spent in different directories, etc. We could
-  use this for tracking build performance regressions. We just need a
-  arewe*yet.com domain...</li>
-<li>A replacement for .mozconfig's that sucks less (stronger validation,
-  settings for not just build config, convenient Python API, etc).</li>
-</ul>
-<p>And, upcoming features which I haven't yet tried to land in
-mozilla-central include:</p>
-<ul>
-<li>API for extracting metadata from Makefile.in's and other frontend
-  files. Want a Python class instance describing the IDLs defined in an
-  individual Makefile.in or across the entire tree? <em>mozbuild</em> can provide
-  that. This functionality will be used to configure alternate build
-  backends.</li>
-<li>Build backend API which allows for different build backends to be
-  configured (e.g. recursive make, Tup, Ninja, etc). When we support
-  multiple build backends, they'll live in <em>mozbuild</em>.</li>
-</ul>
-<p><em>mozbuild</em> can really be thought of as a clean backend to the build
-system and related functionality (like running tests). Everything in
-<em>mozbuild</em> could exist in make files or in .py files littered in
-<em>build/</em>, <em>config/</em>, etc. But, that would involve maintaining make files
-and/or not having a cohesive API. I wanted a clean slate that was free
-from the burdens of the existing world. <em>mozbuild</em> was born.</p>
-<p>I concede that there will be non-clear lines of division between
-<em>mozbuild</em> and other Python packages and/or Mozilla modules. For
-example, is <em>mozbuild</em> the appropriate location to define an API for
-taking the existing build configuration and launching a Mochitest? I'm
-not sure. For now, I'm stuffing functionality inside <em>mozbuild</em> unless
-there is a clear reason for it to exist elsewhere. If we want to
-separate (because of module ownership issues, for example), we can do
-that.</p>
-<p>My vision for <em>mozbuild</em> is for it to be the answer to the question
-<em>how does the Mozilla build system work?</em> You should be able to say,
-<em>look at the code in python/mozbuild and you will have all the answers.</em></p>
-<h3>mozbuild Action Items</h3>
-<p>The single action item for <em>mozbuild</em> is getting it landed. I have code
-written that I think is good enough for an initial landing (with obvious
-shortcomings being addressed in follow-up bugs). It just needs some love
-from reviewers.</p>
-<p>Landing <em>mozbuild</em> is tracked in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a>. I
-initially dropped a monolithic patch. I have since started splitting
-bits up into bite-sized patches to facilitate faster, smaller reviews.
-(See the blocking bugs.)</p>
-<h2>mach</h2>
-<p><em>mozbuild</em> is just a Python package - an API. It has no frontend.</p>
-<p>Enter <strong>mach</strong>.</p>
-<p><strong>mach</strong> is a command-line frontend to <em>mozbuild</em> and beyond.</p>
-<p>Currently, <em>mach</em> provides some convenient shortcuts for performing
-common tasks. e.g. you can run a test by tab-completing to its filename
-using your shell. It also provides nifty output in supported terminals,
-including colorizing and a basic progress indicator during building.</p>
-<p>You can think of <em>mach</em> as a replacement for <em>client.mk</em> and other make
-targets. But, <em>mach</em>'s purpose doesn't end there. My vision for <em>mach</em>
-is for it to be the one-stop shop for all your mozilla-central
-interaction needs.</p>
-<p>From a mozilla-central tree, you should be able to type
-<strong>./mach <action></strong> and do whatever you need to do. This could be
-building Firefox, running tests, uploading a patch to Bugzilla, etc.</p>
-<p>I'm capturing ideas for <em>mach</em> features in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774108">bug 774108</a>.</p>
-<h3>mach Action Items</h3>
-<p><em>mach</em> is in the same boat as <em>mozbuild</em>: it's waiting for reviewer
-love. If you are interested in reviewing it, please let me know.</p>
-<p>Once <em>mach</em> lands, I will be looking to the larger community to improve
-it. I want people to go wild implementing features. I believe that
-<em>mach</em> will have a significant positive impact on driving contributions
-to Mozilla because it will make the process much more streamlined and
-less prone to error. I think it is a no-brainer to check in <em>mach</em> as
-soon as possible so these wins can be realized.</p>
-<p>There is an open question of who will own <em>mach</em> in terms of module
-ownership. <em>mach</em> isn't really part of anything. Sure, it interacts with
-the build system, testing code, tools, etc. But, it isn't actually part
-of any of that. Maybe a new module will be created for it. I'm not
-familiar with how the modules system works and I would love to chat with
-someone about options here.</p>
-<h2>Project Interaction</h2>
-<p>How are all of these projects related?</p>
-<p><em>BuildFaster</em> is what everyone is working on today. It currently focuses
-on making the existing recursive make based build backend faster using
-whatever means necessary. <em>BuildFaster</em> could theoretically evolve to
-cover other build backends (like non-recursive make). Time will tell
-what falls under the <em>BuildFaster</em> banner.</p>
-<p><em>mozbuild</em> is immediately focused on providing the functionality to
-enable <em>mach</em> to land.</p>
-<p><em>mach</em> is about improving the overall developer experience when
-it comes to contributing to Firefox and other in-tree applications (like
-Firefox OS). It's related to the build system in that it provides a nice
-frontend to it. That's the only relationship. <em>mach</em> isn't part of the
-build system (at least not yet - it may eventually be used to perform
-actions on buildbot machines).</p>
-<p>Down the road, <em>mozbuild</em> will gain lots of new features core to the
-build system. It will learn how to extract metadata from Makefile.in's
-which can be used by other build backends. It will define a build
-backend interface and the various build backends will be implemented
-in mozbuild. Aspects of the existing build system currently implemented in
-make files or in various Python files scattered across the tree will be
-added to <em>mozbuild</em> and exposed with a clean, reusable, and testable
-API.</p>
-<p>Today, <em>BuildFaster</em> is the important project with all the attention.
-When <em>mach</em> lands, it will (hopefully) gather a lot of attention. But,
-it will be from a different group (the larger contributor community -
-not just build system people).</p>
-<p><em>mozbuild</em> today is only needed to support <em>mach</em>. But, once <em>mozbuild</em>
-lands and <em>mach</em> is on its own, <em>mozbuild</em>'s purpose  will shift to support
-<em>BuildFaster</em> and other activities under the <em>BuildSplendid</em> banner.</p>
-<h2>Conclusion</h2>
-<p>We have a lot of work ahead of us. Please look at the bugs linked above
-and help out in any way you can.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

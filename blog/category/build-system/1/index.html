@@ -50,6 +50,301 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="the-state-of-the-firefox-build-system-(2013-q3-review)"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/10/15/the-state-of-the-firefox-build-system-(2013-q3-review)" rel="bookmark" title="Permanent Link to The State of the Firefox Build System (2013 Q3 Review)">The State of the Firefox Build System (2013 Q3 Review)</a></h2>
+  <small>October 15, 2013 at 01:00 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2013/10/15/the-state-of-the-firefox-build-system-(2013-q3-review)#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>As we look ahead to Q4 planning for the Firefox build system, I wanted
+to take the time to reflect on what was accomplished in Q3 and to
+simultaneously look forward to Q4 and beyond.</p>
+<h2>2013 Q3 Build System Improvements</h2>
+<p>There were notable improvements in the build system during the last
+quarter.</p>
+<p>The issues our <em>customers</em> care most about is speed. Here is a list of
+accomplishments in that area:</p>
+<ul>
+<li>
+<p><em>MOZ_PSEUDO_DERECURSE</em> work to change how make directory traversal
+  works. This enabled the <em>binaries</em> make target, which can do no-op
+  libxul-only builds in just a few seconds. Of all the changes that
+  landed this quarter, this is the most impactful to local build
+  times. This change also enables C++ compilation to scale out to
+  as many cores as you have. Previously, the build system was
+  <em>starved</em> in many parts of the tree when compiling C++. Mike Hommey
+  is responsible for this work. I reviewed most of it.</p>
+</li>
+<li>
+<p>WebIDL and IPDL bindings are now compiled in <em>unified</em> mode,
+  reducing compile times and linker memory usage. Nathan Froyd wrote the
+  code. I reviewed the patches.</p>
+</li>
+<li>
+<p>XPIDL files are generated much more efficiently. This removed a
+  few minutes of CPU core time from builds. I wrote these patches and
+  Mike Hommey reviewed.</p>
+</li>
+<li>
+<p>Increased reliance on install manifests to process file installs.
+  They have drastically reduced the number of processes required to
+  build by performing all actions inside Python processes as system
+  calls and removing the clownshoes of having to delete parts of the
+  object directory at the beginning of builds. When many mochitests
+  were converted to manifests, no-op build times dropped by ~15%
+  on my machine. Many people are responsible for this work. Mike Hommey
+  wrote the original install code for packaging a few months ago. I
+  built in manifest file support, support for symlinks, and made the
+  code a bit more robust and faster. Mike Hommey reviewed these
+  patches.</p>
+</li>
+<li>
+<p>Many bugs and issues around dependency files on Windows have been
+  discovered and fixed. These were a common source of clobbers.
+  Mike Hommey found most of these, many during his work to make
+  MOZ_PSEUDO_DERECURSE work.</p>
+</li>
+<li>
+<p>The effort to reduce C++ include hell is resulting in significantly
+  shorter incremental builds. While this effort is largely outside the
+  build config module, it is worth mentioning. Ehsan Akhgari is leading
+  this effort. He's been assisted by too many people to mention.</p>
+</li>
+<li>
+<p>The build system now has different build modes favoring faster
+  building vs release build options depending on the environment. Mike
+  Hommey wrote most (all?) of the patches.</p>
+</li>
+</ul>
+<p>A number of other non-speed related improvements have been made:</p>
+<ul>
+<li>
+<p>The build system now monitors resource usage during builds and can
+  graph the results. I wrote the code. Ted Mielczarek, Mike Hommey,
+  and Mike Shal had reviews.</p>
+</li>
+<li>
+<p>Support for test manifests has been integrated with the build system.
+  This enabled some build speed wins and is paving the road for better
+  testing UX, such as the automagical <em>mach test</em> command, which will
+  run the appropriate test suite automatically. Multiple people were
+  involved in the work to integrate test manifests with the build
+  system. I wrote the patches. But Ted Mielczarek got primary review.
+  Joel Maher, Jeff Hammel, and Ms2ger provided excellent assistance
+  during the design and implementation phase. The work around
+  mochitest manifests likely wouldn't have happened this quarter if
+  all of us weren't attending an A*Team work week in August.</p>
+</li>
+<li>
+<p>There are now in-tree build system docs. They are
+  <a href="https://ci.mozilla.org/job/mozilla-central-docs/Build_Documentation/index.html">published automatically</a>.
+  Efforts have been made to purge MDN of cruft. I am responsible for
+  writing the code and most of the docs. Benjamin Smedberg and Mike Shal
+  performed code reviews.</p>
+</li>
+<li>
+<p>Improvements have been made to object directory detection in mach.
+  This was commonly a barrier to some users using mach. I am responsible
+  for the code. Nearly every peer has reviewed patches.</p>
+</li>
+<li>
+<p>We now require Python 2.7.3 to build, making our future Python 3
+  compatibility story much easier while eliminating a large class
+  of Python 2.7.2 and below bugs that we constantly found ourselves
+  working around.</p>
+</li>
+<li>
+<p>mach bootstrap has grown many new features and should be more robust
+  than ever. There are numerous contributors here, including many
+  community members that have found and fixed bugs and have added
+  support for additional distributions.</p>
+</li>
+<li>
+<p>The boilerplate from Makefile.in has disappeared. Mike Hommey is to
+  thank.</p>
+</li>
+<li>
+<p>dumbmake integrated with mach. Resulted in friendlier build interface
+  for a nice UX win. Code by Nick Alexander. I reviewed.</p>
+</li>
+<li>
+<p>Many variables have been ported from Makefile.in to moz.build. We
+  started Q3 with support for 47 variables and now support 73. We
+  started with 1226 Makefile.in and 1517 moz.build and currently
+  have 941 Makefile.in and 1568 moz.build. Many people contributed to
+  this work. Worth mentioning are Joey Armstrong, Mike Shal, Joshua
+  Cranmer, and Ms2ger.</p>
+</li>
+<li>
+<p>Many build actions are moving to Python packages. This enabled pymake
+  <em>inlining</em> (faster builds) and is paving the road towards no .pyc
+  files in the source directory. (pyc files commonly are the source of
+  clobber headaches and make it difficult to efficiently perform builds
+  on read-only filesystems.) I wrote most of the patches and Mike Shal
+  and Mike Hommey reviewed.</p>
+</li>
+<li>
+<p>moz.build is now more strict about what it accepts. We check for
+  missing files at config parse time rather than build time, causing
+  errors to surface faster. Many people are responsible for this work.
+  Mike Shal deserves kudos for work around C/C++ file validation.</p>
+</li>
+<li>
+<p>mach has been added to the B2G repo. Jonathan Griffin and Andrew
+  Halberstadt drove this.</p>
+</li>
+</ul>
+<h2>Current status of the build bystem</h2>
+<p>Q3 was a very significant quarter for the build system. For the first
+time in years, we made fundamental changes to how the build system
+goes about building. The moz.build work to free our build config from
+the shackles of make files had enabled us to consume that data and do
+new and novel things with it. This has enabled improvements in build
+robustness and - most importantly - speed.</p>
+<p>This is most evident with the MOZ_PSEUDO_DERECURSE work, which
+effectively replaces how make traverses directories. The work there
+has allowed Gecko developers focused on libxul to go from e.g. 50s
+no-op build times to less than 5s. Combined with optimized building
+of XPIDL, IPDL, and WebIDL files, processing of file installs via
+manifests, and C++ header dependency reduction, and a host of other
+changes, and we are finally turning a corner on build times! Much of
+this work wouldn't have been possible without moz.build files providing
+a whole world view of our build config.</p>
+<p>The quarter wasn't all roses. Unfortunately, we also broke things. A lot.
+The total number of required clobbers this quarter grew slightly from
+38 in Q2 to 43 in Q3. Many of these clobbers were regressions from
+supposed improvements to the build system. Too many of these
+regressions were Windows/pymake only and surely would have been found
+prior to landing if more build peers were actively building on Windows.
+There are various reasons we aren't. We should strive to fix them so
+more build development occurs on Windows and Windows users aren't
+unfairly punished.</p>
+<p>The other class of avoidable clobbers mostly revolves
+around the theme that <em>the build system is complicated</em>, particularly
+when it comes to integration with release automation. Build automation
+has its build logic currently coded in Buildbot config files. This means
+it's all but impossible for build peers to test and reproduce that build
+environment and flow without time-intensive, stop-energy abundant
+excessive try pushes or loading out build slaves. The RelEng effort
+to extract this code from buildbot to mozharness can't come soon enough. See
+<a href="/blog/2013/07/16/analysis-of-firefox%27s-build-automation/">my overview</a>
+on how automation works for more.</p>
+<p>This quarter, the sheriffs have been filing bugs whenever a clobber is
+needed. This has surfaced clobber issues to build peers better and I
+have no doubt their constant pestering caused clobber issues to be
+resolved sooner. It's a terrific incentive for us to fix the build
+system.</p>
+<p>I have mixed feelings on the personnel/contribution front in Q3. Kyle
+Huey no longer participates in active build system development or patch
+review. Ted Mielczarek is also starting to drift away from active coding
+and review. Although, he does constantly provide knowledge and historical
+context, so not all is lost. It is disappointing to see fantastic
+people and contributors no longer actively participating on the coding
+front. But, I understand the reasons behind it. Mozilla doesn't have a
+build team with a common manager and decree (a mistake if you ask me).
+Ted and Kyle are both insanely smart and talented and they work for
+teams that have other important goals. They've put in their time (and
+suffering). So I see why they've moved on.</p>
+<p>On the plus side, Mike Hommey has been spending a lot more time on build
+work. He was involved in many of the improvements listed above. Due to
+review load and Mike's technical brilliance, I don't think many of our
+accomplishments would have happened without him. If there is one
+Mozillian who should be commended for build system work in Q3, it should
+be Mike Hommey.</p>
+<p>Q3 also saw the addition of new build peers. Mike Shal is now a full
+build config module peer. Nick Alexander is now a peer of a submodule
+covering just the Fennec build system. Aside from his regular patch
+work, Mike Shal has been developing his review skills and
+responsibilities. Without him, we would likely be drowning in review
+requests and bug investigations due to the departures of Kyle and Ted.
+Nick is already doing what I'd hope he'd do when put in charge of the
+Fennec build system: looking at a proper build backend for Java (not
+make) and Eclipse project generation. (I still can't believe many of
+our Fennec developers code Java in vanilla text editors, not powerful
+IDEs. If there is one language that would miss IDEs the most, I'd think
+it would be Java. Anyway.)</p>
+<p>There was a steady stream of contributions from people not in the build
+config module. Joshua Cranmer has been keeping up with moz.build
+conversions for comm-central. Nathan Froyd and Boris Zbarsky have helped
+with all kinds of IDL work. Trevor Saunders has helped keep things
+clean. Ms2ger has been eager to provide assistance through code and
+reviews. Various community contributors have helped with moz.build
+conversion patches and improvements to mach and the bootstrapper. Thank
+you to everyone who contributed last quarter!</p>
+<h2>Looking to the future</h2>
+<p>At the beginning of the quarter, I didn't think it would be possible
+to attain no-op build speeds with make as quickly as <em>make binaries</em> now
+does. But, Mike Hommey worked some magic and this is now possible.
+This was a game changer. The code he wrote can be applied to other
+build actions. And, our other solutions involving moz.build files to
+autogenerated make files seems to be working pretty well too.
+This raises some interesting questions with regards to priortization.</p>
+<p>Long term, we know we want to move away from make. It is old
+and clumsy. It's easy to do things wrong. It doesn't scale to handle a
+single DAG as large as our build system. The latter is particularly
+important if we are to ever have a build system that doesn't require
+clobbers periodically.</p>
+<p>Up to this point we've prioritized work on moz.build conversion, with
+the rationale being that it would more soon enable a clean break from
+make and thus we'd arrive at drastically faster builds sooner. The assumption in that
+argument was that drastically faster builds weren't attainable with
+make. Between the directory traversal overhaul and the release of GNU
+make 4.0 last week (which actually seems to work on Windows, making the
+pymake slowness a non-issue), the importance of breaking away from make
+now seems much less pressing.</p>
+<p>While we would like to actively move off make, developments in the past
+few weeks seem to say that we can reassess priorities. I believe that we
+can drive down no-op builds with make to a time that satisfies many -
+let's say under 10s to be conservative. Using clever tricks optimizing
+for common developer workflows, we can probably get that under 5s
+everywhere, including Windows (people only caring about libxul can
+get 2.5s on mozilla-central today). This isn't the 250ms we could get
+with Tup. But it's much better than 45s. If we got there, I don't think
+many people would be complaining.</p>
+<p>So, the big question for goals setting this quarter will be whether we
+want to focus on a new build backend (likely Tup) or whether we should
+continue with an emphasis on make. Now, a lot of the work involved
+applies to both make and any other build backend. But, I have little
+doubt it would be less overall work to support one build backend (make)
+than two. On the other hand, we know we want to support multiple build
+backends eventually. Why wait? In the balance are
+<a href="https://etherpad.mozilla.org/build-system-goals">numerous other projects</a>
+that have varying impact for developers and release automation. While
+important in their own right, it is difficult to balance them against
+build speed. While we could strive towards instantaneous builds, at some
+point we'll hit <em>good enough</em> and the diminishing returns that accompany
+them. There is already a small vocal faction advocating for Ninja
+support, even though it would only decrease no-op libxul build times
+from ~2.5s to 250ms. While a factor of 10x improvement, I think this is
+dangerously close to diminishing returns territory and our time
+investment would be better spent elsehwere. (Of course, once we can
+support building libxul with Ninja, we could easily get it for Tup. And,
+I believe Tup wins that tie.). Anyway, I'm sure it will be an
+interesting discussion!</p>
+<p>Whatever the future holds, it was a good quarter for the build system and
+the future is looking brighter than ever. We have transitioned from a
+maintain-and-react mode (which I understand has largely been the norm
+since the dawn of Firefox) to a proactive and future-looking approach
+that will satisfy the needs of Firefox and its developers for the next
+ten years. All of this progress is even more impressive when you consider
+that we still react to an aweful lot of fire drills and unwanted
+maintenance!</p>
+<p>The Firefox build system is improving. I'm as anxioux as you are to see
+various milestones in terms of build speed and other features. But it's
+hard work. Wish us luck. Please help out where you can.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/15/the-state-of-the-firefox-build-system-(2013-q3-review)#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="build-system-status-update-2013-05-14"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/05/13/build-system-status-update-2013-05-14" rel="bookmark" title="Permanent Link to Build System Status Update 2013-05-14">Build System Status Update 2013-05-14</a></h2>
   <small>May 13, 2013 at 07:35 PM | categories: 
@@ -829,112 +1124,6 @@ they don't work everywhere.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="visual-studio-project-generation-for-mozilla-central"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central" rel="bookmark" title="Permanent Link to Visual Studio Project Generation for mozilla-central">Visual Studio Project Generation for mozilla-central</a></h2>
-  <small>August 28, 2012 at 12:00 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I have very alpha support for Visual Studio project generation for
-mozilla-central that daring people can dogfood.</p>
-<p>I want to emphasize that this is extremely alpha. Normally, I wouldn't
-release things as fragile as they are. But, I know Windows developers
-sorely miss Visual Studio, especially IntelliSense. The current Visual
-Studio projects support IntelliSense, so I want to get this in the hands
-of Windows developers ASAP.</p>
-<p>The current directions for making this all work are a bit hacky. Things
-will change once things have matured. For now, please excuse the mess.</p>
-<p>First, you will need to grab the code. If you use Git, set up a remote
-to my repository:</p>
-<pre><code>git remote add indygreg git://github.com/indygreg/mozilla-central.git
-git fetch indygreg
-</code></pre>
-<p>The branch of interest is <em>build-splendid</em>. I periodically rebase this
-branch on top of master. You have been warned.</p>
-<p>You can switch to this branch:</p>
-<pre><code>git checkout -b build-splendid indygreg/build-splendid
-</code></pre>
-<p>Alternatively, you can squash it down to a single commit and merge it
-into your local branch. Once you've done that, you can record the SHA-1
-of the commit and cherry-pick that wherever you like!</p>
-<pre><code>git merge --squash indygreg/build-splendid
-git commit
-</code></pre>
-<p>In the current state, you need to build the tree or the Visual Studio
-projects will complain about missing files. It doesn't matter if you
-build the tree before or after Visual Studio projects are generated.
-But, we might as well get it out of the way. From your MozillaBuild
-environment, run:</p>
-<pre><code>./mach build
-</code></pre>
-<p>That should <em>just work</em>. If it doesn't, you may need to configure
-mach.ini. See my <a href="http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid/">previous post</a>
-on how to configure mach.ini. As a reference, my Windows config is:</p>
-<pre><code>[build]
-
-configure_extra = --disable-webgl
-
-[compiler]
-
-[paths]
-source_directory = c:\dev\src\mozilla-central-git
-object_directory = c:\dev\src\mozilla-central-git\objdir
-</code></pre>
-<p>Now, to generate Visual Studio project files:</p>
-<pre><code>./mach backendconfig visualstudio
-</code></pre>
-<p>That should take about a minute to finish. When it's done, it should
-have created <em>objdir/msvc/mozilla.sln</em>. You should be able to load that
-in Visual Studio!</p>
-<p>You will need to regenerate Visual Studio project files when the build
-config changes. As a rule of thumb, do this every time you pull source.
-You don't need to perform a full build before you generate Visual Studio
-files (you do need to perform configure, however). However, if you have
-not performed a full build, Visual Studio may not be able to find some
-files, like headers generated from IDLs.</p>
-<p><strong>Please close the solution before regenerating the project files.</strong> If
-you don't, Visual Studio puts up a modal dialog for each project file
-that changed and you have to click through over a hundred of these. It's
-extremely frustrating. I'm investigating workarounds.</p>
-<h2>Current State</h2>
-<p>Currently, it only generates projects for C/C++ compilation (libraries).
-I still need to add support for IDL, headers, etc. However, each
-project has proper compiler flags, header search paths, etc. So,
-IntelliSense is happy and some things do manage to compile!</p>
-<p>Many parts are broken and sub-par.</p>
-<p>I've only tested on Visual Studio 2008. If you are running Visual Studio
-\2010, you can try to upgrade the solution. This <em>may</em> work. The backend
-supports generating solutions for different versions. But, I haven't
-tested things work on non-2008 and I don't want to expose untested behavior.</p>
-<p>Compiling within Visual Studio works for some things. On my system, I
-get a lot of <em>nullptr not defined</em> errors. I'm not sure why. This will
-hopefully be worked out soon.</p>
-<p>If you do manager to compile within Visual Studio, the output files
-don't go in the right places. So, if you do a build from the
-command-line, it will have to re-compile to pick up changes.</p>
-<p>Project names are based on the name of the library they produce. I'm not
-sure if this is the best solution.</p>
-<p>Project dependencies are not set up. They will be added later.</p>
-<p>Projects for linking libxul or building firefox.exe are not yet
-provided. Along the same vein, debugging support is not built-in. I'm
-working on it.</p>
-<p>Basically, IntelliSense works. You can now use Visual Studio as a rich
-editor. Hopefully this is a step in the right direction.</p>
-<p>I'm anxious to hear if this works for other people. Please leave
-comments!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/build-system/2">Next Page »</a>
 
