@@ -7,12 +7,47 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2013-10-17T14:31:34Z</updated>
+  <updated>2013-10-22T20:31:29Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[OS X Mavericks and the Firefox Build System]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/10/22/os-x-mavericks-and-the-firefox-build-system" />
+    <id>http://gregoryszorc.com/blog/2013/10/22/os-x-mavericks-and-the-firefox-build-system</id>
+    <updated>2013-10-22T13:30:00Z</updated>
+    <published>2013-10-22T13:30:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[OS X Mavericks and the Firefox Build System]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/10/22/os-x-mavericks-and-the-firefox-build-system"><![CDATA[<p>OS X Mavericks is available today as a free upgrade. People at Mozilla
+are probably asking if it is safe to upgrade: will it affect my ability
+to build Firefox.</p>
+<p>A few people (myself included) have been running OS X Mavericks
+developer previews for a few months. I believe all the Firefox build
+system issues have been worked out for at least a few weeks now. So,
+upgrading to OS X Mavericks should not impact your ability to build a
+stock Firefox configuration from mozilla-central.</p>
+<p>There might still be some non-default features and code paths that need
+fixed to work with Mavericks. Support for the OS X 10.9 SDK might also
+be problematic. In addition, if you build older trees such as Aurora
+and Beta, you may run into issues building on Mavericks because those
+trees may not have all required fixes uplifted.</p>
+<p>While I won't encourage you to upgrade, I will say that Mavericks should
+build Firefox without any issue. And since the number of Mavericks users
+will only increase in the days ahead, it should be safe to assume that
+regressions will be promptly fixed.</p>
+<p>If you run into any issues with Firefox and Mavericks,
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=883824">bug 883824</a> is the
+master tracking bug.
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=894090">Bug 894090</a> tracks
+build system issues.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -959,95 +994,5 @@ answering questions like <em>when did bug 123456 ride the trains</em>.</p>
 For example, when I look up a changeset, I want to know the first build
 on the Nightly, Aurora, Beta, and Release channels that change was
 included in.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Mercurial Extension for Gecko Development]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development" />
-    <id>http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development</id>
-    <updated>2013-07-22T10:27:00Z</updated>
-    <published>2013-07-22T10:27:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Mercurial Extension for Gecko Development]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development"><![CDATA[<p>My weekend was spent hacking on Mercurial extensions. First, I worked on
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=827123">porting the pushlog extension off SQLite</a>.
-This will eventually enable Mozilla to move Mercurial hosting off NFS
-and should make <a href="https://hg.mozilla.org/">hg.mozilla.org</a> much faster as
-a result!</p>
-<p>But the main purpose of this blog post is to introduce a new Mercurial
-extension I wrote this weekend!</p>
-<p>Gecko developers perform a number of common tasks with Mercurial, so I
-thought it would be handy to package them up in an extension.</p>
-<p>To install the extension:</p>
-<pre><code>hg clone https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev
-</code></pre>
-<p>Then add this extension to your hgrc file (either the global or
-per-repository will suffice):</p>
-<pre><code>[extensions]
-mozext = /path/to/hgext-gecko-dev
-</code></pre>
-<p>Since I believe tools should be self-documenting, run the following for
-usage info:</p>
-<pre><code>$ hg help mozext
-</code></pre>
-<p>Here are some examples:</p>
-<div class="pygments_murphy"><pre><span class="c"># Clone mozilla-central into the mc directory.</span>
-hg clone central mc
-hg clone mc mc
-
-<span class="c"># Create a unified Mercurial repository containing changesets</span>
-<span class="c"># from all the release repositories.</span>
-hg cloneunified gecko
-
-<span class="c"># Pull changes from the central and inbound repositories.</span>
-hg pull central
-hg pull inbound
-
-<span class="c"># Update the working tree to the tip of inbound.</span>
-hg up inbound/default
-
-<span class="c"># View the tree open/closed status.</span>
-hg treestatus
-
-<span class="c"># Show a list of all known trees and their aliases.</span>
-hg moztrees
-
-<span class="c"># Open TBPL for the push containing a changeset.</span>
-hg tbpl inbound 821e984ef423
-hg tbpl inbound inbound/default
-
-<span class="c"># Push the tip of inbound to mozilla-central</span>
-hg pushtree -r inbound/default central
-</pre></div>
-
-<p>I've only tested this extension with Mercurial 2.6 (which every Mozilla
-developer should be running). I'm not willing to support older versions.
-Upgrade already!</p>
-<p>There are a number of features I'd like to implement:</p>
-<ul>
-<li><strong>hg importtry</strong> - Automatically import changesets for a Try push into
-  the repository.</li>
-<li><strong>hg land</strong> - Automatically land patches on an integration tree (like
-  inbound). Will handle rebasing automatically.</li>
-<li><strong>hg critic</strong> - Perform stlye checking and other analysis on a
-  changeset or group of changesets.</li>
-<li>Ability to integrate build status into changeset info. This will allow
-  things such as <em>pull only the last green changeset</em>. I'd also like a
-  <em>build status</em> field to appear in the log output. Unfortunately, I
-  believe the latency of the build lookup API is prohibitively high to
-  perform the kind of tight integration I'd like.</li>
-<li>Move <em>mozautomation</em> Python package into a standalone package or
-  integrate already existing code (did I reinvent the wheel?).</li>
-<li>Log fetching. Specify a changeset and fetch build/test logs.</li>
-<li>Possibly move code into mozilla-central.</li>
-<li>Possibly add mach commands for some of this functionality.</li>
-</ul>
-<p>There's no bug component for this extension (yet). If you find any
-issues or wish to add a feature, just email a patch to me at gps@mozilla.com.</p>
-<p>Please let me know if you find this useful or if you have any questions.</p>]]></content>
   </entry>
 </feed>
