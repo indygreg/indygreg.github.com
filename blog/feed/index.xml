@@ -10,10 +10,130 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 22 Oct 2013 20:31:29 GMT</pubDate>
+    <pubDate>Thu, 31 Oct 2013 18:40:00 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Distributed Compiling and Firefox</title>
+      <link>http://gregoryszorc.com/blog/2013/10/31/distributed-compiling-and-firefox</link>
+      <pubDate>Thu, 31 Oct 2013 11:35:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[build system]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/10/31/distributed-compiling-and-firefox</guid>
+      <description>Distributed Compiling and Firefox</description>
+      <content:encoded><![CDATA[<p>If you had infinite CPU cores available and the Firefox build system
+could distribute them all for concurrent compilation, Firefox
+clobber build times would likely be 3-5 minutes instead of ~15
+minutes on modern machines. This is a massive win. It therefore
+should come as no surprise that distributed compiling is very
+interesting to us.</p>
+<p>Up until recently, the benefits of distributed compiling in the Firefox
+build system couldn't be fully realized. This was because the build
+system was performing recursive make traversal and make only <em>knew</em>
+about a tiny subset of the tree's total C++ files at one time. For
+example, when visiting <em>/layout/base</em> it only knew about 35 of the
+close to 6000 files that get compiled as part of building Firefox. This
+meant there was a hard ceiling to the max concurrency the build system
+could achieve. This ceiling was often higher than the number of cores in
+an individual machine, so it wasn't a huge issue for single machine
+builds. But it did significantly limit the benefits of distributed
+compiling. This all changed recently.</p>
+<p><strong>As of a few weeks ago, the build system no longer encounters a low
+ceiling preventing distributed compilation from reaping massive
+benefits.</strong> If you have build with <em>make -j128</em>, make will spawn
+128 compiler processes when processing the <em>compile</em> tier (which
+is where most compilation occurs). If your compiler is set to a
+distributed compiler, you will win.</p>
+<p>So, what should you do about it?</p>
+<p>I encourage people to set up distributed compilation <em>networks</em>
+to reap the benefits of distributed compilation. Here are some tools you
+should know about and some things to keep in mind.</p>
+<p><a href="https://code.google.com/p/distcc/">distcc</a> is the tried and proven tool
+for performing distributed compilation. It's heavily used and gets the
+job done. It even works on Windows and can perform remote processing,
+which is a huge win for our tree, where preprocessing can be
+computationally expensive because of excessive includes. But, it has
+a few significant drawbacks. Read the next paragraph.</p>
+<p>I'm personally more excited about
+<a href="https://github.com/icecc/icecream">icecream</a>. It has some very
+compelling advantages to distcc. It has a scheduler that can
+intelligently distribute load between machines. It uses network
+broadcast to discover the scheduler. So, you just start the client
+daemon and if there is a scheduler on the local network, it's all
+set up. Icecream transfers the compiler toolchain between nodes
+so you are guaranteed to have consistent output. (With distcc,
+output may not be idempotent if the nodes aren't homogenous since distcc
+relies on the system-local toolchain. If different versions are
+installed on different nodes, you are out of luck). Icecream also
+supports cross-compiling. In theory, you can have Linux machines
+building for OS X, 32-bit machines building for 64-bit, etc. This
+is all very difficult (if not impossible) to do with distcc.
+Unfortunately, icecream doesn't work on Windows and doesn't appear
+to support server-side preprocessing. Although, I imagine
+both could be made to work if someone put in the effort.</p>
+<p>Distributed compilation is very network intensive. I haven't measured,
+but I suspect Wi-Fi bandwidth and latency constraints might make it
+prohibitive there. It certainly won't be good for Wi-Fi saturation!
+<strong>If you are in a Mozilla office, please do not attempt to perform
+distributed compilation over Wi-Fi!</strong> For the same reasons, distributed
+compilation will likely not benefit you if you are attempting to compile
+on network-distant nodes.</p>
+<p>I have set up an icecream server in the Mozilla San Francisco office. If
+you install the icecream client daemon (iceccd) on your machine, it
+should just work. I'm not sure what broadcast nets are configured as,
+but I've successfully had machines on the 7th floor discover it
+automatically. I guarantee no SLA for this server. Ping me privately
+if you have difficulty connecting.</p>
+<p>I've started very preliminary talks with Mozilla IT about setting up
+dedicated <em>compiler farms</em> in Mozilla offices. I'm not saying this is
+coming any time soon. I feel this will have a major impact on developer
+productivity and I wanted to get the ball rolling months in advance
+so nobody can claim this is a fire drill.</p>
+<p>For distributed compilation to work well, the build system really needs
+to be aware of distributed compilation. For example, to yield the
+benefits of distributed compilation with make, you need to pass -j64 or
+some other large value for concurrency. However, this value would be
+universal for <em>every</em> task in the build. There are still thousands of
+processes that must run locally. Using -j64 on these local tasks could
+cause memory exhaustion, I/O saturation, excessive context switching,
+etc. But if you decrease the concurrency ceiling, you lose the benefits
+of distributed compilation! The build system thus needs to be taught
+when distributed compilation is available and what tasks can be made
+concurrent so it can intelligently adjust the -j concurrency limit at
+run-time. This is why we have a higher-level build wrapper tool: <em>mach
+build</em>. (This is another reason why people should be building through
+mach instead of invoking make directly.)</p>
+<p>No matter what technical solution we employ, I would like the build
+system to automatically discover and use distributed compilation if
+it is available. If we need to hardcode Mozilla IP addresses or
+hostnames into the build system, I'm fine with that. I just don't want
+developers not achieving much-faster build times because they are
+ignorant. If you are in a physical location with distributed compilation
+support, you should get that automatically: fast builds should not be
+hard.</p>
+<p>We can and should investigate distributed compilation as part of release
+automation. Icecream should mitigate the concerns about build
+reproducibility since the toolchain is transferred at build time.</p>
+<p>I have had success getting Icecream to work with Linux builds. However,
+OS X is problematic. Specifically, Icecream is unable to create the
+build environment for distribution (likely modern OS X/Xcode
+compatibility issue). Details are in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=927952">bug 927952</a>.</p>
+<p>Build peers have a lot on our plate this quarter and making distributed
+compilation work well is not in our official goals. <strong>I would love, love,
+love if someone could step up and be a hero to make distributed
+compilation work better with the build system.</strong> If you are interested,
+pop into #build on irc.mozilla.org.</p>
+<p>In summary, there are massive developer productivity wins waiting to be
+realized through distributed compiling. There is nobody tasked to work
+on this officially. Although, I'd love it if there were. If you find
+yourself setting up ad-hoc networks in offices, I'd <em>really</em> like to see
+some kind of discovery in <em>mach</em>. If not, there will be people left
+behind and that really stinks for those individuals. If you do any
+work around distributed compiling, please have it tracked under
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=485559">bug 485559</a>.</p>]]></content:encoded>
+    </item>
     <item>
       <title>OS X Mavericks and the Firefox Build System</title>
       <link>http://gregoryszorc.com/blog/2013/10/22/os-x-mavericks-and-the-firefox-build-system</link>
@@ -897,54 +1017,6 @@ weeks to ensure your Mercurial environment is up to date and properly
 configured.</p>
 <p>I'd like to thank Nick Alexander for sharing my enthusiasm for helping
 contributors and for taking the time to review this work.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Track pushes and train riding with Mercurial</title>
-      <link>http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial</link>
-      <pubDate>Thu, 25 Jul 2013 13:10:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial</guid>
-      <description>Track pushes and train riding with Mercurial</description>
-      <content:encoded><![CDATA[<p>My <a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev">Mercurial extension for Firefox development</a>
-now has an initial implementation of pushlog aggregation and searching.</p>
-<p>You first start by synchronizing the pushlog data on Mozilla's servers
-with the local client:</p>
-<pre><code>hg pushlogsync
-</code></pre>
-<p>This takes a while the first time you run it because it has to download
-all the data. On subsequent runs, it only downloads new data, so it
-should be much faster.</p>
-<p>Then, you can search for the push history of a changeset:</p>
-<div class="pygments_murphy"><pre>$ hg changesetpushes -a b968708558b9
-133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
-
-Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
-http://krijnhoetmer.nl/irc-logs/css/20130205#l-1590
-http://lists.w3.org/Archives/Public/www-style/2013Feb/0392.html
-
-Note that this patch depends on signed integer overflow behavior in C++,
-which I believe is portable despite being unspecified.
-Tree      Date                Username              Build Info
-inbound   2013-02-21T18:12:57 dbaron@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=85b91048c1cd
-central   2013-02-22T09:43:12 ryanvm@gmail.com      https://tbpl.mozilla.org/?tree=Mozilla-Central&amp;rev=3a7d4085787e
-build     2013-02-22T14:31:42 gszorc@mozilla.com    https://tbpl.mozilla.org/?tree=Build-System&amp;rev=3a7d4085787e
-fx-team   2013-02-25T01:04:44 ttaubert@mozilla.com  https://tbpl.mozilla.org/?tree=Fx-Team&amp;rev=31466fd86eb7
-graphics  2013-02-25T20:02:57 mwoodrow@mozilla.com  https://tbpl.mozilla.org/?tree=Graphics&amp;rev=dcf53b7140cd
-ash       2013-02-26T13:50:41 armenzg@mozilla.com   https://tbpl.mozilla.org/?tree=Ash&amp;rev=201b64ad48d8
-services  2013-02-28T09:42:45 Ms2ger@gmail.com      https://tbpl.mozilla.org/?tree=Services-Central&amp;rev=31466fd86eb7
-aurora    2013-04-01T13:50:56 bbajaj@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Aurora&amp;rev=60a3f369ccf0
-beta      2013-05-13T09:59:38 lsblakk@mozilla.com   https://tbpl.mozilla.org/?tree=Mozilla-Beta&amp;rev=60a3f369ccf0
-release   2013-06-17T15:53:19 akeybl@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Release&amp;rev=c54e3363712e
-</pre></div>
-
-<p>(The <em>-a</em> argument prints all trees instead of just the release trees).</p>
-<p>I'd like to integrate bug tracking into the mix to facilitate
-answering questions like <em>when did bug 123456 ride the trains</em>.</p>
-<p>I'd also like to integrate release versions and build IDs into the mix.
-For example, when I look up a changeset, I want to know the first build
-on the Nightly, Aurora, Beta, and Release channels that change was
-included in.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

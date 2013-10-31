@@ -1,0 +1,239 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="distributed-compiling-and-firefox"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/10/31/distributed-compiling-and-firefox" rel="bookmark" title="Permanent Link to Distributed Compiling and Firefox">Distributed Compiling and Firefox</a></h2>
+  <small>October 31, 2013 at 11:35 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2013/10/31/distributed-compiling-and-firefox#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>If you had infinite CPU cores available and the Firefox build system
+could distribute them all for concurrent compilation, Firefox
+clobber build times would likely be 3-5 minutes instead of ~15
+minutes on modern machines. This is a massive win. It therefore
+should come as no surprise that distributed compiling is very
+interesting to us.</p>
+<p>Up until recently, the benefits of distributed compiling in the Firefox
+build system couldn't be fully realized. This was because the build
+system was performing recursive make traversal and make only <em>knew</em>
+about a tiny subset of the tree's total C++ files at one time. For
+example, when visiting <em>/layout/base</em> it only knew about 35 of the
+close to 6000 files that get compiled as part of building Firefox. This
+meant there was a hard ceiling to the max concurrency the build system
+could achieve. This ceiling was often higher than the number of cores in
+an individual machine, so it wasn't a huge issue for single machine
+builds. But it did significantly limit the benefits of distributed
+compiling. This all changed recently.</p>
+<p><strong>As of a few weeks ago, the build system no longer encounters a low
+ceiling preventing distributed compilation from reaping massive
+benefits.</strong> If you have build with <em>make -j128</em>, make will spawn
+128 compiler processes when processing the <em>compile</em> tier (which
+is where most compilation occurs). If your compiler is set to a
+distributed compiler, you will win.</p>
+<p>So, what should you do about it?</p>
+<p>I encourage people to set up distributed compilation <em>networks</em>
+to reap the benefits of distributed compilation. Here are some tools you
+should know about and some things to keep in mind.</p>
+<p><a href="https://code.google.com/p/distcc/">distcc</a> is the tried and proven tool
+for performing distributed compilation. It's heavily used and gets the
+job done. It even works on Windows and can perform remote processing,
+which is a huge win for our tree, where preprocessing can be
+computationally expensive because of excessive includes. But, it has
+a few significant drawbacks. Read the next paragraph.</p>
+<p>I'm personally more excited about
+<a href="https://github.com/icecc/icecream">icecream</a>. It has some very
+compelling advantages to distcc. It has a scheduler that can
+intelligently distribute load between machines. It uses network
+broadcast to discover the scheduler. So, you just start the client
+daemon and if there is a scheduler on the local network, it's all
+set up. Icecream transfers the compiler toolchain between nodes
+so you are guaranteed to have consistent output. (With distcc,
+output may not be idempotent if the nodes aren't homogenous since distcc
+relies on the system-local toolchain. If different versions are
+installed on different nodes, you are out of luck). Icecream also
+supports cross-compiling. In theory, you can have Linux machines
+building for OS X, 32-bit machines building for 64-bit, etc. This
+is all very difficult (if not impossible) to do with distcc.
+Unfortunately, icecream doesn't work on Windows and doesn't appear
+to support server-side preprocessing. Although, I imagine
+both could be made to work if someone put in the effort.</p>
+<p>Distributed compilation is very network intensive. I haven't measured,
+but I suspect Wi-Fi bandwidth and latency constraints might make it
+prohibitive there. It certainly won't be good for Wi-Fi saturation!
+<strong>If you are in a Mozilla office, please do not attempt to perform
+distributed compilation over Wi-Fi!</strong> For the same reasons, distributed
+compilation will likely not benefit you if you are attempting to compile
+on network-distant nodes.</p>
+<p>I have set up an icecream server in the Mozilla San Francisco office. If
+you install the icecream client daemon (iceccd) on your machine, it
+should just work. I'm not sure what broadcast nets are configured as,
+but I've successfully had machines on the 7th floor discover it
+automatically. I guarantee no SLA for this server. Ping me privately
+if you have difficulty connecting.</p>
+<p>I've started very preliminary talks with Mozilla IT about setting up
+dedicated <em>compiler farms</em> in Mozilla offices. I'm not saying this is
+coming any time soon. I feel this will have a major impact on developer
+productivity and I wanted to get the ball rolling months in advance
+so nobody can claim this is a fire drill.</p>
+<p>For distributed compilation to work well, the build system really needs
+to be aware of distributed compilation. For example, to yield the
+benefits of distributed compilation with make, you need to pass -j64 or
+some other large value for concurrency. However, this value would be
+universal for <em>every</em> task in the build. There are still thousands of
+processes that must run locally. Using -j64 on these local tasks could
+cause memory exhaustion, I/O saturation, excessive context switching,
+etc. But if you decrease the concurrency ceiling, you lose the benefits
+of distributed compilation! The build system thus needs to be taught
+when distributed compilation is available and what tasks can be made
+concurrent so it can intelligently adjust the -j concurrency limit at
+run-time. This is why we have a higher-level build wrapper tool: <em>mach
+build</em>. (This is another reason why people should be building through
+mach instead of invoking make directly.)</p>
+<p>No matter what technical solution we employ, I would like the build
+system to automatically discover and use distributed compilation if
+it is available. If we need to hardcode Mozilla IP addresses or
+hostnames into the build system, I'm fine with that. I just don't want
+developers not achieving much-faster build times because they are
+ignorant. If you are in a physical location with distributed compilation
+support, you should get that automatically: fast builds should not be
+hard.</p>
+<p>We can and should investigate distributed compilation as part of release
+automation. Icecream should mitigate the concerns about build
+reproducibility since the toolchain is transferred at build time.</p>
+<p>I have had success getting Icecream to work with Linux builds. However,
+OS X is problematic. Specifically, Icecream is unable to create the
+build environment for distribution (likely modern OS X/Xcode
+compatibility issue). Details are in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=927952">bug 927952</a>.</p>
+<p>Build peers have a lot on our plate this quarter and making distributed
+compilation work well is not in our official goals. <strong>I would love, love,
+love if someone could step up and be a hero to make distributed
+compilation work better with the build system.</strong> If you are interested,
+pop into #build on irc.mozilla.org.</p>
+<p>In summary, there are massive developer productivity wins waiting to be
+realized through distributed compiling. There is nobody tasked to work
+on this officially. Although, I'd love it if there were. If you find
+yourself setting up ad-hoc networks in offices, I'd <em>really</em> like to see
+some kind of discovery in <em>mach</em>. If not, there will be people left
+behind and that really stinks for those individuals. If you do any
+work around distributed compiling, please have it tracked under
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=485559">bug 485559</a>.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2013/10/31/distributed-compiling-and-firefox";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
