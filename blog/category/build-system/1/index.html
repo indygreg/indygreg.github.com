@@ -50,6 +50,405 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="macbook-pro-firefox-build-times-comparison"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/11/05/macbook-pro-firefox-build-times-comparison" rel="bookmark" title="Permanent Link to MacBook Pro Firefox Build Times Comparison">MacBook Pro Firefox Build Times Comparison</a></h2>
+  <small>November 05, 2013 at 10:00 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2013/11/05/macbook-pro-firefox-build-times-comparison#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Many developers use MacBook Pros for day-to-day Firefox development.
+So, I thought it would be worthwhile to perform a comparison of
+Firefox build times for various models of MacBook Pros.</p>
+<h2>Test setup</h2>
+<p>The numbers in this post are obtained from 3 generations of MacBook
+Pros:</p>
+<ol>
+<li>
+<p>A 2011 Sandy Bridge 4 core x 2.3 GHz with 8 GB RAM and an aftermarket
+   SSD.</p>
+</li>
+<li>
+<p>A 2012 Ivy Bridge retina with 4 core x 2.6 GHz, 16 GB RAM, and a
+   factory SSD (or possibly flash storage).</p>
+</li>
+<li>
+<p>A 2013 Haswell retina with 4 core x 2.6 GHz, 16 GB RAM, and flash
+   storage.</p>
+</li>
+</ol>
+<p>All machines were running OS X 10.9 Mavericks and were using the
+Xcode 5.0.1 toolchain (<em>Xcode 5 clang: Apple LLVM version 5.0
+(clang-500.2.79) (based on LLVM 3.3svn)</em>) to build.</p>
+<p>The power settings prevented machine sleep and machines were plugged
+into A/C power during measuring. I did not use the machines while
+obtaining measurements.</p>
+<p>The 2012 and 2013 machines were very vanilla OS installs. However,
+the 2011 machine was my primary work computer and may have had a
+few background services running and may have been slower due to
+normal wear and tear. The 2012 machine was a loaner machine from
+IT and has an unknown history.</p>
+<p>All data was obtained from mozilla-central revision d4a27d8eda28.</p>
+<p>The mozconfig used contained:</p>
+<p>export MOZ_PSEUDO_DERECURSE=1
+  mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-firefox.noindex</p>
+<p>Please note that the objdir name ends with <em>.noindex</em> to prevent Finder
+from indexing build files.</p>
+<p>I performed all tests multiple times and used the fastest time. I used
+<em>time</em> command for obtaining measurements of wall, user, and system
+time.</p>
+<h2>Results</h2>
+<h3>Configure Times</h3>
+<p>The result of <em>mach configure</em> is as follows:</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>29.748</td>
+    <td>17.921</td>
+    <td>11.644</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>26.765</td>
+    <td>15.942</td>
+    <td>10.501</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>21.581</td>
+    <td>12.597</td>
+    <td>8.595</td>
+  </tr>
+</table>
+
+<h3>Clobber build no ccache</h3>
+<p><em>mach build</em> was performed <em>after</em> running <em>mach configure</em>. ccache was
+not enabled.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+    <th>Total CPU time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>22:29 (1349)</td>
+    <td>145:35 (8735)</td>
+    <td>12:03 (723)</td>
+    <td>157:38 (9458)</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>15:00 (900)</td>
+    <td>94:18 (5658)</td>
+    <td>8:14 (494)</td>
+    <td>102:32 (6152)</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>11:13 (673)</td>
+    <td>69:55 (4195)</td>
+    <td>6:04 (364)</td>
+    <td>75:59 (4559)</td>
+  </tr>
+</table>
+
+<h3>Clobber build with empty ccache</h3>
+<p><em>mach build</em> was performed <em>after</em> running <em>mach configure</em>. ccache was
+enabled. The ccache ccache was cleared before running <em>mach configure</em>.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+    <th>Total CPU time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>25:57 (1557)</td>
+    <td>161:30 (9690)</td>
+    <td>18:21 (1101)</td>
+    <td>179:51 (10791)</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>16:58 (1018)</td>
+    <td>104:50 (6290)</td>
+    <td>12:32 (752)</td>
+    <td>117:22 (7042)</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>12:59 (779)</td>
+    <td>79:51 (4791)</td>
+    <td>9:24 (564)</td>
+    <td>89:15 (5355)</td>
+  </tr>
+</table>
+
+<h3>Clobber build with populated ccache</h3>
+<p><em>mach build</em> was performed after running <em>mach configure</em>. ccache was
+enabled and the ccache was populated with the results of a prior build.
+In theory, all compiler invocations should be serviced by ccache
+entries.</p>
+<p>This measure is a very crude way to measure how fast clobber builds
+would be if compiler invocations were nearly instantaneous.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>3:59 (239)</td>
+    <td>8:04 (484)</td>
+    <td>3:21 (201)(</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>3:11 (191)</td>
+    <td>6:45 (405)</td>
+    <td>2:53 (173)</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>2:31 (151)</td>
+    <td>5:22 (322)</td>
+    <td>2:12 (132)</td>
+  </tr>
+</table>
+
+<h3>No-op builds</h3>
+<p><em>mach build</em> was performed on a tree that was already built.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>1:58 (118)</td>
+    <td>2:25 (145)</td>
+    <td>0:41 (41)</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>1:42 (102)</td>
+    <td>2:02 (122)</td>
+    <td>0:37 (37)</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>1:20 (80)</td>
+    <td>1:39 (99)</td>
+    <td>0:28 (28)</td>
+  </tr>
+</table>
+
+<h3>binaries no-op</h3>
+<p><em>mach build binaries</em> was performed on a fully built tree. This results
+in nothing being executed. It's a way to test the overhead of the
+<em>binaries</em> make target.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>4.21</td>
+    <td>4.38</td>
+    <td>0.92</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>3.17</td>
+    <td>3.37</td>
+    <td>0.71</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>2.67</td>
+    <td>2.75</td>
+    <td>0.56</td>
+  </tr>
+</table>
+
+<h3>binaries touch single .cpp</h3>
+<p><em>mach build binaries</em> was performed on a fully built tree after touching
+the file <em>netwerk/dns/nsHostResolver.cpp</em>. ccache was enabled but
+cleared before running this test. This test simulates common C++
+developer workflow of changing C++ and recompiling.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>12.89</td>
+    <td>13.88</td>
+    <td>1.96</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>10.82</td>
+    <td>11.63</td>
+    <td>1.78</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>8.57</td>
+    <td>9.29</td>
+    <td>1.23</td>
+  </tr>
+</table>
+
+<h3>Tier times</h3>
+<p>The times of each build system <em>tier</em> were measured on the 2013 Haswell
+MacBook Pro. These timings were obtained out of curiosity to help
+isolate the impact of different parts of the build. ccache was not
+enabled for these tests.</p>
+<table border="1">
+  <tr>
+    <th>Action</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+    <th>Total CPU time</th>
+  </tr>
+  <tr>
+    <td>export clobber</td>
+    <td>15.75</td>
+    <td>66.11</td>
+    <td>11.33</td>
+    <td>77.44</td>
+  </tr>
+  <tr>
+    <td>compile clobber</td>
+    <td>9:01 (541)</td>
+    <td>64:58 (3898)</td>
+    <td>5:08 (308)</td>
+    <td>70:06 (4206)</td>
+  </tr>
+  <tr>
+    <td>libs clobber</td>
+    <td>1:34 (94)</td>
+    <td>2:15 (135)</td>
+    <td>0:39 (39)</td>
+    <td>2:54 (174)</td>
+  </tr>
+  <tr>
+    <td>tools clobber</td>
+    <td>9.33</td>
+    <td>13.41</td>
+    <td>2.48</td>
+    <td>15.89</td>
+  </tr>
+  <tr>
+    <td>export no-op</td>
+    <td>3.01</td>
+    <td>9.72</td>
+    <td>3.47</td>
+    <td>13.19</td>
+  </tr>
+  <tr>
+    <td>compile no-op</td>
+    <td>3.18</td>
+    <td>18.02</td>
+    <td>2.64</td>
+    <td>20.66</td>
+  </tr>
+  <tr>
+    <td>libs no-op</td>
+    <td>58.2</td>
+    <td>46.9</td>
+    <td>13.4</td>
+    <td>60.3</td>
+  </tr>
+  <tr>
+    <td>tools no-op</td>
+    <td>8.82</td>
+    <td>12.68</td>
+    <td>1.72</td>
+    <td>14.40</td>
+  </tr>
+</table>
+
+<h2>Observations and conclusions</h2>
+<p>The data speaks for itself: <strong>the 2013 Haswell MacBook Pro is
+significantly faster than its predecessors.</strong> It clocks in at 2x faster
+than the benchmarked 2011 Sandy Bridge model (keep in mind the 300 MHz
+base clock difference) and is ~34% faster than the 2012 Ivy Bridge (at
+similar clock speed). Personally, I was surprised by this. I was
+expecting speed improvements over Ivy Bridge, but not 34%.</p>
+<p>It should go without saying: <strong>if you have the opportunity to upgrade
+to a new, Haswell-based machine: do it.</strong> If possible, purchase
+the upgrade to a 2.6 GHz CPU, as it contains ~13% more MHz than the
+base 2.3 GHz model: this will make a measurable difference in build
+times.</p>
+<p>It's worth noting the increased efficiency of Haswell over its
+predecessors. The total CPU time required to build decreased from ~158
+minutes to ~103 minutes to 76 minutes! That 76 minute number is worth
+highlighting because it means if we get 100% CPU saturation during
+builds, we'll be able to build the tree in under 10 wall time minutes!</p>
+<p>I hadn't performed crude benchmarks of high-level build system actions
+since the <em>MOZ_PSEUDO_DERECURSE</em> work landed and I wanted to use the
+opportunity of this hardware comparison to grab some numbers.</p>
+<p>The overhead of ccache continues to surprise me. On the 2013
+machine, enabling ccache increased the wall time of a clobber build by
+1:46 and added 13:16 of CPU time. This is an increase of 16% and 17%,
+respectively.</p>
+<p>It's worth highlighting just how much time is spent compiling C/C++. In
+our artificial tier measuring results, our clobber build time was ~660
+wall time seconds (11 minutes) and used ~4473s CPU time (74:33). Of
+this, 9:01 wall time and 70:06 CPU time was spent compiling C/C++. This
+represents ~82% wall time and ~94% CPU time! Please note this does not
+include linking. <strong>Anything we can do to decrease the CPU time used by
+the compiler will make the build faster.</strong></p>
+<p>I also found it interesting to note variances in obtained times. Even on
+my brand new 2013 Haswell MacBook Pro where I know there aren't many
+background processes running, wall times could vary significantly. I
+<em>think</em> I isolated it to CPU bursting and heat issues. If I wait a few
+minutes between CPU intensive tests, results are pretty consistent. But
+if I perform CPU intensive tests back-to-back, the run times often vary.
+The only other thing coming into play could be page caching or
+filesystem indexing. I accounted for the latter by disabling Finder
+on the object directory. And, I'd like to think that flash storage is
+fast enough to remove I/O latency from the equation. Who knows. At the
+end of the day, laptops aren't servers and OS X is a consumer OS, so I
+don't expect ultra consistency.</p>
+<p>Finally, I want to restate just how fast Haswell is. If you have the
+opportunity to upgrade, do it.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/05/macbook-pro-firefox-build-times-comparison#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="distributed-compiling-and-firefox"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/10/31/distributed-compiling-and-firefox" rel="bookmark" title="Permanent Link to Distributed Compiling and Firefox">Distributed Compiling and Firefox</a></h2>
   <small>October 31, 2013 at 11:35 AM | categories: 
@@ -930,298 +1329,6 @@ something to say.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="moz.build-files-and-the-firefox-build-system"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/02/28/moz.build-files-and-the-firefox-build-system" rel="bookmark" title="Permanent Link to moz.build Files and the Firefox Build System">moz.build Files and the Firefox Build System</a></h2>
-  <small>February 28, 2013 at 07:45 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The next time you update mozilla-central you may notice some significant
-changes with the build system. That's because this morning we finally
-landed the start of a massive overhaul of the build system! There are
-many end goals to this effort. The important ones for most will be
-faster build times and a build system that is friendlier to make changes
-to.</p>
-<h2>Introducing moz.build Files</h2>
-<p>If you look in the tree, you'll notice that nearly every directory
-now has a <em>moz.build</em> file.</p>
-<p><em>moz.build</em> files are what we are using to define the build system. Think of
-them each as a descriptor that describes how to build its own part of the
-tree. An individual <em>moz.build</em> file will contain the C++ sources to
-compile, the headers to export, the tests to run, etc. Eventually.
-Currently, they are limited to directory traversal information.</p>
-<p><em>moz.build</em> files essentially add a level of indirection between the
-build system definition and how the tree is actually built. Before
-<em>moz.build</em> files, the same metadata we are now capturing in <em>moz.build</em>
-files (or plan to capture) was captured in <em>Makefile.in</em> files. We
-performed simple variable substitution on these <em>Makefile.in</em> files to
-produce <em>Makefile</em> files in the object directory. These <em>Makefile</em> files
-were used by GNU Make (or Pymake on Windows) to build the tree.</p>
-<p>As I outlined in <a href="/blog/2012/06/25/improving-mozilla's-build-system/">Improving Mozilla's Build System</a>,
-<em>Makefile.in</em> are suboptimal for a number of reasons. The important
-bit is they essentially tie us to the use of make (recursive or otherwise).
-We are very interested in supporting modern build systems such as Tup
-(the theory being they will build the tree faster).</p>
-<p>Enter <em>moz.build</em> files. Storing our build configuration in
-<em>moz.build</em> files allows us to decouple the definition of the build
-system from the tool used to build it.</p>
-<h2>How moz.build Files Work</h2>
-<p>At the tail end of <em>configure</em>, the build system invokes the
-<em>config.status</em> script in the object directory. The role of
-<em>config.status</em> is to combine the information collected during
-<em>configure</em> with the build configuration obtained from <em>moz.build</em> files
-and take the necessary actions to ensure the build backend (make) can
-build the tree.</p>
-<p>Before today, <em>config.status</em> essentially iterated over the source tree
-and converted <em>Makefile.in</em> files to <em>Makefile</em> in the object directory.
-Things are now slightly more complicated with <em>moz.build</em> files.</p>
-<p>When <em>config.status</em> runs, it starts with the
-<a href="https://hg.mozilla.org/mozilla-central/file/87de54667483/moz.build">root moz.build</a>
-from the source tree. It feeds this file into a Python interpreter. It
-then looks for special variables like <em>DIRS</em> and <em>PARALLEL_DIRS</em> to determine
-which directories contain additional <em>moz.build</em> files. It then descends
-into all the referenced directories, reading their <em>moz.build</em> files.
-While this is happening, we are converting the results of each
-<em>moz.build</em> file execution into <em>backend.mk</em> files that make knows how
-to build. It also performs the <em>Makefile.in</em> to <em>Makefile</em> conversion
-like it always has. When the whole process has finished, the object
-directory contains a bunch of <em>Makefile</em> and <em>backend.mk</em> files. make
-runs like it always has. The only real difference is some variables are
-coming from the <em>moz.build</em>-derived <em>backend.mk</em> files instead of
-<em>Makefile</em>.</p>
-<p>This is just a brief overview, of course. If you want to know more,
-see the code in <em>/python/mozbuild/mozbuild/frontend</em> and
-<em>/python/mozbuild/mozbuild/backend</em>.</p>
-<h2>Build System Future</h2>
-<p>With the introduction of <em>moz.build</em> files, the intent is to <strong>eventually
-completely eliminate Makefile.in and have all the build definition live
-in moz.build files.</strong></p>
-<p>Doing this all at once would have been next to impossible. So, we
-decided to eliminate <em>Makefile.in</em> gradually. The first step is what
-landed today: essentially moving <em>DIRS</em> variables out of <em>Makefile.in</em>
-and into <em>moz.build</em> files. Next, we will be eliminating empty
-<em>Makefile.in</em> (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844635">bug 844635</a>)
-and will be moving more parts of the build definition from <em>Makefile.in</em>
-to <em>moz.build</em> files. The next part to move over will likely be IDLs
-(<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=818246">bug 818246</a>).
-After that, it may be exported files (<em>EXPORTS</em> in <em>Makefile.in</em>
-parlance). And repeat until we have no more <em>Makefile.in</em> in the tree.</p>
-<p>Each migration of build definition data to <em>moz.build</em> files will likely
-occur in two phases:</p>
-<ol>
-<li>A largely mechanical move of the variables from <em>Makefile.in</em> to
-   <em>moz.build</em>.</li>
-<li>Better build backend integration resulting from the move.</li>
-</ol>
-<p>In phase #1, we will essentially cut and paste variable assignments to
-<em>moz.build</em> files. make will read the same variables it does today and
-perform the same actions. The only difference is the values in these
-variables will be defined in <em>moz.build</em> files.</p>
-<p>In phase #2, we will leverage the fact that our build definition now has
-an API. We will change our existing make backend to be more efficient.
-For example, we should soon be able to compile IDLs and copy exported
-headers without make traversing through the directory tree at build time.
-We will be able to do this because the <em>moz.build</em> traversal at
-pre-build time sees data from all <em>moz.build</em> files and with this
-<em>complete world view</em> is able to produce more optimal make files than
-what you would get if you recursed into multiple directories. In short:
-it will make the build faster.</p>
-<p>Once we have a sufficient portion of the build definition moved to
-<em>moz.build</em> files we will be able to experiment with new build backends
-(like Tup), look into automatic Visual Studio project generation, and
-more easily experiment with different ways of building (such as
-precompiled headers, fewer compiler process invocations, etc). These
-should all contribute to faster build times.</p>
-<h2>Frequently Asked Questions</h2>
-<h4>What impact will I see from this change?</h4>
-<p>If you never touched <em>Makefile.in</em> files in the tree, you should not
-notice anything different about how the tree builds or how the build
-system works. You should have nothing to fear.</p>
-<p>The most obvious changes to the source tree are:</p>
-<ol>
-<li>There is a <em>moz.build</em> file in almost every directory now.</li>
-<li>The variables related to directory traversal (those containing <em>DIRS</em>
-   in their name) are now defined in <em>moz.build</em> files instead of
-   <em>Makefile.in</em>.</li>
-<li>If your <em>Makefile.in</em> contains a variable that has been moved to
-   <em>moz.build</em> files, make will spew an error when processing that file
-   and the build will fail.</li>
-</ol>
-<h4>Will this change how I build?</h4>
-<p>It shouldn't. You should build the tree just like you always have. Most
-of you won't notice any differences.</p>
-<p>If you see something weird, speak up in #build or file a bug if you are
-really confident it is wrong.</p>
-<h4>What are the risks to this change?</h4>
-<p>The migration of variables from <em>Makefile.in</em> to <em>moz.build</em> files is
-largely mechanical and significant portions are done manually. This can
-be a mind-numbing and tedious process. Not helping things is the fact
-that Splinter's review interface for these kinds of patches is hard to
-read.</p>
-<p>This all means that there is a non-trivial risk for <em>transcription</em>
-errors. All it takes is an inverted conditional block and all of a
-sudden large parts of the tree are no longer built, for example.</p>
-<p>We have established <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=846425">bug 846825</a>
-to investigate any oddities from the initial transfer. Developers are
-encouraged to help with the effort. Please spot check that your
-directories are still being built, tests run, etc. Pay special attention
-to changes made in the last 4 months as these parts of <em>Makefile.in</em>
-would have been bit rotted and more prone to data loss.</p>
-<p>Parts of the tree not enabled in standard configurations are more prone
-to breakage due to less testing. i.e. build configurations not captured
-by TBPL have a higher chance of breaking.</p>
-<h4>Will this make the tree build faster?</h4>
-<p>Not yet. But eventually it will. This initial landing paves the
-groundwork to making the tree build faster (see the <em>Future</em> section
-above).</p>
-<h4>I see a lot of empty moz.build files!</h4>
-<p>Yes. Sorry about that. The good news is they shouldn't be empty for
-long. As things move from <em>Makefile.in</em> to <em>moz.build</em> we'll see fewer
-and fewer empty <em>moz.build</em> files. We'll also see fewer and fewer
-<em>Makefile.in</em> files once we start deleting empty <em>Makefile.in</em>.</p>
-<p>If you want to know why we must have empty files, it's mainly for
-validation. If we allowed <em>moz.build</em> files to be optional, how would
-you detect a typo in a directory name? Directory exists? What if that
-directory exists but isn't supposed to have a <em>moz.build</em> file?</p>
-<h4>You bitrotted my patches!</h4>
-<p>Yes. I'm sorry. The transition period to <em>moz.build</em> files could be a
-little messy. There will be lots of changes to <em>Makefile.in</em> and
-<em>moz.build</em> files and lots of chances for bit rot. Uplifts could be
-especially nasty. (Although I don't believe many uplifts involve
-significant changes to the build configuration.)</p>
-<p>This all means there is a strong incentive for us to complete the
-transition as quickly as possible.</p>
-<h4>Can I help with the transition to moz.build files?</h4>
-<p>Yes!</p>
-<p>The transition is largely mechanical (at least phase #1). If you are
-interested in moving a variable or set of variables, hop in #build on
-IRC and speak up!</p>
-<h4>You said moz.build files are actually Python files?!</h4>
-<p>Yes they are! However, they are executed in a very tightly controlled
-sandbox. You can't import modules, open files, etc. UPPERCASE variable
-names are reserved and only a few functions are exposed. If you attempt
-to assign to an unknown UPPERCASE variable or assign an invalid value,
-an error will occur. This is already much better than Makefile because
-we can now detect errors earlier in the build process (rather than 15
-minutes into a build).</p>
-<h4>What variables and functions are available in moz.build files?</h4>
-<p>If you run |./mach mozbuild-reference| you will see a print-out of
-all the variables, functions, and symbols that are exposed to the Python
-sandbox that moz.build files execute in. There are even tests that will
-fail the build if the sandbox contains symbols not in this output!</p>
-<p>The output should be valid reSTructuredText (in case you want to convert
-to HTML for reading in your browser).</p>
-<h4>What if a moz.build file contains an error?</h4>
-<p>The build will break.</p>
-<p>A lot of work has gone into making the output of moz.build errors human
-friendly and actionable. If you do something wrong, it won't just
-complain: it will tell you how to fix it!</p>
-<h4>Besides build times, how else will this improve the build system?</h4>
-<p>There are several ways!</p>
-<p>As mentioned above, moz.build are more strict about what data is allowed
-to be defined. If you assign to an UPPERCASE variable, that variable
-must be known to the sandbox or else the assignment will error. This
-means that if you assign to an UPPERCASE variable, you know it has a
-side-effect. No more cargo culting of old, meaningless variables!</p>
-<p>To change the behavior of moz.build files (add new variables or
-functions, change how makefile generation works, etc) will require
-changes to the code in /python/mozbuild. This code belongs squarely to
-the build module and requires appropriate review. A problem with
-Makefiles is that they have lots of foot guns by default and its easy
-for self-inflicted wounds to land in the tree without explicit build
-peer review. This problem largely goes away with moz.build files because
-the sandbox takes away all of make's foot guns.</p>
-<p>The output of a moz.build execution is essentially a static data
-structure. It's easy to validate them for conformance. If we discover
-bad practices in our build definition, we can centrally add tests for
-them and enforce best practices.</p>
-<p>We will also see user experience wins by moving data to moz.build files.
-Take mochitests for an example. We currently have several flavors
-(plain, browser, chrome, etc). Sometimes you cannot distinguish the
-flavor by the filename alone. With moz.build files, it will be easier to
-answer questions like "what mochitest flavor is this file?" mach could
-hook into this so you can type |mach mochitest path/to/file.html|
-instead of |mach mochitest-plain path/to/file.html|. Even better, you
-should just be able to type |mach path/to/test.html| and mach knows from
-the build definition that path/to/test.html is a plain mochitest file
-and assumes you want to run it. There are dozens of small development
-workflow wins to be gained here!</p>
-<h4>If I change a moz.build file, what happens?</h4>
-<p>If you change a moz.build file, then make should detect that it
-has changed and it will update the dynamically generated <em>backend.mk</em>
-file and reinvoke the requested build action. This should all happen
-automatically (just like <em>Makefile.in</em> to <em>Makefile</em> conversion works
-automatically).</p>
-<h4>My build seems to pause for a few seconds before starting!</h4>
-<p>A change to <em>any</em> moz.build file will cause a full traversal of the
-entire moz.build tree. On modern machines, this should only take 1-3
-seconds. If your source tree is not in the page cache (and you need
-to load moz.build files from disk) or if you are on older hardware, this
-could be a little slower.</p>
-<p>This is an unfortunate side-effect of having a whole world view of the
-build definition. The build delay incurred by these full scans should
-eventually be cancelled out by build backend optimizations resulting
-from having this whole world view, however.</p>
-<p>The good news is this full scan should only occur if a mozbuild file
-changes. And, if you are performing make recursion, it should only
-happen once (not in every directory). If you notice multiple moz.build
-scanning-related pauses during builds, please file a bug in Core ::
-Build Config!</p>
-<p>Finally, we are performing the reads on a single thread currently. We
-can throw more cores at the task if someone codes up a patch.</p>
-<h4>What happened to allmakefiles.sh?</h4>
-<p>It has been sacked. allmakefiles.sh was an optimization to perform all
-the Makefile.in to Makefile conversion in one go. The directory
-traversal performed by moz.build reading effectively replaces the role
-of allmakefiles.sh. Not only that, but the moz.build build definition is
-always up to date! allmakefiles.sh was typically out of sync with
-reality and was a burden to maintain.</p>
-<h4>Did we just invent our own build system?</h4>
-<p>Kinda. We invented a generic Python sandboxing infrastructure. Then we
-hooked up code to populate it with variables from our build system and
-told it how to perform file traversal by reading specific variables set
-during file execution. Then we hooked up code for taking the evaluated
-results of all those sandboxes and convert them into make files.</p>
-<p>Conceptually, what we invented is like GYP but with a different config
-file format. We have dabbled with the idea of converting the parsed
-build definition into GYP classes and then leveraging GYP to produce
-Makefiles, Ninja files, Visual Studio Projects, etc. This would an
-interesting experiment!</p>
-<p>If you want to call it a build system, call it a build system. However,
-it is currently tightly coupled to Mozilla's needs, so you can't just
-use it anywhere. The concept might be worth exploring, however.</p>
-<h4>Is there anything else you'd like to share?</h4>
-<p>I think we set the record for most parts in a bug: 61. Although, they
-are numbered 1-17, 19-20. Part 18 has 30+ sub-parts using letters from
-the English and Greek alphabet for identifiers. Part 61 uses the
-infinity symbol as its number. See the
-<a href="https://hg.mozilla.org/mozilla-central/pushloghtml?changeset=c65d59d33aa8">pushlog</a>.</p>
-<p>Finally, I'd like to thank everyone who helped with this effort. The bug
-itself was <em>only</em> 6 months old and had active development off and on for
-a lot of it. Ted Mielczarek and Mike Hommey provided invaluable feedback
-on the core build system patches. A number of module owners stepped in
-to lend eyes to the mechanical conversion of their files. Last but not
-least, Ms2ger provided invaluable review aid on many of the patches. The
-work was so good that we all agreed that an Ms2ger f+ was good enough
-for a build peer rs! If reviewing the patches wasn't enough, Ms2ger
-also oversaw the tree closure and merging of the landing. I don't know
-how I will repay this debt.</p>
-<h4>Any more questions?</h4>
-<p>If you have more questions, drop in #build on irc.mozilla.org and ask
-away.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/02/28/moz.build-files-and-the-firefox-build-system#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/build-system/2">Next Page »</a>
 
