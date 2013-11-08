@@ -175,6 +175,26 @@ command line), you can save them as <em>style files</em>. Search
 to learn how to use them. You can even change your default style so
 the default output from <em>hg log</em> contains everything you'd ever want to
 know about a changeset!</p>
+<h2>Keeping it running</h2>
+<p>Many of the queries rely on data derived from multiple repositories and
+pushlog data that is external to the repository.</p>
+<p>To get best results, you'll need to be running a monolithic/unified
+Mercurial repository. You can either assemble one locally with this
+extension by periodically pulling from the separate repos:</p>
+<pre><code>hg pull releases
+hg pull integration
+</code></pre>
+<p>Or, you can pull from
+<a href="http://hg.gregoryszorc.com/gecko">my personal unified repo</a>.</p>
+<p>You will also need to ensure the pushlog data is current. If you pull
+directly from the official repos, this will happen automatically. To be
+sure, run:</p>
+<pre><code>hg pushlogsync
+</code></pre>
+<p>Finally, you can force a repopulation of cached bug data by running:</p>
+<pre><code>hg buginfo --reset
+</code></pre>
+<p>Over time, I want all this to automagically work. Stay tuned.</p>
 <h2>Comments and future improvements</h2>
 <p>I implemented this feature to save myself from having to go troving
 through Bugzilla and repository history to answer questions and to
