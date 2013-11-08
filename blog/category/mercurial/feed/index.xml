@@ -10,10 +10,30 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 08 Nov 2013 18:03:29 GMT</pubDate>
+    <pubDate>Fri, 08 Nov 2013 22:32:18 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Mercurial 2.8 released</title>
+      <link>http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released</link>
+      <pubDate>Fri, 08 Nov 2013 14:30:00 PST</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released</guid>
+      <description>Mercurial 2.8 released</description>
+      <content:encoded><![CDATA[<p><a href="http://mercurial.selenic.com/">Mercurial</a> 2.8 has been released.</p>
+<p>The <a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_2.8_.282013-11-1.29">changes</a>
+aren't as sexy as previous releases. But there are a handful of bug
+fixes that seem useful to pull in. People may also find the new <em>shelve</em>
+extension useful.</p>
+<p>I encourage Mozillians to keep their Mercurial up to date. I once went
+around the San Francisco office and stood behind people as they
+upgraded to a modern Mercurial. For the next few weeks I was hearing a
+lot of "OMG Mercurial is so much better now." Don't handicap yourself by
+running an older, buggy Mercurial.</p>
+<p>If you don't yet feel comfortable running 2.8, 2.7 should be safe.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Using Mercurial to query Mozilla metadata</title>
       <link>http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata</link>

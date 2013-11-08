@@ -10,10 +10,30 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 08 Nov 2013 18:03:29 GMT</pubDate>
+    <pubDate>Fri, 08 Nov 2013 22:32:18 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Mercurial 2.8 released</title>
+      <link>http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released</link>
+      <pubDate>Fri, 08 Nov 2013 14:30:00 PST</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released</guid>
+      <description>Mercurial 2.8 released</description>
+      <content:encoded><![CDATA[<p><a href="http://mercurial.selenic.com/">Mercurial</a> 2.8 has been released.</p>
+<p>The <a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_2.8_.282013-11-1.29">changes</a>
+aren't as sexy as previous releases. But there are a handful of bug
+fixes that seem useful to pull in. People may also find the new <em>shelve</em>
+extension useful.</p>
+<p>I encourage Mozillians to keep their Mercurial up to date. I once went
+around the San Francisco office and stood behind people as they
+upgraded to a modern Mercurial. For the next few weeks I was hearing a
+lot of "OMG Mercurial is so much better now." Don't handicap yourself by
+running an older, buggy Mercurial.</p>
+<p>If you don't yet feel comfortable running 2.8, 2.7 should be safe.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Using Mercurial to query Mozilla metadata</title>
       <link>http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata</link>
@@ -1460,50 +1480,6 @@ I don't think you'll be disappointed after upgrading.</p>
 <p>If you don't run Ubuntu, you should still run <strong>mach bootstrap</strong>
 periodically to ensure your system has the optimal packages for
 developing Firefox.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Hosting Mozilla services with Stackato</title>
-      <link>http://gregoryszorc.com/blog/2013/09/04/hosting-mozilla-services-with-stackato</link>
-      <pubDate>Wed, 04 Sep 2013 15:07:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/09/04/hosting-mozilla-services-with-stackato</guid>
-      <description>Hosting Mozilla services with Stackato</description>
-      <content:encoded><![CDATA[<p>Many people have written custom web services related to Mozilla
-projects. Cool! However, many of these services live on random hosts
-scattered around the internets. These hosts can have frequent downtime,
-cost Mozilla contributors time and money to operate, and can be hard to
-discover and trust (I don't want to give my LDAP credentials to a
-non-Mozilla server).</p>
-<p>Did you know Mozilla operates a Platform-as-a-Service (PaaS)
-infrastructure that allows Mozillians to host web services and daemons
-on the internets (similar to how EC2 works). Until recently, I didn't
-either!</p>
-<p>If you are a Mozilla employee, learn more about
-<a href="https://mana.mozilla.org/wiki/display/websites/paas.allizom.org">paas.allizom.org</a>.
-(To non-employees, unfortunately it appears you can't use this yet. And
-I'm not sure what the plans for that are.)</p>
-<p>This service is actually a Mozilla-hosted <a href="http://www.activestate.com/stackato">Stackato</a>
-instance. You set up your client with your LDAP credentials, provision
-services such as PostgreSQL, memcache, MySQL, etc and deploy
-applications - either web applications or standalone daemons. The
-runtime environment supports nearly everything under the sun - Python,
-Node.js, Ruby, Perl, PHP, Java, etc. You write an application, drop a
-few files in the project to describe how to deploy it to Stackato, push
-it, and <em>it just works.</em> Web applications even get an HTTPS endpoint
-with a valid root CA chained certificate!</p>
-<p>I recently used this service to power my Django-based
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/automation-dashboard/">automation-dashboard</a>
-project. Aside from the initial hurdles figuring out how Django works
-(this was the first Django project I've written) and how to hook Django
-up to Stackato, I'm pretty impressed with the results. Free web hosting
-with database access!</p>
-<p>For me, the selling point of this service is that apparently the
-transition plan from Stackato-hosted service to IT-managed service is
-relatively pain free. Since you must perform all the steps to
-isolate/package your application for Stackato, it's relatively easy for
-IT to deploy your application.</p>
-<p>I encourage Mozillians to look into using this PaaS service for their
-Mozilla service hosting needs.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

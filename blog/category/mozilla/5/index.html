@@ -50,6 +50,299 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mozilla-build-system-brain-dump"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/05/13/mozilla-build-system-brain-dump" rel="bookmark" title="Permanent Link to Mozilla Build System Brain Dump">Mozilla Build System Brain Dump</a></h2>
+  <small>May 13, 2013 at 05:25 PM | categories: 
+
+<a href='/blog/category/build-system'>build system</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/mach'>mach</a>
+ | <a href="http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I hold a lot of context in my head when it comes to the future of
+Mozilla's build system and the interaction with it. I wanted to
+perform a brain dump of sorts so people have an idea of where I'm
+coming from when I inevitably propose radical changes.</p>
+<h2>The sad state of build system interaction and the history of mach</h2>
+<p>I believe that Mozilla's build system has had a poor developer
+experience for as long as there has been a Mozilla build system.
+Getting started with Firefox development was a rite of passage. It
+required following (often out-of-date) directions on MDN. It
+required finding pages through MDN search or asking other people
+for info over IRC. It was the kind of process that turned away
+potential contributors because it was just too damn hard.</p>
+<p>mach - while born out of my initial efforts to radically change
+the build system proper - morphed into a generic command
+dispatching framework by the time it landed in mozilla-central.
+It has one overarching purpose: provide a single gateway point for
+performing common developer tasks (such as building the tree and
+running tests). The concept was nothing new - individual developers
+had long coded up scripts and tools to streamline workflows. Some
+even published these for others to use. What set mach apart was a
+unified interface for these <em>commands</em> (the mach script in the
+top directory of a checkout) and that these productivity gains
+were <strong>in the tree</strong> and thus easily discoverable and usable by
+<em>everybody</em> without significant effort (just run <em>mach help</em>).</p>
+<p>While mach doesn't yet satisfy everyone's needs, it's slowly
+growing new features and making developers' lives easier with
+every one. All of this is happening despite that there
+is not a single person tasked with working on mach full time.
+Until a few months ago, mach was largely my work. Recently, Matt
+Brubeck has been contributing a flurry of enhancements - thanks
+Matt! Ehsan Akhgari and Nicholas Alexander have contributed a
+few commands as well! There are also a few people with a single
+command to their name. This is fulfilling my original vision of
+facilitating developers to scratch their own itches by
+contributing mach commands.</p>
+<p>I've noticed more people referencing mach in IRC channels. And,
+more people get angry when a mach command breaks or changes
+behavior. So, I consider the mach experiment a success. Is it
+perfect, no. If it's not good enough for you, please file a bug
+and/or code up a patch. If nothing else, please tell me: I love to
+know about everyone's subtle requirements so I can keep them in
+mind when refactoring the build system and hacking on mach.</p>
+<h2>The object directory is a black box</h2>
+<p>One of the ideas I'm trying to advance is that the object directory
+should be considered a black box for the majority of developers. In
+my ideal world, developers don't need to look inside the object
+directory. Instead, they interact with it through condoned and
+supported tools (like mach).</p>
+<p>I say this for a few reasons. First, as the build config module owner
+I would like the ability to massively refactor the <em>internals</em> of
+the object directory without disrupting workflows. If people are
+interacting directly with the object directory, I get significant
+push back if things change. This inevitably holds back much-needed
+improvements and triggers resentment towards me, build peers, and
+the build system. Not a good situation. Whereas if people are
+indirectly interacting with the object directory, we simply need to
+maintain a consistent interface (like mach) and nobody should care
+if things change.</p>
+<p>Second, I believe that the methods used when directly interacting
+with the object directory are often sub-par compared with going
+through a more intelligent tool and that productivity suffers as a
+result. For example, when you type <em>make</em> in inside the object
+directory you need to know to pass <em>-j8</em>, use make vs pymake,
+and that you also need to build <em>toolkit/library</em>, etc.
+Also, by invoking make directly, you bypass other handy features,
+such as automatic compiler warning aggregation (which only happens
+if you invoke the build system through mach). If you go through a
+tool like <em>mach</em>, you <em>should</em> automatically get the most ideal
+experience possible.</p>
+<p>In order for this vision to be realized, we need massive
+improvements to tools like mach to cover the missing workflows that
+still require direct object directory interaction. We also need people
+to start using mach. I think increased mach usage comes after mach
+has established itself as obviously superior to the alternatives
+(I already believe it offers this for tasks like running tests).</p>
+<h2>I don't want to force mach upon people but...</h2>
+<p>Nobody likes when they are forced to change a process that has been
+familiar for years. Developers especially. I get it. That's why
+I've always attempted to position mach as an alternative to
+existing workflows. If you don't like mach, you can always fall
+back to the previous workflow. Or, you can improve mach (patches
+more than welcome!). Having gone down the
+please-use-this-tool-it's-better road before at other
+organizations, I strongly believe that the best method to incur
+adoption of a new tool is to gradually sway people through
+obvious superiority and praise (as opposed to a mandate to switch).
+I've been trying this approach with mach.</p>
+<p>Lately, more and more people have been saying things like
+<em>we should have the build infrastructure build through mach
+instead of client.mk</em> and <em>why do we need testsuite-targets.mk when
+we have mach commands.</em> While I personally feel that client.mk
+and testsuite-targets.mk are antiquated as a developer-facing
+interface compared to mach, I'm reluctant to eliminate them because
+I don't like forcing change on others. That being said, there are
+compelling reasons to eliminate or at least refactor how they work.</p>
+<p>Let's take <em>testsuite-targets.mk</em> as an example. This is the make
+file that provides the targets to run tests (like <em>make xpcshell-test</em>
+and <em>make mochitest-browser-chrome</em>). What's interesting about this
+file is that it's only used in local builds: our automation
+infrastructure does not use <em>testsuite-targets.mk</em>! Instead,
+<em>mozharness</em> and the old buildbot configs manually build up the
+command used to invoke the test harnesses. Initially, the mach
+commands for running tests simply invoked make targets defined
+in <em>testsuite-targets.mk</em>. Lately, we've been converting the mach
+commands to invoke the Python test runners directly. I'd argue that
+the logic for <em>invoke the test runner</em> only needs to live in one
+place in the tree. Furthermore as a build module peer, I have little
+desire to support multiple implementations. Especially considering
+how fragile they can be.</p>
+<p>I think we're trending towards an outcome where mach (or the code
+behind mach commands) transitions into the authoratitive invocation
+method and <em>legacy</em> interfaces like <em>client.mk</em> and
+<em>testsuite-targets.mk</em> are reimplemented to either call mach
+commands or the same routine that powers them. Hopefully this
+will be completely transparent to developers.</p>
+<h2>The future of mozconfigs and environment configuration</h2>
+<p><em>mozconfig</em> files are shell scripts used to define variables consumed
+by the build system. They are the only officially supported mechanism
+for configuring how the build system works.</p>
+<p>I'd argue mozconfig files are a mediocre solution at best. First,
+there's the issue of mozconfig statements that don't actually do
+anything. I've seen no-op mozconfig content cargo culted into the
+in-tree mozconfigs (used for the builder configurations)! Oops.
+Second, doing things in mozconfig files is just awkward. Defining
+the object directory requires <em>mk_add_options MOZ_OBJDIR=some-path</em>.
+What's <em>mk_add_options</em>? If <em>some-path</em> is relative, what is it
+relative <em>to</em>? While certainly addressable, the documentation on
+how mozconfig files work is not terrific and fails to explain many
+pitfalls. Even with proper documentation, there's still the issue
+of the file format allowing no-op variable assignments to persist.</p>
+<p>I'm very tempted to reinvent build configuration as something not
+mozconfigs. What exactly, I don't know. mach has support for ini-like
+configuration files. We could certainly have mach and the build
+system pull configs from the same file.</p>
+<p>I'm not sure what's going to happen here. But deprecating mozconfig
+files as they are today is part of many of the options.</p>
+<h2>Handling multiple mozconfig files</h2>
+<p>A lot of developers only have a single mozconfig file (per source tree
+at least). For these developers, life is easy. You simply install
+your mozconfig in one of the default locations and it's automagically
+used when you use mach or client.mk. Easy peasy.</p>
+<p>I'm not sure what the relative numbers are, but many developers
+maintain multiple mozconfig files per source tree. e.g. they'll
+have one mozconfig to build desktop Firefox and another one for
+Android. They may have debug variations of each.</p>
+<p>Some developers even have a single mozconfig file but leverage the
+fact that mozconfig files are shell scripts and have their
+mozconfig dynamically do things depending on the current working
+directory, value of an environment variable, etc.</p>
+<p>I've also seen wrapper scripts that glorify setting environment
+variables, changing directory, etc and invoke a command.</p>
+<p>I've been thinking a lot about providing a common and well-supported
+solution for switching between active build configurations.
+<a href="https://developer.mozilla.org/en-US/docs/Developer_Guide/mach#Adding_mach_to_your_shell%27s_search_path">Installing mach on $PATH</a>
+goes a long way to facilitate this. If you are in an object
+directory, the mozconfig used when that object directory was
+created is automatically applied. Simple enough. However, I want
+people to start treating object directories as black boxes. So, I'd
+rather not see people have their shell inside the object directory.</p>
+<p>Whenever I think about solutions, I keep arriving at a
+virtualenv-like solution. Developers would potentially need to
+<em>activate</em> a Mozilla build environment (similar to how Windows
+developers need to launch MozillaBuild). Inside this environment,
+the shell prompt would contain the name of the current build
+configuration. Users could switch between configurations using
+<em>mach switch</em> or some other magic command on the $PATH.</p>
+<p>Truth be told, I'm skeptical if people would find this useful. I'm
+not sure it's that much better than exporting the MOZCONFIG
+environment variable to define the active config. This one requires
+more thought.</p>
+<h2>The integration between the build environment and Python</h2>
+<p>We use Python extensively in the build system and for common
+developer tasks. mach is written in Python. moz.build processing
+is implemented in Python. Most of the test harnesses are written in
+Python.</p>
+<p>Doing practically anything in the tree requires a Python
+interpreter that knows about all the Python code in the tree and
+how to load it.</p>
+<p>Currently, we have two very similar Python environments. One is
+a virtualenv created while running configure at the beginning of
+a build. The other is essentially a cheap knock-off that mach
+creates when it is launched.</p>
+<p>At some point I'd like to consolidate these Python environments.
+From any Python process we should have a way to automatically
+bootstrap/activate into a well-defined Python environment. This
+certainly sounds like establishing a unified Python virtualenv
+used by both the build system and mach.</p>
+<p>Unfortunately, things aren't straightforward. The virtualenv today
+is constructed in the object directory. How do we determine the
+current object directory? By loading the mozconfig file. How do we
+do that? Well, if you are mach, we use Python. And, how does mach
+know where to find the code to load the mozconfig file? You can
+see the dilemma here.</p>
+<p>A related issue is that of portable build environments. Currently, a
+lot of our automation recreates the build system's virtualenv from
+its own configuration (not that from the source tree). This has
+and will continue to bite us. We'd <em>really</em> like to package up the
+virtualenv (or at least its config) with tests so there is no
+potential for discrepancy.</p>
+<p>The inner workings of how we integrate with Python should be
+invisible to most developers. But, I figured I'd capture it
+here because it's an annoying problem. And, it's also related
+to an <em>activated</em> build environment. What if we required all
+developers to <em>activate</em> their shell with a Mozilla build
+environment (like we do on Windows)? Not only would this solve
+Python issues, but it would also facilitate simpler config
+switching (outlined above). Hmmm...</p>
+<h2>Direct interaction with the build system considered harmful</h2>
+<p>Ever since there was a build system developers have been typing
+<em>make</em> (or <em>make.py</em>) to build the tree. One of the goals of the
+transition to <em>moz.build</em> files is to facilitate building the tree
+with Tup. <em>make</em> will do nothing when you're not using Makefiles!
+Another goal of the <em>moz.build</em> transition is to start
+derecursifying the make build system such that we build things in
+parallel. It's likely we'll produce monolithic make files and then
+process <em>all</em> targets for a related class <em>IDLs</em>, <em>C++ compilation</em>,
+etc in one invocation of <em>make</em>. So, uh, what happens during a partial
+tree build? If a .cpp file from <em>/dom/src/storage</em> is being handled by
+a monolithic make file invoked by the Makefile at the top of the
+tree, how does a partial tree build pick that up? Does it build just
+that target or every target in the monolithic/non-recursive make file?</p>
+<p>Unless the build peers go out of our way to install redundant targets
+in leaf Makefiles, directly invoking <em>make</em> from a subdirectory of
+the tree won't do what it's done for years.</p>
+<p>As I said above, I'm sympathetic to forced changes in procedure, so
+it's likely we'll provide backwards-compatibile behavior. But, I'd
+prefer to not do it. I'd first prefer partial-tree builds are not
+necessary and a full tree build finishes quickly. But, we're not going
+to get there for a bit. As an alternative, I'll take people building
+through <em>mach build</em>. That way, we have an easily extensible interface
+on which to build partial tree logic. We saw this recently when
+dumbmake/smartmake landed. And, going through <em>mach</em> also reinforces my
+ideal that the object directory is a black box.</p>
+<h2>Semi-persistent state</h2>
+<p>Currently, most state as it pertains to a checkout or build is in the
+object directory. This is fine for artifacts from the build system.
+However, there is a whole class of state that arguably shouldn't be in
+the object directory. Specifically, it shouldn't be clobbered when you
+rebuild. This includes logs from previous builds, the warnings database,
+previously failing tests, etc. The list is only going to grow over time.</p>
+<p>I'd like to establish a location for semi-persistant state related to
+the tree and builds. Perhaps we change the clobber logic to ignore a
+specific directory. Perhaps we start storing things in the user's home
+directory. Perhaps we could establish a second <em>object directory</em> named
+the <em>state directory</em>? How would this interact with <em>build environments</em>?</p>
+<p>This will probably sit on the backburner until there is a compelling use
+case for it.</p>
+<h2>The battle against C++</h2>
+<p>Compiling C++ consumes the bulk of our build time. Anything we can do to
+speed up C++ compilation will work wonders for our build times.</p>
+<p>I'm optimistic things like precompiled headers and compiling multiple
+.cpp files with a single process invocation will drastically decrease
+build times. However, no matter how much work we put in to make C++
+compilation faster, we still have a giant issue: dependency hell.</p>
+<p>As <a href="/presentations/2012-11-29-firefox-build-system/#34">shown</a> in my
+build system presentation a few months back, we have dozens of header
+files included by hundreds if not thousands of C++ files. If you change
+one file: you invalidate build dependencies and trigger a rebuild. This
+is why whenever files like mozilla-config.h change you are essentially
+confronted with a full rebuild. ccache may help if you are lucky. But, I
+fear that as long as headers proliferate the way they do, there is
+little the build system by itself can do.</p>
+<p>My attitude towards this is to wait and see what we can get out of
+precompiled headers and the like. Maybe that makes it good enough. If
+not, I'll likely be making a lot of noise at Platform meetings
+requesting that C++ gurus brainstorm on a solution for reducing
+header proliferation.</p>
+<h2>Conclusion</h2>
+<p>Belive it or not, these are only some of the topics floating around in
+my head! But I've probably managed to bore everyone enough so I'll
+call it a day.</p>
+<p>I'm always interested in opinions and ideas, especially if they are
+different from mine. I encourage you to leave a comment if you have
+something to say.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="the-state-of-mercurial-at-mozilla"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/05/13/the-state-of-mercurial-at-mozilla" rel="bookmark" title="Permanent Link to The State of Mercurial at Mozilla">The State of Mercurial at Mozilla</a></h2>
   <small>May 13, 2013 at 01:25 PM | categories: 
@@ -488,358 +781,6 @@ fallen into SQLite's many performance pitfalls (including me).</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="making-hg-git-faster"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/04/14/making-hg-git-faster" rel="bookmark" title="Permanent Link to Making hg-git Faster">Making hg-git Faster</a></h2>
-  <small>April 14, 2013 at 09:45 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/git'>Git</a>
- | <a href="http://gregoryszorc.com/blog/2013/04/14/making-hg-git-faster#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>When enterprising individuals at Mozilla
-<a href="http://bluishcoder.co.nz/2011/02/10/git-conversion-of-mozilla-central.html">started maintaining</a>
-a Git mirror of Firefox's main source repository (hosted in Mercurial),
-they ran into a significant problem: conversion was slow. The initial
-conversion apparently took over 6 days and used a lot of memory.
-Furthermore, each subsequent commit took many seconds, even on modern
-hardware. This meant that the they could only maintain a Git mirror of
-a few project branches and that updates would be slow. Furthermore,
-the slowness of the conversion significantly discouraged people
-from using the tool locally as part of regular development.</p>
-<p>I thought this was unacceptable. I wanted to enable people to use
-their tool of choice (Git) to develop Firefox. So, I did what annoyed
-engineers do when confronted with an itch: I scratched it.</p>
-<h2>Diagnosing the Problem</h2>
-<p>When I started tackling this problem, I had little knowledge of the
-problem space other than the problem statement: <em>converting from
-Mercurial to Git is prohibitively slow</em> and that the slow tool was
-<a href="http://hg-git.github.io/">hg-git</a>. My challenge was thus to make
-hg-git faster.</p>
-<p>When confronted with a performance problem, one of the first things you
-do is identify the source of the bad performance. Then, you need to
-acertain whether that is something you have the ability to change.</p>
-<p>This often starts by answering some high-level questions then drilling
-down into more detail as necessary. For a long-running system tool like
-hg-git, I start with the <em>top test</em>: how much CPU, memory, and I/O is
-the process utilizing?</p>
-<p>In the case of hg-git, we were CPU bound. The Python process was
-consistently pegging a single CPU core while periodically incurring I/O
-(but not nearly enough to saturate a magnetic disk). This told me a few
-things. First, I should look for bottlenecks inside Python. Second, I
-should investigate whether parallel execution would be possible. The
-latter is especially important these days because the trend in
-processors is towards more cores rather than higher clock speeds. It's
-no longer acceptable to let increases in clock speed or cycle efficiency
-bail you out: if you want a CPU bound process to run as fast as
-possible, it's often necessary to involve all available CPU cores.</p>
-<p>Once I diagnosed CPU as the limiting factor, I pulled out the next tool
-in the arsenal: a code profiler. I quickly discovered exactly where the
-conversion was taking the most CPU time. As feared, it was in the
-<em>export Mercurial changeset to Git commit</em> function.
-Specifically, profiling had flagged the conversion of Mercurial
-manifests to Git trees and blobs. Furthermore, most of the time was
-spent in functions in Mercurial itself (Mercurial is implemented in
-Python and hg-git calls into it natively) and Dulwich (a pure Python
-implementation of Git). So, I was either looking at deficiencies or
-Mercurial and/or Dulwich, a bad conversion algorithm in hg-git, or both.
-To know which, I would need a better grasp on the internal storage
-models of Mercurial and Git.</p>
-<h2>Learning about Mercurial's and Git's internal storage models</h2>
-<p>To understand why conversion from Mercurial to Git was slow, I needed to
-understand how each stored data internally. My hope was that if attained
-better understanding I could apply the knowledge to assess the algorithm
-hg-git was using and optimize it, hopefully introducing parallel
-execution along the way.</p>
-<h3>Git's internals</h3>
-<p>I already had a fairly good understanding of how Git works internally.
-And, it's quite simple really. The <a href="http://git-scm.com/book/en/Git-Internals">Git Internals</a>
-chapter of the <em>Pro Git</em> is extremely useful. While I encourage readers
-to read all of the <a href="http://git-scm.com/book/en/Git-Internals-Git-Objects">Git Objects</a>
-section, the gist is:</p>
-<ul>
-<li>Git's core storage is a key-value data store. Keys are SHA-1 checksums
-  of content. Each entity is storage in a <em>Git object</em>.</li>
-<li>A <em>blob</em> is an object holding the raw content of a file.</li>
-<li>A <em>tree</em> is an object holding a list of <em>tree entries</em>. Each tree entry
-  defines a blob, another tree object, etc. A tree is essentially a
-  directory listing.</li>
-<li>A <em>commit</em> object holds metadata about an individual Git commit. Each
-  commit object refers to a specific <em>tree</em> object.</li>
-</ul>
-<p>When you introduce a new file that hasn't been seen before, a new <em>blob</em>
-is added to storage. That blob is referenced by a <em>tree</em>. When you
-update a file, a new <em>tree</em> is created referring to the new <em>blob</em> that
-was created.</p>
-<p>Things get a little complicated when you consider directories. If you
-update the file <em>foo/bar/baz.c</em>, the tree for <em>foo/bar</em> changes (because
-the SHA-1 of <em>baz.c</em> changed). And, the SHA-1 for the <em>foo/bar</em> tree
-changes, so the <em>bar</em> entry in <em>foo</em>'s tree changes, changing the SHA-1
-for the root tree.</p>
-<p>That's essentially how Git addresses commits, directories, and files. If
-you don't grok this, please, please read the aforementioned page on it -
-it may even help you better grok Git!</p>
-<h3>Mercurial's internals</h3>
-<p>Unlike Git, I didn't really have a clue how Mercurial worked internally.
-So, I needed to do some self-education here.</p>
-<p>The best resource for Mercurial's storage model I've found is the
-<a href="http://hgbook.red-bean.com/read/behind-the-scenes.html">Behind the Scenes</a>
-chapter from <em>Mercurial: The Definitive Guide</em>. The gist is:</p>
-<ul>
-<li>History for an individual file is stored in a <em>filelog</em>. Each
-  <em>filelog</em> contains the history of a single file. Each file revision
-  has a hash based on the file contents.</li>
-<li>The <em>manifest</em> lists every file, its permissions, and its file
-  revision for each changeset in the repository.</li>
-<li>The <em>changelog</em> contains information about each changeset, including
-  the revision of the <em>manifest</em> to use.</li>
-<li>Each of these logs contain <em>revisions</em> and you can address an
-  individual revision within the log.</li>
-</ul>
-<p>From a high level, Mercurial's storage model is very similar to Git's.
-They both address files by hashing their content. Where Git uses
-multiple tree objects to define every file in a commit, Mercurial has a
-single manifest containing a flat list. Aside from that, the
-differences are mostly in implementation details. These are important,
-as we'll soon see.</p>
-<h2>Analyzing hg-git's conversion algorithm</h2>
-<p>Armed with knowledge of how Git and Mercurial internally store data, I
-was ready to analyze how hg-git was performing conversion from Mercurial
-to Git. Since profiling revealed it was the <em>convert a single changeset
-into Git commit</em> function that was taking all the time, I started there.</p>
-<p>In Python (but not the actual Python), the algorithm was essentially:</p>
-<div class="pygments_murphy"><pre><span class="k">def</span> <span class="nf">export_changeset_to_git</span><span class="p">(</span><span class="n">changeset</span><span class="p">,</span> <span class="n">git</span><span class="p">,</span> <span class="n">already_converted</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Receives the Mercurial changeset and a handle on a Git object storre.&quot;&quot;&quot;</span>
-    <span class="c"># This is an entity that helps us build Git tree objects from</span>
-    <span class="c"># paths and blobs. The logic is at</span>
-    <span class="c"># https://github.com/jelmer/dulwich/blob/2a8548be3b1fd4a1ae7d0436dce91611112c47c2/dulwich/index.py#L298</span>
-    <span class="n">tree_builder</span> <span class="o">=</span> <span class="n">TreeBuilder</span><span class="p">()</span>
-
-    <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">changeset</span><span class="o">.</span><span class="n">manifest</span><span class="p">:</span>
-        <span class="n">blob_id</span> <span class="o">=</span> <span class="n">already_converted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">blob_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">blob</span> <span class="o">=</span> <span class="n">Blob</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">data</span><span class="p">())</span>
-            <span class="n">git</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">blob</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">blob</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-            <span class="n">already_converted</span><span class="p">[</span><span class="nb">file</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
-            <span class="n">blob_id</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
-
-        <span class="n">tree_builder</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">blob_id</span><span class="p">,</span> <span class="nb">file</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">all_trees</span><span class="p">():</span>
-        <span class="n">git</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-
-    <span class="n">root_tree</span> <span class="o">=</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">root_tree</span>
-
-    <span class="c"># And proceed to build the Git commit and insert it.</span>
-</pre></div>
-
-<p>On the face of it, this code doesn't seem too bad. If I were writing the
-functionality from scratch, I'd likely do something very similar. So,
-why is it so slow?</p>
-<p>As I mentioned earlier, profiling results had identified Mercurial and
-Dulwich as the hot spots. The Mercurial hotspot was in iteration over
-the files in the manifest. And the Dulwich offender with Git <em>tree</em>
-object construction. By why?</p>
-<p>First, it turns out that iterating a manifest the way hg-git was isn't
-exactly performant. I never traced all the gory details, but I'm pretty
-sure every time it accessed the file context through the change context
-there was I/O involved. Not good, especially if you may not need the
-information contained if it was already cached!</p>
-<p>Second, it turns out that creating Git <em>tree</em> objects in Dulwich is
-rather slow. And, the problem is magnified when converting large
-repositories - like mozilla-central (Firefox's canonical repository).</p>
-<p>So, I was faced with a decision: make Mercurial and/or Dulwich faster or
-change hg-git. Since improving these would have benefits outside of
-hg-git, I initially went down those roads. However, I eventually
-abandonded the effort because of effort involved. And, in the case of
-Dulwich, improving things would likely require rewriting some pieces in
-C - not something I cared to do nor something that the Dulwich people
-would likely accept since Dulwich is all about being a pure Python
-implementation of Git! And in hindsight, this was the right call.
-Mercurial and Dulwich are fast enough - it's hg-git that was being
-suboptimal.</p>
-<p>I was faced with two problems: don't mass iterate over manifests and
-don't mass generate Git trees. Both were seemingly impossible to avoid
-because both are critical to converting a Mercurial changeset to Git.</p>
-<p>I thought about this problem for a while. I experimented with numerous
-micro benchmarks. I engaged the very helpful Mercurial developers on IRC
-(thanks everyone!). And, I eventually arrived at what I think is an
-elegant solution.</p>
-<p>When I took a step back and looked at the larger problem of exporting
-Mercurial changesets to Git, I realized it would be beneficial in terms
-of efficiency for the conversion to be more aware of what had occurred
-before. Before I came along, hg-git was asking Mercurial for the full
-state of each changeset for each changeset conversion. When you think
-about it in low-level operations, this is extremely inefficient. Let's
-take Git trees as an example.</p>
-<p>When you perform a commit, only the trees - and
-their parents - that had modified files will change. All the
-other trees will be identical across commits. For large repositories (in
-terms of files and directories) like mozilla-central, the number of
-<em>static</em> trees across small commits is quite significant compared to
-changed trees. The overhead of computing all these trees is not
-insignificant!</p>
-<p>Instead of throwing away all the trees and file context information
-between changeset exports, what if I preserved it and reused it for the
-next changeset? I think I'm on to something...</p>
-<h2>Implementing incremental changeset export</h2>
-<p>To minimize the work performed when exporting Mercurial changesets to
-Git, I <a href="https://github.com/indygreg/hg-git/commit/aef6eacf86fb08101ea98a7787f3b20dd67287c2">implemented</a>
-a standalone class that can emit Mercurial changeset deltas in terms of
-Git objects. Essentially, it caches a Git tree representation of a
-Mercurial manifest. When you feed a new Mercurial changeset into it, it
-asks Mercurial to compare those changesets using the same API used by
-<em>hg status</em>. This API is efficient and returns the information I care
-about: the paths that changed. Once we have the changed files, we
-<em>simply</em> reflect those changes in terms of updating Git trees.</p>
-<p>If a file changes or is added, we emit a <em>blob</em>. If a <em>tree</em> changes, we
-emit the new <em>tree</em> object. When the consumer has finished writing the
-set of new objects to Git, it asks for the SHA-1 of the root tree. (Up
-until this point the consumer is not aware of what any of the emitted
-objects actually are - just that they likely need to be added to
-storage.) It then uses the SHA-1 of the root tree to construct the
-commit. Then it moves on to the next changeset.</p>
-<p>The impact of this change is significant. On my computer, converting
-Mercurial's own Mercurial repository Git went from <strong>21:07</strong> to <strong>8:14</strong>
-on my i7-2600k. mozilla-central is even more drastic. The first 200
-commits (the first commit was a large dump from CVS) took <strong>8:17</strong>
-before and now take <strong>2:32</strong>. I don't have exact numbers from newer
-commits, but I do know they were at least twice as slow as the initial
-commits and showed an even more drastic speedup.</p>
-<p>But I was just getting started.</p>
-<p>The initial implementation wasn't very efficient in terms of reducing
-tree object calculations. I changed that earlier today when I
-<a href="https://groups.google.com/d/msg/hg-git/I5w_FscF6lw/LAc0pw1iilQJ">submitted a patch for consideration</a>
-that only calculates tree changes for trees that actually changed. I
-also removed some needless sorting on the order of export operations.
-This second patch reduced conversion of Mercurial's repository down to
-<strong>5:33</strong>. Even more impressive is that <strong>mozilla-central's changesets are
-now exporting almost 4x faster</strong> with this patch alone. The first 200
-changesets now export in <strong>42s</strong> (down from <strong>2:32</strong> which is down from
-<strong>8:17</strong>). This is mostly due to the overhead of reprocessing
-non-dirty trees on every export.</p>
-<p>And I'm not through.</p>
-<p>As part of building the standalone incremental changeset exporter, one
-of the goals in the back of my mind was to eventually have things
-execute in parallel.</p>
-<p>In my <a href="https://github.com/indygreg/hg-git/tree/performance-next">personal development branch</a>
-I have a <a href="https://github.com/indygreg/hg-git/commit/e74641284fecc928b0b8f8dcc01ef9b99e09c3cc">patch</a>
-to perform Mercurial changeset export on multiple cores. Essentially
-hg-git fires up a bunch of worker processes and asks each to export a
-consecutive range of changesets. The workers writes new Git objects into
-Git and then tells the coordinator process the root tree SHA-1
-corresponding to each Mercurial changeset. The coordinator process then
-uses these root tree SHA-1's to derive Git commit objects (you can't
-create the commit object until you know the SHA-1 of the commit's
-parents).</p>
-<p>The blob and tree exporting on separate processes makes Mercurial to Git
-export scale out to however many cores you feel like throwing at it.
-When 32 core machines come around, you can convert using all available
-cores and the speedup should roughly be linear with the number of cores.</p>
-<p>I'm still working out some kinks in the multiple processes patch
-(the <em>multiprocessing</em> module is very difficult to get working on all
-platforms and I don't want to break hg-git when it lands). But,
-<a href="http://ehsanakhgari.org/">Ehsan Akhgari</a> has been using it to power the
-<a href="https://github.com/mozilla/mozilla-central/">GitHub mirror</a> of
-mozilla-central for months without issue. (His use of these patches
-freed up the CPU required to support conversion of more project branches
-on the Git mirror. And, he's still not using the 4x improvement patch I
-wrote today - he will shortly - so who knows what improvements will stem
-from that.)</p>
-<p>With all the patches applied, hg-git now feels like a Ferrari when
-exporting Mercurial changesets to Git. Conversion of Mercurial's
-repository now takes <strong>1:25</strong> (down from <strong>21:07</strong>). <strong>Conversion of
-mozilla-central has gone from 6+ days to about 3 hours!</strong> More
-importantly, ongoing conversions feel somewhat snappy now.</p>
-<h2>Making Git export even faster</h2>
-<p>With the patch today, I'd say optimization of exporting Mercurial
-changesets is nearing its limits. There are a few things I could try
-that may net another 2 or 3x improvement. But, I think the ~50x
-improvement I've already attained (at least for mozilla-central) is
-pretty damn good and good enough for most users. (Part of performance
-optimization is knowing when is good enough and stopping before you
-invest excessive time in the long tail.)</p>
-<p>There is one giant refactor that could likely net a significant win for
-Git export. However, it requires optimizing for initial export over
-recurring incremental export (which is why I have little interest in
-it). Incremental export incurs a lot of <em>random</em> I/O accessing Mercurial
-filelogs and extracting specific file revisions as they are needed. An
-optimal export would iterate over the filelogs and export Git blobs from
-each filelog in the sequence they occur in within the filelogs. It would
-cache the file node to blob SHA-1. After all blobs are exported, the
-mappings would be combined and distributed to all workers. Then, tree
-export would occur in parallel largely under the existing model modulo
-blob writing. This would minimize overall I/O and work in Mercurial and
-would likely be significantly faster. However, it's mostly useful for
-initial export and IMO not worth implementing. (It's possible to employ
-a variation for incremental export that iterates over filelogs and
-exports not-yet-seen revisions. Perhaps I will investigate this some
-day.)</p>
-<h2>What about converting Git to Mercurial?</h2>
-<p>Now that I've tackled Mercurial to Git conversion, it's very tempting to
-work magic on the inverse: converting Git commits to Mercurial
-changesets. While I haven't looked at this problem in detail, I already
-know it will be at least slightly more challenging.</p>
-<p>The reason is parallelization. With Mercurial export, I have each child
-process reading directly from Mercurial and writing directly to Git.
-There are no locks involved. There is just a coordinator that ensures
-minimum redundant work among workers. There is some redundant
-work, sure. But, the alternative would be lots of locking and/or
-exchange of state across processes - not cheap operations! Furthermore,
-the writes into Git can occur in any order (since Git is just a
-key-value store). The only hard requirement is a child commit must
-come after its parent (because you need the parent commit's SHA-1).
-And, single-threaded insert of commit objects isn't a big deal because
-you can crank through hundreds of them per second (it might even be over
-1000/s on my machine).</p>
-<p>Mercurial's storage implementation does not afford me the same
-<em>carelessness</em> with regards to writing into storage. Since Mercurial
-uses shared files for individual file and manifest history, we have
-a contention problem. We <em>could</em> lock files when writing to them.
-However, these files (<em>revlogs</em> in Mercurial speak) also use
-transparent delta compression. You get the best performance/compression
-when changes are written in the order they actually occured in (at
-least in the typical case).</p>
-<p>To optimally write to Mercurial you need to order inserts. This means
-parallel reads from Git (in separate worker processes) would be very
-difficult to implement. Doable, sure, but you're looking at a lot of
-transferred state and ordering. This likely involves a lot more memory
-and CPU usage.</p>
-<p>The best idea I've come up with so far is a single process
-that reads off Git commits and iterates trees. It hashes the paths of
-seen files to a consistent worker process which then pulls the blob from
-Git's storage and inserts it into the filelog. You don't need to lock
-filelogs because only one worker owns a specific path. Workers report
-the blob's corresponding file node to another process which then
-assembles manifests, writes manifests in order, and finally creates
-and writes changesets. Unfortunately, the worker processes are just
-doing blob I/O. There is no parallel processing of Git tree calculation
-or Mercurial manifests. Given this was a significant source of slowness
-exporting <em>to</em> Git, I worry the inverse will be true. Although, the
-problem with Git was tree <em>creation</em> and it was due to the volume. Since
-there is only 1 manifest per changeset, perhaps it won't be as bad.</p>
-<p>While I've brainstormed a solution, I have no concrete plans to work on
-Git to Mercurial conversion. The impetus for me working on Mercurial to
-Git speedups was that I and a number of other Mozilla people were
-personally impacted. If the same is true for Git to Mercurial slowness,
-I could invest a few hours the next time I'm sick and bored over the
-weekend.</p>
-<h2>Conclusion</h2>
-<p>Converting Mercurial repositories to Git with hg-git is now
-significantly faster. If you thought it was too slow before, grab the
-latest code (from either the official repository or my personal branch)
-and enjoy.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/04/14/making-hg-git-faster#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/4">« Previous Page</a>
   --  
