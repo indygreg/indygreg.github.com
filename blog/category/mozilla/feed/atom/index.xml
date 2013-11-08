@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2013-11-08T18:00:39Z</updated>
+  <updated>2013-11-08T18:03:29Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -174,7 +174,7 @@ be aware of more than just tracking commits and files. As I've
 and will continue to say, the extensibility of Mercurial is
 really its killer feature, especially for organizations with
 well-defined processes (like Mozilla). The kind of extensibility I
-achieved with this extension with with custom queries and formatting
+achieved with this extension with custom queries and formatting
 functions is just not possible with Git (at least not with the reference
 C implementation that the overwhelming majority of Git users use).</p>
 <p>There are numerous improvements that can be made to the extension.
