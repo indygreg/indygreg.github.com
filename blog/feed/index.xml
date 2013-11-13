@@ -10,10 +10,58 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 08 Nov 2013 22:32:18 GMT</pubDate>
+    <pubDate>Wed, 13 Nov 2013 17:23:23 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Importance of Hosting Your Version Control Server</title>
+      <link>http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server</link>
+      <pubDate>Wed, 13 Nov 2013 09:25:00 PST</pubDate>
+      <category><![CDATA[Git]]></category>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server</guid>
+      <description>Importance of Hosting Your Version Control Server</description>
+      <content:encoded><![CDATA[<p>The subject of where to host version control repositories comes up a lot
+at Mozilla. It takes many forms:</p>
+<ul>
+<li>We should move the Firefox repository to GitHub</li>
+<li>I should be allowed to commit to GitHub</li>
+<li>I want the canonical repository to be hosted by Bitbucket</li>
+</ul>
+<p>When Firefox development is concerned, Release Engineerings puts down
+their foot and insists the canonical repository be hosted by Mozilla,
+under a Mozilla hostname. When that's not possible, they set up a mirror
+on Mozilla infrastructure.</p>
+<p>I think a
+<a href="https://groups.google.com/d/topic/jenkinsci-dev/-myjRIPcVwU/discussion">recent issue with the Jenkins project</a>
+demonstrates why hosting your own version control server is important.
+The gist is someone force pushed to a bunch of repos hosted on GitHub.
+They needed to involve GitHub support to recover from the issue. While
+it appears they largely recovered (and GitHub support deserves kudos - I
+don't want to take away from their excellence), this problem would have
+been avoided or the response time significantly decreased if the Jenkins
+people had direct control over the Git server: they either could have
+installed a custom hook that would have prevented the pushes or had
+access to the reflog so they could have easily seen the last pushed
+revision and easily forced pushed back to it. GitHub doesn't have a
+mechanism for defining pre-* hooks, doesn't allow defining custom
+hooks (a security and performance issue for them), and doesn't
+expose the reflog data.</p>
+<p>Until repository hosting services expose full repository data (such as
+reflogs) and allow you to define custom hooks, accidents like these will
+happen and the recovery time will be longer than if you hosted the repo
+yourself.</p>
+<p>It's possible repository hosting services like GitHub and Bitbucket will
+expose these features or provide a means to quickly recover. If so,
+kudos to them. But larger, more advanced projects will likely employ
+custom hooks and considering custom hooks are a massive security and
+performance issue for any hosted service provider, I'm not going to
+hold my breath this particular feature is rolled out any time soon.
+This is unfortunate, as it makes projects seemingly choose between
+low risk/low convenience and GitHub's vibrant developer community.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Mercurial 2.8 released</title>
       <link>http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released</link>
@@ -1462,24 +1510,6 @@ has been happening to minimize C/C++ header dependency hell recently.
 To everyone working on that, everyone who builds Firefox owes you a
 giant <strong>thank you</strong>. However, there's much more that can be done. While
 you've made terrific progress, please don't slow down any time soon.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Important Ubuntu bootstrap update</title>
-      <link>http://gregoryszorc.com/blog/2013/09/12/important-ubuntu-bootstrap-update</link>
-      <pubDate>Thu, 12 Sep 2013 09:35:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/09/12/important-ubuntu-bootstrap-update</guid>
-      <description>Important Ubuntu bootstrap update</description>
-      <content:encoded><![CDATA[<p>Do you run Ubuntu and build Firefox? If so, please check out a
-mozilla-central revision as of a few hours ago and run <strong>mach
-bootstrap</strong>. Among other things, the bootstrapper now installs a modern
-version of Mercurial (2.7 at the time I wrote this). Ubuntu currently
-ships 2.2.2 in 12.10 and 13.04. It's even worse for older releases.
-Mercurial has evolved a lot over the last few months and releases and
-I don't think you'll be disappointed after upgrading.</p>
-<p>If you don't run Ubuntu, you should still run <strong>mach bootstrap</strong>
-periodically to ensure your system has the optimal packages for
-developing Firefox.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

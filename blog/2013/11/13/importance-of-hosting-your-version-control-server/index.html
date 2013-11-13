@@ -1,0 +1,166 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="importance-of-hosting-your-version-control-server"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/11/13/importance-of-hosting-your-version-control-server" rel="bookmark" title="Permanent Link to Importance of Hosting Your Version Control Server">Importance of Hosting Your Version Control Server</a></h2>
+  <small>November 13, 2013 at 09:25 AM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The subject of where to host version control repositories comes up a lot
+at Mozilla. It takes many forms:</p>
+<ul>
+<li>We should move the Firefox repository to GitHub</li>
+<li>I should be allowed to commit to GitHub</li>
+<li>I want the canonical repository to be hosted by Bitbucket</li>
+</ul>
+<p>When Firefox development is concerned, Release Engineerings puts down
+their foot and insists the canonical repository be hosted by Mozilla,
+under a Mozilla hostname. When that's not possible, they set up a mirror
+on Mozilla infrastructure.</p>
+<p>I think a
+<a href="https://groups.google.com/d/topic/jenkinsci-dev/-myjRIPcVwU/discussion">recent issue with the Jenkins project</a>
+demonstrates why hosting your own version control server is important.
+The gist is someone force pushed to a bunch of repos hosted on GitHub.
+They needed to involve GitHub support to recover from the issue. While
+it appears they largely recovered (and GitHub support deserves kudos - I
+don't want to take away from their excellence), this problem would have
+been avoided or the response time significantly decreased if the Jenkins
+people had direct control over the Git server: they either could have
+installed a custom hook that would have prevented the pushes or had
+access to the reflog so they could have easily seen the last pushed
+revision and easily forced pushed back to it. GitHub doesn't have a
+mechanism for defining pre-* hooks, doesn't allow defining custom
+hooks (a security and performance issue for them), and doesn't
+expose the reflog data.</p>
+<p>Until repository hosting services expose full repository data (such as
+reflogs) and allow you to define custom hooks, accidents like these will
+happen and the recovery time will be longer than if you hosted the repo
+yourself.</p>
+<p>It's possible repository hosting services like GitHub and Bitbucket will
+expose these features or provide a means to quickly recover. If so,
+kudos to them. But larger, more advanced projects will likely employ
+custom hooks and considering custom hooks are a massive security and
+performance issue for any hosted service provider, I'm not going to
+hold my breath this particular feature is rolled out any time soon.
+This is unfortunate, as it makes projects seemingly choose between
+low risk/low convenience and GitHub's vibrant developer community.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
