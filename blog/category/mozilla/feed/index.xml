@@ -10,17 +10,17 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Wed, 08 Jan 2014 00:40:03 GMT</pubDate>
+    <pubDate>Wed, 08 Jan 2014 00:42:04 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
     <item>
-      <title>One Patch per Bug?</title>
-      <link>http://gregoryszorc.com/blog/2014/01/07/one-patch-per-bug-</link>
+      <title>On Multiple Patches in Bugs</title>
+      <link>http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs</link>
       <pubDate>Tue, 07 Jan 2014 16:40:00 PST</pubDate>
       <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/07/one-patch-per-bug-</guid>
-      <description>One Patch per Bug?</description>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs</guid>
+      <description>On Multiple Patches in Bugs</description>
       <content:encoded><![CDATA[<p>There is a common practice at Mozilla for developing patches with
 multiple parts. Nothing wrong with that. In fact, I think it's a best
 practice:</p>

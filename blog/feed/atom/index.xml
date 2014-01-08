@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-01-08T00:40:03Z</updated>
+  <updated>2014-01-08T00:42:04Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -18,14 +18,14 @@
       <name></name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
-    <title type="html"><![CDATA[One Patch per Bug?]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/01/07/one-patch-per-bug-" />
-    <id>http://gregoryszorc.com/blog/2014/01/07/one-patch-per-bug-</id>
+    <title type="html"><![CDATA[On Multiple Patches in Bugs]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs" />
+    <id>http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs</id>
     <updated>2014-01-07T16:40:00Z</updated>
     <published>2014-01-07T16:40:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[One Patch per Bug?]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/01/07/one-patch-per-bug-"><![CDATA[<p>There is a common practice at Mozilla for developing patches with
+    <summary type="html"><![CDATA[On Multiple Patches in Bugs]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs"><![CDATA[<p>There is a common practice at Mozilla for developing patches with
 multiple parts. Nothing wrong with that. In fact, I think it's a best
 practice:</p>
 <ul>
