@@ -48,7 +48,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="why-do-projects-support-old-python-releases"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/08/why-do-projects-support-old-python-releases" rel="bookmark" title="Permanent Link to Why do Projects Support old Python Releases">Why do Projects Support old Python Releases</a></h2>
@@ -106,129 +106,12 @@ project can as well.</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="on-multiple-patches-in-bugs"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/01/07/on-multiple-patches-in-bugs" rel="bookmark" title="Permanent Link to On Multiple Patches in Bugs">On Multiple Patches in Bugs</a></h2>
-  <small>January 07, 2014 at 04:40 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>There is a common practice at Mozilla for developing patches with
-multiple parts. Nothing wrong with that. In fact, I think it's a best
-practice:</p>
-<ul>
-<li>Smaller, self-contained patches are much easier to grok and
-  review than larger patches.</li>
-<li>Smaller patches can land as soon as they are reviewed. Larger patches
-  tend to linger and get bit rotted.</li>
-<li>Smaller patches contribute to a culture of being fast and nimble, not
-  slow and lethargic. This helps with developer confidence, community
-  contributions, etc.</li>
-</ul>
-<p>There are some downsides to multiple, smaller patches:</p>
-<ul>
-<li>The bigger picture is harder to understand until all parts of a
-  logical patch series are shared. (This can be alleviated through
-  commit messages or reviewer notes documenting future intentions.
-  And of course reviewers can delay review until they are comfortable.)</li>
-<li>There is more overhead to maintain the patches (rebasing, etc).
-  IMO the solutions provided by Mercurial and Git are sufficient.</li>
-<li>The process overhead for dealing with multiple patches and/or bugs
-  can be non-trivial. (I would like to think good tooling coupled with
-  continuous revisiting of policy decisions is sufficient to counteract
-  this.)</li>
-</ul>
-<p>Anyway, the prevailing practice at Mozilla seems to be that multiple
-patches related to the same logical change are attached to the same
-bug. I would like to challenge the effectiveness of this practice.</p>
-<p>Given:</p>
-<ul>
-<li>An individual commit to Firefox should be standalone and should not
-  rely on future commits to unbust it (i.e. bisects to any commit should
-  be safe).</li>
-<li>Bugzilla has no good mechanism to isolate review comments from
-  multiple attachments on the same bug, making deciphering simultaneous
-  reviews on multiple attachments difficult and frustrating. This leads
-  to review comments inevitably falling through the cracks and the
-  quality of code suffering.</li>
-<li>Reiterating the last point because it's important.</li>
-</ul>
-<p>I therefore argue that attaching multiple reviews to a single Bugzilla
-bug is not a best practice and it should be avoided if possible. If that
-means filing separate bugs for each patch, so be it. That process can
-be automated. Tools like
-<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">bzexport</a>
-already do it. Alternatively (and even better IMO), we ditch
-Bugzilla's code review interface (Splinter) and integrate something like
-<a href="https://reviewboard.allizom.org/">ReviewBoard</a> instead. We limit
-Bugzilla to tracking, high-level discussion, and metadata aggregation.
-Code review happens elsewhere, without all the clutter and chaos that
-Bugzilla brings to the table.</p>
-<p>Thoughts?</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="python-package-providing-clients-for-mozilla-services"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/01/06/python-package-providing-clients-for-mozilla-services" rel="bookmark" title="Permanent Link to Python Package Providing Clients for Mozilla Services">Python Package Providing Clients for Mozilla Services</a></h2>
-  <small>January 06, 2014 at 10:45 AM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I have a number of Python projects and tools that interact with
-various Mozilla services. I had authored clients for all these services
-as standalone Python modules so they could be reused across projects.</p>
-<p>I have consolidated all these Python modules into a unified source
-control
-<a href="https://bitbucket.org/indygreg/python-mozautomation">repository</a>
-and have made the project available on
-<a href="https://pypi.python.org/pypi/mozautomation">PyPI</a>. You can install it
-by running:</p>
-<p>$ pip install mozautomation</p>
-<p>Currently included in the Python package are:</p>
-<ul>
-<li>A client for <a href="https://treestatus.mozilla.org/">treestatus.mozilla.org</a></li>
-<li>Module for extracting cookies from Firefox profiles (useful for
-  programmatically getting Bugzilla auth credentials).</li>
-<li>A client for reading and interpretting the
-  <a href="http://builddata.pub.build.mozilla.org/buildjson/">JSON dumps of automation jobs</a></li>
-<li>An interface to a SQLite database to manage associations between
-  Mercurial changesets, bugs, and pushes.</li>
-<li>Rudimentary parsing of commit messages to extract bugs and reviewers.</li>
-<li>A client to obtain information about Firefox releases via the
-  <a href="http://releases-api.mozilla.org/">releases API</a></li>
-<li>A module defining common Firefox source repositories, aliases, logical
-  groups (e.g. twigs and integration trees), and APIs for fetching
-  pushlog data.</li>
-<li>A client for the <a href="https://secure.pub.build.mozilla.org/buildapi/self-serve/">self serve API</a></li>
-</ul>
-<p>Documentation and testing is currently sparse. Things aren't up to my
-regular high quality standard. But something is better than nothing.</p>
-<p>If you are interested in contributing, drop me a line or send pull
-requests my way!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               

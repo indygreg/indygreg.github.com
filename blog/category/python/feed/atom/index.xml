@@ -7,12 +7,67 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-01-08T00:42:04Z</updated>
+  <updated>2014-01-09T00:59:39Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Why do Projects Support old Python Releases]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases" />
+    <id>http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases</id>
+    <updated>2014-01-08T17:00:00Z</updated>
+    <published>2014-01-08T17:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Python" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Why do Projects Support old Python Releases]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases"><![CDATA[<p>I see a number of open source projects supporting old versions
+of Python. Mercurial supports 2.4, for example. I have to ask: why do
+projects continue to support old Python releases?</p>
+<p>Consider:</p>
+<ul>
+<li><a href="http://python.org/download/releases/2.4.6/">Python 2.4</a> was last
+  released on December 19, 2008 and <strong>there will be no more releases of
+  Python 2.4</strong>.</li>
+<li><a href="http://python.org/download/releases/2.5.6/">Python 2.5</a> was last
+  released on May 26, 2011 and <strong>there will be no more releases of
+  Python 2.5</strong>.</li>
+<li><a href="http://python.org/download/releases/2.6.9/">Python 2.6</a> was last
+  released on October 29, 2013 and <strong>there will be no more releases of
+  Python 2.6</strong>.</li>
+<li><strong>Everything before Python 2.7 is end-of-lifed</strong></li>
+<li>Python 2.7 continues to see periodic releases, but mostly for bug fixes.</li>
+<li>Practically all of the work on CPython is happening in the 3.3 and 3.4
+  branches. Other implementations continue to support 2.7.</li>
+<li>Python 2.7 has been available since July 2010</li>
+<li>Python 2.7 provides some very compelling language features over
+  earlier releases that developers want to use</li>
+<li>It's much easier to write dual compatible 2/3 Python when 2.7 is the
+  only 2.x release considered.</li>
+<li>Python 2.7 can be installed in userland relatively easily (see
+  projects like <a href="https://github.com/yyuu/pyenv">pyenv</a>).</li>
+</ul>
+<p>Given these facts, I'm not sure why projects insist on supporting old
+and end-of-lifed Python releases.</p>
+<p><strong>I think maintainers of Python projects should seriously consider
+dropping support for Python 2.6 and below.</strong> Are there really that many
+people on systems that don't have Python 2.7 easily available? Why are
+we Python developers inflicting so much pain on ourselves to support
+antiquated Python releases?</p>
+<p>As a data point, I successfully transitioned Firefox's build system
+from requiring Python 2.5+ to 2.7.3+ and it was relatively
+<a href="https://groups.google.com/d/msg/mozilla.dev.platform/djN02O03APc/OS8A9LuHX0sJ">pain</a>
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=870420">free</a>.
+Sure, a few people complained. But as far as I know, not very many new
+developers are coming in and complaining about the requirement.
+If we can do it with a few thousand developers, I'm guessing your
+project can as well.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
