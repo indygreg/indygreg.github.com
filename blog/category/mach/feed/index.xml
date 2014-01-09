@@ -10,10 +10,35 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 09 Jan 2014 00:59:39 GMT</pubDate>
+    <pubDate>Thu, 09 Jan 2014 18:56:25 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>mach now lives in mozilla-central</title>
+      <link>http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central</link>
+      <pubDate>Thu, 09 Jan 2014 10:55:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[mach]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central</guid>
+      <description>mach now lives in mozilla-central</description>
+      <content:encoded><![CDATA[<p><a href="https://pypi.python.org/pypi/mach/">mach</a> -- the generic command
+line interface framework that is behind the <em>mach</em> tool used to
+build Firefox -- now has its canonical home in
+<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mach/">mozilla-central</a>,
+the canonical repository for Firefox. The
+<a href="https://github.com/indygreg/mach">previous home</a> has been updated to
+reflect the change.</p>
+<p>mach will continue to be released on
+<a href="https://pypi.python.org/pypi/mach/">PyPI</a> and installable via <strong>pip
+install mach</strong>.</p>
+<p>I made the change because keeping multiple repositories in sync
+wasn't something I wanted to spend time doing. Furthermore,
+Mozillians have been contributing a steady stream of improvements to
+the mach core recently and it makes sense to leverage Mozilla's
+familiar infrastructure for patch contribution.</p>
+<p>This decision may be revisited in the future. Time will tell.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Mozilla Build System Brain Dump</title>
       <link>http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump</link>

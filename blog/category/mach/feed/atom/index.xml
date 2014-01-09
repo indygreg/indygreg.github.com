@@ -7,12 +7,42 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-01-09T00:59:39Z</updated>
+  <updated>2014-01-09T18:56:25Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[mach now lives in mozilla-central]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central" />
+    <id>http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central</id>
+    <updated>2014-01-09T10:55:00Z</updated>
+    <published>2014-01-09T10:55:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="mach" />
+    <summary type="html"><![CDATA[mach now lives in mozilla-central]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central"><![CDATA[<p><a href="https://pypi.python.org/pypi/mach/">mach</a> -- the generic command
+line interface framework that is behind the <em>mach</em> tool used to
+build Firefox -- now has its canonical home in
+<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mach/">mozilla-central</a>,
+the canonical repository for Firefox. The
+<a href="https://github.com/indygreg/mach">previous home</a> has been updated to
+reflect the change.</p>
+<p>mach will continue to be released on
+<a href="https://pypi.python.org/pypi/mach/">PyPI</a> and installable via <strong>pip
+install mach</strong>.</p>
+<p>I made the change because keeping multiple repositories in sync
+wasn't something I wanted to spend time doing. Furthermore,
+Mozillians have been contributing a steady stream of improvements to
+the mach core recently and it makes sense to leverage Mozilla's
+familiar infrastructure for patch contribution.</p>
+<p>This decision may be revisited in the future. Time will tell.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
