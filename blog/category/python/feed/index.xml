@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 09 Jan 2014 18:56:25 GMT</pubDate>
+    <pubDate>Fri, 10 Jan 2014 00:04:46 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -62,7 +62,15 @@ from requiring Python 2.5+ to 2.7.3+ and it was relatively
 Sure, a few people complained. But as far as I know, not very many new
 developers are coming in and complaining about the requirement.
 If we can do it with a few thousand developers, I'm guessing your
-project can as well.</p>]]></content:encoded>
+project can as well.</p>
+<p><strong>Update 2014-01-09 16:05:00 PST</strong>: This post is being discussed on
+<a href="http://developers.slashdot.org/story/14/01/09/1940232/why-do-projects-continue-to-support-old-python-releases">Slashdot</a>. A lot of the comments
+talk about Python 3. Python 3 is its own set of
+considerations. The intended focus of this post is strictly about
+dropping support for Python 2.6 and below. Python 3 is related
+in that porting Python 2.x to Python 3 is much easier the higher
+the Python 2.x version. This especially holds true when you want
+to write Python that works simultaneously in both 2.x and 3.x.</p>]]></content:encoded>
     </item>
     <item>
       <title>Python Package Providing Clients for Mozilla Services</title>
