@@ -50,6 +50,47 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="os-x-mavericks-and-the-firefox-build-system"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/10/22/os-x-mavericks-and-the-firefox-build-system" rel="bookmark" title="Permanent Link to OS X Mavericks and the Firefox Build System">OS X Mavericks and the Firefox Build System</a></h2>
+  <small>October 22, 2013 at 01:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/10/22/os-x-mavericks-and-the-firefox-build-system#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>OS X Mavericks is available today as a free upgrade. People at Mozilla
+are probably asking if it is safe to upgrade: will it affect my ability
+to build Firefox.</p>
+<p>A few people (myself included) have been running OS X Mavericks
+developer previews for a few months. I believe all the Firefox build
+system issues have been worked out for at least a few weeks now. So,
+upgrading to OS X Mavericks should not impact your ability to build a
+stock Firefox configuration from mozilla-central.</p>
+<p>There might still be some non-default features and code paths that need
+fixed to work with Mavericks. Support for the OS X 10.9 SDK might also
+be problematic. In addition, if you build older trees such as Aurora
+and Beta, you may run into issues building on Mavericks because those
+trees may not have all required fixes uplifted.</p>
+<p>While I won't encourage you to upgrade, I will say that Mavericks should
+build Firefox without any issue. And since the number of Mavericks users
+will only increase in the days ahead, it should be safe to assume that
+regressions will be promptly fixed.</p>
+<p>If you run into any issues with Firefox and Mavericks,
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=883824">bug 883824</a> is the
+master tracking bug.
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=894090">Bug 894090</a> tracks
+build system issues.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/22/os-x-mavericks-and-the-firefox-build-system#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="alternate-mercurial-server-for-firefox-development"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/10/17/alternate-mercurial-server-for-firefox-development" rel="bookmark" title="Permanent Link to Alternate Mercurial Server for Firefox Development">Alternate Mercurial Server for Firefox Development</a></h2>
   <small>October 17, 2013 at 07:30 AM | categories: 
@@ -794,35 +835,6 @@ you've made terrific progress, please don't slow down any time soon.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/01/why-firefox-builds-are-slow#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="important-ubuntu-bootstrap-update"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/09/12/important-ubuntu-bootstrap-update" rel="bookmark" title="Permanent Link to Important Ubuntu bootstrap update">Important Ubuntu bootstrap update</a></h2>
-  <small>September 12, 2013 at 09:35 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/09/12/important-ubuntu-bootstrap-update#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Do you run Ubuntu and build Firefox? If so, please check out a
-mozilla-central revision as of a few hours ago and run <strong>mach
-bootstrap</strong>. Among other things, the bootstrapper now installs a modern
-version of Mercurial (2.7 at the time I wrote this). Ubuntu currently
-ships 2.2.2 in 12.10 and 13.04. It's even worse for older releases.
-Mercurial has evolved a lot over the last few months and releases and
-I don't think you'll be disappointed after upgrading.</p>
-<p>If you don't run Ubuntu, you should still run <strong>mach bootstrap</strong>
-periodically to ensure your system has the optimal packages for
-developing Firefox.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/09/12/important-ubuntu-bootstrap-update#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/2">« Previous Page</a>
   --  
