@@ -50,6 +50,95 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="aggregating-version-control-info-at-mozilla"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/21/aggregating-version-control-info-at-mozilla" rel="bookmark" title="Permanent Link to Aggregating Version Control Info at Mozilla">Aggregating Version Control Info at Mozilla</a></h2>
+  <small>January 21, 2014 at 10:50 AM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/python'>Python</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Over the winter break, I set out on an ambitious project to create
+a service to help developers and others manage the flury
+of patches going into Firefox. While the project is far from complete,
+I'm ready to unleash the first part of the project upon the world.</p>
+<p>If you point your browsers to
+<a href="http://moztree.gregoryszorc.com/">moztree.gregoryszorc.com</a>, you'll
+hopefully see some documentation about what I've built.
+<a href="https://bitbucket.org/indygreg/moz-tree-utopia">Source code</a> is
+available and free, of course. Patches very welcome.</p>
+<p>Essentially, I built a centralized indexing service for version
+control repositories with Mozilla's extra metadata thrown in.
+I tell it what repositories to mirror, and it clones everything,
+fetches data such as the pushlog and Git SHA-1 mappings, and
+stores everything in a central database. It then exposes this
+aggregated data through world-readable web services.</p>
+<p>Currently, I have the service indexing the popular project branches
+for Firefox (central, aurora, beta, release, esr, b2g, inbound, fx-team,
+try, etc). You can view the
+<a href="http://moztree.gregoryszorc.com/api/repos">full list</a> via the web
+service. As a bonus, I'm also serving these repositories via
+<a href="http://hg.gregoryszorc.com/">hg.gregoryszorc.com</a>. My server appears
+to be significantly faster than
+<a href="https://hg.mozilla.org">hg.mozilla.org</a>. If you want to use it for
+your daily needs, go for it. I make no SLA guarantees, however.</p>
+<p>I'm also using this service as an opportunity to experiment with
+alternate forms of Mercurial hosting. I have mirrors of mozilla-central
+and the try repository with generaldelta and lz4 compression enabled.
+I may blog about what those are eventually. The teaser is that they can
+make Mercurial perform a lot faster under some conditions. I'm also
+using ZFS under the hood to manage repositories. Each repository is a
+ZFS filesystem. This means I can create repository copies on the server
+(user repositories anyone?) at a nearly free cost. Contrast this to the
+traditional method of full clones, which take lots of time, memory, CPU,
+and storage.</p>
+<p>Anyway, some things you can do with the existing web service:</p>
+<ul>
+<li>Obtain metadata about Mercurial changesets.
+  <a href="http://moztree.gregoryszorc.com/api/changeset/940b2974f35b">Example</a>.</li>
+<li>Look up metadata about Git commits.
+  <a href="http://moztree.gregoryszorc.com/api/git-sha1/40438af67c321">Example</a>.</li>
+<li>Obtain a <a href="http://moztree.gregoryszorc.com/api/spore">SPORE descriptor</a>
+  describing the web service endpoints. This allows you to auto-generate
+  clients from descriptors. Yay!</li>
+</ul>
+<p>Obviously, that's not a lot. But adding new endpoints is relatively
+straightforward. See the <a href="https://bitbucket.org/indygreg/moz-tree-utopia/src/tip/repodata/web/app.py">source</a>.
+It's literally as easy as defining a URL mapping and writing a
+database query.</p>
+<p>The performance is also not the best. I just haven't put in the effort
+to tune things yet. All of the querying hits the database, not
+Mercurial. So, making things faster should merely be a matter of
+database and hosting optimization. Patches welcome!</p>
+<p>Some ideas that I haven't had time to implement yet:</p>
+<ul>
+<li>Return changests in a specific repository</li>
+<li>Return recently pushed changesets</li>
+<li>Return pushes for a given user</li>
+<li>Return commits for a given author</li>
+<li>Return commits referencing a given bug</li>
+<li>Obtain TBPL URLs for pushes with changeset</li>
+<li>Integrate bugzilla metadata</li>
+</ul>
+<p>Once those are in place, I foresee this service powering a number of
+dashboards. Patches welcome.</p>
+<p>Again, this service is only the tip of what's possible. There's a lot
+that could be built on this service. I have ideas. Others have ideas.</p>
+<p>The project includes a Vagrant file and Puppet
+manifests for provisioning the server. It's a one-liner to get a
+development environment up and running. It should be really easy to
+contribute to this project. Patches welcome.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="things-mozilla-could-do-with-mercurial"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/17/things-mozilla-could-do-with-mercurial" rel="bookmark" title="Permanent Link to Things Mozilla Could Do with Mercurial">Things Mozilla Could Do with Mercurial</a></h2>
   <small>January 17, 2014 at 03:00 PM | categories: 
@@ -369,56 +458,6 @@ Bugzilla brings to the table.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="python-package-providing-clients-for-mozilla-services"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/01/06/python-package-providing-clients-for-mozilla-services" rel="bookmark" title="Permanent Link to Python Package Providing Clients for Mozilla Services">Python Package Providing Clients for Mozilla Services</a></h2>
-  <small>January 06, 2014 at 10:45 AM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I have a number of Python projects and tools that interact with
-various Mozilla services. I had authored clients for all these services
-as standalone Python modules so they could be reused across projects.</p>
-<p>I have consolidated all these Python modules into a unified source
-control
-<a href="https://bitbucket.org/indygreg/python-mozautomation">repository</a>
-and have made the project available on
-<a href="https://pypi.python.org/pypi/mozautomation">PyPI</a>. You can install it
-by running:</p>
-<p>$ pip install mozautomation</p>
-<p>Currently included in the Python package are:</p>
-<ul>
-<li>A client for <a href="https://treestatus.mozilla.org/">treestatus.mozilla.org</a></li>
-<li>Module for extracting cookies from Firefox profiles (useful for
-  programmatically getting Bugzilla auth credentials).</li>
-<li>A client for reading and interpretting the
-  <a href="http://builddata.pub.build.mozilla.org/buildjson/">JSON dumps of automation jobs</a></li>
-<li>An interface to a SQLite database to manage associations between
-  Mercurial changesets, bugs, and pushes.</li>
-<li>Rudimentary parsing of commit messages to extract bugs and reviewers.</li>
-<li>A client to obtain information about Firefox releases via the
-  <a href="http://releases-api.mozilla.org/">releases API</a></li>
-<li>A module defining common Firefox source repositories, aliases, logical
-  groups (e.g. twigs and integration trees), and APIs for fetching
-  pushlog data.</li>
-<li>A client for the <a href="https://secure.pub.build.mozilla.org/buildapi/self-serve/">self serve API</a></li>
-</ul>
-<p>Documentation and testing is currently sparse. Things aren't up to my
-regular high quality standard. But something is better than nothing.</p>
-<p>If you are interested in contributing, drop me a line or send pull
-requests my way!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/2">Next Page »</a>
 

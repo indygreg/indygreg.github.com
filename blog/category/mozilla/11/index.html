@@ -50,6 +50,41 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="smaller-firefox-build-logs"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/05/23/smaller-firefox-build-logs" rel="bookmark" title="Permanent Link to Smaller Firefox Build Logs">Smaller Firefox Build Logs</a></h2>
+  <small>May 23, 2012 at 08:50 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
+ | <a href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The other day I looked at a full Firefox build log from TBPL and noticed
+that ~84,000 of the ~170,000 lines in the log I looked at was output
+from archive processes. We were printing thousands of lines showing the
+files that were being added and extracted from the archives that contain
+test files!</p>
+<p>I thought this was wasteful, so I filed
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=757397">bug 757397</a> and
+coded up a patch. Ted agreed that these lines were rather worthless and
+the patch has landed in mozilla-inbound.</p>
+<p>The result of the patch is build logs are about half as big in terms of
+lines. And, it appears at least 500kb is shaved off the compressed log
+files as well.</p>
+<p>The real world impact is you should be able to load build logs from
+the server faster because they are smaller.</p>
+<p>If you were parsing this data before and are impacted by this, please
+leave a comment on the aforementioned bug and we'll go from there.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="better-sharing-of-test-code-in-mozilla-projects"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/05/10/better-sharing-of-test-code-in-mozilla-projects" rel="bookmark" title="Permanent Link to Better Sharing of Test Code in Mozilla Projects">Better Sharing of Test Code in Mozilla Projects</a></h2>
   <small>May 10, 2012 at 10:35 AM | categories: 
