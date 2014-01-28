@@ -51,6 +51,121 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="review-board-at-mozilla"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/27/review-board-at-mozilla" rel="bookmark" title="Permanent Link to Review Board at Mozilla">Review Board at Mozilla</a></h2>
+  <small>January 27, 2014 at 04:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/mach'>mach</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/27/review-board-at-mozilla#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Some Mozillians recently stood up an
+<a href="https://reviewboard.allizom.org/">instance</a> of
+<a href="http://www.reviewboard.org/">Review Board</a> - a web-based code review
+tool for evaluation purposes. Having used Review Board at a previous
+company, I can say with high confidence that when properly configured,
+it beats the pants off Splinter (the code review interface baked into
+Bugzilla). Here are some advantages:</p>
+<ul>
+<li>The HTML interface is more pleasant on the eyes (subjective).</li>
+<li>Interdiffs actually work.</li>
+<li>Intra-line diffs are rendered.</li>
+<li>You can open <em>issues</em> for individual review comments and these
+  issues can be tracked during subsequent reviews (Bugzilla doesn't
+  really have anything similar and review comments tend to get lost
+  unless the reviewer is sharp).</li>
+<li>It integrates with the VCS, so you can expand code context from the
+  review interface.</li>
+<li>There are buttons to toggle whitespace differences.</li>
+<li>Syntax hightlighting! It even recognizes things like <em>TODO</em> in
+  comments.</li>
+</ul>
+<p>You can read more from the <a href="http://www.reviewboard.org/docs/manual/1.7/users/">official user guide</a>.</p>
+<p>If you have any interest in evaluating Review Board, the easiest way
+to upload patches to Mozilla's instance is to run <strong>mach rbt</strong>.</p>
+<p><strong>mach rbt</strong> will launch the Review Board tools command-line client
+(called RBTools). From there, you can do a number of things. Run
+<strong>mach rbt help</strong> to see the full list.</p>
+<p>Here are some examples:</p>
+<pre><code># See a diff that would be uploaded to Review Board:
+$ mach rbt diff
+
+# Create a review request based on the current Mercurial changeset:
+$ mach rbt post
+
+# That should print out a URL to the not-yet-published review
+# request. If you go to that URL, you'll notice that the fields
+# in that request are all empty.
+
+# Next time, you can have some fields auto-populate by running:
+$ mach rbt post --guess-summary --guess-description
+
+# This grabs info from the commit message.
+
+# To update an existing review request (e.g. to submit a new patch):
+$ mach rbt post -r &lt;review id&gt;
+
+# (where &lt;review ID&gt; is the ID of the review).
+
+# You can also have it generate a "squashed" patch from multiple
+# commits:
+$ mach rbt post 164123:tip
+</code></pre>
+<p>Run <strong>mach rbt help post</strong> for more options. Also see the
+<a href="http://www.reviewboard.org/docs/rbtools/dev/">RBTools documentation</a>
+for more.</p>
+<p>It's worth noting that <strong>mach rbt</strong> will download an unreleased version
+of RBTools. This is because the released version doesn't work well with
+Mercurial. I contributed a handful of patches to RBTools to make
+Mercurial work better.</p>
+<p>Before you dive in and start using Review Board for actual code review,
+there are some things you need to know:</p>
+<ul>
+<li>Mozilla's Review Board instance does not yet send emails on changes.
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=958236">Bug 958236</a>
+  tracks this. When it works, you'll see nice emails, just like you do
+  for Bugzilla reviews.</li>
+<li>Review Board doesn't currently interact with Bugzilla that well. In
+  theory, we could have Review Board update corresponding Bugzilla bugs
+  when actions are performed. Someone just needs to write this code
+  and get it deployed.</li>
+<li>If you create a Bugzilla attachment that contains the URL of a Review
+  Board review (e.g. https://reviewboard.allizom.org/r/23/), Bugzilla
+  will automatically set the MIME type as a Review Board review and set
+  up an HTML redirect when the attachment is <em>downloaded</em> via the
+  browser. You can even set <strong>r?</strong> on this attachment to have Bugzilla
+  nag about reviews. See <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=875562">bug 875562</a>
+  for an example.</li>
+<li>There is currently no way to upload a patch to Review Board and update
+  Bugzilla is one go. I have proof-of-concept code for this. Although,
+  there is <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=947596">pushback</a>
+  on getting that checked in.</li>
+</ul>
+<p>Finally and most importantly, <strong>Review Board at Mozilla is still in
+evaluation mode.</strong> It's usage has not been officially blessed as far
+as I know. I don't believe the SLA is as high as other services (like
+Bugzilla). Nobody is really using it yet. It still needs a lot of
+polish and integration for it to realize its potential. And, there is
+some <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=947596">talk</a>
+about the future of code review at Mozilla that may or may not involve
+Review Board. In short, the future of Review Board is uncertain. I
+wouldn't rely on it to archive review comments from super important
+reviews/decisions, however.</p>
+<p>Despite the shortcomings, I encourage people to play around with Review
+Board. If nothing else, at least <a href="https://reviewboard.allizom.org/r/24/diff/">gaze upon it's patch rendering
+beauty</a> and witness
+what the future could hold.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/27/review-board-at-mozilla#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="aggregating-version-control-info-at-mozilla"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/21/aggregating-version-control-info-at-mozilla" rel="bookmark" title="Permanent Link to Aggregating Version Control Info at Mozilla">Aggregating Version Control Info at Mozilla</a></h2>
   <small>January 21, 2014 at 10:50 AM | categories: 
@@ -388,77 +503,6 @@ to write Python that works simultaneously in both 2.x and 3.x.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="on-multiple-patches-in-bugs"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/01/07/on-multiple-patches-in-bugs" rel="bookmark" title="Permanent Link to On Multiple Patches in Bugs">On Multiple Patches in Bugs</a></h2>
-  <small>January 07, 2014 at 04:40 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>There is a common practice at Mozilla for developing patches with
-multiple parts. Nothing wrong with that. In fact, I think it's a best
-practice:</p>
-<ul>
-<li>Smaller, self-contained patches are much easier to grok and
-  review than larger patches.</li>
-<li>Smaller patches can land as soon as they are reviewed. Larger patches
-  tend to linger and get bit rotted.</li>
-<li>Smaller patches contribute to a culture of being fast and nimble, not
-  slow and lethargic. This helps with developer confidence, community
-  contributions, etc.</li>
-</ul>
-<p>There are some downsides to multiple, smaller patches:</p>
-<ul>
-<li>The bigger picture is harder to understand until all parts of a
-  logical patch series are shared. (This can be alleviated through
-  commit messages or reviewer notes documenting future intentions.
-  And of course reviewers can delay review until they are comfortable.)</li>
-<li>There is more overhead to maintain the patches (rebasing, etc).
-  IMO the solutions provided by Mercurial and Git are sufficient.</li>
-<li>The process overhead for dealing with multiple patches and/or bugs
-  can be non-trivial. (I would like to think good tooling coupled with
-  continuous revisiting of policy decisions is sufficient to counteract
-  this.)</li>
-</ul>
-<p>Anyway, the prevailing practice at Mozilla seems to be that multiple
-patches related to the same logical change are attached to the same
-bug. I would like to challenge the effectiveness of this practice.</p>
-<p>Given:</p>
-<ul>
-<li>An individual commit to Firefox should be standalone and should not
-  rely on future commits to unbust it (i.e. bisects to any commit should
-  be safe).</li>
-<li>Bugzilla has no good mechanism to isolate review comments from
-  multiple attachments on the same bug, making deciphering simultaneous
-  reviews on multiple attachments difficult and frustrating. This leads
-  to review comments inevitably falling through the cracks and the
-  quality of code suffering.</li>
-<li>Reiterating the last point because it's important.</li>
-</ul>
-<p>I therefore argue that attaching multiple reviews to a single Bugzilla
-bug is not a best practice and it should be avoided if possible. If that
-means filing separate bugs for each patch, so be it. That process can
-be automated. Tools like
-<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">bzexport</a>
-already do it. Alternatively (and even better IMO), we ditch
-Bugzilla's code review interface (Splinter) and integrate something like
-<a href="https://reviewboard.allizom.org/">ReviewBoard</a> instead. We limit
-Bugzilla to tracking, high-level discussion, and metadata aggregation.
-Code review happens elsewhere, without all the clutter and chaos that
-Bugzilla brings to the table.</p>
-<p>Thoughts?</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 

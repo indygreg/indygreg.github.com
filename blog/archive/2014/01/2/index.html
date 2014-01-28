@@ -51,6 +51,77 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="on-multiple-patches-in-bugs"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/07/on-multiple-patches-in-bugs" rel="bookmark" title="Permanent Link to On Multiple Patches in Bugs">On Multiple Patches in Bugs</a></h2>
+  <small>January 07, 2014 at 04:40 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>There is a common practice at Mozilla for developing patches with
+multiple parts. Nothing wrong with that. In fact, I think it's a best
+practice:</p>
+<ul>
+<li>Smaller, self-contained patches are much easier to grok and
+  review than larger patches.</li>
+<li>Smaller patches can land as soon as they are reviewed. Larger patches
+  tend to linger and get bit rotted.</li>
+<li>Smaller patches contribute to a culture of being fast and nimble, not
+  slow and lethargic. This helps with developer confidence, community
+  contributions, etc.</li>
+</ul>
+<p>There are some downsides to multiple, smaller patches:</p>
+<ul>
+<li>The bigger picture is harder to understand until all parts of a
+  logical patch series are shared. (This can be alleviated through
+  commit messages or reviewer notes documenting future intentions.
+  And of course reviewers can delay review until they are comfortable.)</li>
+<li>There is more overhead to maintain the patches (rebasing, etc).
+  IMO the solutions provided by Mercurial and Git are sufficient.</li>
+<li>The process overhead for dealing with multiple patches and/or bugs
+  can be non-trivial. (I would like to think good tooling coupled with
+  continuous revisiting of policy decisions is sufficient to counteract
+  this.)</li>
+</ul>
+<p>Anyway, the prevailing practice at Mozilla seems to be that multiple
+patches related to the same logical change are attached to the same
+bug. I would like to challenge the effectiveness of this practice.</p>
+<p>Given:</p>
+<ul>
+<li>An individual commit to Firefox should be standalone and should not
+  rely on future commits to unbust it (i.e. bisects to any commit should
+  be safe).</li>
+<li>Bugzilla has no good mechanism to isolate review comments from
+  multiple attachments on the same bug, making deciphering simultaneous
+  reviews on multiple attachments difficult and frustrating. This leads
+  to review comments inevitably falling through the cracks and the
+  quality of code suffering.</li>
+<li>Reiterating the last point because it's important.</li>
+</ul>
+<p>I therefore argue that attaching multiple reviews to a single Bugzilla
+bug is not a best practice and it should be avoided if possible. If that
+means filing separate bugs for each patch, so be it. That process can
+be automated. Tools like
+<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">bzexport</a>
+already do it. Alternatively (and even better IMO), we ditch
+Bugzilla's code review interface (Splinter) and integrate something like
+<a href="https://reviewboard.allizom.org/">ReviewBoard</a> instead. We limit
+Bugzilla to tracking, high-level discussion, and metadata aggregation.
+Code review happens elsewhere, without all the clutter and chaos that
+Bugzilla brings to the table.</p>
+<p>Thoughts?</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="python-package-providing-clients-for-mozilla-services"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/06/python-package-providing-clients-for-mozilla-services" rel="bookmark" title="Permanent Link to Python Package Providing Clients for Mozilla Services">Python Package Providing Clients for Mozilla Services</a></h2>
   <small>January 06, 2014 at 10:45 AM | categories: 
