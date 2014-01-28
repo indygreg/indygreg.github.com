@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-01-28T00:57:20Z</updated>
+  <updated>2014-01-28T00:59:24Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -117,9 +117,9 @@ Bugzilla). Nobody is really using it yet. It still needs a lot of
 polish and integration for it to realize its potential. And, there is
 some <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=947596">talk</a>
 about the future of code review at Mozilla that may or may not involve
-Review Board. In short, the future of Review Board is uncertain. I
-wouldn't rely on it to archive review comments from super important
-reviews/decisions, however.</p>
+Review Board. In short, the future of Review Board at Mozilla is
+uncertain. I wouldn't rely on it to archive review comments from super
+important reviews/decisions.</p>
 <p>Despite the shortcomings, I encourage people to play around with Review
 Board. If nothing else, at least <a href="https://reviewboard.allizom.org/r/24/diff/">gaze upon it's patch rendering
 beauty</a> and witness
