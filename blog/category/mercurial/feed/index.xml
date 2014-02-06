@@ -10,10 +10,270 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 28 Jan 2014 00:59:24 GMT</pubDate>
+    <pubDate>Thu, 06 Feb 2014 00:24:51 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>The Mercurial Revlog</title>
+      <link>http://gregoryszorc.com/blog/2014/02/05/the-mercurial-revlog</link>
+      <pubDate>Wed, 05 Feb 2014 16:26:00 PST</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/02/05/the-mercurial-revlog</guid>
+      <description>The Mercurial Revlog</description>
+      <content:encoded><![CDATA[<p>Mercurial stores lots of its data in append-only,
+intended-to-be-immutable data structures called <em>revlogs</em>. Each revlog is
+backed by a file on the filesystem. The main component of a revlog
+is a <em>revision</em>. When a new revision arrives, its content is compared
+against the previous revision in the file and a zlib-compressed
+delta/diff is generated. If the delta is smaller than the entry
+itself, the delta is appended to the revlog. If the compressed delta
+itself or the stream of deltas that must be applied to recreate the
+original text is larger than the source text, the compressed full content
+is appended to the revlog. In other words, Mercurial tries to maintain
+a balance between file size/growth rate and read times in terms of
+both I/O and CPU.</p>
+<p>The <em>changelog</em> is a <em>revlog</em> that holds information about every
+changeset/commit in the repository. The <em>manifest</em> is a <em>revlog</em> that
+holds details about which files are present in every changeset. There
+exist a separate <em>revlog</em> for each file/path ever present in the
+repository. These are called <em>filelogs</em>.</p>
+<p>When you commit a change touching a single file, Mercurial will append
+a revision to the changelog describing the commit, a revision to the
+manifest describing the set of files active in that specific commit,
+and a new revision to a filelog.</p>
+<p>You can poke around your repository's revlogs by running some debug
+commands. For example:</p>
+<pre><code># Show high-level information about the manifest revlog
+$ hg debugrevlog -m
+
+# Show details about each entry in the manifest revlog (this
+# actually reads data from an index to the data revlog - pretend
+# there aren't index files for now)
+$ hg debugindex -m
+
+# Dump the content of a single entry in the changelog.
+$ hg debugdata -c 2
+</code></pre>
+<p>I'm generally a big fan of append-only data structures because I love
+the beneficial caching properties and linear I/O performance.
+Mercurial and the revlog can take advantage of these properties for
+some performance wins under key scenarios, especially server
+operation (pushing commits doesn't necessarily invalidate cached revlog
+entries, allowing the page cache to service many reads).</p>
+<h2>Edge cases and deficiencies</h2>
+<p>As with any system trying to solve a complex problem, the revlog
+storage format doesn't always work as well as intended.</p>
+<p>Let's start by taking by looking at how revlogs do delta storage. I said
+earlier that revlogs try to store a compressed delta against the
+previous entry. Well, that previous entry is the previous physical
+revision in the file/revlog, not the parent revision. You see,
+entries/revisions in revlogs have a numeric index (0, 1, 2, 3, ...),
+a SHA-1 hash of their content, and a link to the logical <em>parent</em> of
+the entry. e.g. say you have two commits in your repo, one made after
+the other:</p>
+<pre><code>0:8ba995b74e18
+1:9b2a99adc05e
+</code></pre>
+<p>The revlog has entries at indexes 0 and 1. They are also accessible
+by their hash/node values of 8ba995b74e18 and 9b2a99adc05e. The parent
+of 1 is 0. The entry for 0 is the full, compressed content of 0. The
+entry for 1 is likely a compressed delta from 0 to 1. As we commit,
+we keep appending new entries. These exist as compressed deltas until
+the sizes of 0..n is greater than n by itself. At that time, a
+compressed version of n is stored.</p>
+<p>This model works great for linear histories, as changes from n to n+1
+are usually small. Mercurial can store a very small delta for each
+entry. The world is good.</p>
+<p>This model works great when entries in revlogs are small. By having
+small entries (and small changes), the number of deltas required to
+eclipse the size of a single entry remains small, in effect keeping the length
+of a <em>delta chain</em> in check. Limiting the length of delta chains is good
+because it keeps the cost of looking up a single revision's content low.
+If you have a delta chain of 1000, for example, Mercurial will need to read
+1000 revlog entries and apply 1000 deltas to obtain the original value.
+That can get expensive computationally. Since reads are linear, I/O
+should remain in check. But you do need to scan a lot of bytes to read
+in all the deltas and you need to perform a lot of the same computations
+(such as zlib decompression).</p>
+<p>Let's talk a little about where the revlog starts to break down.</p>
+<p>First, there's the issue of multiple, interleaved branches in the
+revlog. Say we have a repository with many branches/heads. We alternate
+committing between all the heads. This can play havoc with the default
+revlog delta compression. Since revlogs compress against the previous
+<em>physical</em> entry in the revlog, if there is lots of alternating between
+branches and the contents of those branches diverges significantly, the
+deltas can grow quite large and full revisions will be stored with
+higher frequency. This means more storage space and more CPU tasked
+with resolving deltas (since deltas are larger). Although, CPU is kept
+in check since delta chains tend to be smaller since full revisions are
+stored with higher frequency.</p>
+<p>Second, we have an issue with delta chain explosion of large entries
+with small turnover. If your base content is large and it isn't changing
+that much, it will take hundreds or even thousands of revisions before
+the sum of the delta sizes outgrows that of an entry. This means delta
+chains can be very long and Mercurial will have to spend a lot of CPU
+to resolve a single entry.</p>
+<p>Third, revlogs are using zlib for compression. As many
+<a href="http://pokecraft.first-world.info/wiki/Quick_Benchmark:_Gzip_vs_Bzip2_vs_LZMA_vs_XZ_vs_LZ4_vs_LZO">benchmarks</a>
+have shown, zlib isn't the fastest or most efficient compression
+algorithm in the world. It's likely justified as a reasonable default.
+But alternatives exist. The choice of zlib has implications, especially
+when other factors (such as excessively long delta chains) come into
+play.</p>
+<p>Let's talk about mitigation strategies.</p>
+<h2>True parent deltas</h2>
+<p>While I wasn't around for the original design decisions of revlogs, I'm
+guessing they were strongly influenced by the fact that sequential I/O
+on magnetic disks is much, much faster than random I/O. With SSDs and
+flash storage growing in popularity - a medium that offers random I/O
+commonly over 100 MB/s - this buys us the luxury of asking <em>do revlogs
+need to be optimized for sequential I/O</em> and <em>how can revlogs change to
+take advantage of fast random I/O</em>.</p>
+<p>One of the ways revlogs can adapt to fast random I/O is to store the
+delta against the logical parent, not the physical. The delta chain will
+thus <em>skip</em> revisions in the revlog. e.g. the chain could be 1, 2, 5, 6,
+10, not n, n+1, n+2, .... This would keep deltas small and would reduce
+the overall size of the revlog. Although, it would likely increase the
+length of delta chains, especially when dealing with non-linear
+histories.</p>
+<p>It turns out Mercurial has a setting that enables this -
+<strong>format.generaldelta</strong>. To create a repository with this enabled, run:</p>
+<pre><code>$ hg --config format.generaldelta=true init path/to/repo
+</code></pre>
+<p>The revlogs in that repository with now have deltas computed against the
+logical parent!</p>
+<p>To verify you are using general delta, look for <strong>generaldelta</strong> in the
+<em>.hg/requires</em> file. If it isn't there, you probably don't have
+generaldelta enabled. <strong>Please note that cloning a generaldelta repo
+won't necessarily give your repo generaldelta. You need to have the
+custom config option set on the client or the client will likely use the
+defaults.</strong></p>
+<p>On repositories with lots of interleaved heads, this can make a huge
+difference. As a pathalogical example, Mozilla's
+<a href="https://hg.mozilla.org/try/">Try</a> repository (where people push heads
+to trigger test/automation runs) has over 22,000 heads. The on-disk
+size of the repository is 3117 MB with the standard settings and 2139 MB
+with generaldelta! The bulk of this difference comes from the manifest
+revlog, which is 954 MB smaller with generaldelta.</p>
+<h2>Alternate compression format</h2>
+<p>Mercurial uses zlib for revlog compression by default. This is a safe
+choice. It's relatively fast and yields relatively good compression.</p>
+<p>Since Mercurial is highly extensible, it's possible to plug in a custom
+compression format for revlogs. Facebook's
+<a href="https://bitbucket.org/facebook/lz4revlog/">lz4revlog extension</a> will
+use lz4 for compression. lz4 is faster than zlib, but compression isn't
+as good. Repositories with lz4 are commonly ~1.5x larger. But CPU bound
+tasks can be significantly faster.</p>
+<p>In theory, any compression format can be used. However, it's not
+trivially selectable in Mercurial (yet), so someone will need to provide
+an extension that implements your desired compression format.</p>
+<h2>Alternate storage backends</h2>
+<p>In theory, Mercurial revlogs can be backed by anything. This is the
+extensibility of Mercurial at work. There's just a Mercurial extension
+sitting between using SQL, S3, Cassandra, or any other storage backend
+for revlogs.</p>
+<p>It's also possible to write custom revlog implementations that change
+the file layout for interesting scaling possibilities. For example,
+modern filesystems like ZFS and btrfs support block-level deduplication
+and transparent compression. If you had block-aligned revlog entries
+with deduplication enabled, servers could in theory only store each
+revision at most once. Another idea is to let the filesystem handle
+the compression. This would cause compression to occur in kernel space
+(rather than inside Python userspace). This may have beneficial
+performance properties. It may not. It may depend on the repository.
+These would be interesting experiments to conduct!</p>
+<h2>Caveat with alternate revlog implementations</h2>
+<p>Before you go experimenting with alternative revlog implementations,
+be forewarned that wall time performance for push and pull operations
+may suffer!</p>
+<p>Currently, Mercurial isn't as smart as it could be when it comes to
+transferring <em>bundles</em> of changeset data between repositories. Let me
+explain.</p>
+<p>When Mercurial transfers changeset data between repositories, it often
+uses an encoding format called a <a href="http://mercurial.selenic.com/wiki/BundleFormat">bundle</a>.
+A bundle is effectively a custom archive format for revlog data. If
+you've ever used <em>hg bundle</em> or <em>hg unbundle</em> to transfer repository
+data, you've explicitly interacted with bundles. But what's lesser known
+is that the <em>hg push</em> and <em>hg pull</em> operations also transfer bundles.
+The only major difference is that they are created on the fly and their
+existence is hidden from view.</p>
+<p>In theory, bundles can be encoded a number of different ways. The most
+common tunable is the compression format. Over the wire, bundles are
+zlib (or even uncompressed). If you run <em>hg bundle</em>, you'll likely
+produce a bzip2 bundle. (This is why <em>hg unbundle</em> can be slower than
+<em>hg clone</em> - the CPU time spent for bzip2 is much greater than for
+zlib.) But a problem with bundles as they exist today is that the format
+is rather static when it comes to what's transferred over the wire.
+Unless you've mucked about with settings, the client and server will
+send a zlib-compressed bundle using the physical revlog order. In other
+words, the bundle format is the Mercurial defaults.</p>
+<p>If Mercurial were completely dumb, transferring bundles would involve
+1) determining the full text of a revlog entry 2) compressing that entry
+into a bundle 3) sending that data to a peer 4) decompressing that entry
+5) appending that entry to the appropriate revlog (which involves
+recompression). Fortunately, Mercurial is a bit smarter than that:
+Mercurial can detect when compressed bits in a bundle will match what
+is on disk and will avoid the unncessary compression operations.</p>
+<p>Anyway, the current bundle transfer mechanism falls apart when there is
+a mismatch between client and server configurations or even when the
+server or client is using non-defaults. You can think of this as a
+revlog impedance mismatch. Essentially, when the client and server are
+operating with different or uncommon types of revlogs, Mercurial tends
+to default to the lowest common denominator, or zlib deltas against the
+physical parent. If, for example, a client wants to use generaldelta
+with a server employing defaults, the client will have to convert the
+server's deltas into generaldelta deltas. This requires a non-trivial
+amount of CPU and pull operations become slower. I believe the opposite
+is also true: generaldelta clients will emit generaldelta bundles,
+causing the server to recompute the deltas.</p>
+<p><strong>When it comes to custom revlog formats today, essentially nobody
+wins.</strong></p>
+<p>The good news is this will be fixed. There is an
+<a href="http://mercurial.selenic.com/wiki/BundleFormat2">effort</a> to improve the
+bundle format and wire protocols to make matters better. A little
+protocol negotiation can go a long way to make the situation a lot
+better. That said, there is still the underlying problem that some
+clients may want settings that differ from the server's. e.g. clients
+with SSDs likely want generaldelta because they don't need sequential
+I/O and SSD space is more expensive, so the smaller repository sizes
+achieved with generaldelta are appreciated. But a server operator may
+not want to force generaldelta on all clients because it would make
+clients on mechanical hard drives slower! The point is revlog impedance
+mismatch will occur and someone needs to spend the CPU cycles to rectify
+the matter. I suspect this will be pushed to clients since distributed
+CPU load is easier to deal with than centralized on the server. But, I
+wouldn't be surprised if Mercurial allowed server operators to configure
+the behavior. It's a hard problem. Time will tell.</p>
+<p>In the mean time, just know that if you experiment with custom revlog
+settings, push and pull operations will likely be slower. You may not
+notice this on day-to-day operations. But on things like initial clone,
+you could experience a massive slow-down.</p>
+<p>Here's some timings with
+<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a> with a
+Mercurial 1.9 server and client on the same SSD-backed multi-core machine:</p>
+<ul>
+<li>clone default settings - 4:25</li>
+<li>clone --uncompressed - 0:49</li>
+<li>clone from generaldelta - 14:11</li>
+<li>clone from generaldelta to generaldelta - 16:49</li>
+<li>clone from generaldelta --uncompressed - 0:50</li>
+<li>pull 2250 changesets, default from default - 6.7s</li>
+<li>pull 2250 changesets, default from generaldelta - 17.9s</li>
+<li>pull 2250 changesets, generaldelta from default - 28.5s</li>
+<li>pull 2250 changesets, generaldelta from generaldelta - 20.0s</li>
+</ul>
+<p>As you can see, anything involving compression and generaldelta is
+much slower. Once <em>bundle format 2</em> is fully implemented, I expect the
+situation to improve.  Until then, know that you'll get a ~2.5-4x
+slowdown from using generaldelta. You'll have to measure other
+revlog formats for their impact.</p>
+<p>In conclusion, Mercurial's revlog file format is an interesting and
+tunable data structure. It works pretty well for most repositories. But
+if you are the 1%, you might want to spend some time to investigate
+changing its default configuration.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Aggregating Version Control Info at Mozilla</title>
       <link>http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla</link>
@@ -771,102 +1031,6 @@ Upgrade already!</p>
 <p>There's no bug component for this extension (yet). If you find any
 issues or wish to add a feature, just email a patch to me at gps@mozilla.com.</p>
 <p>Please let me know if you find this useful or if you have any questions.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>The State of Mercurial at Mozilla</title>
-      <link>http://gregoryszorc.com/blog/2013/05/13/the-state-of-mercurial-at-mozilla</link>
-      <pubDate>Mon, 13 May 2013 13:25:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/05/13/the-state-of-mercurial-at-mozilla</guid>
-      <description>The State of Mercurial at Mozilla</description>
-      <content:encoded><![CDATA[<p>I have an opinion on the usage of Mercurial at Mozilla: it stinks.</p>
-<p>Here's why.</p>
-<h2>The server is configured poorly</h2>
-<p>Our Mozilla server, hg.mozilla.org, is currently running Mercurial 2.0.2.
-In terms of Mercurial features, stability, and performance, we are light
-years behind.</p>
-<p>You know that annoying phases configuration you need to set when pushing
-to Try? That's because the server isn't new enough to tell the client the
-same thing the configuration option does. It
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=725362">will be fixed</a>
-when the server is upgraded to 2.1+.</p>
-<p>Furthermore, we are running the server over NFS, which introduces known
-badness, including slowness.</p>
-<p>I believe we blame Mercurial for issues that would go away if we
-configured the Mercurial server properly.</p>
-<p>Fortunately, it appears the
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=781012">upgrade to 2.5</a>
-is near and I've heard we're moving from NFS to local disk storage as
-part of that. This should go a long way to making the server better.
-The upgrade can't happen soon enough.</p>
-<h2>User education is poor</h2>
-<p>I think a lot of people are ignorant on the features and abilities of
-Mercurial.</p>
-<p>I commonly hear people are dissatisfied with the behavior of their
-Mercurial client. They encounter performance issues, bugs, corruption,
-etc. Nine times out of ten this is due to running an old Mercurial
-release. Just last Friday someone on my team asked me about
-weird behavior involving file case. My first question: <em>what version
-of Mercurial are you using?</em> He was running 2.0.2. I told him to
-upgrade to 2.5+. It fixed his problem. <strong>If you aren't running
-Mercurial 2.5 or newer, upgrade immediately.</strong></p>
-<p>I've heard people say we should switch to Git because Git has feature X.
-Most of the time, Mercurial has these features. Unfortunately, people
-just don't realize it. When I point them at
-<a href="http://mercurial.selenic.com/wiki/UsingExtensions">Mercurial's extensions list</a>
-their eyes light up and they thank me for making their lives easier.</p>
-<p>I think a problem is a lot of new Mozilla contributors knew Git
-before and only pick up the bare essentials of Mercurial that allow them
-to land patches. They prefer Git because it is familiar and just don't
-bother to pick up Mercurial. The potential of Mercurial is thus lost on
-them.</p>
-<p>Perhaps we should have a brown bag and/or better documentation on
-getting the most out of Mercurial?</p>
-<h2>The branching model is far from ideal</h2>
-<p>For Gecko/Firefox development, we maintain separate repositories for the
-trunk and release branches. This introduces all kinds of annoying.</p>
-<p>We should not have separate repositories for <em>central</em>, <em>inbound</em>,
-<em>aurora</em>, <em>beta</em>, <em>release</em>, etc. We should be using some combination of
-branches and bookmarks and have all the release heads in one
-repository, just like how the
-<a href="https://github.com/mozilla/mozilla-central/">GitHub mirror</a> is
-configured.</p>
-<p>As an experiment, I created a
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko">unified Mercurial repository</a>.
-Each current repository is tracked as a bookmark (there are
-<a href="https://developer.mozilla.org/en-US/docs/Developer_Guide/Source_Code/Mercurial">instructions</a>
-for reproducing this). Unfortunately, the web interface isn't showing
-bookmarks (perhaps because the version of Mercurial is too old?), so
-you'll have to clone the repository to play around. Just run
-<em>hg bookmarks</em> and e.g. <em>hg up aurora</em> after cloning.
-<em>Warning: I'm not actively synchronizing this repository, so don't rely
-on it being up to date</em>.</p>
-<p>A Mercurial contributor (who is familiar with Mozilla's
-development model) suggested we use Mercurial branches for every Gecko
-release (20, 21, 22, etc). I think this and other uses of branches and
-bookmarks are ideas worth exploring.</p>
-<h2>We're failing to harness the extensibility</h2>
-<p>Gecko/Firefox has a complicated code lifecycle and landing process.
-This could be significantly streamlined if we fully harnessed and
-embraced the extensibility of Mercurial. While there are some
-Mozilla-centric extensions (details in my
-<a href="/blog/2013/05/12/thoughts-on-mercurial-%28and-git%29/">recent post</a>),
-I don't think they are well known nor used.</p>
-<p>I think Mozilla should embrace the functionality of extensions like
-these (whether they be for Mercurial, Git, or something else) and invest
-resources in improving the workflows for all developers. Until these
-tools are obviously superior and advertised, I believe many developers
-will unknowingly continue to toil without them. And, it's likely hurting
-our ability to attract and retain new contributors as well.</p>
-<h2>Conclusion</h2>
-<p>Mozilla's current usage of Mercurial is far from ideal. It's no wonder
-people don't like Mercurial (and why some want to switch to Git).</p>
-<p>Fortunately, little has to do with shortcomings of Mercurial itself (at
-least with newer versions). If you want to know why Mercurial isn't
-working too well for Gecko/Firefox development, most of the problems
-are self-inflicted or the solutions reside within each of us. Time
-will tell if we as a community have the will to address these issues.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
