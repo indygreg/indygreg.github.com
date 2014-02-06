@@ -7,12 +7,67 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-02-06T00:24:51Z</updated>
+  <updated>2014-02-06T03:12:51Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[New Repository for Mozilla Version Control Tools]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools" />
+    <id>http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools</id>
+    <updated>2014-02-05T19:15:00Z</updated>
+    <published>2014-02-05T19:15:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Git" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[New Repository for Mozilla Version Control Tools]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools"><![CDATA[<p>Version control systems can be highly useful tools.</p>
+<p>At Mozilla, we've made numerous improvements and customizations to our
+version control tools. We have <a href="https://hg.mozilla.org/hgcustom/hghooks/">custom hooks</a>
+that run on the server. We have a <a href="https://hg.mozilla.org/hgcustom/hg_templates/">custom skin</a>
+for Mercurial's web interface. Mozillians have written a handful of
+Mercurial extensions to aid with common developer tasks, such as
+<a href="https://bitbucket.org/sfink/trychooser">pushing to try</a>,
+<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">interacting with Bugzilla</a>,
+<a href="https://bitbucket.org/sfink/mqext">making mq more useful</a>, and more.</p>
+<p>These have all come into existence in an organic manner, one after the
+other. Individuals have seen an itch and scratched it. Good for them.
+Good for Mozilla.</p>
+<p>Unfortunately, the collection of amassed tools has become quite large.
+They have become difficult to discover and keep up to date. The
+consistency in quality and style between the tools varies. Each tool has
+separate processes for updating and changing.</p>
+<p>I contacted the maintainers of the popular version control tools at
+Mozilla with a simple proposal: let's maintain all our tools under one
+repo. This would allow us to increase cohesion, share code, maintain a
+high quality bar, share best practices, etc. There were no major
+objections, so we now have a <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">unified repository</a>
+containing our version control tools!</p>
+<p>Currently, we only have a few Mercurial extensions in there. A goal is
+to accumulate as much of the existing Mercurial infrastructure into
+that repository as possible. Client code. Server code. All of the code.
+I want developers to be able to install the same hooks on their clients
+as what's running on the server: why should your local repo let you
+commit something that the server will reject? I want developers to be
+able to reasonably reproduce Mozilla's canonical version control server
+configuration locally. That way, you can test things locally with a high
+confidence that your changes will work the same way on production. This
+allows deployments to move faster and with less friction.</p>
+<p>The immediate emphasis will be on moving extensions into this repo and
+deprecating the old homes on user repositories. Over time, we'll move
+into consolidating server code and getting hg.mozilla.org and
+git.mozilla.org to use this repository. But that's a lower priority: the
+most important goal right now is to make it easier and friendlier for
+people to run productivity-enhancing tools.</p>
+<p>So, if you see your Mercurial extensions alerting you that they've been
+moved to a new repository, now you know what's going on.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -874,30 +929,5 @@ performance issue for any hosted service provider, I'm not going to
 hold my breath this particular feature is rolled out any time soon.
 This is unfortunate, as it makes projects seemingly choose between
 low risk/low convenience and GitHub's vibrant developer community.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Mercurial 2.8 released]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released" />
-    <id>http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released</id>
-    <updated>2013-11-08T14:30:00Z</updated>
-    <published>2013-11-08T14:30:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Mercurial 2.8 released]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released"><![CDATA[<p><a href="http://mercurial.selenic.com/">Mercurial</a> 2.8 has been released.</p>
-<p>The <a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_2.8_.282013-11-1.29">changes</a>
-aren't as sexy as previous releases. But there are a handful of bug
-fixes that seem useful to pull in. People may also find the new <em>shelve</em>
-extension useful.</p>
-<p>I encourage Mozillians to keep their Mercurial up to date. I once went
-around the San Francisco office and stood behind people as they
-upgraded to a modern Mercurial. For the next few weeks I was hearing a
-lot of "OMG Mercurial is so much better now." Don't handicap yourself by
-running an older, buggy Mercurial.</p>
-<p>If you don't yet feel comfortable running 2.8, 2.7 should be safe.</p>]]></content>
   </entry>
 </feed>
