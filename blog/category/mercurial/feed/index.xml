@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 06 Feb 2014 03:12:51 GMT</pubDate>
+    <pubDate>Tue, 04 Mar 2014 23:09:29 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -620,7 +620,7 @@ running an older, buggy Mercurial.</p>
       <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata</guid>
       <description>Using Mercurial to query Mozilla metadata</description>
       <content:encoded><![CDATA[<p>I have updated my
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev">Mercurial extension tailored for Gecko/Firefox development</a>
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension tailored for Gecko/Firefox development</a>
 with features that support rich querying of Mozilla/Gecko-development
 specific metadata!</p>
 <p>The extension now comes with a bug full of
@@ -957,7 +957,7 @@ contributors and for taking the time to review this work.</p>]]></content:encode
       <category><![CDATA[Mozilla]]></category>
       <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial</guid>
       <description>Track pushes and train riding with Mercurial</description>
-      <content:encoded><![CDATA[<p>My <a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev">Mercurial extension for Firefox development</a>
+      <content:encoded><![CDATA[<p>My <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension for Firefox development</a>
 now has an initial implementation of pushlog aggregation and searching.</p>
 <p>You first start by synchronizing the pushlog data on Mozilla's servers
 with the local client:</p>

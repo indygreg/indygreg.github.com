@@ -223,7 +223,7 @@ contributors and for taking the time to review this work.</p>
 </small><p/>
   <div class="post_prose">
     
-  <p>My <a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev">Mercurial extension for Firefox development</a>
+  <p>My <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension for Firefox development</a>
 now has an initial implementation of pushlog aggregation and searching.</p>
 <p>You first start by synchronizing the pushlog data on Mozilla's servers
 with the local client:</p>
@@ -291,12 +291,12 @@ extension I wrote this weekend!</p>
 <p>Gecko developers perform a number of common tasks with Mercurial, so I
 thought it would be handy to package them up in an extension.</p>
 <p>To install the extension:</p>
-<pre><code>hg clone https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev
+<pre><code>hg clone https://hg.mozilla.org/hgcustom/version-control-tools
 </code></pre>
 <p>Then add this extension to your hgrc file (either the global or
 per-repository will suffice):</p>
 <pre><code>[extensions]
-mozext = /path/to/hgext-gecko-dev
+mozext = /path/to/version-control-tools/hgext/mozext
 </code></pre>
 <p>Since I believe tools should be self-documenting, run the following for
 usage info:</p>

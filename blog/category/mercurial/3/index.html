@@ -70,12 +70,12 @@ extension I wrote this weekend!</p>
 <p>Gecko developers perform a number of common tasks with Mercurial, so I
 thought it would be handy to package them up in an extension.</p>
 <p>To install the extension:</p>
-<pre><code>hg clone https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev
+<pre><code>hg clone https://hg.mozilla.org/hgcustom/version-control-tools
 </code></pre>
 <p>Then add this extension to your hgrc file (either the global or
 per-repository will suffice):</p>
 <pre><code>[extensions]
-mozext = /path/to/hgext-gecko-dev
+mozext = /path/to/version-control-tools/hgext/mozext
 </code></pre>
 <p>Since I believe tools should be self-documenting, run the following for
 usage info:</p>

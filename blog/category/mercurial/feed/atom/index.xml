@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-02-06T03:12:51Z</updated>
+  <updated>2014-03-04T23:09:29Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -654,7 +654,7 @@ running an older, buggy Mercurial.</p>
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
     <summary type="html"><![CDATA[Using Mercurial to query Mozilla metadata]]></summary>
     <content type="html" xml:base="http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata"><![CDATA[<p>I have updated my
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev">Mercurial extension tailored for Gecko/Firefox development</a>
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension tailored for Gecko/Firefox development</a>
 with features that support rich querying of Mozilla/Gecko-development
 specific metadata!</p>
 <p>The extension now comes with a bug full of
@@ -1006,7 +1006,7 @@ contributors and for taking the time to review this work.</p>]]></content>
     <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
     <summary type="html"><![CDATA[Track pushes and train riding with Mercurial]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial"><![CDATA[<p>My <a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev">Mercurial extension for Firefox development</a>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial"><![CDATA[<p>My <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension for Firefox development</a>
 now has an initial implementation of pushlog aggregation and searching.</p>
 <p>You first start by synchronizing the pushlog data on Mozilla's servers
 with the local client:</p>
