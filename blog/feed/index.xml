@@ -10,10 +10,88 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 30 Mar 2014 21:13:31 GMT</pubDate>
+    <pubDate>Tue, 01 Apr 2014 19:31:27 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Using Mercurial for Status Reports</title>
+      <link>http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports</link>
+      <pubDate>Tue, 01 Apr 2014 12:30:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports</guid>
+      <description>Using Mercurial for Status Reports</description>
+      <content:encoded><![CDATA[<p>Mercurial has a pair of amazing features called
+<a href="http://www.selenic.com/hg/help/revsets">Revisions Sets</a>
+and <a href="http://www.selenic.com/hg/help/templates">Templates</a>. Combined,
+they allow you to query Mercurial like a database and to generate custom
+reports from obtained data.</p>
+<p>As I've <a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata/">demonstrated</a>,
+you can write Mercurial extensions to provide custom revision set
+queries and template functions and keywords. My
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">mozext</a>
+extension aggregates Mozilla's <em>pushlog</em> data into a local SQLite
+database and makes this data available to revision sets and templates.</p>
+<p>My hack of the day is to use revision sets and templates to create a
+weekly status report:</p>
+<div class="pygments_murphy"><pre>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
+--template &#39;* {ifeq(reviewer, &quot;gps&quot;, &quot;Review: &quot;, &quot;Landing: &quot;)}{firstline(desc)}\n&#39;
+</pre></div>
+
+<p>When I run this, I get the output:</p>
+<div class="pygments_murphy"><pre>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
+* Review: Bug 987146 - Represent SQL queries more efficiently. r=gps.
+* Review: Bug 987984 - VirtualenvManager.call_setup() should use self.python_path instead of sys.executable, r=gps
+* Landing: Bug 987398 - Part 1: Run mochitests from manifests with mach; r=ahal
+* Landing: Bug 987398 - Part 2: Handle install-to-subdir in TestResolver; r=ahal
+* Landing: Bug 987414 - Pass multiple test arguments to mach testing commands; r=ahal
+* Review: Bug 988141 - Clean up config/recurse.mk after bug 969164. r=gps
+* Landing: Bug 973992 - Support experiments add-ons; r=Unfocused
+* Review: Bug 927672 - Force pymake to fall back to mozmake when run on build slaves. r=gps
+* Review: Bug 989147 - Use new sccache for Linux and Android builds. r=gps
+* Review: Bug 989147 - Add missing part of the patch from rebase conflict. r=gps
+* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
+* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
+* Landing: Backed out changeset 4834a3833639 and c580afddd1cb (bug 985084 and bug 97500)
+* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
+* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
+* Landing: Bug 989137 - Part 1: Uninstall unknown experiments; r=Unfocused
+* Landing: Bug 989137 - Part 2: Don&#39;t use a global logger; r=gfritzsche
+* Landing: Bug 989137 - Part 3: Log.jsm API to get a Logger that prefixes messages; r=bsmedberg
+* Landing: Bug 989137 - Part 4: Use a prefixing logger for Experiments logging; r=gfritzsche
+* Landing: Bug 989137 - Part 5: Prefix each log message with the instance of the object; r=gfritzsche
+* Review: Bug 988849 - Add mach target for jit tests; r=gps
+* Landing: Bug 989137 - Part 6: Create experiment XPIs during the build; r=bsmedberg
+* Landing: Bug 989137 - Part 7: Remove unncessary content from test experiments; r=Unfocused
+* Landing: Bug 985084 - Part 2: Properly report userDisabled in the API; r=Unfocused
+</pre></div>
+
+<p>Which I can then copy and paste directly into the
+<a href="http://benjamin.smedbergs.us/weekly-updates.fcgi/">status tool</a> to
+capture all my weekly code contributions! That takes a few seconds to
+run and saves me a few minutes of typing.</p>
+<p>For the curious, let's break that Mercurial command down.</p>
+<ul>
+<li>public() selects all <em>public</em> changesets. These are changesets in the
+  repository that have been pushed to a publishing repository. In other
+  words, patches that landed in Firefox.</li>
+<li>me() is a custom revset from my <em>mozext</em> extension that parses the
+  commit message and selects changesets that I authored or reviewed.</li>
+<li>firstpushdate("-7") is a custom revset from my <em>mozext</em> extension. It
+  selects changesets that were first pushed in the last 7 days (using
+  pushlog data stored in a local SQLite database).</li>
+</ul>
+<p>The template piece should be easy to read. I have a simple branch
+testing whether the changeset is a review or not, then output a label
+followed by the first line of the commit message.</p>
+<p>I have this command saved under the <em>[alias]</em> section of my <em>~/.hgrc</em>
+file so I can just type <em>hg statusreport</em>.</p>
+<p>While there is room to improve the tool (stripping <em>r=</em> lines from
+commit messages for example), I think it's a pretty cool hack and shows
+how Mercurial can grow to solve problems you don't think your version
+control system knows how to solve.</p>]]></content:encoded>
+    </item>
     <item>
       <title>How Promises and Tasks are Improving Tests</title>
       <link>http://gregoryszorc.com/blog/2014/03/30/how-promises-and-tasks-are-improving-tests</link>
@@ -900,46 +978,6 @@ Bugzilla to tracking, high-level discussion, and metadata aggregation.
 Code review happens elsewhere, without all the clutter and chaos that
 Bugzilla brings to the table.</p>
 <p>Thoughts?</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Python Package Providing Clients for Mozilla Services</title>
-      <link>http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services</link>
-      <pubDate>Mon, 06 Jan 2014 10:45:00 PST</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services</guid>
-      <description>Python Package Providing Clients for Mozilla Services</description>
-      <content:encoded><![CDATA[<p>I have a number of Python projects and tools that interact with
-various Mozilla services. I had authored clients for all these services
-as standalone Python modules so they could be reused across projects.</p>
-<p>I have consolidated all these Python modules into a unified source
-control
-<a href="https://bitbucket.org/indygreg/python-mozautomation">repository</a>
-and have made the project available on
-<a href="https://pypi.python.org/pypi/mozautomation">PyPI</a>. You can install it
-by running:</p>
-<p>$ pip install mozautomation</p>
-<p>Currently included in the Python package are:</p>
-<ul>
-<li>A client for <a href="https://treestatus.mozilla.org/">treestatus.mozilla.org</a></li>
-<li>Module for extracting cookies from Firefox profiles (useful for
-  programmatically getting Bugzilla auth credentials).</li>
-<li>A client for reading and interpretting the
-  <a href="http://builddata.pub.build.mozilla.org/buildjson/">JSON dumps of automation jobs</a></li>
-<li>An interface to a SQLite database to manage associations between
-  Mercurial changesets, bugs, and pushes.</li>
-<li>Rudimentary parsing of commit messages to extract bugs and reviewers.</li>
-<li>A client to obtain information about Firefox releases via the
-  <a href="http://releases-api.mozilla.org/">releases API</a></li>
-<li>A module defining common Firefox source repositories, aliases, logical
-  groups (e.g. twigs and integration trees), and APIs for fetching
-  pushlog data.</li>
-<li>A client for the <a href="https://secure.pub.build.mozilla.org/buildapi/self-serve/">self serve API</a></li>
-</ul>
-<p>Documentation and testing is currently sparse. Things aren't up to my
-regular high quality standard. But something is better than nothing.</p>
-<p>If you are interested in contributing, drop me a line or send pull
-requests my way!</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

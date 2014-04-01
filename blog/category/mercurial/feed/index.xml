@@ -10,10 +10,88 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 30 Mar 2014 21:13:31 GMT</pubDate>
+    <pubDate>Tue, 01 Apr 2014 19:31:27 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Using Mercurial for Status Reports</title>
+      <link>http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports</link>
+      <pubDate>Tue, 01 Apr 2014 12:30:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports</guid>
+      <description>Using Mercurial for Status Reports</description>
+      <content:encoded><![CDATA[<p>Mercurial has a pair of amazing features called
+<a href="http://www.selenic.com/hg/help/revsets">Revisions Sets</a>
+and <a href="http://www.selenic.com/hg/help/templates">Templates</a>. Combined,
+they allow you to query Mercurial like a database and to generate custom
+reports from obtained data.</p>
+<p>As I've <a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata/">demonstrated</a>,
+you can write Mercurial extensions to provide custom revision set
+queries and template functions and keywords. My
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">mozext</a>
+extension aggregates Mozilla's <em>pushlog</em> data into a local SQLite
+database and makes this data available to revision sets and templates.</p>
+<p>My hack of the day is to use revision sets and templates to create a
+weekly status report:</p>
+<div class="pygments_murphy"><pre>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
+--template &#39;* {ifeq(reviewer, &quot;gps&quot;, &quot;Review: &quot;, &quot;Landing: &quot;)}{firstline(desc)}\n&#39;
+</pre></div>
+
+<p>When I run this, I get the output:</p>
+<div class="pygments_murphy"><pre>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
+* Review: Bug 987146 - Represent SQL queries more efficiently. r=gps.
+* Review: Bug 987984 - VirtualenvManager.call_setup() should use self.python_path instead of sys.executable, r=gps
+* Landing: Bug 987398 - Part 1: Run mochitests from manifests with mach; r=ahal
+* Landing: Bug 987398 - Part 2: Handle install-to-subdir in TestResolver; r=ahal
+* Landing: Bug 987414 - Pass multiple test arguments to mach testing commands; r=ahal
+* Review: Bug 988141 - Clean up config/recurse.mk after bug 969164. r=gps
+* Landing: Bug 973992 - Support experiments add-ons; r=Unfocused
+* Review: Bug 927672 - Force pymake to fall back to mozmake when run on build slaves. r=gps
+* Review: Bug 989147 - Use new sccache for Linux and Android builds. r=gps
+* Review: Bug 989147 - Add missing part of the patch from rebase conflict. r=gps
+* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
+* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
+* Landing: Backed out changeset 4834a3833639 and c580afddd1cb (bug 985084 and bug 97500)
+* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
+* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
+* Landing: Bug 989137 - Part 1: Uninstall unknown experiments; r=Unfocused
+* Landing: Bug 989137 - Part 2: Don&#39;t use a global logger; r=gfritzsche
+* Landing: Bug 989137 - Part 3: Log.jsm API to get a Logger that prefixes messages; r=bsmedberg
+* Landing: Bug 989137 - Part 4: Use a prefixing logger for Experiments logging; r=gfritzsche
+* Landing: Bug 989137 - Part 5: Prefix each log message with the instance of the object; r=gfritzsche
+* Review: Bug 988849 - Add mach target for jit tests; r=gps
+* Landing: Bug 989137 - Part 6: Create experiment XPIs during the build; r=bsmedberg
+* Landing: Bug 989137 - Part 7: Remove unncessary content from test experiments; r=Unfocused
+* Landing: Bug 985084 - Part 2: Properly report userDisabled in the API; r=Unfocused
+</pre></div>
+
+<p>Which I can then copy and paste directly into the
+<a href="http://benjamin.smedbergs.us/weekly-updates.fcgi/">status tool</a> to
+capture all my weekly code contributions! That takes a few seconds to
+run and saves me a few minutes of typing.</p>
+<p>For the curious, let's break that Mercurial command down.</p>
+<ul>
+<li>public() selects all <em>public</em> changesets. These are changesets in the
+  repository that have been pushed to a publishing repository. In other
+  words, patches that landed in Firefox.</li>
+<li>me() is a custom revset from my <em>mozext</em> extension that parses the
+  commit message and selects changesets that I authored or reviewed.</li>
+<li>firstpushdate("-7") is a custom revset from my <em>mozext</em> extension. It
+  selects changesets that were first pushed in the last 7 days (using
+  pushlog data stored in a local SQLite database).</li>
+</ul>
+<p>The template piece should be easy to read. I have a simple branch
+testing whether the changeset is a review or not, then output a label
+followed by the first line of the commit message.</p>
+<p>I have this command saved under the <em>[alias]</em> section of my <em>~/.hgrc</em>
+file so I can just type <em>hg statusreport</em>.</p>
+<p>While there is room to improve the tool (stripping <em>r=</em> lines from
+commit messages for example), I think it's a pretty cool hack and shows
+how Mercurial can grow to solve problems you don't think your version
+control system knows how to solve.</p>]]></content:encoded>
+    </item>
     <item>
       <title>New Repository for Mozilla Version Control Tools</title>
       <link>http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools</link>
@@ -948,54 +1026,6 @@ weeks to ensure your Mercurial environment is up to date and properly
 configured.</p>
 <p>I'd like to thank Nick Alexander for sharing my enthusiasm for helping
 contributors and for taking the time to review this work.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Track pushes and train riding with Mercurial</title>
-      <link>http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial</link>
-      <pubDate>Thu, 25 Jul 2013 13:10:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial</guid>
-      <description>Track pushes and train riding with Mercurial</description>
-      <content:encoded><![CDATA[<p>My <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension for Firefox development</a>
-now has an initial implementation of pushlog aggregation and searching.</p>
-<p>You first start by synchronizing the pushlog data on Mozilla's servers
-with the local client:</p>
-<pre><code>hg pushlogsync
-</code></pre>
-<p>This takes a while the first time you run it because it has to download
-all the data. On subsequent runs, it only downloads new data, so it
-should be much faster.</p>
-<p>Then, you can search for the push history of a changeset:</p>
-<div class="pygments_murphy"><pre>$ hg changesetpushes -a b968708558b9
-133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
-
-Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
-http://krijnhoetmer.nl/irc-logs/css/20130205#l-1590
-http://lists.w3.org/Archives/Public/www-style/2013Feb/0392.html
-
-Note that this patch depends on signed integer overflow behavior in C++,
-which I believe is portable despite being unspecified.
-Tree      Date                Username              Build Info
-inbound   2013-02-21T18:12:57 dbaron@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=85b91048c1cd
-central   2013-02-22T09:43:12 ryanvm@gmail.com      https://tbpl.mozilla.org/?tree=Mozilla-Central&amp;rev=3a7d4085787e
-build     2013-02-22T14:31:42 gszorc@mozilla.com    https://tbpl.mozilla.org/?tree=Build-System&amp;rev=3a7d4085787e
-fx-team   2013-02-25T01:04:44 ttaubert@mozilla.com  https://tbpl.mozilla.org/?tree=Fx-Team&amp;rev=31466fd86eb7
-graphics  2013-02-25T20:02:57 mwoodrow@mozilla.com  https://tbpl.mozilla.org/?tree=Graphics&amp;rev=dcf53b7140cd
-ash       2013-02-26T13:50:41 armenzg@mozilla.com   https://tbpl.mozilla.org/?tree=Ash&amp;rev=201b64ad48d8
-services  2013-02-28T09:42:45 Ms2ger@gmail.com      https://tbpl.mozilla.org/?tree=Services-Central&amp;rev=31466fd86eb7
-aurora    2013-04-01T13:50:56 bbajaj@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Aurora&amp;rev=60a3f369ccf0
-beta      2013-05-13T09:59:38 lsblakk@mozilla.com   https://tbpl.mozilla.org/?tree=Mozilla-Beta&amp;rev=60a3f369ccf0
-release   2013-06-17T15:53:19 akeybl@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Release&amp;rev=c54e3363712e
-</pre></div>
-
-<p>(The <em>-a</em> argument prints all trees instead of just the release trees).</p>
-<p>I'd like to integrate bug tracking into the mix to facilitate
-answering questions like <em>when did bug 123456 ride the trains</em>.</p>
-<p>I'd also like to integrate release versions and build IDs into the mix.
-For example, when I look up a changeset, I want to know the first build
-on the Nightly, Aurora, Beta, and Release channels that change was
-included in.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

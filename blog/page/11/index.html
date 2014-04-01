@@ -51,6 +51,130 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="makefile-execution-times"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/07/28/makefile-execution-times" rel="bookmark" title="Permanent Link to Makefile Execution Times">Makefile Execution Times</a></h2>
+  <small>July 28, 2012 at 12:45 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/pymake'>pymake</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>In my course of hacking about with Mozilla's build system, I've been
+using pymake (a Python implementation of GNU make) to parse, examine,
+and manipulate make files. In doing so, I've learned some interesting
+things, dispelling myths in the process.</p>
+<p>People often say that parsing make files is slow and that the sheer
+number of Makefile.in's in mozilla-central (Firefox's source tree) is
+leading to lots of overhead in make execution. This statement is only
+partially correct.</p>
+<p><em>Parsing</em> make files is actually pretty fast. Using pymake's parser API,
+I'm able to parse every Makefile.in in mozilla-central in under 5
+seconds on my 2011 generation MacBook Pro using a single core. Not too
+shabby, especially considering that there are about 82,500 lines in all
+the Makefile.in's.</p>
+<p>Evaluation of make files, however, is a completely different story. You
+see, parsing a string containing make file directives is only part of
+what needs to be done. Once you've parsed a make file into a statement
+list (essentially an AST), you need to load that into a data structure
+fit for evaluation. Because of the way make files are evaluated,
+you need to iterate through every parsed statement and evaluate it
+for side-effects. This occurs before you actually evaluate specific
+targets in the make file itself. As I found out, this process can be
+time-consuming.</p>
+<p>For mozilla-central, the cost of loading the statement list into a data
+structure ready for target evaluation takes about 1 minute in aggregate.
+And, considering we effectively iterate through every Makefile in
+mozilla-central 3 times when building (once for every tier state of
+export, libs, and tools), you can multiply this figure by 3.</p>
+<p>Put another way, <em>parsing</em> Makefile's is fast: loading them for
+target evaluation is slow.</p>
+<p>Digging deeper, I uncovered the main source of the additional overhead:
+<em>rules.mk</em>.</p>
+<p>Nearly every Makefile in mozilla-central has a pattern that looks like:</p>
+<pre><code>DEPTH = ../..
+topsrcdir = @top_srcdir@
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+include $(DEPTH)/config/autoconf.mk
+
+&lt;LOCAL MAKE FILE DECLARATIONS&gt;
+
+include $(topsrcdir)/config/rules.mk
+</code></pre>
+<p>We have a header boilerplate, followed by a bunch of Makefile-specific
+variables definitions and rules. Finally, we include the <em>rules.mk</em>
+file. This is the make file that takes specially-named variables and
+converts them to rules (actions) for make to perform.</p>
+<p>A typical Makefile.in is a few dozen lines or so. This often reduces to
+maybe a dozen parsed statements. By contrast, <em>rules.mk</em> is massive. It
+is currently 1770 lines and may include other make files, bringing the
+total to ~3000 lines.</p>
+<p>Pymake has an LRU cache that caches the results of <em>parsing</em> make files.
+This means it only has to parse a single make file into a statement list
+once (assuming no cache eviction). <em>rules.mk</em> is frequently used, so it
+should have no eviction. Even if it were evicted, I've measured that
+<em>parsing</em> is pretty fast.</p>
+<p>Unfortunately, the cache doesn't help with evaluation. For every
+Makefile in mozilla-central, pymake will need to evaluate rules.mk
+within the context of that specific Makefile. It's impossible to cache
+the results of a previous evaluation because the side-effects of rules.mk
+are determined by what is defined in the Makefile that includes it.</p>
+<p>I performed an experiment where I stripped the <em>include rules.mk</em>
+statement from all parsed Makefile.in's. This essentially isolates the
+overhead of loading <em>rules.mk</em>. It turns out that all but ~2 seconds
+of evaluation time is spent in <em>rules.mk</em>. In other words,
+without <em>rules.mk</em>, the Makefile.in's are loaded and ready for evaluation
+in just a few seconds (over parsing time), not ~1 minute!</p>
+<p>What does this all mean?</p>
+<p>Is <em>parsing</em> make files slow? Technically no. <em>Parsing</em> itself is not slow.
+It is actually quite fast! Pymake even surprised me at how fast it can
+parse all the Makefile.in's in mozilla-central.</p>
+<p><em>Loading</em> parsed make file statements to be ready for evaluation is
+actually the bit that is slow - at least in the case of mozilla-central.
+Specifically, the loading of <em>rules.mk</em> is what constitutes the
+overwhelming majority of the time spent loading Makefile's.</p>
+<p>That being said, <em>parsing</em> and <em>loading</em> go hand in hand. You almost
+never parse a make file without loading and evaluating it. So, if you
+consider <em>parsing</em> to include parsing <em>and</em> readying the make file for
+execution, there is some truth to the statement that parsing make files
+is slow. Someone splitting hairs may say differently.</p>
+<p>Is there anything we can do? Good question.</p>
+<p>I believe that build times of mozilla-central can be reduced by reducing
+the size of <em>rules.mk</em>. Obviously, the content of <em>rules.mk</em> is
+important, so we can't just delete content. But, we can be more
+intelligent about how it is loaded. For example, we can move pieces of
+<em>rules.mk</em> into separate <em>.mk</em> files and conditionally include these
+files based on the presence of specific variables. We already do this
+today, but only partially: there are still a number of bits of rules.mk
+that could be factored out into separate files. By conditionally loading
+make file content from <em>rules.mk</em>, we would be reducing the number of
+statements that need to be loaded before evaluating each Makefile. And,
+this should, in turn, make build times faster. Keep in mind that any
+savings will be multiplied by roughly 3 since we do 3 passes over
+Makefile's during a build.</p>
+<p>To my knowledge, there aren't any bugs yet on file to do this. Given the
+measurements I've obtained, I encourage somebody to do this work. Even
+if it doesn't reduce build times, I think it will be a win since it will
+make the make rules easier to understand since they will be contained in
+function-specific files rather than one monolithic file. At worse, we
+have better readability. At best, we have better readability and faster
+build times. Win!</p>
+<p>Finally, I don't know what the impact on GNU make is. Presumably, GNU
+make evaluates make files faster than pymake (C is generally faster than
+python). Therefore, reducing the size of <em>rules.mk</em> should make GNU make
+faster. By how much, I have no clue.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mozilla-build-system-plan-of-attack"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/07/25/mozilla-build-system-plan-of-attack" rel="bookmark" title="Permanent Link to Mozilla Build System Plan of Attack">Mozilla Build System Plan of Attack</a></h2>
   <small>July 25, 2012 at 11:30 PM | categories: 
@@ -1469,41 +1593,6 @@ were introduced.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/06/18/finding-oldest-firefox-code#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="smaller-firefox-build-logs"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/05/23/smaller-firefox-build-logs" rel="bookmark" title="Permanent Link to Smaller Firefox Build Logs">Smaller Firefox Build Logs</a></h2>
-  <small>May 23, 2012 at 08:50 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
- | <a href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The other day I looked at a full Firefox build log from TBPL and noticed
-that ~84,000 of the ~170,000 lines in the log I looked at was output
-from archive processes. We were printing thousands of lines showing the
-files that were being added and extracted from the archives that contain
-test files!</p>
-<p>I thought this was wasteful, so I filed
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=757397">bug 757397</a> and
-coded up a patch. Ted agreed that these lines were rather worthless and
-the patch has landed in mozilla-inbound.</p>
-<p>The result of the patch is build logs are about half as big in terms of
-lines. And, it appears at least 500kb is shaved off the compressed log
-files as well.</p>
-<p>The real world impact is you should be able to load build logs from
-the server faster because they are smaller.</p>
-<p>If you were parsing this data before and are impacted by this, please
-leave a comment on the aforementioned bug and we'll go from there.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../10">« Previous Page</a>
   --  
