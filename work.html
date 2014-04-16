@@ -52,7 +52,7 @@ href="/blog/feed/atom" />
 
 <h1>Body of Work</h1>
 
-<i>Last updated May 13, 2011</i>
+<i>Last updated April 2014</i>
 
 <p>This page contains information on my technical history. You can think of it
 as a very descriptive resume.</p>
@@ -466,27 +466,245 @@ serving over 10,000 users on roughly the same hardware configuration.</p>
 
 <p>I started working for Mozilla on July 18, 2011 as part of the Services
 team. The Services team is responsible for writing and maintaining a
-number of Mozilla's hosted services. When I started, the main servie was
-Firefox Sync, but a number of other services were in the pipeline.
+number of Mozilla's hosted services. When I started, the main service was
+Firefox Sync, but a number of other services were in the pipeline.</p>
 
-I started out with the Firefox Sync client team, which is charged with
-maintaining the Sync client shipped as part of Firefox. The Sync client
-in Firefox is authored in JavaScript and XUL, two technologies I wasn't
-too familiar with going in.
+<h3>Firefox Sync</h3>
 
-My first major contribution to Sync/Firefox was add-on sync, which
-shipped as part of Firefox 11. This was a heavily requested feature, so
-I felt quite good about shipping it.
+<p>I was hired to work on Firefox Sync for the desktop version of Firefox.
+The Sync client in Firefox is authored primarily in JavaScript, a programming
+language I only knew casually before working at Mozilla.</p>
 
-In my early days at Mozilla, I grew frustrated with the build system (as
-most Mozilla people do). So, I set out to make improvements to the build
-system. At the time I wrote this, the work was ongoing. Check back
-later.
+<p>My first major contribution to Sync/Firefox was add-on sync, which keeps
+your add-ons in sync across devices. It shipped as part of Firefox 11.
+Add-on sync was a heavily requested feature, so I felt quite good about
+shipping it.</p>
 
-My story at Mozilla is an unfinished book. I'll try to keep this section
-updated. But, please excuse me if it lags behind a bit.
+<p>As part of working on Firefox Sync, I learned a lot about various
+Firefox components and how they work. I also expanded my syncing
+knowledge (the product I worked on at Xobni was essentially contact
+sync) to cover scenarios where synchronization must be performed in a
+distributed manner on clients (Firefox Sync data was encrypted and the
+server only sees an opaque blob). I also learned a bit about
+cryptography. Some of my understanding of this space is demonstrated
+in this <a href="/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing">
+blog post</a> summarizing the security of various browser syncing
+implementations.</p>
+
+<h3>Firefox Health Report</h3>
+
+<p>I was the lead implementor on the Firefox desktop implementation of
+Firefox Health Report, a feature that collects data from every Firefox
+install and sends it to Mozilla (in a privacy-conscious manner, of
+course).</p>
+
+<p>Firefox Health Report (or FHR) was a huge project. It's not every day
+that you have the opportunity to write a feature that will be used by
+over 100 million people! FHR was also one of those projects that had a
+lot of interest from management and leadership. FHR was going to be the
+first time Mozilla collected so much data from every Firefox user by
+default. Up to that point, Mozilla collected very little data from its
+entire user base. What collection existed was opt in (Telemetry) and
+thus had low activation rate or collected very little data at all (before
+FHR, Mozilla measured active daily users by counting the number of
+<i>update ping</i> requests (HTTP requests sent by Firefox to see whether
+a new Firefox release and/or add-on versions are available). FHR was a
+huge change of direction and a lot of people from metrics/statisticians,
+security, privacy, performance, etc all wanted a seat at the table.
+There were a lot of cooks in the kitchen and I got to feel what it was
+like to be in that position at Mozilla. It was a learning experience
+to say the least.</p>
+
+<p>Firefox Health Report consists of a background Firefox service
+implemented in JavaScript. It stores data in SQLite. The source code
+is <a href="https://hg.mozilla.org/mozilla-central/file/1f932e462b84/services/healthreport">
+available</a> for reference.</p>
+
+<p>As part of implementing FHR, I was troubled by the lack of a clean
+and useful SQLite API accessible to Firefox. So, I wrote
+<a href="https://hg.mozilla.org/mozilla-central/file/1f932e462b84/toolkit/modules/Sqlite.jsm">
+Sqlite.jsm</a>, a standalone module for interacting with SQLite from
+JavaScript. You can read more about Sqlite.jsm on
+<a href="/blog/2013/04/14/sqlite.jsm---sqlite-done-betterer/">my blog</a>
+and in the <a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Sqlite.jsm">
+online documentation</a>. Sqlite.jsm was very well received because it
+took away most of the footguns associated with SQLite interaction and
+provided compelling features such as task/generator based transactions
+and easier memory management.</p>
+
+<h3>Firefox Build System</h3>
+
+<p>In my early days at Mozilla, I grew frustrated with the build system (as
+most Mozilla people do). So, I did what curious engineers often do and
+started digging deeper into the rabbit hole. One thing led to another
+and I eventually became the module owner (Mozilla speak for the person
+with governance responsibility over something).</p>
+
+<p>When I first got involved with the build system, Firefox was built from
+over 1000 Makefiles. We employed what is called recursive make. Essentially,
+you have a tree of Makefiles which is iterated upon. This technique is
+far from efficient. There's even a
+<a href="http://aegis.sourceforge.net/auug97.pdf">Recursive Make Considered
+Harmful</a> paper explaining it.</p>
+
+<p>Everyone knew the build system sucked and needed to be improved. But
+nobody knew what to do or had the will to tackle a major change. I spent
+a lot of time looking at the problem space, experimenting with various
+solutions. I wrote up a
+<a href="/blog/2012/06/25/improving-mozilla's-build-system/">very detailed
+blog post</a> detailing a transition plan. After much technical deliberation,
+we <a href="/blog/2013/02/28/moz.build-files-and-the-firefox-build-system">
+adopted a plan</a> to use sandboxed Python files to define our build
+configuration. At the time, I thought this was a new and novel idea. I
+thought it was somewhat risky because it had never been tried before. I later
+learned that the solution was effectively invented at Google years
+before. The Google project is called Blaze and the approach has been copied
+by Twitter's Pants build tool, Facebook's Buck build tool, and eventually
+Chromium's CN tool. I essentially independently arrived at the same solution
+that Google did and that felt pretty reassuring!</p>
+
+<p>Over time, the Firefox build config data was slowly transitioned to
+moz.build files. We couldn't do this atomically in a flag day because it
+would be too much work. Instead, we moved things over and continued to emit
+Makefiles behind the scenes. Where we could, we would consolidate data from
+various parts of the source tree together and emit optimized build rules.
+moz.build files enabled us to do things we couldn't do with recursive make
+and enabled us to build Firefox more efficiently.</p>
+
+<h3>Improving the Development Experience and Developer Productivity</h3>
+
+<p>From my first days contributing to Firefox, I was frustrated at how
+difficult everything was. There were so many hurdles preventing people
+from getting started and once you got up and running, there were so
+many tasks that were non-intuitive. At Mozilla, I was on a never-ending
+quest to improve the developer experimence and to make developers more
+productive.</p>
+
+<p>One of my major contributions to Firefox development is a tool called
+<i>mach</i>. Mach is effectively a command-line command dispatcher. You
+register commands and it runs them. Simple, right? Before mach came along,
+Firefox developers had to run over a dozen different commands to perform
+common tasks. The command locations and their options were non-intuitive.
+Mach fixed all of that.</p>
+
+<p>I first blogged about Mach in
+<a href="/blog/2012/05/07/improving-the-mozilla-build-system-experience/">May 2012</a>.
+I think that post details some of the empathy I feel towards new contributors
+and onboarding new members. After an uphill battle where I couldn't find
+someone willing to buy-in to my vision and allow mach to be checked into
+the tree, mach <a href="/blog/2012/09/26/mach-has-landed/">finally landed</a>
+in September 2012. In the time since, mach has increased in popularity and
+gained dozens of commands. It's now used by most developers and I commonly
+hear things like &quot;I can't believe we lived in a world without mach
+for so long!&quot;.</p>
+
+<p>Onboarding new contributors has always been important to me. When I
+started at Mozilla, if you want wanted to build Firefox, you needed to
+install all the build dependencies manually. You did this by following
+instructions on a wiki that were frequently out of data. I think it's
+inefficient to perform actions that can be automated, so I
+<a href="/blog/2012/09/18/bootstrap-your-system-to-build-firefox/">wrote
+a tool to automate it</a>. People can now type a one-liner into the shell
+to configure their system to build Firefox.</p>
+
+<p>There was a growing movement at Mozilla in 2012 and 2013 to use Git
+for developing Firefox. (The canonical repository is Mercurial.) A tool
+called <a href="http://hg-git.github.io/">hg-git</a> was being used to
+allow developers to convert Mercurial commits to and from Git commits.
+A major complaint was it was too slow. So, I started learning a lot about
+Mercurial and Git's internals and set about to improve it. The results
+<a href="/blog/2013/04/14/making-hg-git-faster/">speak for themselves</a>.
+</p>
+
+<h3>Improving Mozilla's Automation</h3>
+
+<p>When I started at Mozilla, it was clear that Mozilla's build and testing
+automation had a lot of potential to grow. I've been casually involved
+in making it better.</p>
+
+<p>One of the things about Mozilla's automation that troubled me a lot was
+the lack of machine readable output. For example, to determine whether a
+test job was successful, we would parse the log output and look for certain
+strings using regular expressions. This is a very fragile process and it
+was prone to breaking and made it difficult to change output without
+breaking the parser. I wrote a
+<a href="/blog/2012/12/06/thoughts-on-logging---part-1---structured-logging/">
+blog post on structured logging</a> and later worked with the automation
+team to integrate that approach into our testing automation. I even mentored
+a summer intern in 2013 who had this as his chief project. As of April 2014,
+things are still moving forward and Mozilla is on the trajectory of emitting
+machine-readable data from automation. I can't wait for that day to come.</p>
+
+<p>Similar in vein to lack of machine readable output from automation was
+the lack of data being captured at all. For example, Mozilla was not recording
+system resource usage (CPU, I/O, memory, etc) and thus was not measuring how
+efficient our automation was. The optimization engineer with server-side
+experience in me tells me that you should try to get 100% out of your
+servers or you are wasting money. So, I
+<a href="/2013/07/14/quantifying-mozilla's-automation-efficiency/">patched
+our automation code to record system resource usage</a>.</p>
+
+<p>I also built some tools for analyzing Mozilla's automation data.
+One tool <a href="/blog/2013/08/30/visualizing-mozilla's-release-infrastructure-machine-efficiency/">
+visualized the efficiency of every machine in automation</a>. Although the
+tool no longer is live, it was used to show people that a lot of the money
+we were spending on machines was being wasted. It turned some heads. I also
+<a href="/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data/">
+wrote a tool</a> that aggregated and allowed analysis of bulk automation
+data.</p>
+
+<h3>Version Control Geek</h3>
+
+<p>Somehow I became a version control geek during my time at Mozilla.
+It likely started with my
+<a href="/blog/2013/04/14/making-hg-git-faster/">hg-git
+optimization work.</a> I think what captivated me was the scaling problems
+within both Mercurial and Git. I was also writing a lot of Python at the
+time and was also captivated by Mercurial's extensibility and hackability.
+I <a href="/blog/2013/05/12/thoughts-on-mercurial-(and-git)/">wrote about
+the topic</a>.</p>
+
+<p>It was the summer of 2013 that I became a Mercurial convert. I used to
+loathe working with Mercurial (preferring Git instead). With what I know
+now, pretty much the only reasons I'd use Git are for GitHub and because
+most everyone seems to know Git these days. Those are big reasons. But
+when it comes down to your version control system as a tool, Mercurial
+wins hands down.</p>
+
+<h3>Learning Python</h3>
+
+<p>It was at Mozilla that my Python knowledge developed from intermediate to
+I'd say pretty advanced. A lot of my projects for Firefox's build system
+and automation are written in Python. Mercurial is Python.</p>
+
+<p>I even got <a href="http://developers.slashdot.org/story/14/01/09/1940232/why-do-projects-continue-to-support-old-python-releases">
+Slashdotted</a> writing about Python.</p>
+
+<h3>Misc</h3>
+
+<p>I was a <a href="/blog/2013/05/19/using-docker-to-build-firefox/">
+very early fan of Docker</a>. When it came out, I immediately saw the
+potential for use in Mozilla's automation infrastructure. I went over
+to dotCloud (now Docker Inc) to discuss Mozilla's use cases very early
+in Docker's lifetime. For a while, a quote of mine was in the main
+<i>Learn about Docker</i> slide deck that was prominently featured on
+Docker's website!</p>
+
+<p>My <a href="/blog/2012/07/18/one-year-at-mozilla/">One Year at Mozilla</a>
+is worth reading.</p>
+
+<p>Pretty much all my blog posts from 2012 and on are related to Mozilla
+in one way or another.</p>
 
 <h2>Outside of Full-Time Job (Over All Time)</h2>
+
+<h3>Clang Python Bindings</h3>
+
+<p>I have contributed significant patches to Clang's Python bindings.
+The Clang Python bindings allow you to examine the token stream and
+AST that Clang generates. It is my understanding that the Clang Python
+bindings are heavily used in the science and research arenas, where people
+are using higher-level tools for examining source code.</p>
 
 <h3>Zippylog</h3>
 
