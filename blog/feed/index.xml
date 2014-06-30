@@ -10,10 +10,79 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 23 Jun 2014 18:49:18 GMT</pubDate>
+    <pubDate>Mon, 30 Jun 2014 17:23:36 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Track Firefox Repositories with Local-Only Mercurial Tags</title>
+      <link>http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags</link>
+      <pubDate>Mon, 30 Jun 2014 10:25:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags</guid>
+      <description>Track Firefox Repositories with Local-Only Mercurial Tags</description>
+      <content:encoded><![CDATA[<p>After reading my recent
+<a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
+a number of people asked me about my development workflow. While I
+still owe a full answer to that question, one of the cornerstores
+is a unified Mercurial repository. Instead of having separate clones
+for mozilla-central, mozilla-inbound, aurora, beta, etc, I have a
+single clone with the changesets from all the repositories.</p>
+<p>I feel having a unified repository has made me more productive. I no
+longer have to waste time shuffling changesets between local clones.
+This introduced all kinds of extra cognitive load and manual
+processes that slowed me down. I highly encourage others to adopt
+unified repositories.</p>
+<p>Because the various Firefox repositories don't have unique branches
+or bookmarks tracking the various heads, aggregating multiple
+repositories introduces a client-side problem of identifying
+which head is which. If you merely do a <em>hg pull</em>, you'll get a
+bunch of anonymous heads.</p>
+<p>To solve this problem, you'll need to employ minor client-side
+magic. Previously, I <a href="/2013/07/22/mercurial-extension-for-gecko-development/">recommended</a>
+my heavyweight <em>mozext</em> extension.</p>
+<p>Today, I'm proud to announce a new, lighter extension:
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">firefoxtree</a>.
+When pulling from a known Firefox repository, this extension will add
+a local-only Mercurial tag for that repository. For example,
+when pulling mozilla-central, the <em>central</em> tag will be created.</p>
+<p>Local-only tags are a Mercurial feature only available to
+extensions. A local-only tag is effectively an overlay of tags
+that don't get transferred as part of push and pull operations.
+They behave like normal tags: you can <em>hg up</em> to them and reference
+them elsewhere changeset identifiers are used. They are also read
+only: if you update to a tag and then commit, the tag will not
+move forward (contrast with branches or bookmarks).</p>
+<h2>Example Usage</h2>
+<p>Clone <em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and add
+the following to your <em>.hg/hgrc</em>:</p>
+<pre><code>[extensions]
+firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
+</code></pre>
+<p>To use, simply pull from a Firefox repo:</p>
+<div class="pygments_murphy"><pre>$ hg pull https://hg.mozilla.org/mozilla-central
+
+$ hg up central
+
+# Do your development work.
+
+# Time to land.
+$ hg pull https://hg.mozilla.org/integration/mozilla-inbound
+$ hg rebase -d inbound
+$ hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
+$ hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
+</pre></div>
+
+<p>Please note that <em>hg push</em> tries to push all local changes on all
+heads to a remote by default. When operating a unified repo, you'll
+need to use the <em>-r</em> argument to <em>hg push</em> and <em>hg out</em> to limit
+what changesets are considered. I most frequently use <em>-r .</em> to limit
+changes to the current checked out changeset.</p>
+<p>Also note that this extension conflicts with my <em>mozext</em> extension.
+I hope to update <em>mozext</em> to make it behave in the same manner. (It
+was easier to write a new extension than to update mozext.)</p>]]></content:encoded>
+    </item>
     <item>
       <title>Please Stop Using MQ</title>
       <link>http://gregoryszorc.com/blog/2014/06/23/please-stop-using-mq</link>
@@ -1551,64 +1620,6 @@ Mozillians have been contributing a steady stream of improvements to
 the mach core recently and it makes sense to leverage Mozilla's
 familiar infrastructure for patch contribution.</p>
 <p>This decision may be revisited in the future. Time will tell.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Why do Projects Support old Python Releases</title>
-      <link>http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases</link>
-      <pubDate>Wed, 08 Jan 2014 17:00:00 PST</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases</guid>
-      <description>Why do Projects Support old Python Releases</description>
-      <content:encoded><![CDATA[<p>I see a number of open source projects supporting old versions
-of Python. Mercurial supports 2.4, for example. I have to ask: why do
-projects continue to support old Python releases?</p>
-<p>Consider:</p>
-<ul>
-<li><a href="http://python.org/download/releases/2.4.6/">Python 2.4</a> was last
-  released on December 19, 2008 and <strong>there will be no more releases of
-  Python 2.4</strong>.</li>
-<li><a href="http://python.org/download/releases/2.5.6/">Python 2.5</a> was last
-  released on May 26, 2011 and <strong>there will be no more releases of
-  Python 2.5</strong>.</li>
-<li><a href="http://python.org/download/releases/2.6.9/">Python 2.6</a> was last
-  released on October 29, 2013 and <strong>there will be no more releases of
-  Python 2.6</strong>.</li>
-<li><strong>Everything before Python 2.7 is end-of-lifed</strong></li>
-<li>Python 2.7 continues to see periodic releases, but mostly for bug fixes.</li>
-<li>Practically all of the work on CPython is happening in the 3.3 and 3.4
-  branches. Other implementations continue to support 2.7.</li>
-<li>Python 2.7 has been available since July 2010</li>
-<li>Python 2.7 provides some very compelling language features over
-  earlier releases that developers want to use</li>
-<li>It's much easier to write dual compatible 2/3 Python when 2.7 is the
-  only 2.x release considered.</li>
-<li>Python 2.7 can be installed in userland relatively easily (see
-  projects like <a href="https://github.com/yyuu/pyenv">pyenv</a>).</li>
-</ul>
-<p>Given these facts, I'm not sure why projects insist on supporting old
-and end-of-lifed Python releases.</p>
-<p><strong>I think maintainers of Python projects should seriously consider
-dropping support for Python 2.6 and below.</strong> Are there really that many
-people on systems that don't have Python 2.7 easily available? Why are
-we Python developers inflicting so much pain on ourselves to support
-antiquated Python releases?</p>
-<p>As a data point, I successfully transitioned Firefox's build system
-from requiring Python 2.5+ to 2.7.3+ and it was relatively
-<a href="https://groups.google.com/d/msg/mozilla.dev.platform/djN02O03APc/OS8A9LuHX0sJ">pain</a>
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=870420">free</a>.
-Sure, a few people complained. But as far as I know, not very many new
-developers are coming in and complaining about the requirement.
-If we can do it with a few thousand developers, I'm guessing your
-project can as well.</p>
-<p><strong>Update 2014-01-09 16:05:00 PST</strong>: This post is being discussed on
-<a href="http://developers.slashdot.org/story/14/01/09/1940232/why-do-projects-continue-to-support-old-python-releases">Slashdot</a>. A lot of the comments
-talk about Python 3. Python 3 is its own set of
-considerations. The intended focus of this post is strictly about
-dropping support for Python 2.6 and below. Python 3 is related
-in that porting Python 2.x to Python 3 is much easier the higher
-the Python 2.x version. This especially holds true when you want
-to write Python that works simultaneously in both 2.x and 3.x.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
