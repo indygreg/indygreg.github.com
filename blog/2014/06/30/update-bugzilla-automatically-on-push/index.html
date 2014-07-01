@@ -1,0 +1,185 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Update Bugzilla Automatically on Push
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="update-bugzilla-automatically-on-push"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/06/30/update-bugzilla-automatically-on-push" rel="bookmark" title="Permanent Link to Update Bugzilla Automatically on Push">Update Bugzilla Automatically on Push</a></h2>
+  <small>June 30, 2014 at 11:05 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Do you manually create Bugzilla comments when you push changes to a
+Firefox source repository? Yeah, I do too.</p>
+<p>That's always annoyed me.</p>
+<p>It is screaming to be automated.</p>
+<p>So I automated it.</p>
+<p>You can too. From a Firefox source checkout:</p>
+<p>$ ./mach mercurial-setup</p>
+<p>That should clone the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+repository into <em>~/.mozbuild/version-control-tools</em>.</p>
+<p>Then, add the following to your <em>~/.hgrc</em> file:</p>
+<div class="pygments_murphy"><pre><span class="k">[extensions]</span>
+<span class="na">bzpost</span> <span class="o">=</span> <span class="s">~/.mozbuild/version-control-tools/hgext/bzpost</span>
+
+<span class="k">[bugzilla]</span>
+<span class="na">username</span> <span class="o">=</span> <span class="s">me@example.com</span>
+<span class="na">password</span> <span class="o">=</span> <span class="s">password</span>
+</pre></div>
+
+<p>Now, when you <em>hg push</em> to a Firefox repository, the commit URLs will
+get posted to referenced bugs automatically.</p>
+<p>Please note that pushing to <em>release</em> trees such as mozilla-central is
+not yet supported. In due time.</p>
+<p>Please let me know if you run into any issues.</p>
+<h2>Estimated Cost Savings</h2>
+<p>Assuming the following:</p>
+<ul>
+<li>It costs Mozilla $200,000 per year per full-time engineer working on
+  Firefox (a general rule of thumb for non-senior positions is that your
+  true employee cost is 2x your base salary).</li>
+<li>Each full-time engineer works 40 hours per week for 46 weeks out of
+  the year.</li>
+<li>It takes 15 seconds to manually update Bugzilla for each push.</li>
+<li>There are 20,000 pushes requiring Bugzilla attention per year.</li>
+</ul>
+<p>We arrive at the following:</p>
+<ul>
+<li>Cost per employee per hour worked: $108.70</li>
+<li>Total person-time to manually update Bugzilla: ~83 hours</li>
+<li>Total cost to manually update Bugzilla after push: $9,058.</li>
+</ul>
+<p>I was intentionally conservative with all the inputs except time
+worked (I think many of us work more than 40 hour weeks).
+My estimates also don't take into consideration the lost productivity
+associated with getting mentally derailed by interacting with Bugzilla.
+With this in mind, I could very easily justify a total cost at
+least 2x-3x higher.</p>
+<p>It took me maybe 3 hours to crank this out. I could spend another few
+weeks on it full time and Mozilla would still save money (assuming
+100% adoption).</p>
+<p>I encourage people to run their own cost calculations on other tasks
+that can be automated. Inefficiencies multiplied by millions of dollars
+(your collective employee cost) result in large piles of money. Not
+having tools is equivalent to setting loads of cash on fire.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

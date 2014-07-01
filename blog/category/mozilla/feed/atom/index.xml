@@ -7,12 +7,80 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-06-30T17:23:36Z</updated>
+  <updated>2014-07-01T06:13:31Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Update Bugzilla Automatically on Push]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push" />
+    <id>http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push</id>
+    <updated>2014-06-30T23:05:00Z</updated>
+    <published>2014-06-30T23:05:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Update Bugzilla Automatically on Push]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push"><![CDATA[<p>Do you manually create Bugzilla comments when you push changes to a
+Firefox source repository? Yeah, I do too.</p>
+<p>That's always annoyed me.</p>
+<p>It is screaming to be automated.</p>
+<p>So I automated it.</p>
+<p>You can too. From a Firefox source checkout:</p>
+<p>$ ./mach mercurial-setup</p>
+<p>That should clone the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+repository into <em>~/.mozbuild/version-control-tools</em>.</p>
+<p>Then, add the following to your <em>~/.hgrc</em> file:</p>
+<div class="pygments_murphy"><pre><span class="k">[extensions]</span>
+<span class="na">bzpost</span> <span class="o">=</span> <span class="s">~/.mozbuild/version-control-tools/hgext/bzpost</span>
+
+<span class="k">[bugzilla]</span>
+<span class="na">username</span> <span class="o">=</span> <span class="s">me@example.com</span>
+<span class="na">password</span> <span class="o">=</span> <span class="s">password</span>
+</pre></div>
+
+<p>Now, when you <em>hg push</em> to a Firefox repository, the commit URLs will
+get posted to referenced bugs automatically.</p>
+<p>Please note that pushing to <em>release</em> trees such as mozilla-central is
+not yet supported. In due time.</p>
+<p>Please let me know if you run into any issues.</p>
+<h2>Estimated Cost Savings</h2>
+<p>Assuming the following:</p>
+<ul>
+<li>It costs Mozilla $200,000 per year per full-time engineer working on
+  Firefox (a general rule of thumb for non-senior positions is that your
+  true employee cost is 2x your base salary).</li>
+<li>Each full-time engineer works 40 hours per week for 46 weeks out of
+  the year.</li>
+<li>It takes 15 seconds to manually update Bugzilla for each push.</li>
+<li>There are 20,000 pushes requiring Bugzilla attention per year.</li>
+</ul>
+<p>We arrive at the following:</p>
+<ul>
+<li>Cost per employee per hour worked: $108.70</li>
+<li>Total person-time to manually update Bugzilla: ~83 hours</li>
+<li>Total cost to manually update Bugzilla after push: $9,058.</li>
+</ul>
+<p>I was intentionally conservative with all the inputs except time
+worked (I think many of us work more than 40 hour weeks).
+My estimates also don't take into consideration the lost productivity
+associated with getting mentally derailed by interacting with Bugzilla.
+With this in mind, I could very easily justify a total cost at
+least 2x-3x higher.</p>
+<p>It took me maybe 3 hours to crank this out. I could spend another few
+weeks on it full time and Mozilla would still save money (assuming
+100% adoption).</p>
+<p>I encourage people to run their own cost calculations on other tasks
+that can be automated. Inefficiencies multiplied by millions of dollars
+(your collective employee cost) result in large piles of money. Not
+having tools is equivalent to setting loads of cash on fire.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1639,35 +1707,5 @@ and workflows.</p>
 <p>The possibilities I've suggested are by no means exhaustive. I encourage
 others to dream up new and interesting ideas. Who knows, maybe some of
 them may actually happen.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[mach now lives in mozilla-central]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central" />
-    <id>http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central</id>
-    <updated>2014-01-09T10:55:00Z</updated>
-    <published>2014-01-09T10:55:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="mach" />
-    <summary type="html"><![CDATA[mach now lives in mozilla-central]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central"><![CDATA[<p><a href="https://pypi.python.org/pypi/mach/">mach</a> -- the generic command
-line interface framework that is behind the <em>mach</em> tool used to
-build Firefox -- now has its canonical home in
-<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mach/">mozilla-central</a>,
-the canonical repository for Firefox. The
-<a href="https://github.com/indygreg/mach">previous home</a> has been updated to
-reflect the change.</p>
-<p>mach will continue to be released on
-<a href="https://pypi.python.org/pypi/mach/">PyPI</a> and installable via <strong>pip
-install mach</strong>.</p>
-<p>I made the change because keeping multiple repositories in sync
-wasn't something I wanted to spend time doing. Furthermore,
-Mozillians have been contributing a steady stream of improvements to
-the mach core recently and it makes sense to leverage Mozilla's
-familiar infrastructure for patch contribution.</p>
-<p>This decision may be revisited in the future. Time will tell.</p>]]></content>
   </entry>
 </feed>

@@ -7,12 +7,80 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-06-30T17:23:36Z</updated>
+  <updated>2014-07-01T06:13:31Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Update Bugzilla Automatically on Push]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push" />
+    <id>http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push</id>
+    <updated>2014-06-30T23:05:00Z</updated>
+    <published>2014-06-30T23:05:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Update Bugzilla Automatically on Push]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push"><![CDATA[<p>Do you manually create Bugzilla comments when you push changes to a
+Firefox source repository? Yeah, I do too.</p>
+<p>That's always annoyed me.</p>
+<p>It is screaming to be automated.</p>
+<p>So I automated it.</p>
+<p>You can too. From a Firefox source checkout:</p>
+<p>$ ./mach mercurial-setup</p>
+<p>That should clone the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+repository into <em>~/.mozbuild/version-control-tools</em>.</p>
+<p>Then, add the following to your <em>~/.hgrc</em> file:</p>
+<div class="pygments_murphy"><pre><span class="k">[extensions]</span>
+<span class="na">bzpost</span> <span class="o">=</span> <span class="s">~/.mozbuild/version-control-tools/hgext/bzpost</span>
+
+<span class="k">[bugzilla]</span>
+<span class="na">username</span> <span class="o">=</span> <span class="s">me@example.com</span>
+<span class="na">password</span> <span class="o">=</span> <span class="s">password</span>
+</pre></div>
+
+<p>Now, when you <em>hg push</em> to a Firefox repository, the commit URLs will
+get posted to referenced bugs automatically.</p>
+<p>Please note that pushing to <em>release</em> trees such as mozilla-central is
+not yet supported. In due time.</p>
+<p>Please let me know if you run into any issues.</p>
+<h2>Estimated Cost Savings</h2>
+<p>Assuming the following:</p>
+<ul>
+<li>It costs Mozilla $200,000 per year per full-time engineer working on
+  Firefox (a general rule of thumb for non-senior positions is that your
+  true employee cost is 2x your base salary).</li>
+<li>Each full-time engineer works 40 hours per week for 46 weeks out of
+  the year.</li>
+<li>It takes 15 seconds to manually update Bugzilla for each push.</li>
+<li>There are 20,000 pushes requiring Bugzilla attention per year.</li>
+</ul>
+<p>We arrive at the following:</p>
+<ul>
+<li>Cost per employee per hour worked: $108.70</li>
+<li>Total person-time to manually update Bugzilla: ~83 hours</li>
+<li>Total cost to manually update Bugzilla after push: $9,058.</li>
+</ul>
+<p>I was intentionally conservative with all the inputs except time
+worked (I think many of us work more than 40 hour weeks).
+My estimates also don't take into consideration the lost productivity
+associated with getting mentally derailed by interacting with Bugzilla.
+With this in mind, I could very easily justify a total cost at
+least 2x-3x higher.</p>
+<p>It took me maybe 3 hours to crank this out. I could spend another few
+weeks on it full time and Mozilla would still save money (assuming
+100% adoption).</p>
+<p>I encourage people to run their own cost calculations on other tasks
+that can be automated. Inefficiencies multiplied by millions of dollars
+(your collective employee cost) result in large piles of money. Not
+having tools is equivalent to setting loads of cash on fire.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1492,195 +1560,5 @@ upgraded to a modern Mercurial. For the next few weeks I was hearing a
 lot of "OMG Mercurial is so much better now." Don't handicap yourself by
 running an older, buggy Mercurial.</p>
 <p>If you don't yet feel comfortable running 2.8, 2.7 should be safe.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Using Mercurial to query Mozilla metadata]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata" />
-    <id>http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata</id>
-    <updated>2013-11-08T09:42:00Z</updated>
-    <published>2013-11-08T09:42:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Using Mercurial to query Mozilla metadata]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata"><![CDATA[<p>I have updated my
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension tailored for Gecko/Firefox development</a>
-with features that support rich querying of Mozilla/Gecko-development
-specific metadata!</p>
-<p>The extension now comes with a bug full of
-<a href="http://www.selenic.com/hg/help/revsets">revision set</a> selectors and
-<a href="http://www.selenic.com/hg/help/templates">template keywords</a>. You can
-use them to query and format Mozilla-central metadata from the
-repository.</p>
-<h2>Revision set selectors</h2>
-<p>You can now select changesets referencing a specific bug number:</p>
-<pre><code>hg log -r 'bug(931383)'
-</code></pre>
-<p>Or that were reviewed by a specific person:</p>
-<pre><code>hg log -r 'reviewer(gps)'
-</code></pre>
-<p>Or were reviewed or not reviewed:</p>
-<pre><code>hg log -r 'reviewed()'
-hg log -r 'not reviewed()'
-</code></pre>
-<p>You can now select changesets that are present in a specific tree:</p>
-<pre><code>hg log -r 'tree(central)'
-</code></pre>
-<p>I've also introduced support to query changesets <em>you</em> influenced:</p>
-<pre><code>hg log -r 'me()'
-</code></pre>
-<p>(This finds changesets you authored or reviewed.)</p>
-<p>You can select changesets that initially landed on a specific tree:</p>
-<pre><code>hg log -r 'firstpushtree(central)'
-</code></pre>
-<p>You can select changesets marked as <em>DONTBUILD</em>:</p>
-<pre><code>hg log -r 'dontbuild()'
-</code></pre>
-<p>You can select changesets that don't reference a bug:</p>
-<pre><code>hg log -r 'nobug()'
-</code></pre>
-<p>You can select changesets that were <em>push heads</em> for a tree:</p>
-<pre><code>hg log -r 'pushhead(central)'
-</code></pre>
-<p>(This would form the basis of a push-aware bisection tool - an excellent
-idea for a future feature in this extension.)</p>
-<p>You can combine these revset selector functions with other revset
-selectors to do some pretty powerful things.</p>
-<p>To select all changesets on inbound but not central:</p>
-<pre><code>hg log -r 'tree(inbound) - tree(central)'
-</code></pre>
-<p>To find all your contributions on beta but not release:</p>
-<pre><code>hg log -r 'me() &amp; (tree(beta) - tree(release))'
-</code></pre>
-<p>To find all changesets referencing a specific bug that have landed in
-Aurora:</p>
-<pre><code>hg log -r 'bug(931383) and tree(aurora)'
-</code></pre>
-<p>To find all changesets marked <em>DONTBUILD</em> that landed directly on central:</p>
-<pre><code>hg log -r 'dontbuild() and firstpushtree(central)'
-</code></pre>
-<p>To find all non-merge changesets that don't reference a bug:</p>
-<pre><code>hg log -r 'not merge() and nobug()'
-</code></pre>
-<p>Neato!</p>
-<h2>Template keywords</h2>
-<p>You can also now print some Mozilla information when using templates.</p>
-<p>To print the main bug of a changeset, use:</p>
-<pre><code>{bug}
-</code></pre>
-<p>To retrieve all referenced bugs:</p>
-<pre><code>{bugs} {join(bugs, ', ')}
-</code></pre>
-<p>To print the reviewers:</p>
-<pre><code>{reviewer} {join(reviewers, ', ')}
-</code></pre>
-<p>To print the first version a changeset appeared in a specific channel:</p>
-<pre><code>{firstrelease} {firstbeta} {firstaurora} {firstnightly}
-</code></pre>
-<p>To print the <strong>estimated</strong> first Aurora and Nightly date for a
-changeset, use:</p>
-<pre><code>{auroradate} {nightlydate}
-</code></pre>
-<p>(Getting the exact first Aurora and Nightly dates requires consulting
-3rd party services, which we don't currently do. I'd like to
-eventually integrate these into the extension. For now, it just
-estimates dates from the pushlog data.)</p>
-<p>You can also print who and where pushed a changeset:</p>
-<pre><code>{firstpushuser} {firstpushtree}
-</code></pre>
-<p>You can also print the TBPL URL with the results of the first push:</p>
-<pre><code>{firstpushtbpl}
-</code></pre>
-<p>Here is an example that prints channel versions and dates for each
-changesets:</p>
-<pre><code>hg log --template '{rev} Nightly: {firstnightly} {nightlydate}; Aurora {firstaurora} {auroradate}; Beta: {firstbeta}; Release: {firstrelease}\n'
-</code></pre>
-<h2>Putting it all together</h2>
-<p>Of course, you can combine selectors and templates to create some
-mighty powerful queries.</p>
-<p>To look at your impact on Mozilla, do something like:</p>
-<pre><code>hg log --template '{rev} Bug {bug}; Release {firstrelease}\n' -r 'me()'
-</code></pre>
-<p>You can easily forumate a status report for your activity in the past
-week:</p>
-<pre><code>hg log --template '{firstline(desc)}\n' -r 'firstpushdate(-7) and me()'
-</code></pre>
-<p>You can also query Mercurial to see where changesets have been landing
-in the past 30 days:</p>
-<pre><code>hg log --template '{firstpushtree}\n' -r 'firstpushdate(-30)' | sort | uniq -c
-</code></pre>
-<p>You can see who has been reviewing lots of patches lately:</p>
-<pre><code>hg log --template '{join(reviewers, "\n")}\n' -r 'firstpushdate(-30)' | sort | uniq -c | sort -n
-</code></pre>
-<p>(smaug currently has the top score, edging out my 116 reviews with 137.)</p>
-<p>If you want to reuse templates (instead of having to type them on the
-command line), you can save them as <em>style files</em>. Search
-<a href="https://www.google.com/search?q=mercurial+style+files">the Internets</a>
-to learn how to use them. You can even change your default style so
-the default output from <em>hg log</em> contains everything you'd ever want to
-know about a changeset!</p>
-<h2>Keeping it running</h2>
-<p>Many of the queries rely on data derived from multiple repositories and
-pushlog data that is external to the repository.</p>
-<p>To get best results, you'll need to be running a monolithic/unified
-Mercurial repository. You can either assemble one locally with this
-extension by periodically pulling from the separate repos:</p>
-<pre><code>hg pull releases
-hg pull integration
-</code></pre>
-<p>Or, you can pull from
-<a href="http://hg.gregoryszorc.com/gecko">my personal unified repo</a>.</p>
-<p>You will also need to ensure the pushlog data is current. If you pull
-directly from the official repos, this will happen automatically. To be
-sure, run:</p>
-<pre><code>hg pushlogsync
-</code></pre>
-<p>Finally, you can force a repopulation of cached bug data by running:</p>
-<pre><code>hg buginfo --reset
-</code></pre>
-<p>Over time, I want all this to automagically work. Stay tuned.</p>
-<h2>Comments and future improvements</h2>
-<p>I implemented this feature to save myself from having to go troving
-through Bugzilla and repository history to answer questions and to
-obtain metrics. I can now answer many questions via simple Mercurial
-one-liners.</p>
-<p>Custom revision set selectors and template keywords are a pretty nifty
-feature of Mercurial. They demonstrate how you can extend Mercurial to
-be aware of more than just tracking commits and files. As I've
-<a href="/blog/2013/05/12/thoughts-on-mercurial-%28and-git%29/">said before</a>
-and will continue to say, the extensibility of Mercurial is
-really its killer feature, especially for organizations with
-well-defined processes (like Mozilla). The kind of extensibility I
-achieved with this extension with custom queries and formatting
-functions is just not possible with Git (at least not with the reference
-C implementation that the overwhelming majority of Git users use).</p>
-<p>There are numerous improvements that can be made to the extension.
-Obviously more revision set selectors and template keywords can be
-added. The parsing routine to extract bugs and reviewers isn't the most
-robust in the world. I copied some existing Mozilla code. It does well
-at detecting string patters but doesn't cope well with extracting lists.</p>
-<p>I'd also love to better integrate Mercurial with automation
-results so you can do things like expose a <em>greenpush()</em> selector and do
-things like <em>hg up -r 'last(tree(inbound)) and greenpush()'</em> (which
-of course could be exposed as <em>lastgreen(inbound)</em>. Wouldn't
-that be cool! (This would be possible if we had better APIs for querying
-individual push results.) It would also be possible to have the
-Mercurial server expose this data as repository data so clients pull it
-automatically. That would prevent clients from all needing to query the
-same 3rd party services. Just a crazy thought.</p>
-<p>Speed can be an issue. Calculating the release information
-(<em>{firstnightly}</em> etc) is currently slower than I'd like. This is mostly
-due to me using inefficient algorithms and not caching things where I
-should. Speed issues should be fixed in due time.</p>
-<p>Please let me know if you run into any problems or have suggestions for
-improvements. If you want to implement your own revision set selectors
-or template keywords, it's <a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev/file/35bb3c96d786/__init__.py#l705">easier</a>
-than you think! I will happily accept patches. Keep in mind that
-Mercurial can integrate with 3rd party services. So if you want to
-supplement repository data with data from a HTTP+JSON web service,
-that's very doable. The sky is the limit.</p>]]></content>
   </entry>
 </feed>
