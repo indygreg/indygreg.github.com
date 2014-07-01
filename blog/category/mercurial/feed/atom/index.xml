@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-07-01T06:13:31Z</updated>
+  <updated>2014-07-01T06:18:09Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -21,8 +21,8 @@
     <title type="html"><![CDATA[Update Bugzilla Automatically on Push]]></title>
     <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push" />
     <id>http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push</id>
-    <updated>2014-06-30T23:05:00Z</updated>
-    <published>2014-06-30T23:05:00Z</published>
+    <updated>2014-06-30T23:15:00Z</updated>
+    <published>2014-06-30T23:15:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
     <summary type="html"><![CDATA[Update Bugzilla Automatically on Push]]></summary>
@@ -69,7 +69,7 @@ not yet supported. In due time.</p>
 </ul>
 <p>I was intentionally conservative with all the inputs except time
 worked (I think many of us work more than 40 hour weeks).
-My estimates also don't take into consideration the lost productivity
+My estimates also don't take into account the lost productivity
 associated with getting mentally derailed by interacting with Bugzilla.
 With this in mind, I could very easily justify a total cost at
 least 2x-3x higher.</p>
@@ -79,7 +79,8 @@ weeks on it full time and Mozilla would still save money (assuming
 <p>I encourage people to run their own cost calculations on other tasks
 that can be automated. Inefficiencies multiplied by millions of dollars
 (your collective employee cost) result in large piles of money. Not
-having tools is equivalent to setting loads of cash on fire.</p>]]></content>
+having tools (even simple ones like this) is equivalent to setting
+loads of cash on fire.</p>]]></content>
   </entry>
   <entry>
     <author>
