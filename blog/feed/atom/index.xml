@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-07-16T00:19:59Z</updated>
+  <updated>2014-07-16T16:48:40Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -23,7 +23,7 @@
     <id>http://gregoryszorc.com/blog/2014/07/15/python-packaging-do's-and-don'ts</id>
     <updated>2014-07-15T17:20:00Z</updated>
     <published>2014-07-15T17:20:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="python" />
+    <category scheme="http://gregoryszorc.com/blog" term="Python" />
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
     <summary type="html"><![CDATA[Python Packaging Do's and Don'ts]]></summary>
     <content type="html" xml:base="http://gregoryszorc.com/blog/2014/07/15/python-packaging-do's-and-don'ts"><![CDATA[<p>Are you someone who casually interacts with Python but don't know the
@@ -74,7 +74,7 @@ realm over it.</p>
 <p>On some systems, such as OS X with Homebrew, you don't need sudo to
 install Python packages because the user has write access to the Python
 directory (<em>/usr/local</em> in Homebrew).</p>
-<p>For the reasons given above, don't much around with the system Python
+<p>For the reasons given above, don't muck around with the system Python
 environment. Instead, use a virtualenv.</p>
 <h2>Beware of the package manager</h2>
 <p>Your system's package manager (apt, yum, etc) is likely using root and/or
