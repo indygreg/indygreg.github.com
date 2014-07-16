@@ -10,363 +10,155 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 01 Jul 2014 06:18:09 GMT</pubDate>
+    <pubDate>Wed, 16 Jul 2014 00:19:59 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
     <item>
-      <title>Aggregating Version Control Info at Mozilla</title>
-      <link>http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla</link>
-      <pubDate>Tue, 21 Jan 2014 10:50:00 PST</pubDate>
-      <category><![CDATA[Git]]></category>
-      <category><![CDATA[Mercurial]]></category>
+      <title>Python Packaging Do's and Don'ts</title>
+      <link>http://gregoryszorc.com/blog/2014/07/15/python-packaging-do's-and-don'ts</link>
+      <pubDate>Tue, 15 Jul 2014 17:20:00 PDT</pubDate>
+      <category><![CDATA[python]]></category>
       <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Python]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla</guid>
-      <description>Aggregating Version Control Info at Mozilla</description>
-      <content:encoded><![CDATA[<p>Over the winter break, I set out on an ambitious project to create
-a service to help developers and others manage the flury
-of patches going into Firefox. While the project is far from complete,
-I'm ready to unleash the first part of the project upon the world.</p>
-<p>If you point your browsers to
-<a href="http://moztree.gregoryszorc.com/">moztree.gregoryszorc.com</a>, you'll
-hopefully see some documentation about what I've built.
-<a href="https://bitbucket.org/indygreg/moz-tree-utopia">Source code</a> is
-available and free, of course. Patches very welcome.</p>
-<p>Essentially, I built a centralized indexing service for version
-control repositories with Mozilla's extra metadata thrown in.
-I tell it what repositories to mirror, and it clones everything,
-fetches data such as the pushlog and Git SHA-1 mappings, and
-stores everything in a central database. It then exposes this
-aggregated data through world-readable web services.</p>
-<p>Currently, I have the service indexing the popular project branches
-for Firefox (central, aurora, beta, release, esr, b2g, inbound, fx-team,
-try, etc). You can view the
-<a href="http://moztree.gregoryszorc.com/api/repos">full list</a> via the web
-service. As a bonus, I'm also serving these repositories via
-<a href="http://hg.gregoryszorc.com/">hg.gregoryszorc.com</a>. My server appears
-to be significantly faster than
-<a href="https://hg.mozilla.org">hg.mozilla.org</a>. If you want to use it for
-your daily needs, go for it. I make no SLA guarantees, however.</p>
-<p>I'm also using this service as an opportunity to experiment with
-alternate forms of Mercurial hosting. I have mirrors of mozilla-central
-and the try repository with generaldelta and lz4 compression enabled.
-I may blog about what those are eventually. The teaser is that they can
-make Mercurial perform a lot faster under some conditions. I'm also
-using ZFS under the hood to manage repositories. Each repository is a
-ZFS filesystem. This means I can create repository copies on the server
-(user repositories anyone?) at a nearly free cost. Contrast this to the
-traditional method of full clones, which take lots of time, memory, CPU,
-and storage.</p>
-<p>Anyway, some things you can do with the existing web service:</p>
-<ul>
-<li>Obtain metadata about Mercurial changesets.
-  <a href="http://moztree.gregoryszorc.com/api/changeset/940b2974f35b">Example</a>.</li>
-<li>Look up metadata about Git commits.
-  <a href="http://moztree.gregoryszorc.com/api/git-sha1/40438af67c321">Example</a>.</li>
-<li>Obtain a <a href="http://moztree.gregoryszorc.com/api/spore">SPORE descriptor</a>
-  describing the web service endpoints. This allows you to auto-generate
-  clients from descriptors. Yay!</li>
-</ul>
-<p>Obviously, that's not a lot. But adding new endpoints is relatively
-straightforward. See the <a href="https://bitbucket.org/indygreg/moz-tree-utopia/src/tip/repodata/web/app.py">source</a>.
-It's literally as easy as defining a URL mapping and writing a
-database query.</p>
-<p>The performance is also not the best. I just haven't put in the effort
-to tune things yet. All of the querying hits the database, not
-Mercurial. So, making things faster should merely be a matter of
-database and hosting optimization. Patches welcome!</p>
-<p>Some ideas that I haven't had time to implement yet:</p>
-<ul>
-<li>Return changests in a specific repository</li>
-<li>Return recently pushed changesets</li>
-<li>Return pushes for a given user</li>
-<li>Return commits for a given author</li>
-<li>Return commits referencing a given bug</li>
-<li>Obtain TBPL URLs for pushes with changeset</li>
-<li>Integrate bugzilla metadata</li>
-</ul>
-<p>Once those are in place, I foresee this service powering a number of
-dashboards. Patches welcome.</p>
-<p>Again, this service is only the tip of what's possible. There's a lot
-that could be built on this service. I have ideas. Others have ideas.</p>
-<p>The project includes a Vagrant file and Puppet
-manifests for provisioning the server. It's a one-liner to get a
-development environment up and running. It should be really easy to
-contribute to this project. Patches welcome.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Why do Projects Support old Python Releases</title>
-      <link>http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases</link>
-      <pubDate>Wed, 08 Jan 2014 17:00:00 PST</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases</guid>
-      <description>Why do Projects Support old Python Releases</description>
-      <content:encoded><![CDATA[<p>I see a number of open source projects supporting old versions
-of Python. Mercurial supports 2.4, for example. I have to ask: why do
-projects continue to support old Python releases?</p>
-<p>Consider:</p>
-<ul>
-<li><a href="http://python.org/download/releases/2.4.6/">Python 2.4</a> was last
-  released on December 19, 2008 and <strong>there will be no more releases of
-  Python 2.4</strong>.</li>
-<li><a href="http://python.org/download/releases/2.5.6/">Python 2.5</a> was last
-  released on May 26, 2011 and <strong>there will be no more releases of
-  Python 2.5</strong>.</li>
-<li><a href="http://python.org/download/releases/2.6.9/">Python 2.6</a> was last
-  released on October 29, 2013 and <strong>there will be no more releases of
-  Python 2.6</strong>.</li>
-<li><strong>Everything before Python 2.7 is end-of-lifed</strong></li>
-<li>Python 2.7 continues to see periodic releases, but mostly for bug fixes.</li>
-<li>Practically all of the work on CPython is happening in the 3.3 and 3.4
-  branches. Other implementations continue to support 2.7.</li>
-<li>Python 2.7 has been available since July 2010</li>
-<li>Python 2.7 provides some very compelling language features over
-  earlier releases that developers want to use</li>
-<li>It's much easier to write dual compatible 2/3 Python when 2.7 is the
-  only 2.x release considered.</li>
-<li>Python 2.7 can be installed in userland relatively easily (see
-  projects like <a href="https://github.com/yyuu/pyenv">pyenv</a>).</li>
-</ul>
-<p>Given these facts, I'm not sure why projects insist on supporting old
-and end-of-lifed Python releases.</p>
-<p><strong>I think maintainers of Python projects should seriously consider
-dropping support for Python 2.6 and below.</strong> Are there really that many
-people on systems that don't have Python 2.7 easily available? Why are
-we Python developers inflicting so much pain on ourselves to support
-antiquated Python releases?</p>
-<p>As a data point, I successfully transitioned Firefox's build system
-from requiring Python 2.5+ to 2.7.3+ and it was relatively
-<a href="https://groups.google.com/d/msg/mozilla.dev.platform/djN02O03APc/OS8A9LuHX0sJ">pain</a>
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=870420">free</a>.
-Sure, a few people complained. But as far as I know, not very many new
-developers are coming in and complaining about the requirement.
-If we can do it with a few thousand developers, I'm guessing your
-project can as well.</p>
-<p><strong>Update 2014-01-09 16:05:00 PST</strong>: This post is being discussed on
-<a href="http://developers.slashdot.org/story/14/01/09/1940232/why-do-projects-continue-to-support-old-python-releases">Slashdot</a>. A lot of the comments
-talk about Python 3. Python 3 is its own set of
-considerations. The intended focus of this post is strictly about
-dropping support for Python 2.6 and below. Python 3 is related
-in that porting Python 2.x to Python 3 is much easier the higher
-the Python 2.x version. This especially holds true when you want
-to write Python that works simultaneously in both 2.x and 3.x.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Python Package Providing Clients for Mozilla Services</title>
-      <link>http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services</link>
-      <pubDate>Mon, 06 Jan 2014 10:45:00 PST</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services</guid>
-      <description>Python Package Providing Clients for Mozilla Services</description>
-      <content:encoded><![CDATA[<p>I have a number of Python projects and tools that interact with
-various Mozilla services. I had authored clients for all these services
-as standalone Python modules so they could be reused across projects.</p>
-<p>I have consolidated all these Python modules into a unified source
-control
-<a href="https://bitbucket.org/indygreg/python-mozautomation">repository</a>
-and have made the project available on
-<a href="https://pypi.python.org/pypi/mozautomation">PyPI</a>. You can install it
-by running:</p>
-<p>$ pip install mozautomation</p>
-<p>Currently included in the Python package are:</p>
-<ul>
-<li>A client for <a href="https://treestatus.mozilla.org/">treestatus.mozilla.org</a></li>
-<li>Module for extracting cookies from Firefox profiles (useful for
-  programmatically getting Bugzilla auth credentials).</li>
-<li>A client for reading and interpretting the
-  <a href="http://builddata.pub.build.mozilla.org/buildjson/">JSON dumps of automation jobs</a></li>
-<li>An interface to a SQLite database to manage associations between
-  Mercurial changesets, bugs, and pushes.</li>
-<li>Rudimentary parsing of commit messages to extract bugs and reviewers.</li>
-<li>A client to obtain information about Firefox releases via the
-  <a href="http://releases-api.mozilla.org/">releases API</a></li>
-<li>A module defining common Firefox source repositories, aliases, logical
-  groups (e.g. twigs and integration trees), and APIs for fetching
-  pushlog data.</li>
-<li>A client for the <a href="https://secure.pub.build.mozilla.org/buildapi/self-serve/">self serve API</a></li>
-</ul>
-<p>Documentation and testing is currently sparse. Things aren't up to my
-regular high quality standard. But something is better than nothing.</p>
-<p>If you are interested in contributing, drop me a line or send pull
-requests my way!</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Python Bindings Updates in Clang 3.1</title>
-      <link>http://gregoryszorc.com/blog/2012/05/14/python-bindings-updates-in-clang-3.1</link>
-      <pubDate>Mon, 14 May 2012 00:05:00 PDT</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Clang]]></category>
-      <category><![CDATA[compilers]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2012/05/14/python-bindings-updates-in-clang-3.1</guid>
-      <description>Python Bindings Updates in Clang 3.1</description>
-      <content:encoded><![CDATA[<p><a href="http://clang.llvm.org/">Clang</a> 3.1 is scheduled to be released any hour
-now. And, I'm proud to say that I've contributed to it! Specifically,
-I've contributed improvements to the Python bindings, which are an
-interface to
-<a href="http://clang.llvm.org/doxygen/group__CINDEX.html">libclang</a>, the C
-interface to Clang.</p>
-<p>Since 3.1 is being released today, I wanted to share some of the new
-features in this release. An exhaustive list of newly supported APIs is
-available in the
-<a href="http://clang.llvm.org/docs/ReleaseNotes.html#pythonchanges">release notes</a>.</p>
-<h2>Diagnostic Metadata</h2>
-<p><em>Diagnostics</em> are how Clang represents warnings and errors during
-compilation. The Python bindings
-now allow you to get at more metadata. Of particilar interest is
-<strong>Diagnostic.option</strong>. This property allows you to see the compiler flag
-that triggered the diagnostic. Or, you could query
-<strong>Diagnostic.disable_option</strong> for the compiler flag that would silence
-this diagnostic.</p>
-<p>These might be useful if you are analyzing diagnostics produced by the
-compiler. For example, you could parse source code using the Python
-bindings and collect aggregate information on all the diagnostics
-encountered.</p>
-<p>Here is an example:</p>
-<pre><code>from clang.cindex import Index
-
-index = Index.create()
-tu = index.parse('hello.c')
-
-for diag in tu.diagnostics:
-    print diag.severity
-    print diag.location
-    print diag.spelling
-    print diag.option
-</code></pre>
-<p>Or, if you are using the Python bindings from trunk:</p>
-<pre><code>from clang.cindex import TranslationUnit
-
-tu = TranslationUnit.from_source('hello.c')
-...
-</code></pre>
-<p>Sadly, the patch that enabled this simpler usage did not make the 3.1
-branch.</p>
-<h2>Finding Entities from Source Location</h2>
-<p>Two new APIs, <strong>SourceLocation.from_position</strong> and
-<strong>Cursor.from_location</strong>, allow you to easily extract a cursor in the AST
-from any arbitrary point in a file.</p>
-<p>Say you want to find the element in the AST that occupies column 6 of
-line #10 in the file <em>foo.c</em>:</p>
-<pre><code>from clang.cindex import Cursor
-from clang.cindex import Index
-from clang.cindex import SourceLocation
-
-index = Index.create()
-tu = index.parse('foo.c')
-
-f = File.from_name(tu, 'foo.c')
-
-location = SourceLocation.from_position(tu, f, 10, 6)
-cursor = Cursor.from_location(tu, location)
-</code></pre>
-<p>Of course, you could do this by iterating over cursors in the AST until
-one with the desired source range is found. But, that would involve more
-API calls.</p>
-<p>I would like to say that these APIs feel klunky to me. There is lots of
-redundancy in there. In my opinion, there should just be a
-<strong>TranslationUnit.get_cursor(file='foo.c', line=10, column=6)</strong> that
-does the right thing. Maybe that will make it into a future release.
-Maybe it won't. After all, the Python bindings are really a thin wrapper
-around the C API and an argument can be made that there should be
-minimal extra logic and complexity in the Python bindings. Time will
-tell.</p>
-<h2>Type Metadata</h2>
-<p>It is now possible to access more metadata on <strong>Type</strong> instances. For
-example, you can:</p>
-<ul>
-<li>See what the elements of an array are using <strong>Type.get_array_element_type</strong></li>
-<li>See how many elements are in a static array using
-  <strong>Type.get_array_element_count</strong></li>
-<li>Determine if a function is variadic using <strong>Type.is_function_variadic</strong></li>
-<li>Inspect the Types of function arguments using <strong>Type.argument_types</strong></li>
-</ul>
-<p>In this example, I will show how to iterate over all the functions
-declared in a file and to inspect their arguments.</p>
-<pre><code>from clang.cindex import CursorKind
-from clang.cindex import Index
-from clang.cindex import TypeKind
-
-index = Index.create()
-tu = index.parse('hello.c')
-
-for cursor in tu.cursor.get_children():
-    # Ignore AST elements not from the main source file (e.g.
-    # from included files).
-    if not cursor.location.file or cursor.location.file.name != 'hello.c':
-        continue
-
-    # Ignore AST elements not a function declaration.
-    if cursor.kind != CursorKind.FUNCTION_DECL:
-        continue
-
-    # Obtain the return Type for this function.
-    result_type = cursor.type.get_result()
-
-    print 'Function: %s' % cursor.spelling
-    print '  Return type: %s' % result_type.kind.spelling
-    print '  Arguments:'
-
-    # Function has no arguments.
-    if cursor.type.kind == TypeKind.FUNCTIONNOPROTO:
-        print '    None'
-        continue
-
-    for arg_type in cursor.argument_types():
-        print '    %s' % arg_type.kind.spelling
-</code></pre>
-<p>This example is overly simplified. A more robust solution would also
-inspect the Type instances to see if they are constants, check for
-pointers, check for variadic functions, etc.</p>
-<p>An example application of these APIs is to build a tool which
-automatically generated
-<a href="http://docs.python.org/library/ctypes.html">ctypes</a> or similar
-<a href="https://en.wikipedia.org/wiki/Foreign_function_interface">FFI</a>
-bindings. Many of these tools today use custom parsers. Why invent a
-custom (and likely complex) parser when you can call out into Clang and
-have it to all the heavy lifting for you?</p>
-<h2>Future Features</h2>
-<p>As I write this, there are already a handful of Python binding features
-checked into Clang's SVN trunk that were made after the 3.1 branch was cut.
-And, I'm actively working at integrating many more.</p>
-<p>Still to come to the Python bindings are:</p>
-<ul>
-<li>Better memory management support (currently, not all references are
-  kept everywhere, so it is possible for a GC to collect and dispose of
-  objects that should be alive, even though they are not in scope).</li>
-<li>Support for token API (lexer output)</li>
-<li>More complete coverage of Cursor and Type APIs</li>
-<li>More friendly APIs</li>
-</ul>
-<p>I have a personal goal for the Python bindings to cover 100% of the
-functionality in libclang. My work towards that goal is captured in my
-<a href="https://github.com/indygreg/clang/tree/python_features/">python features</a>
-branch on GitHub. I periodically clean up a patch, submit it for review,
-apply feedback, and commit. That branch is highly volatile and I do
-rebase. You have been warned.</p>
-<p>Furthermore, I would like to add additional functionality to libclang
-[and expose it to Python]. For example, I would love for libclang to
-support code generation (i.e. compiling), not just parsing. This would
-enable all kinds of nifty scenarios (like channeling your build system's
-compiler calls through a proxy which siphons off metadata such as
-diagnostics).</p>
-<h2>Credits and Getting Involved</h2>
-<p>I'm not alone in my effort to improve Clang's Python bindings.
-Anders Waldenborg has landed a number of patches to add functionality
-and tests. He has also been actively reviewing patches and implementing
-official LLVM Python bindings! On the reviewing front, Manuel Klimek has been
-invaluable. I've lost track of how many bugs he's caught and good
-suggestions he's made. Tobias Grosser and Chandler Carruth have also
-reviewed their fair share of patches and handled community contributions.</p>
-<p>If you are interested in contributing to the Python bindings, we could
-use your help! You can find me in <a href="http://llvm.org/docs/#irc">#llvm</a> as
-IndyGreg. If I'm not around, the LLVM community is generally pretty helpful,
-so I'm sure you'll get an answer. If you prefer email, send it to the
-<a href="http://lists.cs.uiuc.edu/mailman/listinfo/cfe-dev">cfe-dev</a> list.</p>
-<p>If you have any questions, leave them in the comments or ask using one
-of the methods above.</p>]]></content:encoded>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/07/15/python-packaging-do's-and-don'ts</guid>
+      <description>Python Packaging Do's and Don'ts</description>
+      <content:encoded><![CDATA[<p>Are you someone who casually interacts with Python but don't know the
+inner workings of Python? Then this post is for you. Read on to learn
+why some things are the way they are and how to avoid making some
+common mistakes.</p>
+<h2>Always use Virtualenvs</h2>
+<p>It is an easy trap to view <a href="https://virtualenv.pypa.io/en/latest/virtualenv.html">virtualenvs</a>
+as an obstacle, a distraction towards accomplishing something. People
+see me adding virtualenvs to build instructions and they say <em>I don't
+use virtualenvs, they aren't necessary, why are you doing that?</em></p>
+<p>A virtualenv is effectively an overlay on top of your system Python
+install. Creating a virtualenv can be thought of as copying your system
+Python environment into a local location. When you modify virtualenvs,
+you are modifying an isolated container. Modifying virtualenvs has no
+impact on your system Python.</p>
+<p>A goal of a virtualenv is to isolate your system/global Python install
+from unwanted changes. When you accidentally make a change to a
+virtualenv, you can just delete the virtualenv and start over from
+scratch. When you accidentally make a change to your system Python, it
+can be much, much harder to recover from that.</p>
+<p>Another goal of virtualenvs is to allow different versions of packages
+to exist. Say you are working on two different projects and each
+requires a specific version of Django. With virtualenvs, you install one
+version in one virtualenv and a different version in another virtualenv.
+Things happily coexist because the virtualenvs are independent.
+Contrast with trying to manage both versions of Django in your system
+Python installation. Trust me, it's not fun.</p>
+<p>Casual Python users may not encounter scenarios where virtualenvs make
+their lives better... until they do, at which point they realize their
+system Python install is beyond saving. People who eat, breath, and die
+Python run into these scenarios all the time. We've learned how bad life
+without virtualenvs can be and so we use them everywhere.</p>
+<p>Use of virtualenvs is a best practice. Not using virtualenvs will result
+in something unexpected happening. It's only a matter of time.</p>
+<p>Please use virtualenvs.</p>
+<h2>Never use sudo</h2>
+<p>Do you use sudo to install a Python package? You are doing it wrong.</p>
+<p>If you need to use sudo to install a Python package, that almost
+certainly means you are installing a Python package to your
+system/global Python install. And this means you are modifying your
+system Python instead of isolating it and keeping it pristine.</p>
+<p>Instead of using sudo to install packages, create a virtualenv and
+install things into the virtualenv. There should never be permissions
+issues with virtualenvs - the user that creates a virtualenv has full
+realm over it.</p>
+<h2>Never modify the system Python environment</h2>
+<p>On some systems, such as OS X with Homebrew, you don't need sudo to
+install Python packages because the user has write access to the Python
+directory (<em>/usr/local</em> in Homebrew).</p>
+<p>For the reasons given above, don't much around with the system Python
+environment. Instead, use a virtualenv.</p>
+<h2>Beware of the package manager</h2>
+<p>Your system's package manager (apt, yum, etc) is likely using root and/or
+installing Python packages into the system Python.</p>
+<p>For the reasons given above, this is bad. Try to use a virtualenv, if
+possible. Try to not use the system package manager for installing
+Python packages.</p>
+<h2>Use pip for installing packages</h2>
+<p>Python packaging has historically been a mess. There are a handful of
+tools and APIs for installing Python packages. As a casual Python user,
+you only need to know of one of them:
+<a href="https://pip.pypa.io/en/latest/">pip</a>.</p>
+<p>If someone says <em>install a package</em>, you should be thinking <em>create a
+virtualenv, activate a virtualenv, <code>pip install &lt;package&gt;</code></em>. <strong>You
+should never run <code>pip install</code> outside of a virtualenv.</strong> (The exception
+is to install virtualenv and pip itself, which you almost certainly want
+in your system/global Python.)</p>
+<p>Running <em>pip install <package></em> will install packages from
+<a href="https://pypi.python.org/pypi">PyPI</a>, the Python Packaging Index by
+default. It's Python's official package repository.</p>
+<p>There are a lot of old and outdated tutorials online about Python
+packaging. Beware of bad content. For example, if you see documentation
+that says <em>use easy_install</em>, you should be thinking, <em>easy_install is
+a legacy package installer that has largely been replaced by pip, I
+should use pip instead</em>. When in doubt, consult the
+<a href="https://python-packaging-user-guide.readthedocs.org/en/latest/index.html">Python packaging user guide</a>
+and do what it recommends.</p>
+<h2>Don't trust the Python in your package manager</h2>
+<p>The more Python programming you do, the more you learn to not trust the
+Python package provided by your system / package manager.</p>
+<p>Linux distributions such as Ubuntu that sit on the forward edge of
+versions are better than others. But I've run into enough problems with
+the OS or package manager maintained Python (especially on OS X), that
+I've learned to distrust them.</p>
+<p>I use <a href="https://github.com/yyuu/pyenv">pyenv</a> for installing and managing
+Python distributions from source. pyenv also installs virtualenv and
+pip for me, packages that I believe should be in all Python installs
+by default. As a more experienced Python programmer, I find pyenv 
+<em>just works</em>.</p>
+<p>If you are just a beginner with Python, it is probably safe to ignore
+this section. Just know that as soon as something weird happens, start
+suspecting your default Python install, especially if you are on OS X.
+If you suspect trouble, use something like pyenv to enforce a buffer so
+the system can have its Python and you can have yours.</p>
+<h2>Recovering from the past</h2>
+<p>Now that you know the preferred way to interact with Python, you are
+probably thinking <em>oh crap, I've been wrong all these years - how do I
+fix it?</em></p>
+<p>The goal is to get a Python install <em>somewhere</em> that is as pristine as
+possible. You have two approaches here: cleaning your existing Python or
+creating a new Python install.</p>
+<p>To clean your existing Python, you'll want to purge it of pretty much
+all packages not installed by the core Python distribution. The
+exception is virtualenv, pip, and setuptools - you almost certainly want
+those installed globally. On Homebrew, you can uninstall everything related to
+Python and blow away your Python directory, typically
+/usr/local/lib/python*. Then, <em>brew install python</em>. On Linux distros,
+this is a bit harder, especially since most Linux distros rely on Python
+for OS features and thus they may have installed extra packages. You
+could try a similar approach on Linux, but I don't think it's worth it.</p>
+<p>Cleaning your system Python and attempting to keep it pure are ongoing
+tasks that are very difficult to keep up with. All it takes is one
+dependency to get pulled in that trashes your system Python. Therefore,
+I shy away from this approach.</p>
+<p>Instead, I install and run Python from my user directory. I use
+<a href="https://github.com/yyuu/pyenv">pyenv</a>. I've also heard great things
+about <a href="http://conda.pydata.org/miniconda.html">Miniconda</a>. With either
+solution, you get a Python in your home directory that starts clean and
+pure. Even better, it is completely independent from your system Python.
+So if your package manager does something funky, there is a buffer. And,
+if things go wrong with your userland Python install, you can always
+nuke it without fear of breaking something in system land. This seems to
+be the best of both worlds.</p>
+<p>Please note that installing packages in the system Python shouldn't be
+evil. When you create virtualenvs, you can - and should - tell
+virtualenv to not use the system site-packages (i.e. <em>don't use
+non-core packages from the system installation</em>). This is the default
+behavior in virtualenv. It should provide an adequate buffer. But from
+my experience, things still manage to bleed through. My userland Python
+install is extra safety. If something wrong happens, I can only blame
+myself.</p>
+<h2>Conclusion</h2>
+<p>Python's long and complicated history of package management makes it
+very easy for you to shoot yourself in the foot. The long list of
+outdated tutorials on The Internet make this a near certainty for casual
+Python users. Using the guidelines in this post, you can adhere to best
+practices that will cut down on surprises and rage and keep your Python
+running smoothly.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
