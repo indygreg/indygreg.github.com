@@ -7,12 +7,91 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-07-16T16:48:40Z</updated>
+  <updated>2014-07-17T02:53:04Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Updates to firefoxtree Mercurial extension]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension" />
+    <id>http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension</id>
+    <updated>2014-07-16T19:55:00Z</updated>
+    <published>2014-07-16T19:55:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Updates to firefoxtree Mercurial extension]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension"><![CDATA[<p>My <a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
+has been generating a lot of interest for bookmark-based workflows at
+Mozilla. To make adoption easier, I
+<a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags/">quickly authored</a>
+an <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">extension</a>
+to add <em>remote refs</em> of Firefox repositories to Mercurial.</p>
+<p>There was still a bit of confusion and gripes about workflows that I
+thought it would be best to update the extension to make things more
+pleasant.</p>
+<h2>Automatic tree names</h2>
+<p>People wanted an ability to easy pull/aggregate the various Firefox
+trees without additional configuration to an hgrc file.</p>
+<p>With <em>firefoxtree</em>, you can now <em>hg pull central</em> or <em>hg pull inbound</em>
+or <em>hg pull aurora</em> and it just works.</p>
+<p>Pushing with aliases doesn't yet work. It is slightly harder to do in
+the Mercurial API. I have a solution, but I'm validating some code paths
+to ensure it is safe. This feature will likely appear soon.</p>
+<h2>fxheads commands</h2>
+<p>Once people adopted unified repositories with heads from multiple
+repositories, they asked how they could quickly identify the heads of
+the pulled Firefox repositories.</p>
+<p><em>firefoxtree</em> now provides a <em>hg fxheads</em> command that prints a
+concise output of the commits constituting the heads of the Firefox
+repos. e.g.</p>
+<div class="pygments_murphy"><pre>$ hg fxheads
+224969:0ec0b9ac39f0 aurora (sort of) bug 898554 - raise expected hazard count for b2g to 4 until they are fixed, a=bustage+hazbuild-only
+224290:6befadcaa685 beta Tagging /src/mdauto/build/mozilla-beta 1772e55568e4 with FIREFOX_RELEASE_31_BASE a=release CLOSED TREE
+224848:8e8f3ba64655 central Merge inbound to m-c a=merge
+225035:ec7f2245280c fx-team fx-team/default Merge m-c to fx-team
+224877:63c52b7ddc28 inbound Bug 1039197 - Always build js engine with zlib. r=luke
+225044:1560f67f4f93 release release/default tip Automated checkin: version bump for firefox 31.0 release. DONTBUILD CLOSED TREE a=release
+</pre></div>
+
+<p>Please note that the output is based upon local-only knowledge.</p>
+<h2>Reject pushing multiple heads</h2>
+<p>People were complaining that bookmark-based workflows resulted in
+Mercurial trying to push multiple heads to a remote. This complaint
+stems from the fact that Mercurial's default push behavior is to find
+all commits missing from the remote and push them. This behavior is
+extremely frustrating for Firefox development because the Firefox repos
+only have a single head and pushing multiple heads will only result in
+a server hook rejecting the push (after wasting a lot of time
+transferring that commit data).</p>
+<p><em>firefoxtree</em> now will refuse to push multiple heads to a known Firefox
+repo before any commit data is sent. In other words, we fail fast so
+your time is saved.</p>
+<p><em>firefoxtree</em> also changes the default behavior of <em>hg push</em> when
+pushing to a Firefox repo. If no <em>-r</em> argument is specified, <em>hg push</em>
+to a Firefox repo will automatically remap to <em>hg push -r .</em>. In other
+words, we attempt to push the working copy's commit by default. This
+change establishes sensible default and likely working behavior when
+typing just <em>hg push</em>.</p>
+<h2>Installing firefoxtree</h2>
+<p>Within the next 48 hours, <em>mach mercurial-setup</em> should prompt to
+install <em>firefoxtree</em>. Until then, clone
+<em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and ensure your
+<em>~/hgrc</em> file has the following:</p>
+<pre><code>[extensions]
+firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
+</code></pre>
+<p>You likely already have a copy of version-control-tools
+in <em>~/.mozbuild/version-control-tools</em>.</p>
+<p>It is completely safe to install <em>firefoxtree</em> globally: the extension
+will only modify behavior of repositories that are clones of Firefox
+repositories.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1536,30 +1615,5 @@ performance issue for any hosted service provider, I'm not going to
 hold my breath this particular feature is rolled out any time soon.
 This is unfortunate, as it makes projects seemingly choose between
 low risk/low convenience and GitHub's vibrant developer community.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Mercurial 2.8 released]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released" />
-    <id>http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released</id>
-    <updated>2013-11-08T14:30:00Z</updated>
-    <published>2013-11-08T14:30:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Mercurial 2.8 released]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released"><![CDATA[<p><a href="http://mercurial.selenic.com/">Mercurial</a> 2.8 has been released.</p>
-<p>The <a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_2.8_.282013-11-1.29">changes</a>
-aren't as sexy as previous releases. But there are a handful of bug
-fixes that seem useful to pull in. People may also find the new <em>shelve</em>
-extension useful.</p>
-<p>I encourage Mozillians to keep their Mercurial up to date. I once went
-around the San Francisco office and stood behind people as they
-upgraded to a modern Mercurial. For the next few weeks I was hearing a
-lot of "OMG Mercurial is so much better now." Don't handicap yourself by
-running an older, buggy Mercurial.</p>
-<p>If you don't yet feel comfortable running 2.8, 2.7 should be safe.</p>]]></content>
   </entry>
 </feed>

@@ -7,12 +7,91 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-07-16T16:48:40Z</updated>
+  <updated>2014-07-17T02:53:04Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Updates to firefoxtree Mercurial extension]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension" />
+    <id>http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension</id>
+    <updated>2014-07-16T19:55:00Z</updated>
+    <published>2014-07-16T19:55:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Updates to firefoxtree Mercurial extension]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension"><![CDATA[<p>My <a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
+has been generating a lot of interest for bookmark-based workflows at
+Mozilla. To make adoption easier, I
+<a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags/">quickly authored</a>
+an <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">extension</a>
+to add <em>remote refs</em> of Firefox repositories to Mercurial.</p>
+<p>There was still a bit of confusion and gripes about workflows that I
+thought it would be best to update the extension to make things more
+pleasant.</p>
+<h2>Automatic tree names</h2>
+<p>People wanted an ability to easy pull/aggregate the various Firefox
+trees without additional configuration to an hgrc file.</p>
+<p>With <em>firefoxtree</em>, you can now <em>hg pull central</em> or <em>hg pull inbound</em>
+or <em>hg pull aurora</em> and it just works.</p>
+<p>Pushing with aliases doesn't yet work. It is slightly harder to do in
+the Mercurial API. I have a solution, but I'm validating some code paths
+to ensure it is safe. This feature will likely appear soon.</p>
+<h2>fxheads commands</h2>
+<p>Once people adopted unified repositories with heads from multiple
+repositories, they asked how they could quickly identify the heads of
+the pulled Firefox repositories.</p>
+<p><em>firefoxtree</em> now provides a <em>hg fxheads</em> command that prints a
+concise output of the commits constituting the heads of the Firefox
+repos. e.g.</p>
+<div class="pygments_murphy"><pre>$ hg fxheads
+224969:0ec0b9ac39f0 aurora (sort of) bug 898554 - raise expected hazard count for b2g to 4 until they are fixed, a=bustage+hazbuild-only
+224290:6befadcaa685 beta Tagging /src/mdauto/build/mozilla-beta 1772e55568e4 with FIREFOX_RELEASE_31_BASE a=release CLOSED TREE
+224848:8e8f3ba64655 central Merge inbound to m-c a=merge
+225035:ec7f2245280c fx-team fx-team/default Merge m-c to fx-team
+224877:63c52b7ddc28 inbound Bug 1039197 - Always build js engine with zlib. r=luke
+225044:1560f67f4f93 release release/default tip Automated checkin: version bump for firefox 31.0 release. DONTBUILD CLOSED TREE a=release
+</pre></div>
+
+<p>Please note that the output is based upon local-only knowledge.</p>
+<h2>Reject pushing multiple heads</h2>
+<p>People were complaining that bookmark-based workflows resulted in
+Mercurial trying to push multiple heads to a remote. This complaint
+stems from the fact that Mercurial's default push behavior is to find
+all commits missing from the remote and push them. This behavior is
+extremely frustrating for Firefox development because the Firefox repos
+only have a single head and pushing multiple heads will only result in
+a server hook rejecting the push (after wasting a lot of time
+transferring that commit data).</p>
+<p><em>firefoxtree</em> now will refuse to push multiple heads to a known Firefox
+repo before any commit data is sent. In other words, we fail fast so
+your time is saved.</p>
+<p><em>firefoxtree</em> also changes the default behavior of <em>hg push</em> when
+pushing to a Firefox repo. If no <em>-r</em> argument is specified, <em>hg push</em>
+to a Firefox repo will automatically remap to <em>hg push -r .</em>. In other
+words, we attempt to push the working copy's commit by default. This
+change establishes sensible default and likely working behavior when
+typing just <em>hg push</em>.</p>
+<h2>Installing firefoxtree</h2>
+<p>Within the next 48 hours, <em>mach mercurial-setup</em> should prompt to
+install <em>firefoxtree</em>. Until then, clone
+<em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and ensure your
+<em>~/hgrc</em> file has the following:</p>
+<pre><code>[extensions]
+firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
+</code></pre>
+<p>You likely already have a copy of version-control-tools
+in <em>~/.mozbuild/version-control-tools</em>.</p>
+<p>It is completely safe to install <em>firefoxtree</em> globally: the extension
+will only modify behavior of repositories that are clones of Firefox
+repositories.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1630,91 +1709,5 @@ important reviews/decisions.</p>
 Board. If nothing else, at least <a href="https://reviewboard.allizom.org/r/24/diff/">gaze upon it's patch rendering
 beauty</a> and witness
 what the future could hold.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Aggregating Version Control Info at Mozilla]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla" />
-    <id>http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla</id>
-    <updated>2014-01-21T10:50:00Z</updated>
-    <published>2014-01-21T10:50:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Git" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="Python" />
-    <summary type="html"><![CDATA[Aggregating Version Control Info at Mozilla]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla"><![CDATA[<p>Over the winter break, I set out on an ambitious project to create
-a service to help developers and others manage the flury
-of patches going into Firefox. While the project is far from complete,
-I'm ready to unleash the first part of the project upon the world.</p>
-<p>If you point your browsers to
-<a href="http://moztree.gregoryszorc.com/">moztree.gregoryszorc.com</a>, you'll
-hopefully see some documentation about what I've built.
-<a href="https://bitbucket.org/indygreg/moz-tree-utopia">Source code</a> is
-available and free, of course. Patches very welcome.</p>
-<p>Essentially, I built a centralized indexing service for version
-control repositories with Mozilla's extra metadata thrown in.
-I tell it what repositories to mirror, and it clones everything,
-fetches data such as the pushlog and Git SHA-1 mappings, and
-stores everything in a central database. It then exposes this
-aggregated data through world-readable web services.</p>
-<p>Currently, I have the service indexing the popular project branches
-for Firefox (central, aurora, beta, release, esr, b2g, inbound, fx-team,
-try, etc). You can view the
-<a href="http://moztree.gregoryszorc.com/api/repos">full list</a> via the web
-service. As a bonus, I'm also serving these repositories via
-<a href="http://hg.gregoryszorc.com/">hg.gregoryszorc.com</a>. My server appears
-to be significantly faster than
-<a href="https://hg.mozilla.org">hg.mozilla.org</a>. If you want to use it for
-your daily needs, go for it. I make no SLA guarantees, however.</p>
-<p>I'm also using this service as an opportunity to experiment with
-alternate forms of Mercurial hosting. I have mirrors of mozilla-central
-and the try repository with generaldelta and lz4 compression enabled.
-I may blog about what those are eventually. The teaser is that they can
-make Mercurial perform a lot faster under some conditions. I'm also
-using ZFS under the hood to manage repositories. Each repository is a
-ZFS filesystem. This means I can create repository copies on the server
-(user repositories anyone?) at a nearly free cost. Contrast this to the
-traditional method of full clones, which take lots of time, memory, CPU,
-and storage.</p>
-<p>Anyway, some things you can do with the existing web service:</p>
-<ul>
-<li>Obtain metadata about Mercurial changesets.
-  <a href="http://moztree.gregoryszorc.com/api/changeset/940b2974f35b">Example</a>.</li>
-<li>Look up metadata about Git commits.
-  <a href="http://moztree.gregoryszorc.com/api/git-sha1/40438af67c321">Example</a>.</li>
-<li>Obtain a <a href="http://moztree.gregoryszorc.com/api/spore">SPORE descriptor</a>
-  describing the web service endpoints. This allows you to auto-generate
-  clients from descriptors. Yay!</li>
-</ul>
-<p>Obviously, that's not a lot. But adding new endpoints is relatively
-straightforward. See the <a href="https://bitbucket.org/indygreg/moz-tree-utopia/src/tip/repodata/web/app.py">source</a>.
-It's literally as easy as defining a URL mapping and writing a
-database query.</p>
-<p>The performance is also not the best. I just haven't put in the effort
-to tune things yet. All of the querying hits the database, not
-Mercurial. So, making things faster should merely be a matter of
-database and hosting optimization. Patches welcome!</p>
-<p>Some ideas that I haven't had time to implement yet:</p>
-<ul>
-<li>Return changests in a specific repository</li>
-<li>Return recently pushed changesets</li>
-<li>Return pushes for a given user</li>
-<li>Return commits for a given author</li>
-<li>Return commits referencing a given bug</li>
-<li>Obtain TBPL URLs for pushes with changeset</li>
-<li>Integrate bugzilla metadata</li>
-</ul>
-<p>Once those are in place, I foresee this service powering a number of
-dashboards. Patches welcome.</p>
-<p>Again, this service is only the tip of what's possible. There's a lot
-that could be built on this service. I have ideas. Others have ideas.</p>
-<p>The project includes a Vagrant file and Puppet
-manifests for provisioning the server. It's a one-liner to get a
-development environment up and running. It should be really easy to
-contribute to this project. Patches welcome.</p>]]></content>
   </entry>
 </feed>
