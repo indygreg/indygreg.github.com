@@ -94,7 +94,8 @@ repos. e.g.</p>
 225044:1560f67f4f93 release release/default tip Automated checkin: version bump for firefox 31.0 release. DONTBUILD CLOSED TREE a=release
 </pre></div>
 
-<p>Please note that the output is based upon local-only knowledge.</p>
+<p>Please note that the output is based upon local-only knowledge: you'll
+need to pull to ensure data is current.</p>
 <h2>Reject pushing multiple heads</h2>
 <p>People were complaining that bookmark-based workflows resulted in
 Mercurial trying to push multiple heads to a remote. This complaint
@@ -113,11 +114,17 @@ to a Firefox repo will automatically remap to <em>hg push -r .</em>. In other
 words, we attempt to push the working copy's commit by default. This
 change establishes sensible default and likely working behavior when
 typing just <em>hg push</em>.</p>
+<p>I am a bit on the fence about changing the default behavior of <em>hg
+push</em>. On one hand, it makes total sense. On the other, silently
+changing the default behavior of a built-in command is a little
+dangerous. I can easily see this backfiring when people interact with
+non-Firefox repos. I encourage people to get in the habit of typing
+<em>hg push -r <rev></em> because that's what you should be doing.</p>
 <h2>Installing firefoxtree</h2>
 <p>Within the next 48 hours, <em>mach mercurial-setup</em> should prompt to
 install <em>firefoxtree</em>. Until then, clone
 <em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and ensure your
-<em>~/hgrc</em> file has the following:</p>
+<em>~/.hgrc</em> file has the following:</p>
 <pre><code>[extensions]
 firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
 </code></pre>

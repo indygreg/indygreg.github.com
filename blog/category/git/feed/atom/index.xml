@@ -7,12 +7,118 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-07-17T02:53:04Z</updated>
+  <updated>2014-07-25T03:22:13Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Repository-Centric Development]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development" />
+    <id>http://gregoryszorc.com/blog/2014/07/24/repository-centric-development</id>
+    <updated>2014-07-24T20:23:00Z</updated>
+    <published>2014-07-24T20:23:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Git" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Repository-Centric Development]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development"><![CDATA[<p>I was editing a wiki page yesterday and I think I coined a new term
+which I'd like to enter the common nomenclature: <em>repository-centric
+development</em>. The term refers to development/version control
+workflows that place repositories - not patches - first.</p>
+<p>When collaborating on version controlled code with modern tools like
+Git and Mercurial, you essentially have two choices on how to
+share version control data: patches or repositories.</p>
+<p>Patches have been around since the dawn of version control. Everyone
+knows how they work: your version control system has a copy of
+the canonical data and it can export a view of a specific change
+into what's called a patch. A patch is essentially a diff with
+extra metadata.</p>
+<p>When distributed version control systems came along, they brought
+with them an alternative to patch-centric development:
+repository-centric development. You could still exchange patches if you
+wanted, but distributed version control allowed you to <em>pull</em> changes
+directly from multiple <em>repositories</em>. You weren't limited to a single
+master server (that's what the <em>distributed</em> in <em>distributed version
+control</em> means). You also didn't have to go through an intermediate
+transport such as email to exchange patches: you communicate directly
+with a peer repository instance.</p>
+<p>Repository-centric development eliminates the <em>middle man</em> required
+for patch exchange: instead of exchanging derived data, you exchange
+the actual data, speaking the repository's native language.</p>
+<p>One advantage of repository-centric development is it eliminates the
+problem of patch non-uniformity. Patches come in many different flavors.
+You have plain diffs. You have diffs with metadata. You have Git style
+metadata. You have Mercurial style metadata. You can produce patches
+with various lines of context in the diff. There are different methods
+for handling binary content. There are different ways to express
+file adds, removals, and renames. It's all a hot mess. Any system
+that consumes patches needs to deal with the non-uniformity. Do you
+think this isn't a problem in the real world? Think again. If you are
+involved with an open source project that collects patches via email
+or by uploading patches to a bug tracker, have you ever seen someone
+accidentally upload a patch in the wrong format? That's patch
+non-uniformity. New contributors to Firefox do this all the time. I
+also see it in the Mercurial project. With repository-centric
+development, patches never enter the picture, so patch non-uniformity
+is a non-issue. (Don't confuse the superficial formatting of patches
+with the content, such as an incorrect commit message format.)</p>
+<p>Another advantage of repository-centric development is it makes the
+act of exchanging data easier. Just have two repositories talk to
+each other. This used to be difficult, but hosting services like
+GitHub and Bitbucket make this easy. Contrast with patches, which
+require hooking your version control tool up to wherever those patches
+are located. The Linux Kernel, like so many other projects,
+<a href="https://www.kernel.org/doc/Documentation/SubmittingPatches">uses email for contributing changes</a>.
+So now Git, Mercurial, etc all fulfill Zawinski's law. This means your
+version control tool is talking to your inbox to send and receive code.
+Firefox development uses Bugzilla to hold patches as attachments. So now your
+version control tool needs to talk to your issue tracker. (Not the worst
+idea in the world I will concede.) While, yes, the tools around using
+email or uploading patches to issue trackers or whatever else you are
+using to exchange patches exist and can work pretty well, the grim
+reality is that these tools are all reinventing the wheel of repository
+exchange and are solving a problem that has already been solved by
+<em>git push</em>, <em>git fetch</em>, <em>hg pull</em>, <em>hg push</em>, etc. Personally, I would
+rather <em>hg push</em> to a remote and have tools like issue trackers and
+mailing lists pull directly from repositories. At least that way they
+have a direct line into the source of truth and are guaranteed a
+consistent output format.</p>
+<p>It is a fair criticism to say that not everyone can host a server or
+that permissions and authorization are hard. Although I think concerns
+about impact are overblown. If you are a small project, just create a
+GitHub or Bitbucket account. If you are a larger project, realize that
+people time is one of your largest expenses and invest in tools like
+proper and efficient repository hosting (often this can be GitHub) to
+reduce this waste and keep your developers happier and more efficient.</p>
+<p>One of the clearest examples of repository-centric development is
+GitHub. There are no patches in GitHub. Instead, you <em>git push</em>
+and <em>git fetch</em>. Want to apply someone else's work? Just add a remote
+and <em>git fetch</em>! Contrast with first locating patches, hooking up
+Git to consume them (this part was always confusing to me - do you
+need to retroactively have them sent to your email inbox so you can
+import them from there), and finally actually importing them. Just
+give me a URL to a repository already. But the benefits of
+repository-centric development with GitHub don't stop at pushing and
+pulling. GitHub has built code review functionality into pushes. They
+call these <em>pull requests</em>. While I have significant issues with
+GitHub's implemention of pull requests (I need to blog about those some
+day), I can't deny the utility of the repository-centric workflow and
+all the benefits around it. Once you switch to GitHub and its
+repository-centric workflow, you more clearly see how lacking
+patch-centric development is and quickly lose your desire to go back
+to the 1990's state-of-the-art methods for software development.</p>
+<p>I hope you now know what repository-centric development is and will join
+me in championing it over patch-based development.</p>
+<p>Mozillians reading this will be very happy to learn that work is under
+way to shift Firefox's development workflow to a more repository-centric
+world. Stay tuned.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>

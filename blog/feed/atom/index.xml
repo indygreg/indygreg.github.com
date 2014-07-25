@@ -7,12 +7,118 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-07-17T02:53:04Z</updated>
+  <updated>2014-07-25T03:22:13Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Repository-Centric Development]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development" />
+    <id>http://gregoryszorc.com/blog/2014/07/24/repository-centric-development</id>
+    <updated>2014-07-24T20:23:00Z</updated>
+    <published>2014-07-24T20:23:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Git" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Repository-Centric Development]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development"><![CDATA[<p>I was editing a wiki page yesterday and I think I coined a new term
+which I'd like to enter the common nomenclature: <em>repository-centric
+development</em>. The term refers to development/version control
+workflows that place repositories - not patches - first.</p>
+<p>When collaborating on version controlled code with modern tools like
+Git and Mercurial, you essentially have two choices on how to
+share version control data: patches or repositories.</p>
+<p>Patches have been around since the dawn of version control. Everyone
+knows how they work: your version control system has a copy of
+the canonical data and it can export a view of a specific change
+into what's called a patch. A patch is essentially a diff with
+extra metadata.</p>
+<p>When distributed version control systems came along, they brought
+with them an alternative to patch-centric development:
+repository-centric development. You could still exchange patches if you
+wanted, but distributed version control allowed you to <em>pull</em> changes
+directly from multiple <em>repositories</em>. You weren't limited to a single
+master server (that's what the <em>distributed</em> in <em>distributed version
+control</em> means). You also didn't have to go through an intermediate
+transport such as email to exchange patches: you communicate directly
+with a peer repository instance.</p>
+<p>Repository-centric development eliminates the <em>middle man</em> required
+for patch exchange: instead of exchanging derived data, you exchange
+the actual data, speaking the repository's native language.</p>
+<p>One advantage of repository-centric development is it eliminates the
+problem of patch non-uniformity. Patches come in many different flavors.
+You have plain diffs. You have diffs with metadata. You have Git style
+metadata. You have Mercurial style metadata. You can produce patches
+with various lines of context in the diff. There are different methods
+for handling binary content. There are different ways to express
+file adds, removals, and renames. It's all a hot mess. Any system
+that consumes patches needs to deal with the non-uniformity. Do you
+think this isn't a problem in the real world? Think again. If you are
+involved with an open source project that collects patches via email
+or by uploading patches to a bug tracker, have you ever seen someone
+accidentally upload a patch in the wrong format? That's patch
+non-uniformity. New contributors to Firefox do this all the time. I
+also see it in the Mercurial project. With repository-centric
+development, patches never enter the picture, so patch non-uniformity
+is a non-issue. (Don't confuse the superficial formatting of patches
+with the content, such as an incorrect commit message format.)</p>
+<p>Another advantage of repository-centric development is it makes the
+act of exchanging data easier. Just have two repositories talk to
+each other. This used to be difficult, but hosting services like
+GitHub and Bitbucket make this easy. Contrast with patches, which
+require hooking your version control tool up to wherever those patches
+are located. The Linux Kernel, like so many other projects,
+<a href="https://www.kernel.org/doc/Documentation/SubmittingPatches">uses email for contributing changes</a>.
+So now Git, Mercurial, etc all fulfill Zawinski's law. This means your
+version control tool is talking to your inbox to send and receive code.
+Firefox development uses Bugzilla to hold patches as attachments. So now your
+version control tool needs to talk to your issue tracker. (Not the worst
+idea in the world I will concede.) While, yes, the tools around using
+email or uploading patches to issue trackers or whatever else you are
+using to exchange patches exist and can work pretty well, the grim
+reality is that these tools are all reinventing the wheel of repository
+exchange and are solving a problem that has already been solved by
+<em>git push</em>, <em>git fetch</em>, <em>hg pull</em>, <em>hg push</em>, etc. Personally, I would
+rather <em>hg push</em> to a remote and have tools like issue trackers and
+mailing lists pull directly from repositories. At least that way they
+have a direct line into the source of truth and are guaranteed a
+consistent output format.</p>
+<p>It is a fair criticism to say that not everyone can host a server or
+that permissions and authorization are hard. Although I think concerns
+about impact are overblown. If you are a small project, just create a
+GitHub or Bitbucket account. If you are a larger project, realize that
+people time is one of your largest expenses and invest in tools like
+proper and efficient repository hosting (often this can be GitHub) to
+reduce this waste and keep your developers happier and more efficient.</p>
+<p>One of the clearest examples of repository-centric development is
+GitHub. There are no patches in GitHub. Instead, you <em>git push</em>
+and <em>git fetch</em>. Want to apply someone else's work? Just add a remote
+and <em>git fetch</em>! Contrast with first locating patches, hooking up
+Git to consume them (this part was always confusing to me - do you
+need to retroactively have them sent to your email inbox so you can
+import them from there), and finally actually importing them. Just
+give me a URL to a repository already. But the benefits of
+repository-centric development with GitHub don't stop at pushing and
+pulling. GitHub has built code review functionality into pushes. They
+call these <em>pull requests</em>. While I have significant issues with
+GitHub's implemention of pull requests (I need to blog about those some
+day), I can't deny the utility of the repository-centric workflow and
+all the benefits around it. Once you switch to GitHub and its
+repository-centric workflow, you more clearly see how lacking
+patch-centric development is and quickly lose your desire to go back
+to the 1990's state-of-the-art methods for software development.</p>
+<p>I hope you now know what repository-centric development is and will join
+me in championing it over patch-based development.</p>
+<p>Mozillians reading this will be very happy to learn that work is under
+way to shift Firefox's development workflow to a more repository-centric
+world. Stay tuned.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -59,7 +165,8 @@ repos. e.g.</p>
 225044:1560f67f4f93 release release/default tip Automated checkin: version bump for firefox 31.0 release. DONTBUILD CLOSED TREE a=release
 </pre></div>
 
-<p>Please note that the output is based upon local-only knowledge.</p>
+<p>Please note that the output is based upon local-only knowledge: you'll
+need to pull to ensure data is current.</p>
 <h2>Reject pushing multiple heads</h2>
 <p>People were complaining that bookmark-based workflows resulted in
 Mercurial trying to push multiple heads to a remote. This complaint
@@ -78,11 +185,17 @@ to a Firefox repo will automatically remap to <em>hg push -r .</em>. In other
 words, we attempt to push the working copy's commit by default. This
 change establishes sensible default and likely working behavior when
 typing just <em>hg push</em>.</p>
+<p>I am a bit on the fence about changing the default behavior of <em>hg
+push</em>. On one hand, it makes total sense. On the other, silently
+changing the default behavior of a built-in command is a little
+dangerous. I can easily see this backfiring when people interact with
+non-Firefox repos. I encourage people to get in the habit of typing
+<em>hg push -r <rev></em> because that's what you should be doing.</p>
 <h2>Installing firefoxtree</h2>
 <p>Within the next 48 hours, <em>mach mercurial-setup</em> should prompt to
 install <em>firefoxtree</em>. Until then, clone
 <em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and ensure your
-<em>~/hgrc</em> file has the following:</p>
+<em>~/.hgrc</em> file has the following:</p>
 <pre><code>[extensions]
 firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
 </code></pre>
@@ -1597,117 +1710,5 @@ revlog formats for their impact.</p>
 tunable data structure. It works pretty well for most repositories. But
 if you are the 1%, you might want to spend some time to investigate
 changing its default configuration.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Review Board at Mozilla]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/01/27/review-board-at-mozilla" />
-    <id>http://gregoryszorc.com/blog/2014/01/27/review-board-at-mozilla</id>
-    <updated>2014-01-27T16:30:00Z</updated>
-    <published>2014-01-27T16:30:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="mach" />
-    <summary type="html"><![CDATA[Review Board at Mozilla]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/01/27/review-board-at-mozilla"><![CDATA[<p>Some Mozillians recently stood up an
-<a href="https://reviewboard.allizom.org/">instance</a> of
-<a href="http://www.reviewboard.org/">Review Board</a> - a web-based code review
-tool for evaluation purposes. Having used Review Board at a previous
-company, I can say with high confidence that when properly configured,
-it beats the pants off Splinter (the code review interface baked into
-Bugzilla). Here are some advantages:</p>
-<ul>
-<li>The HTML interface is more pleasant on the eyes (subjective).</li>
-<li>Interdiffs actually work.</li>
-<li>Intra-line diffs are rendered.</li>
-<li>You can open <em>issues</em> for individual review comments and these
-  issues can be tracked during subsequent reviews (Bugzilla doesn't
-  really have anything similar and review comments tend to get lost
-  unless the reviewer is sharp).</li>
-<li>It integrates with the VCS, so you can expand code context from the
-  review interface.</li>
-<li>There are buttons to toggle whitespace differences.</li>
-<li>Syntax hightlighting! It even recognizes things like <em>TODO</em> in
-  comments.</li>
-</ul>
-<p>You can read more from the <a href="http://www.reviewboard.org/docs/manual/1.7/users/">official user guide</a>.</p>
-<p>If you have any interest in evaluating Review Board, the easiest way
-to upload patches to Mozilla's instance is to run <strong>mach rbt</strong>.</p>
-<p><strong>mach rbt</strong> will launch the Review Board tools command-line client
-(called RBTools). From there, you can do a number of things. Run
-<strong>mach rbt help</strong> to see the full list.</p>
-<p>Here are some examples:</p>
-<pre><code># See a diff that would be uploaded to Review Board:
-$ mach rbt diff
-
-# Create a review request based on the current Mercurial changeset:
-$ mach rbt post
-
-# That should print out a URL to the not-yet-published review
-# request. If you go to that URL, you'll notice that the fields
-# in that request are all empty.
-
-# Next time, you can have some fields auto-populate by running:
-$ mach rbt post --guess-summary --guess-description
-
-# This grabs info from the commit message.
-
-# To update an existing review request (e.g. to submit a new patch):
-$ mach rbt post -r &lt;review id&gt;
-
-# (where &lt;review ID&gt; is the ID of the review).
-
-# You can also have it generate a "squashed" patch from multiple
-# commits:
-$ mach rbt post 164123::164125
-</code></pre>
-<p>Run <strong>mach rbt help post</strong> for more options. Also see the
-<a href="http://www.reviewboard.org/docs/rbtools/dev/">RBTools documentation</a>
-for more.</p>
-<p>It's worth noting that <strong>mach rbt</strong> will download an unreleased version
-of RBTools. This is because the released version doesn't work well with
-Mercurial. I contributed a handful of patches to RBTools to make
-Mercurial work better.</p>
-<p>Before you dive in and start using Review Board for actual code review,
-there are some things you need to know:</p>
-<ul>
-<li>Mozilla's Review Board instance does not yet send emails on changes.
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=958236">Bug 958236</a>
-  tracks this. When it works, you'll see nice emails, just like you do
-  for Bugzilla reviews.</li>
-<li>Review Board doesn't currently interact with Bugzilla that well. In
-  theory, we could have Review Board update corresponding Bugzilla bugs
-  when actions are performed. Someone just needs to write this code
-  and get it deployed.</li>
-<li>If you create a Bugzilla attachment that contains the URL of a Review
-  Board review (e.g. https://reviewboard.allizom.org/r/23/), Bugzilla
-  will automatically set the MIME type as a Review Board review and set
-  up an HTML redirect when the attachment is <em>downloaded</em> via the
-  browser. You can even set <strong>r?</strong> on this attachment to have Bugzilla
-  nag about reviews. See <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=875562">bug 875562</a>
-  for an example.</li>
-<li>There is currently no way to upload a patch to Review Board and update
-  Bugzilla is one go. I have proof-of-concept code for this. Although,
-  there is <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=947596">pushback</a>
-  on getting that checked in.</li>
-<li>Review Board 2 is in development. It has a number of new and exciting
-  features. And it looks better.</li>
-</ul>
-<p>Finally and most importantly, <strong>Review Board at Mozilla is still in
-evaluation mode.</strong> It's usage has not been officially blessed as far
-as I know. I don't believe the SLA is as high as other services (like
-Bugzilla). Nobody is really using it yet. It still needs a lot of
-polish and integration for it to realize its potential. And, there is
-some <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=947596">talk</a>
-about the future of code review at Mozilla that may or may not involve
-Review Board. In short, the future of Review Board at Mozilla is
-uncertain. I wouldn't rely on it to archive review comments from super
-important reviews/decisions.</p>
-<p>Despite the shortcomings, I encourage people to play around with Review
-Board. If nothing else, at least <a href="https://reviewboard.allizom.org/r/24/diff/">gaze upon it's patch rendering
-beauty</a> and witness
-what the future could hold.</p>]]></content>
   </entry>
 </feed>
