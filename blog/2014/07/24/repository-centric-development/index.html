@@ -123,6 +123,30 @@ rather <em>hg push</em> to a remote and have tools like issue trackers and
 mailing lists pull directly from repositories. At least that way they
 have a direct line into the source of truth and are guaranteed a
 consistent output format.</p>
+<p>Another area where direct exchange is huge is multi-patch commits
+(<em>branches</em> in Git parlance) or where commit data is fragmented. When
+pushing patches to email, you need to insert metadata saying which patch
+comes after which. Then the email import tool needs to reassemble things
+in the proper order (remember that the typical convention is one email
+per patch and email can be delivered out of order). Not the most
+difficult problem in the world to solve. But seriously, it's been
+solved already by <em>git fetch</em> and <em>hg pull</em>! Things are worse for
+Bugzilla. There is no bullet-proof way to order patches there. The
+convention at Mozilla is to add <em>Part N</em> strings to
+commit messages and have the Bugzilla import tool do a sort (I assume it
+does that). But what if you have a logical commit series spread across
+multiple bugs? How do you reassemble everything into a linear series of
+commits? You don't, sadly. Just today I wanted to apply a somewhat
+complicated series of patches to the Firefox build system I was asked to
+review so I could jump into a debugger and see what was going on so I
+could conduct a more thorough review. There were 4 or 5 patches spread
+over 3 or 4 bugs. Bugzilla and its patch-centric workflow prevented me
+from importing the patches. Fortunately, this patch series was pushed to
+Mozilla's Try server, so I could pull from there. But I haven't always
+been so fortunate. This limitation means developers have to make
+sacrifices such as writing fewer, larger patches (this makes code review
+harder) or involving unrelated parties in the same bug and/or review.
+In other words, deficient tools are imposing limited workflows. No bueno.</p>
 <p>It is a fair criticism to say that not everyone can host a server or
 that permissions and authorization are hard. Although I think concerns
 about impact are overblown. If you are a small project, just create a
