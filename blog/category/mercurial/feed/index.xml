@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 18 Aug 2014 22:11:02 GMT</pubDate>
+    <pubDate>Mon, 18 Aug 2014 23:35:40 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -41,7 +41,7 @@ version-control-tools. This means we get
 <a href="https://ci.mozilla.org/job/version-control-tools/coveragepy/?">code coverage</a>,
 and the ability to run tests against multiple versions of Mercurial
 (2.5.4 through 3.1) in one go.</p>
-<p><strong>This is new for Mozilla and is a big beal.</strong> For the first time, we
+<p><strong>This is new for Mozilla and is a big deal.</strong> For the first time, we
 have a somewhat robust testing environment for Mercurial that is testing
 things we run in production.</p>
 <p>But we still have a long way to go. The ultimate goal is to get everything
