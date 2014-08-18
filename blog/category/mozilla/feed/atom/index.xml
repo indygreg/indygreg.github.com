@@ -7,12 +7,66 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-07-25T17:02:44Z</updated>
+  <updated>2014-08-18T22:11:02Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mercurial hooks move and testing Mercurial]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial" />
+    <id>http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial</id>
+    <updated>2014-08-18T15:10:00Z</updated>
+    <published>2014-08-18T15:10:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Mercurial hooks move and testing Mercurial]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial"><![CDATA[<p>Mozilla has a number of source repositories under
+<a href="https://hg.mozilla.org/hgcustom/">https://hg.mozilla.org/hgcustom/</a>
+that cumulatively define how version control works at Mozilla.</p>
+<p>Back in February, I
+<a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools/">launched an effort</a>
+to establish a unified Mercurial repository for all this code. That
+repository is <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+and it has slowly grown.</p>
+<p>The <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1052201">latest addition</a>
+to this repository is the import of the <em>hghooks</em> repository. This
+now-defunct repository contained all the server-side Mercurial hooks
+that Mozilla has deployed on <em>hg.mozilla.org</em>.</p>
+<p>Soon after that repository was imported into version-control-tools, we
+started executing the hooks tests as part of the existing test suite in
+version-control-tools. This means we get
+<a href="https://ci.mozilla.org/job/version-control-tools/">continuous integration</a>,
+<a href="https://ci.mozilla.org/job/version-control-tools/coveragepy/?">code coverage</a>,
+and the ability to run tests against multiple versions of Mercurial
+(2.5.4 through 3.1) in one go.</p>
+<p><strong>This is new for Mozilla and is a big beal.</strong> For the first time, we
+have a somewhat robust testing environment for Mercurial that is testing
+things we run in production.</p>
+<p>But we still have a long way to go. The ultimate goal is to get everything
+rolled into the version-control-tools repository and to write tests for
+everything people rely on. We also want the test environment to look as
+much like our production environment as possible. Once that's in place,
+most of the fear and uncertainty around upgrading or changing the server
+goes away. This will allow Mozilla to move faster and issues like our
+recent server problems can be diagnosed more quickly (Mercurial has
+added better logging in newer versions).</p>
+<p>If you want to contribute to this effort, <strong>please write tests for
+behavior you rely on.</strong> We're now relying on Mercurial's test harness
+and <a href="http://mercurial.selenic.com/wiki/WritingTests">test types</a>
+rather than low-level unit tests. This means our tests are now running
+a Mercurial server and running actual Mercurial commands. The tests thus
+explicitly verify that client-seen behavior is exactly as you intend.
+For an example, see the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/abc1c5bdca9b/hghooks/tests/test-prevent-webidl.t">WebIDL hook test</a>.</p>
+<p>So what are you waiting for? Find some gaps in code coverage and write
+some tests today!</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1437,60 +1491,5 @@ finish that patch.</strong></p>
 spent writing and debugging tests, I encourage everyone to consider
 promises and tasks for his or her next feature so that you can cut
 down on development time and complete projects faster.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[New Repository for Mozilla Version Control Tools]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools" />
-    <id>http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools</id>
-    <updated>2014-02-05T19:15:00Z</updated>
-    <published>2014-02-05T19:15:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Git" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[New Repository for Mozilla Version Control Tools]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools"><![CDATA[<p>Version control systems can be highly useful tools.</p>
-<p>At Mozilla, we've made numerous improvements and customizations to our
-version control tools. We have <a href="https://hg.mozilla.org/hgcustom/hghooks/">custom hooks</a>
-that run on the server. We have a <a href="https://hg.mozilla.org/hgcustom/hg_templates/">custom skin</a>
-for Mercurial's web interface. Mozillians have written a handful of
-Mercurial extensions to aid with common developer tasks, such as
-<a href="https://bitbucket.org/sfink/trychooser">pushing to try</a>,
-<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">interacting with Bugzilla</a>,
-<a href="https://bitbucket.org/sfink/mqext">making mq more useful</a>, and more.</p>
-<p>These have all come into existence in an organic manner, one after the
-other. Individuals have seen an itch and scratched it. Good for them.
-Good for Mozilla.</p>
-<p>Unfortunately, the collection of amassed tools has become quite large.
-They have become difficult to discover and keep up to date. The
-consistency in quality and style between the tools varies. Each tool has
-separate processes for updating and changing.</p>
-<p>I contacted the maintainers of the popular version control tools at
-Mozilla with a simple proposal: let's maintain all our tools under one
-repo. This would allow us to increase cohesion, share code, maintain a
-high quality bar, share best practices, etc. There were no major
-objections, so we now have a <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">unified repository</a>
-containing our version control tools!</p>
-<p>Currently, we only have a few Mercurial extensions in there. A goal is
-to accumulate as much of the existing Mercurial infrastructure into
-that repository as possible. Client code. Server code. All of the code.
-I want developers to be able to install the same hooks on their clients
-as what's running on the server: why should your local repo let you
-commit something that the server will reject? I want developers to be
-able to reasonably reproduce Mozilla's canonical version control server
-configuration locally. That way, you can test things locally with a high
-confidence that your changes will work the same way on production. This
-allows deployments to move faster and with less friction.</p>
-<p>The immediate emphasis will be on moving extensions into this repo and
-deprecating the old homes on user repositories. Over time, we'll move
-into consolidating server code and getting hg.mozilla.org and
-git.mozilla.org to use this repository. But that's a lower priority: the
-most important goal right now is to make it easier and friendlier for
-people to run productivity-enhancing tools.</p>
-<p>So, if you see your Mercurial extensions alerting you that they've been
-moved to a new repository, now you know what's going on.</p>]]></content>
   </entry>
 </feed>
