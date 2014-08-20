@@ -7,12 +7,43 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-08-18T23:35:40Z</updated>
+  <updated>2014-08-20T01:30:18Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Submit Feedback about Mercurial]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/08/19/submit-feedback-about-mercurial" />
+    <id>http://gregoryszorc.com/blog/2014/08/19/submit-feedback-about-mercurial</id>
+    <updated>2014-08-19T18:30:00Z</updated>
+    <published>2014-08-19T18:30:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Submit Feedback about Mercurial]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/08/19/submit-feedback-about-mercurial"><![CDATA[<p>Are you a Mozillian who uses Mercurial? Do you have a complaint,
+suggestion, observation, or any other type of feedback you'd like
+to give to the maintainers of Mercurial? Now's your chance.</p>
+<p>There is a large gathering of Mercurial contributors next weekend
+in Munich. The
+<a href="http://mercurial.selenic.com/wiki/3.2sprint#Possible_Topics">topics list</a>
+is already impressive. But Mozilla's <em>delegation</em> (Mike Hommey,
+Ben Kero, and myself) would love to advance Mozilla's concerns to
+the wider community.</p>
+<p>To leave or vote for feedback, please visit
+<a href="https://hgfeedback.paas.allizom.org/e/august-2014-summit">https://hgfeedback.paas.allizom.org/e/august-2014-summit</a>
+before August 29 so your voice may be heard.</p>
+<p>I encourage you to leave feedback about any small, big or small,
+Mozilla-specific or not. Comparisons to Git, GitHub and other
+version control tools and services are also welcome.</p>
+<p>If you have feedback that can't be captured in that moderator tool,
+please email me. gps@mozilla.com.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1378,118 +1409,5 @@ file so I can just type <em>hg statusreport</em>.</p>
 commit messages for example), I think it's a pretty cool hack and shows
 how Mercurial can grow to solve problems you don't think your version
 control system knows how to solve.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[How Promises and Tasks are Improving Tests]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/03/30/how-promises-and-tasks-are-improving-tests" />
-    <id>http://gregoryszorc.com/blog/2014/03/30/how-promises-and-tasks-are-improving-tests</id>
-    <updated>2014-03-30T14:15:00Z</updated>
-    <published>2014-03-30T14:15:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="JavaScript" />
-    <summary type="html"><![CDATA[How Promises and Tasks are Improving Tests]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/03/30/how-promises-and-tasks-are-improving-tests"><![CDATA[<p>I was a very early adoptor of promises and
-<a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Task.jsm">Tasks</a>
-in Firefox's JavaScript code base. To me, promises on their own are ok.
-The ability to chain promises together and tack one error handler on
-the end sure beats the
-<a href="http://tritarget.org/blog/2012/11/28/the-pyramid-of-doom-a-javascript-style-trap/">Pyramid of Doom</a>
-and having to pass errors into callbacks everywhere. But what really
-lured me in were tasks: using generators (then a feature only available
-in SpiderMonkey) to represent async code flow as nice, easy-to-read
-procedural flow that nearly every programming can relate to. It made
-code much easier to read and grok. I've been using tasks ever since.</p>
-<p>When I started writing new APIs that returned promises instead of using
-callbacks, I found myself writing a lot of tests consuming promises and
-using tasks. So, I
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=819033">added an add_task</a>
-API to our xpcshell test harness to make writing task-based unit tests
-involve less boilerplate. That API is now used heavily for new xpcshell
-tests.</p>
-<p>While I initially added <em>add_task()</em> to cut down on the boilerplate for
-writing tests, I only recently realized it has another benefit: it's
-helped cut down on hung tests!</p>
-<p>Before, with callback-based APIs, we'd code tests like so:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-     <span class="nx">Assert</span><span class="p">.</span><span class="nx">ok</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">success</span><span class="p">);</span>
-     <span class="nx">run_next_test</span><span class="p">();</span>
-  <span class="p">});</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>Or another pattern:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// The next line throws an Error by accident!</span>
-    <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
-    <span class="nx">run_next_test</span><span class="p">();</span>
-  <span class="p">});</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>In the first example, the test will hang if the callback never gets
-called. The test harness driver will eventually terminate
-the test (after a multi-second delay with no output). Not good.</p>
-<p>In the second example, we are still susceptible to the callback not
-being called. But we have a different problem: an untrapped Error is
-thrown from a callback! This results in the same behavior:
-<em>run_next_test()</em> (the function that says to advance to the next test)
-won't execute and the test will hang until it times out.</p>
-<p>A more proper way to write this test is:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">try</span> <span class="p">{</span>
-      <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
-    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">ex</span><span class="p">)</span> <span class="p">{</span>
-      <span class="nx">do_report_unexpected_exception</span><span class="p">(</span><span class="nx">ex</span><span class="p">);</span>
-    <span class="p">}</span>
-
-    <span class="nx">run_next_test</span><span class="p">();</span>
-  <span class="p">});</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>In reality, few people surround all their callbacks with try..catch
-blocks because, well, it's a lot of typing and people don't always think
-it's necessary (the test passes most of the time, doesn't it?).</p>
-<p>What promises and task-based tests are doing is enabling us to write
-more robust tests without all of the extra work. Here is how you would
-use task-based tests:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_task</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">yield</span> <span class="nx">do_something</span><span class="p">();</span>
-  <span class="c1">// The next line throws an Error by accident!</span>
-  <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>Here, the Error thrown by the test function is thrown within the context
-of an executing Task. It is caught by the Task and converted into a
-rejected promise. <strong>The test harness sees that failure immediately
-and no timeout occurs!</strong> This can cut down on overhead when writing
-tests, especially if you are trying to debug a hang.</p>
-<p>Furthermore, the test is 4 lines versus 10. Less typing means you have
-more time to write additional tests or you can focus on writing other
-patches.</p>
-<p>Finally, the task-based test functions are easier to understand. That 4
-line, procedural test is much easier to grok than its callback-based
-counterpart.</p>
-<p>And before I conclude, I should mention that we can do more with
-promises. For example, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=976205">bug 976205</a> is making uncaught promise errors turn into test failures!
-There is also an awesome patch in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=867742">bug 867742</a> to
-introduce a unified JavaScript test harness API for defining JavaScript
-tests in our tree (currently the APIs for xpcshell tests and mochitests
-are different, leading to cognitive dissonance and lower productivity).
-<strong>If you want to be a hero to the Firefox developer community, help
-finish that patch.</strong></p>
-<p>Given that so much Firefox feature development time (at Mozilla) is
-spent writing and debugging tests, I encourage everyone to consider
-promises and tasks for his or her next feature so that you can cut
-down on development time and complete projects faster.</p>]]></content>
   </entry>
 </feed>
