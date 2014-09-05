@@ -51,6 +51,140 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="repository-centric-development"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/07/24/repository-centric-development" rel="bookmark" title="Permanent Link to Repository-Centric Development">Repository-Centric Development</a></h2>
+  <small>July 24, 2014 at 08:23 PM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I was editing a wiki page yesterday and I think I coined a new term
+which I'd like to enter the common nomenclature: <em>repository-centric
+development</em>. The term refers to development/version control
+workflows that place repositories - not patches - first.</p>
+<p>When collaborating on version controlled code with modern tools like
+Git and Mercurial, you essentially have two choices on how to
+share version control data: patches or repositories.</p>
+<p>Patches have been around since the dawn of version control. Everyone
+knows how they work: your version control system has a copy of
+the canonical data and it can export a view of a specific change
+into what's called a patch. A patch is essentially a diff with
+extra metadata.</p>
+<p>When distributed version control systems came along, they brought
+with them an alternative to patch-centric development:
+repository-centric development. You could still exchange patches if you
+wanted, but distributed version control allowed you to <em>pull</em> changes
+directly from multiple <em>repositories</em>. You weren't limited to a single
+master server (that's what the <em>distributed</em> in <em>distributed version
+control</em> means). You also didn't have to go through an intermediate
+transport such as email to exchange patches: you communicate directly
+with a peer repository instance.</p>
+<p>Repository-centric development eliminates the <em>middle man</em> required
+for patch exchange: instead of exchanging derived data, you exchange
+the actual data, speaking the repository's native language.</p>
+<p>One advantage of repository-centric development is it eliminates the
+problem of patch non-uniformity. Patches come in many different flavors.
+You have plain diffs. You have diffs with metadata. You have Git style
+metadata. You have Mercurial style metadata. You can produce patches
+with various lines of context in the diff. There are different methods
+for handling binary content. There are different ways to express
+file adds, removals, and renames. It's all a hot mess. Any system
+that consumes patches needs to deal with the non-uniformity. Do you
+think this isn't a problem in the real world? Think again. If you are
+involved with an open source project that collects patches via email
+or by uploading patches to a bug tracker, have you ever seen someone
+accidentally upload a patch in the wrong format? That's patch
+non-uniformity. New contributors to Firefox do this all the time. I
+also see it in the Mercurial project. With repository-centric
+development, patches never enter the picture, so patch non-uniformity
+is a non-issue. (Don't confuse the superficial formatting of patches
+with the content, such as an incorrect commit message format.)</p>
+<p>Another advantage of repository-centric development is it makes the
+act of exchanging data easier. Just have two repositories talk to
+each other. This used to be difficult, but hosting services like
+GitHub and Bitbucket make this easy. Contrast with patches, which
+require hooking your version control tool up to wherever those patches
+are located. The Linux Kernel, like so many other projects,
+<a href="https://www.kernel.org/doc/Documentation/SubmittingPatches">uses email for contributing changes</a>.
+So now Git, Mercurial, etc all fulfill Zawinski's law. This means your
+version control tool is talking to your inbox to send and receive code.
+Firefox development uses Bugzilla to hold patches as attachments. So now your
+version control tool needs to talk to your issue tracker. (Not the worst
+idea in the world I will concede.) While, yes, the tools around using
+email or uploading patches to issue trackers or whatever else you are
+using to exchange patches exist and can work pretty well, the grim
+reality is that these tools are all reinventing the wheel of repository
+exchange and are solving a problem that has already been solved by
+<em>git push</em>, <em>git fetch</em>, <em>hg pull</em>, <em>hg push</em>, etc. Personally, I would
+rather <em>hg push</em> to a remote and have tools like issue trackers and
+mailing lists pull directly from repositories. At least that way they
+have a direct line into the source of truth and are guaranteed a
+consistent output format.</p>
+<p>Another area where direct exchange is huge is multi-patch commits
+(<em>branches</em> in Git parlance) or where commit data is fragmented. When
+pushing patches to email, you need to insert metadata saying which patch
+comes after which. Then the email import tool needs to reassemble things
+in the proper order (remember that the typical convention is one email
+per patch and email can be delivered out of order). Not the most
+difficult problem in the world to solve. But seriously, it's been
+solved already by <em>git fetch</em> and <em>hg pull</em>! Things are worse for
+Bugzilla. There is no bullet-proof way to order patches there. The
+convention at Mozilla is to add <em>Part N</em> strings to
+commit messages and have the Bugzilla import tool do a sort (I assume it
+does that). But what if you have a logical commit series spread across
+multiple bugs? How do you reassemble everything into a linear series of
+commits? You don't, sadly. Just today I wanted to apply a somewhat
+complicated series of patches to the Firefox build system I was asked to
+review so I could jump into a debugger and see what was going on so I
+could conduct a more thorough review. There were 4 or 5 patches spread
+over 3 or 4 bugs. Bugzilla and its patch-centric workflow prevented me
+from importing the patches. Fortunately, this patch series was pushed to
+Mozilla's Try server, so I could pull from there. But I haven't always
+been so fortunate. This limitation means developers have to make
+sacrifices such as writing fewer, larger patches (this makes code review
+harder) or involving unrelated parties in the same bug and/or review.
+In other words, deficient tools are imposing limited workflows. No bueno.</p>
+<p>It is a fair criticism to say that not everyone can host a server or
+that permissions and authorization are hard. Although I think concerns
+about impact are overblown. If you are a small project, just create a
+GitHub or Bitbucket account. If you are a larger project, realize that
+people time is one of your largest expenses and invest in tools like
+proper and efficient repository hosting (often this can be GitHub) to
+reduce this waste and keep your developers happier and more efficient.</p>
+<p>One of the clearest examples of repository-centric development is
+GitHub. There are no patches in GitHub. Instead, you <em>git push</em>
+and <em>git fetch</em>. Want to apply someone else's work? Just add a remote
+and <em>git fetch</em>! Contrast with first locating patches, hooking up
+Git to consume them (this part was always confusing to me - do you
+need to retroactively have them sent to your email inbox so you can
+import them from there), and finally actually importing them. Just
+give me a URL to a repository already. But the benefits of
+repository-centric development with GitHub don't stop at pushing and
+pulling. GitHub has built code review functionality into pushes. They
+call these <em>pull requests</em>. While I have significant issues with
+GitHub's implemention of pull requests (I need to blog about those some
+day), I can't deny the utility of the repository-centric workflow and
+all the benefits around it. Once you switch to GitHub and its
+repository-centric workflow, you more clearly see how lacking
+patch-centric development is and quickly lose your desire to go back
+to the 1990's state-of-the-art methods for software development.</p>
+<p>I hope you now know what repository-centric development is and will join
+me in championing it over patch-based development.</p>
+<p>Mozillians reading this will be very happy to learn that work is under
+way to shift Firefox's development workflow to a more repository-centric
+world. Stay tuned.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="updates-to-firefoxtree-mercurial-extension"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension" rel="bookmark" title="Permanent Link to Updates to firefoxtree Mercurial extension">Updates to firefoxtree Mercurial extension</a></h2>
   <small>July 16, 2014 at 07:55 PM | categories: 
@@ -448,707 +582,6 @@ was easier to write a new extension than to update mozext.)</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="please-stop-using-mq"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/06/23/please-stop-using-mq" rel="bookmark" title="Permanent Link to Please Stop Using MQ">Please Stop Using MQ</a></h2>
-  <small>June 23, 2014 at 11:50 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/06/23/please-stop-using-mq#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Are you a <a href="http://mercurial.selenic.com/">Mercurial</a> user?</p>
-<p>Do you use the <a href="http://mercurial.selenic.com/wiki/MqExtension">mq</a>
-extension? If so, please don't.</p>
-<p>Why, you ask? Good question. The short version is that mq is a
-solution spawned from version control techniques that were popular
-over a decade ago. We have better tools now. mq is technologically
-obsolete.</p>
-<p>But if you want to know the full answer, keep reading.</p>
-<h2>A history of Mercurial and mq</h2>
-<p>The mq extension is just that: an extension to Mercurial's core
-capabilities. (Mercurial consists of a core/basic feature set
-supplemented by
-<a href="http://www.selenic.com/hg/help/extensions">built-in</a> and
-<a href="http://mercurial.selenic.com/wiki/UsingExtensions">3rd party</a>
-extensions that provide more advanced or lesser used, niche
-features.) Modern versions of Mercurial (if you aren't
-running version 3.0+, please upgrade ASAP) are significantly
-different from the Mercurial that necessitated the existence and
-usage of the mq extension.</p>
-<p>In the early days of Mercurial (Mercurial was
-<a href="http://lkml.iu.edu//hypermail/linux/kernel/0504.2/0670.html">announced</a>
-in April 2005), your choices for <em>branching</em> were not spectacular.
-Your option in the core of Mercurial was to use Mercurial <em>branches</em>.
-Mercurial branches are very heavy beasts. Branches are permanent.
-If you change the branch a changeset (Mercurial's term for a commit)
-is assciated with, the SHA-1 of that changeset changes. The takeaway
-is Mercurial branches aren't very user friendly. That's why modern
-versions of Mercurial print a warning when you create one:</p>
-<pre><code>$ hg branch my-new-feature
-marked working directory as branch my-new-feature
-(branches are permanent and global, did you want a bookmark?)
-</code></pre>
-<p>Branches were and still are a relatively poor user experience
-inside Mercurial, especially when compared to Git branches
-(comparing Git and Mercurial branches is an apples to oranges
-comparison: Mercurial branches are more synonymous with CVS or
-Subversion branches). In defense of branches, they are good for
-some roles, such as tracking release branches.
-(Mozilla's <a href="https://hg.mozilla.org/releases/mozilla-aurora/">aurora</a>,
-<a href="https://hg.mozilla.org/releases/mozilla-beta/">beta</a>,
-<a href="https://hg.mozilla.org/releases/mozilla-release/">release</a>, etc
-Firefox repositories should arguably be modeled as branches
-instead of separate repositories.)</p>
-<p>Further complicating the usability of branches in early versions
-of Mercurial was the lack of commands to rewrite history.
-Concepts such as rebasing or reordering patches were not
-always available in Mercurial (or if they were there were
-significant limitations). Today, this seems like an obvious
-shortcoming of a version control system. But keep in mind the
-state of version control around 2005-2007. CVS and Subversion
-were the big players. Perforce, SourceSafe, TFS, etc were popular
-in corporate settings. While I'm sure there were version control
-systems at the time that supported rewriting history,
-my recollection is that rewriting history did not <em>become a
-thing</em> until Git rose in popularity (which I think was around
-2008 or 2009). At that time, the concept of mutating past commits
-was alien, if not absurd. Why would you want to lose data on what
-you've already done? Isn't that the antithesis of a version control
-system?! Git - and many of its concepts, including history
-rewriting - were perceived as radical. It doesn't matter if they
-borrowed the ideas from other tools: Git's newfound popularity
-made them common and a new necessity. If you went from Git to
-Subversion (or even Mercurial), the superiority of Git's
-flexibility was obvious (although the UI was not so great, but
-people can - and do - still cope).</p>
-<p>It was under this renaissance of modern version control tools
-in the late 2000's where mq became popular. But its popularity
-was not because of the strength of mq: it was because of its
-necessity.</p>
-<p>mq was added to Mercurial in February 2006 and released as part of
-Mercurial 0.8.1 in April 2006. As far as I can tell, at the time of
-mq's release, mq was the only tolerable way to perform history
-rewriting in Mercurial (<em>hg qref</em> and <em>hg qpush --move</em> are a
-very crude method of history rewriting). Now, you could leverage
-multiple Mercurial commands to give the illusion of history
-rewriting, but it was very cumbersome. No sane person wanted to
-deal with that. So mq was used.</p>
-<p>The introduction of the <em>transplant</em> extension in the
-Mercurial 0.9.2 release in December 2006 added another history
-rewriting facility to Mercurial. The <em>transplant</em> command
-effectively copies changesets between branches or heads.</p>
-<p>The Mercurial 0.9.5 release in September 2007 introduced the
-<em>record</em> extension. The <em>record</em> command provides interactive
-and incremental commit support, similar to <em>git add -i</em>.
-While <em>record</em> isn't strictly history rewriting, it provides
-a very useful functionality for helping to produce separate,
-smaller commits from a larger ongoing change.</p>
-<p>The release of Mercurial 1.1 in December 2008 was - on paper at
-least - an milestone for Mercurial. This release added the
-<em>rebase</em> extension.  This introduced the <em>rebase</em> command,
-which moves changesets (as opposed to <em>transplant</em>, which merely
-copies them). Rebasing allowed you to pull remote changes and
-then easily move your local changesets on top of the new changes,
-among other things.</p>
-<p>An even bigger feature added in Mercurial 1.1 was the <em>bookmarks</em>
-extension. <a href="http://mercurial.selenic.com/wiki/Bookmarks">Bookmarks</a>
-are Mercurial's lightweigh branches. Instead of permanent
-association with a changeset, a bookmark is a movable label
-attached to a changeset. They are very similar to Git branches.</p>
-<p>The initial bookmarks feature was far from robust. You couldn't
-push bookmarks and share them with others until Mercurial 1.6
-in June 2010. It's worth noting that bookmarks became part of the
-Mercurial core (as opposed to existing in an extension that must
-be enabled) in Mercurial 1.8, released in March 2011.</p>
-<p>Bookmarks, record, and rebase provided a decent framework for
-history editing in Mercurial. But there were still some rough
-edges, notably around making it easier to edit history: mq
-was still easier to use for doing tasks like reordering patches.</p>
-<p>It wasn't until Mercurial 2.2 in May 2012 that Mercurial
-gained the ability to easily reorder patches using something
-other than mq. It came via the <em>histedit</em> extension, which
-provides the <em>histedit</em> command. This command provides a mechanism
-to interactively edit history. It is very similar to <em>git rebase
---interactive</em>.</p>
-<p>With the introduction of the <em>histedit</em> extension, you could
-(finally) perform most of the more advanced repository
-interaction workflows that mq allowed without using mq. Continue
-reading the next section to learn why not using mq is important.</p>
-<p>For Mozillians reading, it's worth noting that the conversion of
-the Firefox source repository from CVS to Mercurial
-<a href="http://soberbuildengineer.com/blog/2007/04/version-control-system-shootout-redux-redux/">occurred in March 2007</a>.
-At that time, Mercurial had <em>mq</em> and <em>transplant</em> for
-performing history rewriting. mq was thus the most convenient
-method for rewriting history and managing individual patches
-(a process Firefox development largely maintains to this day).
-Thus, mq effectively became a de facto requirement for developing
-Firefox patches. Despite mq being arguably unnecessary since
-Mercurial 2.2's release in May 2012, mq is still widely used within
-Mozilla. My perception is that most developers continue to use
-mq. Furthermore, even new developers are still picking it up
-instead of utilizing Mercurial's other commands for managing
-changesets. FWIW, I believe many are so turned off by mq or
-don't want to learn Mercurial or mq that they do their
-day-to-day development in Git and only involve Mercurial
-when doing the final push to the canonical Firefox Mercurial
-repository.</p>
-<p>Now that we learned why mq is popular, let's talk about why it
-shouldn't be used any more.</p>
-<h2>The hack that is mq</h2>
-<p>In terms of architecture, mq is a giant hack: a wart on top of
-Mercurial. The goal of every version control system is to track
-changes over time. mq actively works against that.</p>
-<p>At the core of every Mercurial repository is a <em>store</em> that
-contains the repository data. The changesets in the repository
-are logically represented as a directed acyclic graph (DAG).
-When you run <em>hg commit</em>, <em>hg pull</em>, <em>hg import</em>, or any
-command that introduces new changesets, new data is added to
-the DAG and written to the store.</p>
-<p>One of the most important properties of the store is that it is
-supposed to be append-only: once data is added, it is never
-removed. This property allows Mercurial to fulfill the <em>contract</em>
-of version control systems, which is to keep track of data without
-losing anything.</p>
-<p>This append-only property is important because it means Mercurial
-can know about all of the history for all of time. If you need to
-perform a merge, Mercurial knows exactly what came before and thus
-the most effective way to perform that merge. (It's worth noting
-that merging can be quite complicated. All this extra data helps
-do the merge correctly the first time, which means you can spend
-your time writing code instead of resolving merge conflicts.)</p>
-<p>The <em>"mq is a hack"</em> statement derives from how mq interacts with
-Mercurial's store. Your mq <em>patch queue</em> is effectively an overlay
-over Mercurial's built-in store that is in an ever-changing state
-of partial application. When you <em>hg qpush</em> to apply a patch from
-the <em>patch queue</em>, you effectively do an <em>hg import</em> to <em>import</em>
-a Mercurial changeset file into the core Mercurial store. That's
-mostly fine. But when you <em>hg qpop</em> (unapply a patch from mq), you
-are effectively asking Mercurial to delete a changeset and all
-data associated with it from the core Mercurial store. In other
-words, <em>qpop</em> breaks the ideal append-only property of the
-Mercurial store: <em>qpop</em> forces Mercurial to delete data and lose
-track of history. This makes Mercurial very sad.</p>
-<p>Because you are throwing away repository data, merges become much
-harder. This means you spend more of your time dealing with
-resolving conflicts. To further complicate that, the mq code paths
-for performing merges and conflict resolution aren't as robust as
-those used by, say, <em>hg rebase</em> and <em>hg histedit</em>. So if you use mq,
-you are pretty much guaranteed a poorer conflict resolution process.
-This means you spend more of your time wrestling with tools instead
-of, you know, actually doing something productive.</p>
-<p>Deleting repository data by unapplying patches via mq also has
-negative performance implications. Given a large enough repository
-(such as Firefox's - it currently has ~200,000 changesets), these
-performance issues can result in severely degraded performance.
-An extreme example of this is Mozilla's
-<a href="https://hg.mozilla.org/try/">Try repository</a>. The
-<a href="http://bke.ro/?p=386">runaway process/CPU issues leading to outages</a>
-is due to a
-<a href="http://bz.selenic.com/show_bug.cgi?id=4255">known Mercurial issue</a>
-dealing with inefficient handling of stores that aren't append-only.
-When you use mq, you risk running into the same issues. Although the
-performance implication should hopefully be a magnitude or two less
-pronounced than what Mozilla's Try repository experiences.</p>
-<p>In theory, mq could compensate for deletion of data from Mercurial's
-core store by retaining that data itself. But it doesn't. This leads
-to yet more reasons why you shouldn't use mq.</p>
-<p>mq throws away perfectly fine history data. When you <em>hg qrefresh</em>,
-your current patch is overwritten with the new one. The old version
-is discared. This actively works against the goal of a version
-control system to record history. Have you ever started down a path
-and realized a few commits later that you need to throw it away and
-backtrack to a few commits back? I do that all the time. If you
-<em>qrefresh</em>, tough luck: you've lost your history. If only the
-history store was append-only.</p>
-<p>(In fairness to mq, the patch queue maintained by mq is itself a
-Mercurial repository and can be committed to, preventing history
-loss. The <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/36eb33f9058d/hgext/mqext/README.txt">mqext extension</a>
-even provides a mechanism for automatically committing the patch
-queue repo during <em>qrefresh</em> and other mutation events. But as we
-will see, even with this, mq is not perfect.)</p>
-<p>mq also fails to adequately update patches when they are moved
-around. Little known fact: mq patches have their parent changeset
-encoded in them. If you run <em>hg qpush --exact</em>, Mercurial will apply
-the patch against the parent changeset it was actually created
-against, as opposed to the current work directory changeset. In
-theory, you should never encounter conflicts when
-applying patches this way. Because Mercurial's changeset SHA-1s
-are dependent on content (like Git), if 23d165967da3 is the
-child of d5741ada659d, then there should be absolutely no way
-that 23d165967da3 should fail to apply directly to d5741ada659d.
-The problem is that mq fails to update the parent changeset when
-you push patches on top of a new parent! e.g.</p>
-<div class="pygments_murphy"><pre># Let&#39;s create a root commit.
-$ echo &#39;foo&#39; &gt; foo
-$ hg commit -A -m &#39;initial commit&#39;
-adding foo
-$ hg log
-changeset:   0:23d165967da3
-user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:05 2014 -0700
-summary:     initial commit
-</pre></div>
-
-<p>Notice the changeset of that commit. <em>023d165...</em>.</p>
-<p>Now let's create a new mq patch.</p>
-<div class="pygments_murphy"><pre>$ echo &#39;patch 1&#39; &gt; foo
-$ hg qnew -m &#39;make mq patch 1&#39; p1
-
-# Creating an mq patch creates a file in .hg/patches.
-$ cat .hg/patches/p1
-# HG changeset patch
-# Parent 23d165967da39e5846976eb6ed967f1058827ffa
-# User Gregory Szorc &lt;gps@mozilla.com&gt;
-make p1
-
-diff --git a/foo b/foo
---- a/foo
-+++ b/foo
-@@ -1,1 +1,1 @@
--foo
-+patch 1
-</pre></div>
-
-<p>Notice how the parent is listed as the changeset in Mercurial's core
-store.</p>
-<p>Now let's pop that patch, create a new commit, and push the old mq
-patch.</p>
-<div class="pygments_murphy"><pre>$ hg qpop
-popping p1
-patch queue now empty
-
-$ echo &#39;bar&#39; &gt; bar
-$ hg commit -A -m &#39;second commit&#39;
-adding bar
-
-$ hg log
-changeset:   1:d5741ada659d
-tag:         tip
-user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:37 2014 -0700
-summary:     second commit
-
-changeset:   0:23d165967da3
-user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:05 2014 -0700
-summary:     initial commit
-
-$ hg qpush
-applying p1
-now at: p1
-
-$ hg log --graph
-@ changeset:   2:64851294d038
-| tag:         p1
-| tag:         qbase
-| tag:         qtip
-| tag:         tip
-| user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-| date:        Sun Jun 22 14:27:55 2014 -0700
-| summary:     make mq patch 1
-|
-o changeset:   1:d5741ada659d
-| tag:         qparent
-| user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-| date:        Sun Jun 22 13:48:37 2014 -0700
-| summary:     second commit
-|
-o changeset:   0:23d165967da3
-  user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-  date:        Sun Jun 22 13:48:05 2014 -0700
-  summary:     initial commit
-</pre></div>
-
-<p>We see our mq patch is now applied on top of the second commit,
-<em>d5741ada659d</em> because it was pushed while the working directory
-was sitting at <em>d5741ada659d</em>.</p>
-<p>But let's see what mq says:</p>
-<div class="pygments_murphy"><pre>$ hg cat .hg/patches/p1
-# HG changeset patch
-# Parent 23d165967da39e5846976eb6ed967f1058827ffa
-# User Gregory Szorc &lt;gps@mozilla.com&gt;
-make p1
-
-diff --git a/foo b/foo
---- a/foo
-+++ b/foo
-@@ -1,1 +1,1 @@
--foo
-+patch 1
-</pre></div>
-
-<p>mq still says <em>23d165967da3</em> is the parent, even though we changed the
-parent! mq is lying to us! Now, we
-can rectify the situation by running <em>hg qrefresh</em>. That will cause mq
-to regenerate the patch file, which will pick up the new parent. But
-who does that? Unless you need to qrefresh to resolve conflicts or
-other changes, nobody. This means that if you distribute the patch -
-say you are uploading it for review - the parent changeset may not
-be accurate and anyone applying that patch may apply it to the wrong
-changeset and get unexpected results. That's no good.</p>
-<p>For what it's worth, this behavior of not auto refreshing patches
-is by design. We don't necessarily want application to be a mutating
-operation, especially since mq repositories aren't automatically
-versioned. This is partially because mq was effectively designed to be
-<a href="https://savannah.nongnu.org/projects/quilt">quilt</a> built into
-Mercurial. And <em>quilt</em> is a tool that was invented before the modern
-version control tools era. mq's behavior is influenced more from
-emulating <em>quilt</em> than from the desire to facilitate a sane
-patch/stack/feature based workflow. If you ever wanted to know why
-mq works the way it does and not like something more modern, that's
-why.</p>
-<p>Another huge reason to not use mq is because its concepts and
-workflows are alien to modern and well-understood practices. While
-I'm a huge fan of Mercurial and prefer it over Git (read my
-<a href="/blog/2013/05/12/thoughts-on-mercurial-%28and-git%29/">thoughts on the topic</a>),
-I don't pretend that Git isn't the most widely used version control
-software right now (at least in the open source world).
-It got that way despite its horrible
-<a href="http://stevelosh.com/blog/2013/04/git-koans/">UI shortcomings</a>.
-I argue its rise was because people enjoy workflows such
-as lightweight branches and fast, often-simple merging.
-(GitHub and its fairly good web UI certainly helped the cause.)
-People today know Git. They know lightweight branches. I think
-they largely understand the concept of repositories with multiple
-heads and grok how a distributed version control system means you can
-commit locally without affecting a remote (server). They grok
-how can you push local commits to a remote (sometimes in the
-form of a pull request). mq doesn't work this way - the way that
-people have come to expect from Git. There are
-<a href="https://en.wikipedia.org/wiki/List_of_cognitive_biases">cognitive biases</a>
-that lead us to believe that because mq is different (from Git)
-that it is inferior. Why should someone apply and unapply
-individual patches on a temporary queue (or stack depending on how
-you think about it) instead of working with <em>branches</em>? If someone
-groks Git and multiple heads/branches/bookmarks, why should they
-go through all the trouble of learning mq? The fact that mq
-doesn't work as well as non-mq mechanisms is icing on the
-figurative cake.</p>
-<p>If the reasons I've listed are not enough, know this: mq users
-will not able to fully utilize the game-changing
-<a href="http://mercurial.selenic.com/wiki/ChangesetEvolution">Changeset Evolution</a>
-feature of Mercurial. Remember in the late 2000's when people
-thought Git was crazy for allowing you to mutate history - the
-antithesis of version control because it threw away data? Changeset
-Evolution and obsolescence markers - the mechanism used to enable
-Changeset Evolution - are Mercurial's answer to that. They enable
-Mercurial to retain metadata about previous changesets and how they
-<em>evolved</em> into newer changesets. That criticism about history
-rewriting deleting history: Changeset Evolution makes it largely
-go away. A light version of the history of past commits is preserved
-and propagated during push and pull operations.</p>
-<p>Changeset Evolution changes the game much like Git changed the
-landscape of version control in the late 2000's. So much of our
-notions of how modern version control work are based on the
-<em>current</em> behavior of tools. For example, any Git user will tell
-you, <em>never git push --force</em>.
-<a href="https://groups.google.com/forum/#!searchin/jenkinsci-dev/force$20push/jenkinsci-dev/-myjRIPcVwU/mrwn8VkyXagJ">Bad things will happen</a>.
-Why do they say that? They say that because the user experience of
-distributed history rewriting in Git can be horrible and error prone.
-And it is like this because Git's implementation of history rewriting
-burns the old books of history once they are translated to the
-new world order. (OK, to be fair to Git it does have a reflog that
-can kinda sorta be used to recover in disaster scenarios. But it's
-far from robust and there are numerous caveats, notably that the
-reflog is not part of data distributed with push/fetch and therefore
-susceptible to single/few points of failure.) Mercurial's
-obsolescence markers, by contrast, leave footnotes in our history
-books and transfer these annotations as part of the distributed
-repository data. Changeset Evolution uses these footnotes to
-reconstruct the pages of history, even if they differ
-from our own perspective. For example, you can force push rewritten
-history and other clients can recover from that automagically. Want
-to do complex history rewriting and force push?
-Go right ahead: Mercurial and Changeset Evolution will
-enable you to work without imposing as many (practical)
-restrictions on your workflow as other tools. Good tools are flexible
-and impose fewer restrictions. This is why Mercurial and Changeset
-Evolution have the potential to change the world of version control
-much like Git changed things half a decade ago.</p>
-<p>Are you still not convinced mq is a bad idea? Know this: a
-Mercurial core developer
-<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-June/059535.html">recently proposed marking mq as deprecated</a>.
-That's right: there's very little love for mq within the Mercurial
-Project. Maintainers generally think what I've stated in this post:
-mq is yesterday's solution to yesterday's problem and it should
-be cast aside.</p>
-<p>If you are a mq user, I hope you are now convinced that mq is a bad
-idea and you should transition away from it as soon as possible. In
-the next section, I'll talk about moving off mq.</p>
-<h2>Moving away from mq</h2>
-<p>I completely abandonded mq in December 2013 and am never using it
-again. In hindsight, I should have made the transition much sooner.</p>
-<p>I could write an entire post about my workflow. Since this post is
-already a bit long, I'm going to describe it with mostly command
-line examples.</p>
-<p>I use bookmarks for managing my <em>feature branches</em>. I use one
-bookmark per logical feature. This workflow is very similar to
-using Git branches.</p>
-<div class="pygments_murphy"><pre># Create a new bookmark for the new feature I&#39;m developing.
-$ hg bookmark gps/my-new-feature
-
-# make changes to files
-(gps/my-new-feature) $ hg commit
-# make more changes)
-(gps/my-new-feature) $ hg commit
-# keep making small changes
-(gps/my-new-features) $ hg commit
-
-# I decide I want to reorder or merge a few commits. I look at the
-# DAG to see which changeset to rewrite.
-(gps/my-new-features) $ hg log --graph
-
-(gps/my-new-feature) $ hg histedit 5e907ed10e22
-# this opens an editor where I can say what changes to make)
-
-# Let&#39;s start a new feature.
-(gps/my-new-feature) $ hg up central
-(leaving bookmark gps/my-new-feature)
-$ hg bookmark gps/feature2
-# Make some changes
-(gps/feature2) $ hg commit
-
-# I got review on my original feature. Let&#39;s push it.
-(gps/feature2) $ hg up gps/my-new-feature
-(activating bookmark gps/marionette-restart)
-
-(gps/my-new-feature) $ hg pull gecko
-pulling from http://hg.stage.mozaws.net/gecko
-searching for changes
-adding changesets
-adding manifests
-adding file changes
-added 118 changesets with 543 changes to 328 files (+1 heads)
-OBSEXC: pull obsolescence markers
-OBSEXC: looking for common markers in 215590 nodes
-OBSEXC: no unknown remote markers
-OBSEXC: DONE
-updating bookmark aurora
-updating bookmark b2g28
-updating bookmark b2ginbound
-updating bookmark beta
-updating bookmark central
-updating bookmark esr24
-updating bookmark fx-team
-updating bookmark inbound
-updating bookmark release
-(run &#39;hg heads .&#39; to see heads, &#39;hg merge&#39; to merge)
-
-(gps/my-new-feature) $ hg rebase -d fx-team
-
-# Verify I&#39;m about to push what I want to push.
-(gps/my-new-feature) $ hg out -r . fx-team
-
-# And push the changes.
-(gps/my-new-feature) $ hg push -r . fx-team
-
-# And delete the bookmark that I don&#39;t need any more.
-(gps/my-new-feature) $ hg bookmark -d gps/my-new-feature
-</pre></div>
-
-<p>That's how bookmarks work. If you upgrade to Mercurial 3.0 or newer,
-Mercurial will print messages when you enter and leave bookmarks. This
-is a great UI improvement!</p>
-<p>I also have the
-<a href="http://mercurial.selenic.com/wiki/PromptExtension">prompt extension</a>
-installed and configured so my shell prompt contains the active
-bookmark. This helps me keep track of what head I'm committing to.</p>
-<p>I'm also a user of the experimental
-<a href="http://mercurial.selenic.com/wiki/EvolveExtension">evolve extension</a>.
-This is the extension that is implementing the <em>Changeset Evolution</em>
-feature. Eventually the functionality will be merged into core
-Mercurial. One such workflow with <em>evolve</em> is as follows.</p>
-<div class="pygments_murphy"><pre># Create a bookmark for a new feature
-$ hg bookmark gps/my-new-feature
-
-# Make some changes.
-(gps/my-new-feature) $ hg commit -m &#39;first commit&#39;
-
-# Make some more changes.
-(gps/my-new-feature) $ hg commit -m &#39;second commit&#39;
-
-# Submit code for review. (Exact commands excluded.)
-
-# Wait for review comments. There is a nit on the first commit.
-$ hg previous
-[204142] first commit
-
-# Make changes
-$ hg amend
-1 new unstable changesets
-
-# (amend is provided by evolve. It is equivalent to hg commit --amend)
-
-# evolve is the command that looks at the history rewriting markers
-# and knows how to rebase, etc other changesets in the face of
-# rewriting.
-$ hg evolve
-move:[204143] second commit
-atop:[204144] first commit
-merging foo
-warning: conflicts during merge.
-merging foo incomplete! (edit conflicts, then use &#39;hg resolve --mark&#39;)
-evolve failed!
-fix conflict and run &quot;hg evolve --continue&quot;
-abort: unresolved merge conflicts (see hg help resolve)
-
-# Manually address conflict markers in file &quot;foo&quot;
-$ hg resolve -m foo
-no more unresolved files
-
-$ hg evolve --continue
-grafting revision 204143
-
-# And I&#39;m ready to push.
-</pre></div>
-
-<p>If you really love the concept of mq and patch queues and absolutely
-must do development that way (as opposed to bookmarks/branches), then
-you should consider using the
-<a href="http://mercurial.selenic.com/wiki/ShelveExtension">shelve extension</a>
-instead of mq. While shelve is still a bit hacky in that it violates the
-append-only goal of the Mercurial store, it does so in a way that
-integrates much better than mq. For example, when you <em>unshelve</em>,
-the changesets will only apply to the parent changeset they were
-last attached to. You will get no merge conflicts during <em>unshelve</em>. If
-you want to rebase, you will need to use the <em>rebase</em> command, which
-will go through Mercurial's more robust merging code paths, leaving
-conflict markers instead of <em>.rej</em> files
-(assuming you are using the <em>internal</em>
-<a href="http://mercurial.selenic.com/wiki/MergeToolConfiguration">merge tool</a>).
-Shelve also groups multiple changesets together. Contrast with
-mq's default behavior of a flat list of patches (my mq queue grew
-to over 100 patches with patches belonging to dozens of bugs).
-Shelve is all around a better mq and is a good compromise between
-the stack/queue based development workflow of mq with the more modern
-development workflow of bookmarks. If nothing else, shelve integrates
-much better into the Mercurial core. As a quantitative measurement
-of this, mq weighs in
-at <a href="http://selenic.com/repo/hg/file/cd3c79392056/hgext/mq.py">3461</a>
-lines. Shelve, by comparison, is a svelt
-<a href="http://selenic.com/repo/hg/file/cd3c79392056/hgext/shelve.py">704 lines</a>.
-Considering they do nearly the same thing (shelve offloads functionality
-like folding and reordering to core Mercurial commands that didn't
-exist at the time of mq's inception), I trust shelve with its reduced
-surface area to be more robust and bug free.</p>
-<p>But as good as shelve is, it's still not as integrated as bookmarks
-or branches. If you can, try to stick to the Mercurial core
-features and avoid shelve. But whatever you do, try to avoid mq!</p>
-<h2>Conclusion</h2>
-<p>I never used Mercurial before becoming an employee of Mozilla
-and a contributor to Firefox. I was a mq user for my first two plus
-years of Mercurial use. I blindly followed the Mozilla
-documentation and advice of my fellow Mozillians to use mq.
-It wasn't until I truly invested in learning Mercurial (as
-opposed to learning merely the command line interface - the
-minimum required for me to contribute to Firefox) that I
-realized how wrong the common Mozilla mindset about Mercurial
-and mq was. I was incorrectly associating mq with <em>"The Mercurial
-Way"</em> and thought Mercurial was inherently lacking. I knew
-about branches and bookmarks, but didn't realize I could use
-them as an alternative to mq.</p>
-<p>Only after learning Mercurial's internals, contributing patches to
-the Mercurial core, and reading the changelog of the Mercurial
-project itself did I realize the truth: <strong>mq's popularity is a
-result of historical necessity that no longer exists; and, continued
-usage of mq represents a general failure in user eduction about
-mq's drawbacks and Mercurial's modern features.</strong> In other words,
-the more informed I became, the more I learned what a bad idea
-mq is and why it should be avoided.</p>
-<p>At Mozilla, we happened to switch to Mercurial at a time (2007) when
-mq was the only reasonable solution available to Mercurial. The
-procedures and documentation developed in 2007 have persisted to
-2014, largely ignoring advancements in Mercurial over that time.
-To be fair to my fellow Mozillians and Mercurial users everywhere,
-Mercurial wasn't truly ready to jettison mq until the <em>histedit</em>
-extension came into existence a few years ago. But that was
-<em>years</em> ago. We all should have had time to switch, but we haven't.
-Or if we have, we've switched to Git. (And I can't blame anyone for
-switching to Git - both its mind share and the network effect of
-GitHub are <em>very</em> compelling reasons.)</p>
-<p>I hope you now know why mq is a bad idea. Please join me in realizing
-that mq was a solution for yesterday's problems. mq is a legacy tool
-that loses data and makes your life harder. It's time to let go of
-the past and embrace the future. Please join me in shaving the mq
-neck beard that has been growing since CVS was a popular version
-control system.</p>
-<h2>Addendum on Code Review</h2>
-<p>While I've wanted to write this post for a while, the trigger for me
-finally writing it is my work on integrating Mercurial with the
-<a href="http://www.reviewboard.org/">Review Board</a> code
-review software. The Bugzilla Team at Mozilla is working on a project
-to integrate Review Board into Bugzilla for code review, supplementing
-the antiquated-by-comparison Splinter code review feature.
-Instead of uploading patches to Bugzilla - how Mozilla and Firefox
-development has done it for over a decade - you will push changesets
-to a Mercurial repository and pushed
-changesets will automatically turn into code reviews on Review
-Board and get cross-posted to referenced Bugzilla bugs.</p>
-<p>This is all part of a larger goal to make it easier for patches to be
-submitted and landed consistently and centrally. This should lead to
-various automation and tooling improvements, such as bots conducting
-aspects of code review and automatically landing reviewed patches.</p>
-<p>These things are very difficult to do in a Bugzilla-only and patch-based
-world because it is difficult to first aggregate patches and second
-process them in a unified manner. Patches come in many different
-flavors. You have Mercurial style diffs.
-You have plain patches, and patches with Git or Mercurial style
-annotation.  You have different lines of context in the patch.
-You have different handling of binary content. You have mq lying
-about the parent changeset. All these contribute
-to a massive impedance mismatch of sorts that makes it extremely
-difficult to roll out any kind of automation. Any tools built on
-top must first solve a very difficult data normalization and
-distribution problem. These are problems that should not exist and
-drastically raise the barrier to forward progress.</p>
-<p>Contrast this with pushing to Mercurial (or Git) repositories. The
-repository is the data, not the patch file. Clients are able to
-extract variations of that data however they see fit. Commit
-data is centralized, distributable, and unified. There are dozens
-of existing tools and services that already know how to speak
-with repositories. Our data problem not only goes away, but
-many solutions have already been invented for us.</p>
-<p>Back to Review Board.</p>
-<p>I've written an <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/reviewboard">extension</a>
-that pushes review-specific metadata to the Mercurial server. This
-effectively allows Mercurial to <em>speak</em> code review and interact
-with the code review server. For Mercurial clients that are writing
-obsolescence markers, we are able to <em>track</em> the changesets
-undergoing review against their logical successors. For example,
-if you pull and rebase, this will rewrite changeset X to changeset Y
-(because the SHA-1 changes). Mercurial knows that a) changeset X was
-under review and b) Y is the new version of X. So, when you push
-Y for code review, the review associated with X is updated
-automagically. You could accomplish this with heuristic-based
-matching or user prompting, but these are error prone (you wouldn't
-believe the number of corner cases) or require excessive user
-time, especially when complex history rewriting is involved.
-Mercurial's obsolescence markers allow the matching to <em>just work</em>
-in most scenarios and for people to spend more time writing and
-reviewing code as opposed to telling the code review tool what
-and how to review.</p>
-<p>As I was implementing this extension, I realized that mq users
-(most Mercurial users at Mozilla I reckon) would be unable to reap the
-benefits of all this magic because, well, they are using mq. I care
-passionately about developer productivity. Good tools are the tools
-that don't require constant massaging. I want everyone to get the
-full benefits of Mozilla's new code review system when it launches.
-And the only way that happens is if people stop using mq. And the
-only way that happens is if people learn why mq is a bad idea. So
-if nothing else has convinced you to stop using mq yet, maybe the
-lure of an amazing and automagical code review and collaboration
-experience will sway you.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/23/please-stop-using-mq#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/1">« Previous Page</a>
   --  

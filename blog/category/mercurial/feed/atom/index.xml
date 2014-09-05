@@ -7,12 +7,130 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-09-05T18:39:51Z</updated>
+  <updated>2014-09-05T21:45:49Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Reproducing Mozilla's Mercurial Server]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server" />
+    <id>http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server</id>
+    <updated>2014-09-05T14:50:00Z</updated>
+    <published>2014-09-05T14:50:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Reproducing Mozilla's Mercurial Server]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server"><![CDATA[<p>Of of my first tasks in my
+<a href="/blog/2014/09/05/new-job-role/">new role</a> as a <em>Developer Productivity
+Engineer</em> is to help make Mozilla's Mercurial server better. Many of the
+awesome things we have planned rely on features in newer versions of
+Mercurial. It's therefore important for us to upgrade our Mercurial
+server to a modern version (we are currently running 2.5.4) and to keep
+our Mercurial server upgraded as time passes.</p>
+<p>There are a few reasons why we haven't historically upgraded our
+Mercurial server. First, as anyone who has maintained high-availability
+systems will tell you, there is the attitude of <em>if it isn't broken,
+don't fix it.</em> In other words, Mercurial 2.5.4 is working fine, so why
+mess with a good thing. This was all fine and dandy - until Mercurial
+started falling over in the last few weeks.</p>
+<p>But the blocker towards upgrading that I want to talk about today is
+systems verification. There has been extreme caution around upgrading
+Mercurial at Mozilla because it is a critical piece of Mozilla's
+infrastructure and if the upgrade were to not go well, the outage
+would be disastrous for developer productivity and could even jeopardize
+an emergency Firefox release.</p>
+<p>As much as I'd like to say that a modern version of Mercurial on the
+server would be a drop-in replacement (Mercurial has a great committment
+to backwards compatibility and has loose coupling between clients and
+servers such that upgrading servers should not impact clients), there is
+always a risk that something will change. And that risk is compounded by
+the amount of custom code we have running on our server.</p>
+<p>The way you protect against unexpected changes is testing. In the ideal
+world, you have a robust test suite that you run against a staging
+instance of a service to validate that any changes have no impact. In
+the absence of testing, you are left with fear, uncertainty, and doubt.
+FUD is an especially horrible philosophy when it comes to managing
+servers.</p>
+<p>Unfortunately, we don't really have a great testing infrastructure for
+Mozilla's Mercurial server. And I want to change that.</p>
+<h2>Reproducing the Server Environment</h2>
+<p>When writing tests, it is important for the thing being tested to be as
+similar as possible to the real thing. This is why so many people have
+an aversion to mocking: every time you alter the test environment, you run
+the risk that those differences from reality will mask changes seen in
+the real environment.</p>
+<p>So, it makes sense that a good first goal for creating a test suite against
+our Mercurial server should be to reproduce the production server and
+environment as closely as possible.</p>
+<p>I'm currently working on a Vagrant environment that attempts to
+reproduce the official environment as closely as possible. It starts
+one virtual machine for the SSH/master server. It starts a separate
+virtual machine for the hgweb/slave servers. The virtual machines are
+booting CentOS. This is different than production, where we run RHEL.
+But they are similar enough (and can share the same packages) that the
+differences shouldn't matter too much, at least for now.</p>
+<h2>Using Puppet</h2>
+<p>In production, Mozilla is using Puppet to manage the Mercurial servers.
+Unfortunately, the actual Puppet configs that Mozilla is running are
+behind a firewall, mainly for security reasons. This is potentially
+a huge setback for my reproducibility effort, as I'd like to have
+my virtual machines use the same exact Puppet configs as whats used
+in production so the environments match as closely as possible. This
+would also save me a lot of work from having to reinvent the wheel.</p>
+<p>Fortunately, Ben Kero has extracted the Mercurial-relevant Puppet
+config files into a
+<a href="https://github.com/bkero/puppet-module-hg">standalone repository</a>.
+Apparently that repository gets rolled into the production Puppet
+configs periodically. So, my virtual machines and production can share
+the same Mercurial Puppet files. Nice!</p>
+<p>It wasn't long after starting to use the standalone Puppet configs that
+I realized this would be a rabbit hole. This first manifests in the
+standalone Puppet code referencing things that exist in the hidden
+Mozilla Puppet files. So the liberation was only partially successful.
+Sad panda.</p>
+<p>So, I'm now in the process of creating a <em>fake Mozilla</em> Puppet
+environment that mimics the base Mozilla environment (from the closed
+repo) and am modifying the shared Puppet Mercurial code to work with
+both versions. This is a royal pain, but it needs to be done if we want
+to reproduce production and maintain peace of mind that test results
+reflect reality.</p>
+<p>Because reproducing runtime environments is important for reproducing
+and solving bugs and for testing, <strong>I call on the maintainers of
+Mozilla's closed Puppet repository to liberate it from behind its
+firewall</strong>. I'd like to see a public Puppet configuration tree available
+for all to use so that anyone anywhere can reproduce the state of a
+server or service operated by Mozilla to within reasonable
+approximation. Had this already been done, it would have saved me hours
+of work. As it stands, I'm reverse engineering systems and trying to
+cobble together understanding of how the Mozilla Puppet configs
+work and what parts of them can safely be ignored to reproduce an
+approximate testing environment.</p>
+<p>Along that vein, I finally got access to Mozilla's internal Puppet
+repository. This took a few meetings and apparently a lot of
+backroom chatter was generated - "developer's don't normally get access,
+oh my!" All I wanted was to see how systems are configured so I can
+help improve them. Instead, getting access felt like pulling teeth.
+This feels like a major roadblock towards productivity, reproducibility,
+and testing.</p>
+<p>Facebook gives its developers access to most production machines and
+trusts them to not be stupid. I know we (Mozilla) like to hold
+ourselves to a high standard of security and privacy. But not giving
+developers access to the configurations for the systems their code
+runs on feels like a very silly policy. I hope Mozilla invests in
+opening up this important code and data, if not to the world, at least
+to its trusted employees.</p>
+<p>Anyway, hopefully I'll soon have a Vagrant environment that allows
+people to build a standalone instance of Mozilla's Mercurial server.
+And once that's in place, I can start writing tests that basic services
+and workflows (including repository syncing) work as expected. Stay
+tuned.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -1258,60 +1376,5 @@ file so I can just type <em>hg statusreport</em>.</p>
 commit messages for example), I think it's a pretty cool hack and shows
 how Mercurial can grow to solve problems you don't think your version
 control system knows how to solve.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[New Repository for Mozilla Version Control Tools]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools" />
-    <id>http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools</id>
-    <updated>2014-02-05T19:15:00Z</updated>
-    <published>2014-02-05T19:15:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Git" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[New Repository for Mozilla Version Control Tools]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools"><![CDATA[<p>Version control systems can be highly useful tools.</p>
-<p>At Mozilla, we've made numerous improvements and customizations to our
-version control tools. We have <a href="https://hg.mozilla.org/hgcustom/hghooks/">custom hooks</a>
-that run on the server. We have a <a href="https://hg.mozilla.org/hgcustom/hg_templates/">custom skin</a>
-for Mercurial's web interface. Mozillians have written a handful of
-Mercurial extensions to aid with common developer tasks, such as
-<a href="https://bitbucket.org/sfink/trychooser">pushing to try</a>,
-<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">interacting with Bugzilla</a>,
-<a href="https://bitbucket.org/sfink/mqext">making mq more useful</a>, and more.</p>
-<p>These have all come into existence in an organic manner, one after the
-other. Individuals have seen an itch and scratched it. Good for them.
-Good for Mozilla.</p>
-<p>Unfortunately, the collection of amassed tools has become quite large.
-They have become difficult to discover and keep up to date. The
-consistency in quality and style between the tools varies. Each tool has
-separate processes for updating and changing.</p>
-<p>I contacted the maintainers of the popular version control tools at
-Mozilla with a simple proposal: let's maintain all our tools under one
-repo. This would allow us to increase cohesion, share code, maintain a
-high quality bar, share best practices, etc. There were no major
-objections, so we now have a <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">unified repository</a>
-containing our version control tools!</p>
-<p>Currently, we only have a few Mercurial extensions in there. A goal is
-to accumulate as much of the existing Mercurial infrastructure into
-that repository as possible. Client code. Server code. All of the code.
-I want developers to be able to install the same hooks on their clients
-as what's running on the server: why should your local repo let you
-commit something that the server will reject? I want developers to be
-able to reasonably reproduce Mozilla's canonical version control server
-configuration locally. That way, you can test things locally with a high
-confidence that your changes will work the same way on production. This
-allows deployments to move faster and with less friction.</p>
-<p>The immediate emphasis will be on moving extensions into this repo and
-deprecating the old homes on user repositories. Over time, we'll move
-into consolidating server code and getting hg.mozilla.org and
-git.mozilla.org to use this repository. But that's a lower priority: the
-most important goal right now is to make it easier and friendlier for
-people to run productivity-enhancing tools.</p>
-<p>So, if you see your Mercurial extensions alerting you that they've been
-moved to a new repository, now you know what's going on.</p>]]></content>
   </entry>
 </feed>
