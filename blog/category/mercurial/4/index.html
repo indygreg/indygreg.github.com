@@ -51,6 +51,63 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="importance-of-hosting-your-version-control-server"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/11/13/importance-of-hosting-your-version-control-server" rel="bookmark" title="Permanent Link to Importance of Hosting Your Version Control Server">Importance of Hosting Your Version Control Server</a></h2>
+  <small>November 13, 2013 at 09:25 AM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The subject of where to host version control repositories comes up a lot
+at Mozilla. It takes many forms:</p>
+<ul>
+<li>We should move the Firefox repository to GitHub</li>
+<li>I should be allowed to commit to GitHub</li>
+<li>I want the canonical repository to be hosted by Bitbucket</li>
+</ul>
+<p>When Firefox development is concerned, Release Engineerings puts down
+their foot and insists the canonical repository be hosted by Mozilla,
+under a Mozilla hostname. When that's not possible, they set up a mirror
+on Mozilla infrastructure.</p>
+<p>I think a
+<a href="https://groups.google.com/d/topic/jenkinsci-dev/-myjRIPcVwU/discussion">recent issue with the Jenkins project</a>
+demonstrates why hosting your own version control server is important.
+The gist is someone force pushed to a bunch of repos hosted on GitHub.
+They needed to involve GitHub support to recover from the issue. While
+it appears they largely recovered (and GitHub support deserves kudos - I
+don't want to take away from their excellence), this problem would have
+been avoided or the response time significantly decreased if the Jenkins
+people had direct control over the Git server: they either could have
+installed a custom hook that would have prevented the pushes or had
+access to the reflog so they could have easily seen the last pushed
+revision and easily forced pushed back to it. GitHub doesn't have a
+mechanism for defining pre-* hooks, doesn't allow defining custom
+hooks (a security and performance issue for them), and doesn't
+expose the reflog data.</p>
+<p>Until repository hosting services expose full repository data (such as
+reflogs) and allow you to define custom hooks, accidents like these will
+happen and the recovery time will be longer than if you hosted the repo
+yourself.</p>
+<p>It's possible repository hosting services like GitHub and Bitbucket will
+expose these features or provide a means to quickly recover. If so,
+kudos to them. But larger, more advanced projects will likely employ
+custom hooks and considering custom hooks are a massive security and
+performance issue for any hosted service provider, I'm not going to
+hold my breath this particular feature is rolled out any time soon.
+This is unfortunate, as it makes projects seemingly choose between
+low risk/low convenience and GitHub's vibrant developer community.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mercurial-2.8-released"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/11/08/mercurial-2.8-released" rel="bookmark" title="Permanent Link to Mercurial 2.8 released">Mercurial 2.8 released</a></h2>
   <small>November 08, 2013 at 02:30 PM | categories: 
@@ -446,64 +503,6 @@ contributors and for taking the time to review this work.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="track-pushes-and-train-riding-with-mercurial"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial" rel="bookmark" title="Permanent Link to Track pushes and train riding with Mercurial">Track pushes and train riding with Mercurial</a></h2>
-  <small>July 25, 2013 at 01:10 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>My <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension for Firefox development</a>
-now has an initial implementation of pushlog aggregation and searching.</p>
-<p>You first start by synchronizing the pushlog data on Mozilla's servers
-with the local client:</p>
-<pre><code>hg pushlogsync
-</code></pre>
-<p>This takes a while the first time you run it because it has to download
-all the data. On subsequent runs, it only downloads new data, so it
-should be much faster.</p>
-<p>Then, you can search for the push history of a changeset:</p>
-<div class="pygments_murphy"><pre>$ hg changesetpushes -a b968708558b9
-133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
-
-Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
-http://krijnhoetmer.nl/irc-logs/css/20130205#l-1590
-http://lists.w3.org/Archives/Public/www-style/2013Feb/0392.html
-
-Note that this patch depends on signed integer overflow behavior in C++,
-which I believe is portable despite being unspecified.
-Tree      Date                Username              Build Info
-inbound   2013-02-21T18:12:57 dbaron@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=85b91048c1cd
-central   2013-02-22T09:43:12 ryanvm@gmail.com      https://tbpl.mozilla.org/?tree=Mozilla-Central&amp;rev=3a7d4085787e
-build     2013-02-22T14:31:42 gszorc@mozilla.com    https://tbpl.mozilla.org/?tree=Build-System&amp;rev=3a7d4085787e
-fx-team   2013-02-25T01:04:44 ttaubert@mozilla.com  https://tbpl.mozilla.org/?tree=Fx-Team&amp;rev=31466fd86eb7
-graphics  2013-02-25T20:02:57 mwoodrow@mozilla.com  https://tbpl.mozilla.org/?tree=Graphics&amp;rev=dcf53b7140cd
-ash       2013-02-26T13:50:41 armenzg@mozilla.com   https://tbpl.mozilla.org/?tree=Ash&amp;rev=201b64ad48d8
-services  2013-02-28T09:42:45 Ms2ger@gmail.com      https://tbpl.mozilla.org/?tree=Services-Central&amp;rev=31466fd86eb7
-aurora    2013-04-01T13:50:56 bbajaj@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Aurora&amp;rev=60a3f369ccf0
-beta      2013-05-13T09:59:38 lsblakk@mozilla.com   https://tbpl.mozilla.org/?tree=Mozilla-Beta&amp;rev=60a3f369ccf0
-release   2013-06-17T15:53:19 akeybl@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Release&amp;rev=c54e3363712e
-</pre></div>
-
-<p>(The <em>-a</em> argument prints all trees instead of just the release trees).</p>
-<p>I'd like to integrate bug tracking into the mix to facilitate
-answering questions like <em>when did bug 123456 ride the trains</em>.</p>
-<p>I'd also like to integrate release versions and build IDs into the mix.
-For example, when I look up a changeset, I want to know the first build
-on the Nightly, Aurora, Beta, and Release channels that change was
-included in.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/3">« Previous Page</a>
   --  

@@ -10,10 +10,147 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 05 Sep 2014 21:45:49 GMT</pubDate>
+    <pubDate>Tue, 09 Sep 2014 17:02:11 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>On Monolithic Repositories</title>
+      <link>http://gregoryszorc.com/blog/2014/09/09/on-monolithic-repositories</link>
+      <pubDate>Tue, 09 Sep 2014 10:00:00 PDT</pubDate>
+      <category><![CDATA[Git]]></category>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/09/09/on-monolithic-repositories</guid>
+      <description>On Monolithic Repositories</description>
+      <content:encoded><![CDATA[<p>When companies or organizations deploy version control, they have to
+make many choices. One of them is how many repositories to create.
+Your choices are essentially a) a single, monolithic repository that
+holds everything b) many separate, smaller repositories that hold
+all the individual parts c) something in between.</p>
+<p>The prevailing convention today (especially in the open source
+realm) is to create many separate and loosely coupled repositories,
+each repository mapping to a specific product or service. That does
+seem reasonable: if you were organizing files on your filesystem,
+you would group them by functionality or role (photos, music,
+documents, etc). And, version control tools are functionally
+filesystems. So it makes sense to draw repository boundaries at
+directory/role levels.</p>
+<p>Further reinforcing the separate repository convention is the
+scaling behavior of our version control tools. Git, the popular
+tool in open source these days, doesn't scale well to very large
+repositories due to - among other things - not having narrow clones
+(fetching a subset of files). It scales well enough to the
+overwhelming majority of projects. But if you are a large
+organization generating lots of data (read: gigabytes of data over
+hundreds of thousands of files and commits) for version control,
+Git is unsuitable in its current form. Other tools (like Mercurial)
+don't currently fare that much better (although Mercurial has plans
+to tackle these scaling vectors).</p>
+<p>Despite popular convention and even limitations in tools, companies
+like Google and Facebook opt to run large, monolithic repositories.
+Google runs Perforce.
+<a href="https://code.facebook.com/posts/218678814984400/scaling-mercurial-at-facebook/">Facebook is on Mercurial</a>,
+or at least is in the process of migrating to Mercurial.</p>
+<p>Why do these companies run monolithic repositories?
+In <a href="http://www.perforce.com/sites/default/files/still-all-one-server-perforce-scale-google-wp.pdf">Google's words</a>:</p>
+<p><em>We have a single large depot with almost all of Google's projects
+on it. This aids agile development and is much loved by our users,
+since it allows almost anyone to easily view almost any code, allows
+projects to share code, and allows engineers to move freely from
+project to project. Documentation and data is stored on the server
+as well as code.</em></p>
+<p>So, monolithic repositories are all about moving fast and getting things
+done more efficiently. In other words, <strong>monolithic repositories
+increase developer productivity.</strong></p>
+<p>Furthermore, monolithic repositories are also more compatible with
+the ebb and flow of large organizations and large software projects.
+Components, features, products, and teams come and go, merge and split.
+The only constant is change. And if you are maintaining separate
+repositories that attempt to map to this ever-changing organizational
+topology, you are going to have a bad time. Either you'll be
+constantly copying, moving, merging, splitting, etc data and repositories.
+Or your repositories will be organized in a very non-logical and
+non-intuitive manner. That translates to overhead and lost productivity.
+I think that monolithic repositories handle the realities of large
+organizations much better. Big change or reorganization you want
+to reflect? You can make a single, atomic, history-preserving commit
+to move things around. I think that's much more manageable, especially
+when you consider the difficulty and annoyance of history-preserving
+changes across repositories.</p>
+<p>Naysayers will decry monolithic repositories on principled and practical
+grounds.</p>
+<p>The principled camp will say that separate repositories
+constitute a loosely coupled (dare I say service oriented) architecture
+that maps better to how software is consumed, assembled, and deployed
+and that erecting barriers in the form of separate repositories
+deliberately enforces this architecture. I agree. However, you can
+still maintain a loosely coupled architecture with monolithic
+repositories. The Subversion model of checking out a single tree
+<em>from a larger repository</em> proves this. Furthermore, I would say
+architecture decisions should be enforced by people (via code review,
+etc), not via version control repository topology. I believe this
+principled argument against monolithic repositories to be rather weak.</p>
+<p>The principled camp living in the open source realm may also decry
+monolithic repositories as an affront to the spirit of open source.
+They would say that a monolithic repository creates unfairly strong
+ties to the organization that operates it and creates barriers to
+forking, etc. This may be true. But monolithic repositories don't
+intrinsically infringe on the
+<a href="https://www.gnu.org/philosophy/free-sw.html">basic software freedoms</a>,
+organizations do. Therefore, I find this principled argument rather
+weak.</p>
+<p>The practical camp will say that monolithic repositories just don't
+scale or aren't suitable for general audiences. These concerns are
+real.</p>
+<p><em>Fully</em> distributed version control systems (every commit on every
+machine) definitely don't scale past certain limits. Depending on your
+repository and user base, your scaling limits include disk space
+(repository data terabytes in size), bandwidth (repository data terabytes
+in size), filesystem (repository hundreds of thousands or millions of
+files), CPU and memory (operations on large repositories take too
+many system resources), and many heads/branches (tools like Git and
+Mercurial don't scale well to tens of thousands of heads/branches).
+These limitations with fully distributed version
+control are why distributed version control tools like Git and
+Mercurial support a partially-distributed mode that behaves more like
+your classical server-client model, like those employed by Subversion,
+Perforce, etc. Git supports shallow clone and sparse checkout.
+Mercurial supports shallow clone (via remotefilelog) and has planned
+support for narrow clone and sparse checkout in the next release or
+two. Of course, you can avoid the scaling limitations of distributed
+version control by employing a non-distributed tool, such as Subversion.
+Many companies continue to reach this conclusion today. However,
+users adapted to the distributed workflow would likely be
+up in arms (they would probably use tools like hg-subversion or git-svn
+to maintain their workflows). So, while scaling of version control
+can be a real concern, there are solutions and workarounds. However,
+they do involve falling back to a partially-distributed model.</p>
+<p>Another concern with monolithic repositories is user access control. You
+inevitably have code or data that is more sensitive and want to limit
+who can change or even access it. Separate repositories seem to
+facilitate a simpler model: per-repository access control. With
+monolithic repositories, you have to worry about per-directory/subtree
+permissions, an increased risk of data leaking, etc. This concern is
+more real with distributed version control, as distributed data and
+access control aren't naturally compatible. But these issues can be
+resolved. And if the tooling supports it, there is only a semantic
+difference between managing access control between repositories versus
+components of a single repository.</p>
+<p>When it comes to repository hosting conversions, I agree with Google
+and Facebook: <strong>I prefer monolithic repositories</strong>. When I am interacting
+with version control, I just want to get stuff done. I don't want to
+waste time dealing with multiple commands to manage multiple
+repositories. I don't want to waste time or expend cognitive load
+dealing with submodule, subrepository, or big files management. I
+don't want to waste time trying to find and reuse code, data, or
+documentation. I want everything at my fingertips, where it can be
+easily discovered, inspected, and used. Monolithic repositories
+facilitate these workflows more than separate repositories and make
+me more productive as a result.</p>
+<p>Now, if only all the tools and processes we use and love would work
+with monolithic repositories...</p>]]></content:encoded>
+    </item>
     <item>
       <title>Reproducing Mozilla's Mercurial Server</title>
       <link>http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server</link>
@@ -1249,84 +1386,6 @@ only way that happens is if people learn why mq is a bad idea. So
 if nothing else has convinced you to stop using mq yet, maybe the
 lure of an amazing and automagical code review and collaboration
 experience will sway you.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Using Mercurial for Status Reports</title>
-      <link>http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports</link>
-      <pubDate>Tue, 01 Apr 2014 12:30:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports</guid>
-      <description>Using Mercurial for Status Reports</description>
-      <content:encoded><![CDATA[<p>Mercurial has a pair of amazing features called
-<a href="http://www.selenic.com/hg/help/revsets">Revisions Sets</a>
-and <a href="http://www.selenic.com/hg/help/templates">Templates</a>. Combined,
-they allow you to query Mercurial like a database and to generate custom
-reports from obtained data.</p>
-<p>As I've <a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata/">demonstrated</a>,
-you can write Mercurial extensions to provide custom revision set
-queries and template functions and keywords. My
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">mozext</a>
-extension aggregates Mozilla's <em>pushlog</em> data into a local SQLite
-database and makes this data available to revision sets and templates.</p>
-<p>My hack of the day is to use revision sets and templates to create a
-weekly status report:</p>
-<div class="pygments_murphy"><pre>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
---template &#39;* {ifeq(reviewer, &quot;gps&quot;, &quot;Review: &quot;, &quot;Landing: &quot;)}{firstline(desc)}\n&#39;
-</pre></div>
-
-<p>When I run this, I get the output:</p>
-<div class="pygments_murphy"><pre>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
-* Review: Bug 987146 - Represent SQL queries more efficiently. r=gps.
-* Review: Bug 987984 - VirtualenvManager.call_setup() should use self.python_path instead of sys.executable, r=gps
-* Landing: Bug 987398 - Part 1: Run mochitests from manifests with mach; r=ahal
-* Landing: Bug 987398 - Part 2: Handle install-to-subdir in TestResolver; r=ahal
-* Landing: Bug 987414 - Pass multiple test arguments to mach testing commands; r=ahal
-* Review: Bug 988141 - Clean up config/recurse.mk after bug 969164. r=gps
-* Landing: Bug 973992 - Support experiments add-ons; r=Unfocused
-* Review: Bug 927672 - Force pymake to fall back to mozmake when run on build slaves. r=gps
-* Review: Bug 989147 - Use new sccache for Linux and Android builds. r=gps
-* Review: Bug 989147 - Add missing part of the patch from rebase conflict. r=gps
-* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
-* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
-* Landing: Backed out changeset 4834a3833639 and c580afddd1cb (bug 985084 and bug 97500)
-* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
-* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
-* Landing: Bug 989137 - Part 1: Uninstall unknown experiments; r=Unfocused
-* Landing: Bug 989137 - Part 2: Don&#39;t use a global logger; r=gfritzsche
-* Landing: Bug 989137 - Part 3: Log.jsm API to get a Logger that prefixes messages; r=bsmedberg
-* Landing: Bug 989137 - Part 4: Use a prefixing logger for Experiments logging; r=gfritzsche
-* Landing: Bug 989137 - Part 5: Prefix each log message with the instance of the object; r=gfritzsche
-* Review: Bug 988849 - Add mach target for jit tests; r=gps
-* Landing: Bug 989137 - Part 6: Create experiment XPIs during the build; r=bsmedberg
-* Landing: Bug 989137 - Part 7: Remove unncessary content from test experiments; r=Unfocused
-* Landing: Bug 985084 - Part 2: Properly report userDisabled in the API; r=Unfocused
-</pre></div>
-
-<p>Which I can then copy and paste directly into the
-<a href="http://benjamin.smedbergs.us/weekly-updates.fcgi/">status tool</a> to
-capture all my weekly code contributions! That takes a few seconds to
-run and saves me a few minutes of typing.</p>
-<p>For the curious, let's break that Mercurial command down.</p>
-<ul>
-<li>public() selects all <em>public</em> changesets. These are changesets in the
-  repository that have been pushed to a publishing repository. In other
-  words, patches that landed in Firefox.</li>
-<li>me() is a custom revset from my <em>mozext</em> extension that parses the
-  commit message and selects changesets that I authored or reviewed.</li>
-<li>firstpushdate("-7") is a custom revset from my <em>mozext</em> extension. It
-  selects changesets that were first pushed in the last 7 days (using
-  pushlog data stored in a local SQLite database).</li>
-</ul>
-<p>The template piece should be easy to read. I have a simple branch
-testing whether the changeset is a review or not, then output a label
-followed by the first line of the commit message.</p>
-<p>I have this command saved under the <em>[alias]</em> section of my <em>~/.hgrc</em>
-file so I can just type <em>hg statusreport</em>.</p>
-<p>While there is room to improve the tool (stripping <em>r=</em> lines from
-commit messages for example), I think it's a pretty cool hack and shows
-how Mercurial can grow to solve problems you don't think your version
-control system knows how to solve.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
