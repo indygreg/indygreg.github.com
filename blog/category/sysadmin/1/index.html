@@ -51,6 +51,224 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="deterministic-and-minimal-docker-images"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/10/13/deterministic-and-minimal-docker-images" rel="bookmark" title="Permanent Link to Deterministic and Minimal Docker Images">Deterministic and Minimal Docker Images</a></h2>
+  <small>October 13, 2014 at 04:50 PM | categories: 
+
+<a href='/blog/category/sysadmin'>sysadmin</a>
+ | <a href="http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p><a href="https://www.docker.com/">Docker</a> is a really nifty tool. It
+vastly lowers the barrier to distributing and executing applications. It
+forces people to think about building server side code as a collection
+of discrete applications and services. When it was released, I instantly
+realized its potential, including for uses it wasn't primary intended
+for, such as applications in automated build and test environments.</p>
+<p>Over the months, Docker's feature set has grown and many of its
+shortcomings have been addressed. It's more usable than ever. Most of my
+early complaints and concerns have been addressed or are actively being
+addressed.</p>
+<p>But one supposedly solved part of Docker still bothers me: image
+creation.</p>
+<p>One of the properties that gets people excited about Docker is the
+ability to ship execution environments around as data. Simply produce an
+image once, transfer it to a central server, pull it down from anywhere,
+and execute. That's pretty damn elegant. I dare say Docker has solved
+the image <em>distribution</em> problem. (Ignore for a minute that the
+implementation detail of how images map to filesystems still has a few
+quirks to work out. But they'll solve that.)</p>
+<p>The ease at which Docker manages images is brilliant. I, like many, was
+overcome with joy and marvelled at how amazing it was. But as I started
+producing more and more images, my initial excitement turned to
+frustration.</p>
+<p>The thing that bothers me most about images is that the de facto and
+recommended method for producing images is neither deterministic nor
+results in minimal images. I strongly believe that the current
+recommended and applied approach is far from optimal and has too many
+drawbacks. Let me explain.</p>
+<p>If you look at the Dockerfiles from the official
+<a href="https://github.com/docker-library">Docker library</a>
+(examples: <a href="https://github.com/docker-library/node/blob/51b1dd1984e287189106884c453ca506737eed78/0.11/Dockerfile">Node</a>,
+<a href="https://github.com/docker-library/mysql/blob/master/5.7/Dockerfile">MySQL</a>),
+you notice something in common: they tend to use <em>apt-get update</em> as one
+of their first steps. For those not familiar with Apt, that command will
+synchronize the package repository indexes with a remote server. In
+other words, depending on when you run the command, different versions
+of packages will be pulled down and the result of image creation will
+differ. The same thing happens when you clone a Git repository. Depending
+on when you run the command - when you create the image - you may get
+different output. If you create an image from scratch today, it could have
+a different version of say Python than it did the day before. This can be
+a big deal, especially if you are trying to use Docker to accurately
+reproduce environments.</p>
+<p>This non-determinism of building Docker images really bothers me. It
+seems to run counter to Docker's goal of facilitating reliable
+environments for running applications. Sure, one person can
+produce an image once, upload it to a Docker Registry server, and have
+others pull it. But there are applications where independent production
+of the same base image is important.</p>
+<p>One area is the security arena. There are many people who are
+justifiably paranoid about running binaries produced by others and
+pre-built Docker images set off all kinds of alarms. So, these people
+would rather build an image from source, from a Dockerfile, than pull
+binaries. Except then they build the image from a Dockerfile and the
+application doesn't run because of an incompatibility with a new
+version of some random package whose version wasn't pinned. Of course,
+you probably lost numerous hours tracing down this obscure reason. How
+frustrating! Determinism and verifiability as part of Docker image
+creation help solve this problem.</p>
+<p>Deterministic image building is also important for disaster recovery.
+What happens if your Docker Registry and all hosts with copies of its
+images go down? If you go to build the images from scratch again, what
+guarantee do you have that things will behave the same? Without
+determinism, you are taking a risk that things will be different and
+your images won't work as intended. That's scary. (Yes, Docker is no
+different here from existing tools that attempt to solve this problem.)</p>
+<p>What if your open source product relies on a proprietary component that
+can't be legally distributed? So much for Docker image distribution. The
+best you can do is provide a base image and instructions for completing
+the process. But if that doesn't work deterministically, your users now
+have varying Docker images, again undermining Docker's goal of
+increasing consistency.</p>
+<p>My other main concern about Docker images is that they tend to be large,
+both in size and in scope. Many Docker images use a full Linux install
+as their base. A lot of people start with a base e.g. Ubuntu or Debian
+install, <em>apt-get install</em> the required packages, do some extra
+configuration, and call it a day. Simple and straightforward, yes. But
+this practice makes me more than a bit uneasy.</p>
+<p>One of the themes surrounding Docker is minimalism. Containers are
+lighter than VMs; just ship your containers around; deploy dozens or
+hundreds of containers simultaneously; compose your applications of
+many, smaller containers instead of larger, monolithic ones. I get it
+and am totally on board. So why are Docker images built on top of the
+bloaty excess of a full operating system (modulo the kernel)? Do I
+really need a package manager in my Docker image? Do I need a compiler
+or header files so I can e.g. build binary Python extensions? No, I
+don't, thank you.</p>
+<p>As a security-minded person, I want my Docker images to consist of only
+the files they need, especially binary files. By leaving out
+non-critical elements from your image and your run-time environment,
+you are reducing the surface area to attack. If your application
+doesn't need a shell, don't include a shell and don't leave yourself
+potentially vulnerable to
+<a href="https://en.wikipedia.org/wiki/Shellshock_%28software_bug%29">shellshock</a>.
+I want the attacker who inevitably breaks out of my application into the
+outer container to get nothing, not something that looks like an operating
+system and has access to tools like curl and wget that could potentially
+be used to craft a more advanced attack (which might even be able to
+exploit a kernel vulnerability to break out of the container). Of
+course, you can and should pursue additional security protections in
+addition to attack surface reduction to secure your execution
+environment. Defense in depth. But that doesn't give Docker images a
+free pass on being bloated.</p>
+<p>Another reason I want smaller containers is... because they are smaller.
+People tend to have relatively slow upload bandwidth. Pushing Docker
+images that can be hundreds of megabytes clogs my tubes. However, I'll
+gladly push 10, 20, or even 50 megabytes of only the necessary data.
+When you factor in that Docker image creation isn't deterministic, you
+also realize that different people are producing different versions of
+images from the same Dockerfiles and that you have to spend extra
+bandwidth transferring the different versions around. This bites me all
+the time when I'm creating new images and am experimenting with the
+creation steps. I tend to bypass the fake caching mechanism (fake
+because the output isn't deterministic) and this really results in data
+explosion.</p>
+<p>I understand why Docker images are neither deterministic nor minimal:
+making them so is a hard problem. I think Docker was right to prioritize
+solving distribution (it opens up many new possibilities). But I really
+wish some effort could be put into making images deterministic (and thus
+verifiable) and more minimal. I think it would make Docker an even more
+appealing platform, especially for the security conscious. (As an aside,
+I would absolutely love if we could ship a
+<a href="https://brendaneich.com/2014/01/trust-but-verify/">verifiable Firefox</a>
+build, for example.)</p>
+<p>These are hard problems. But they are solvable. Here's how I would do
+it.</p>
+<p>First, let's tackle deterministic image creation. Despite computers and
+software being ideally deterministic, building software tends not to be,
+so deterministic image creation is a hard problem. Even
+tools like Puppet and Chef which claim to solve aspects of this problem
+don't do a very good job with determinism. Read my post on
+<a href="/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration/">The Importance of Time on Machine Provisioning</a>
+for more on the topic. But there are solutions. <a href="http://nixos.org/">NixOS</a>
+and the <a href="http://nixos.org/nix/">Nix</a> package manager have the potential
+to be used as the basis of a deterministic image building platform.
+The <a href="http://nixos.org/nix/about.html">high-level overview of Nix</a> is
+that the inputs and contents of a package determine the package ID. If
+you know how Git or Mercurial get their commit SHA-1's, it's pretty much
+the same concept. In theory, two people on different machines start with
+the same environment and bootstrap the exact same packages, all from
+source. <a href="https://gitian.org/">Gitian</a> is a similar solution. Although I
+prefer Nix's content-based approach and how it goes about managing
+packages and environments. Nix feels so right as a base for
+deterministically building software. Anyway, yes, fully verifiable
+build environments are turtles all the way down (I recommend reading
+<a href="https://blog.torproject.org/blog/deterministic-builds-part-two-technical-details">Tor's overview of the problem and their approach</a>.
+However, Nix's approach addresses many of the turtles and silences most
+of the critics. I would absolutely love if more and more Docker images
+were the result of a deterministic build process like Nix. Perhaps you
+could define the full set of packages (with versions) that would be
+used. Let's call this the package manifest. You would then PGP sign and
+distribute your manifest. You could then have Nix step through all the
+dependencies, compiling everything from source. If PGP verification
+fails, compilation output changes, or extra files are needed, the build
+aborts or issues a warning. I have a feeling the security-minded
+community would go crazy over this. I know I would.</p>
+<p>OK, so now you can use Nix to produce packages (and thus images)
+(more) deterministically. How do you make them minimal? Well, instead of
+just packaging the entire environment, I'd employ tools like
+<a href="http://www.floc.net/makejail/">makejail</a>. The purpose of makejail is to
+create minimal chroot <em>jail</em> environments. These are very similar to
+Docker/LXC containers. In fact, you can often take a tarball of a chroot
+directory tree and convert it into a Docker container! With makejail,
+you define a configuration file saying among other things what binaries
+to run inside the jail. makejail will trace file I/O of that binary and
+copy over accessed files. The result is an execution environment that
+(hopefully) contains only what you need. Then, create an archive of that
+environment and pipe it into <em>docker build</em> to create a minimal Docker
+image.</p>
+<p>In summary, Nix provides you with a reliable and verifiable build
+environment. Tools like makejail pair down the produced packages into
+something minimal, which you then turn into your Docker image. Regular
+people can still pull binary images, but they are much smaller and more
+in tune with Docker's principles of minimalism. The paranoid among us can
+produce the same bits from source (after verifying the inputs look
+credible and waiting through a few hours of compiling). Or, perhaps
+the individual files in the image could be signed and thus verified via
+trust somehow? The company deploying Docker can have peace of mind
+that disaster scenarios resulting in Docker image loss should not
+result in total loss of the image (just rebuild it exactly as it was
+before).</p>
+<p>You'll note that my proposed solution does not involve Dockerfiles as
+they exist today. I just don't think Dockerfile's design of stackable
+layers of commands is the right model, at least for people who care
+about determinism and minimalism. You really want a recipe that
+knows how to create a set of relevant files and some metadata like what
+ports to expose, what command to run on container start, etc and turn
+that into your Docker image. I suppose you could accomplish this all
+inside Dockerfiles. But that's a pretty radical departure from how
+Dockerfiles work today. I'm not sure the two solutions are compatible.
+Something to think about.</p>
+<p>I'm pretty sure of what it would take to add deterministic and verifiable
+building of minimal and more secure Docker images. And, if someone
+solved this problem, it could be applicable outside of Docker (again,
+Docker images are essentially chroot environments plus metadata).
+The closest solution I've seen is
+<a href="http://zef.me/6049/nix-docker/">nix-docker</a>. I hope the Docker
+community latches on to these ideas and makes deterministic, verifiable,
+and minimal images the default, not the exception.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="the-importance-of-time-on-automated-machine-configuration"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration" rel="bookmark" title="Permanent Link to The Importance of Time on Automated Machine Configuration">The Importance of Time on Automated Machine Configuration</a></h2>
   <small>June 24, 2013 at 09:00 PM | categories: 
