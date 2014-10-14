@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-14T19:03:44Z</updated>
+  <updated>2014-10-14T19:06:36Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -190,7 +190,10 @@ replication tests. We'll get there some day. I also have plans to
 improve Mercurial's test harness to better facilitate some of our
 advanced use cases. I would absolutely love to make Mercurial's .t test
 harness more consumable outside the context of Mercurial.
-(<a href="https://bitbucket.org/brodie/cram">cram</a> is one such attempt at this.)</p>
+(<a href="https://bitbucket.org/brodie/cram">cram</a> is one such attempt at this.)
+We also need to incorporate the Git server code into this repository.
+Currently, I'm pretty sure everything Git at Mozilla is untested.
+Challenge accepted!</p>
 <p>In summary, our story for testing version control at Mozilla has gone
 from a cobbled together mess to something cohesive and comprehensive.
 This has given us confidence to move fast without breaking things. I think
