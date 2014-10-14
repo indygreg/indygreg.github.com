@@ -51,6 +51,197 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="robustly-testing-version-control-at-mozilla"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/10/14/robustly-testing-version-control-at-mozilla" rel="bookmark" title="Permanent Link to Robustly Testing Version Control at Mozilla">Robustly Testing Version Control at Mozilla</a></h2>
+  <small>October 14, 2014 at 12:00 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/10/14/robustly-testing-version-control-at-mozilla#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Version control services and interaction with them play an important
+role at any company. Despite version control being a critical part
+of your infrastructure, my experience from working at a few companies
+and talking with others is that version control often doesn't get the
+testing love that other services do. Hooks get written, spot-tested
+by the author, and deployed. Tools that interact with version control
+often rely on behavior that may or may not change over time,
+especially when the version of your version control software is
+upgraded.</p>
+<p>We've seen this pattern at Mozilla. Mercurial hooks and extensions
+were written and deployed to the server without test coverage. As a
+result, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1070637">things break</a>
+when we try to upgrade the server. This happens a few times and you
+naturally develop an attitude of fear, uncertainty, and doubt around
+touching anything on the server (or the clients for that matter). <em>If
+it isn't broken, why fix it</em> prevails for months or years. Then one an
+enthusiastic individual comes around wanting to deploy some hot new
+functionality. You tell them the path is arduous because the server is
+running antiquated versions of software and nothing is tested. The
+individual realizes the amazing change isn't worth the effort and
+justifiably throws up their hands and gives up. This is almost a
+textbook definition of how not having test coverage can result
+in technical debt. This is the position Mozilla is trying to recover
+from.</p>
+<p>One of the biggest impacts I've had since joining the Developer Services
+Team at Mozilla a little over a month ago has been changing the story
+about how we test version control at Mozilla.</p>
+<p>I'm proud to say that Mozilla now has a robust enough testing
+infrastructure in place around our Mercurial server that we're feeling
+pretty good about silencing the doubters when it comes to changing
+server behavior. Here's how we did it.</p>
+<p>The genesis of this project was likely me getting involved with the
+hg-git and Mercurial projects. For hg-git, I learned a bit about
+Mercurial internals and how extensions work. When I looked at Mercurial
+extensions and hooks used by Mozilla, I started to realize what parts
+were good and what parts were bad. I realized what parts would likely
+break after upgrades. When I started contributing patches to Mercurial
+itself, I took notice of how Mercurial is tested. When I discovered
+<a href="http://mercurial.selenic.com/wiki/WritingTests">T Tests</a>, I thought,
+<em>wow, that's pretty cool: we should use them to test Mozilla's Mercurial
+customizations!</em></p>
+<p>After some frustrations with Mercurial extensions breaking after
+Mercurial upgrades, I wanted to do something about it to prevent this from
+happening again. I'm a
+<a href="/blog/2014/09/09/on-monolithic-repositories/">huge fan of unified repositories</a>.
+So earlier this year, I reached out to the various parties who maintain
+all the different components and convinced nearly everyone that
+establishing a single repository for all the version control code was a
+<a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools/">good idea</a>.
+The <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+repository was born. Things were slow at first. It was initially pretty
+much my playground for hosting Mercurial extensions that I authored.
+Fast forward a few months, and the version-control-tools repository now
+contains full history imports of our
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/573db71cdb79/hghooks">Mercurial hooks</a>
+that are deployed on <a href="https://hg.mozilla.org/">hg.mozilla.org</a>, the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/573db71cdb79/hgtemplates">templates</a>
+used to render HTML on hg.mozilla.org, and pretty much every
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/573db71cdb79/hgext">Mercurial extension</a>
+authored by Mozillians, including
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/573db71cdb79/hgext/pushlog-legacy">pushlog</a>.
+Having all the code in one repository has been very useful. It has
+simplified server deployments: we now pull 1 repository instead of 3. If
+there is a dependency between different components, we can do the update
+atomically. These are all benefits of using a single repository instead
+of N&gt;1.</p>
+<p>While version-control-tools was still pretty much my personal
+playground, I introduced a short script for running tests. It was pretty
+basic: just find test files and invoke them with Mercurial's test
+harness. It served my needs pretty well. Over time, as more and more
+functionality was rolled into version-control-tools, we expanded the
+scope of the test harness.</p>
+<p>We can now run Python unit tests (in addition to Mercurial .t tests).
+Test all of the things!</p>
+<p>We set up <a href="https://ci.mozilla.org/job/version-control-tools/">continuous integration</a>
+with Jenkins so tests run after check-in and alert us when things fail.</p>
+<p>We added <a href="https://ci.mozilla.org/job/version-control-tools/coveragepy/?">code coverage</a>
+so we can see what is and isn't being tested. Using code coverage data,
+we've
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1075275">identified a server upgrade bug</a>
+before it happens. We're also using the data to ensure that code is tested
+as thoroughly as it needs to be. The code coverage data has been
+invaluable at assessing the quality of our tests. I'm still shocked that
+Firefox developers tolerate not having JavaScript code coverage when
+developing Firefox features. (I'm not saying code coverage is perfect,
+merely that it is a valuable tool in your arsenal.)</p>
+<p>We added support for running tests against multiple versions of
+Mercurial. We even test the bleeding edge of Mercurial so we know when
+an upstream Mercurial change breaks our code. So, no more surprises on
+Mercurial release day. I can tell you today that we have a handful of
+extensions that are broken in Mercurial 3.2, due for release around
+November 1. (Hopefully we'll fix them before release.)</p>
+<p>We have Vagrant configurations so you can start a virtual machine that
+runs the tests the same way Jenkins does.</p>
+<p>The latest addition to the test harness is the ability to spin up Docker
+containers as part of tests. Right now, this is limited to running
+Bugzilla during tests. But I imagine the scope will only increase over
+time.</p>
+<p>Before I go on, I want to quickly explain how amazing Mercurial's
+<a href="http://mercurial.selenic.com/wiki/WritingTests#Writing_a_shell_script_test">.t tests</a>
+are. These are a flavor of tests used by Mercurial and the dominant form
+of new tests added to the version-control-tools repository. These tests
+are glorified shell scripts annotated with expected
+command output and other metadata. It might be easier to explain by
+showing. Take
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/573db71cdb79/hgext/bzpost/tests/test-post.t">bzpost's tests</a>
+as an example. The bzpost extension automatically posts commit URLs to
+Bugzilla during push.
+<a href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push/">Read more</a>
+if you are interested. What I like so much about .t tests is that they
+are actually testing the user experience. The test
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/573db71cdb79/hgext/bzpost/tests/test-post.t#l69">actually runs hg push</a>
+and verifies the output is exactly what is intended. Furthermore,
+since we're running a Dockerized Bugzilla server during the test, we're
+able to
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/573db71cdb79/hgext/bzpost/tests/test-post.t#l108">verify</a>
+that the bzpost extension actually resulted in Bugzilla comments being
+added to the appropriate bug(s). Contrast this with unit tests that only
+test a subset of functionality. Or, contrast with writing a lot of
+boilerplate and often hard-to-read code that invokes processes and uses
+regular expressions, etc to compare output. I find .t tests are more
+concise and they do a better job of testing user experience. More than
+once I've written a .t test and thought <em>this user experience doesn't
+feel right, I should change the behavior to be more user friendly</em>. This
+happened because I was writing actual end-user commands as part of
+writing tests and seeing the exact output the user would see. It is
+much harder to attain this sense of understanding when writing unit
+tests. I can name a few projects with poor command line interfaces that
+could benefit from this approach... I'm not saying .t tests are perfect
+or that they should replace other testing methodologies such as unit
+tests. I just think they are very useful for accurately testing
+higher-level functionality and for assessing user experience. I really
+wish we had these tests for mach commands...</p>
+<p>Anyway, with a proper testing harness in place for our version control code,
+we've been pretty good about ensuring new code is properly tested. When
+people submit new hooks or patches to existing hooks, we can push back and
+refuse to grant review unless tests are included. When someone requests a
+new deployment to the server, we can look at what changed, cross-reference
+to test coverage, and assess the riskiness of the deployment. We're getting
+to the point where we just trust our tests and server deployments are minor
+events. Concerns over accidental regressions due to server changes are
+waning. We can tell people <em>if you really care about this not breaking,
+you need a test</em> and <em>if you add a test, we'll support it for you.</em>
+People are often more than happy to write tests to ensure them peace of
+mind, especially when that test's presence shifts maintenance
+responsibility away from them. We're happy because we don't have many
+surprises (and fire drills) at deployment time. It's a win-win!</p>
+<p>So, what's next? Good question! We still have a number of large gaps in
+our test coverage. Our code to synchronize repositories from the master
+server to read-only slaves is likely the most critical omission. We also
+don't yet have a good way of reproducing our server environment.
+Ideally, we'd run the continuous integration in an environment that's
+very similar to production. Same package versions and everything. This
+would also allow us to simulate the actual hg.mozilla.org server
+topology during tests. Currently, our tests are more unit-style than
+integration-style. We rely on the consistent behavior of Mercurial and
+other tools as sufficient proxies for test accuracy and we back those up
+with running the tests on the staging server before production
+deployment. But these aren't a substitute for an accurate reproduction
+of the production servers, especially when it comes to things like the
+replication tests. We'll get there some day. I also have plans to
+improve Mercurial's test harness to better facilitate some of our
+advanced use cases. I would absolutely love to make Mercurial's .t test
+harness more consumable outside the context of Mercurial.
+(<a href="https://bitbucket.org/brodie/cram">cram</a> is one such attempt at this.)</p>
+<p>In summary, our story for testing version control at Mozilla has gone
+from a cobbled together mess to something cohesive and comprehensive.
+This has given us confidence to move fast without breaking things. I think
+the weeks of people time invested into improving the state of testing
+was well spent and will pay enormous dividends going forward. Looking
+back, the mountain of technical debt now looks like a mole hill. I feel
+good knowing that I played a part in making this change.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/10/14/robustly-testing-version-control-at-mozilla#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="deterministic-and-minimal-docker-images"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/10/13/deterministic-and-minimal-docker-images" rel="bookmark" title="Permanent Link to Deterministic and Minimal Docker Images">Deterministic and Minimal Docker Images</a></h2>
   <small>October 13, 2014 at 04:50 PM | categories: 
@@ -570,37 +761,6 @@ tuned.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="new-job-role"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/09/05/new-job-role" rel="bookmark" title="Permanent Link to New Job Role">New Job Role</a></h2>
-  <small>September 05, 2014 at 11:30 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/09/05/new-job-role#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>As of today, I have a new role and title at Mozilla: <em>Developer
-Productivity Engineer</em>. I'll be reporting to Laura Thomson as a
-member of the <em>Developer Services</em> team.</p>
-<p>I have an immediate goal to make our version control work better.
-This includes making Try scale and helping out with the deployment
-of ReviewBoard. After that, I'm not entirely sure. But Autoland
-and Firefox build system improvements have been discussed.</p>
-<p>I'm really excited to be in this new role. If someone were to give me
-a clean slate and tell me to design my own job role, I think I'd
-answer with something very similar to the role I am now in. I am
-passionate about tools and enabling people to become more productive.
-I have little doubt I'll thrive in this new role.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/05/new-job-role#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 
