@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 13 Oct 2014 23:52:17 GMT</pubDate>
+    <pubDate>Tue, 14 Oct 2014 15:33:48 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -19,6 +19,7 @@
       <link>http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images</link>
       <pubDate>Mon, 13 Oct 2014 16:50:00 PDT</pubDate>
       <category><![CDATA[sysadmin]]></category>
+      <category><![CDATA[Mozilla]]></category>
       <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images</guid>
       <description>Deterministic and Minimal Docker Images</description>
       <content:encoded><![CDATA[<p><a href="https://www.docker.com/">Docker</a> is a really nifty tool. It

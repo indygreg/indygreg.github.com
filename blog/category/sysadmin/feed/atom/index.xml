@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-13T23:52:17Z</updated>
+  <updated>2014-10-14T15:33:47Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -24,6 +24,7 @@
     <updated>2014-10-13T16:50:00Z</updated>
     <published>2014-10-13T16:50:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="sysadmin" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
     <summary type="html"><![CDATA[Deterministic and Minimal Docker Images]]></summary>
     <content type="html" xml:base="http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images"><![CDATA[<p><a href="https://www.docker.com/">Docker</a> is a really nifty tool. It
 vastly lowers the barrier to distributing and executing applications. It
