@@ -51,6 +51,145 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="finding-oldest-firefox-code"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/06/18/finding-oldest-firefox-code" rel="bookmark" title="Permanent Link to Finding Oldest Firefox Code">Finding Oldest Firefox Code</a></h2>
+  <small>June 18, 2012 at 10:10 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2012/06/18/finding-oldest-firefox-code#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>On Twitter the other night, Justin Dolske
+<a href="https://twitter.com/dolske/status/214241105179451393">posed a question</a>:</p>
+<pre><code>Weekend challenge: what is the oldest line of code still shipping
+in Firefox (tiebreaker: largest contiguous chunk)?
+</code></pre>
+<p>Good question and good challenge!</p>
+<h2>Technical Approach</h2>
+<p>To solve this problem, I decided my first task would be to produce a
+database holding line-by-line metadata for files <em>currently</em> in the
+Firefox repository. This sounded like a difficult problem at first,
+especially considering the Mercurial repository doesn't contain CVS
+history and this would be needed to identify code older than Mercurial
+that is <em>still</em> active.</p>
+<p>Fortunately, there exists a
+<a href="https://github.com/mozilla/mozilla-central/">Git repository</a> with full
+history of mozilla-central, including CVS and Mercurial! Armed with a
+clone of this repository, I wrote a quick shell <em>one-liner</em> to ascertain
+the history of every line in the repository:</p>
+<pre><code>for f in `git ls-tree -r --name-only HEAD`; do \
+  echo "BEGIN_RECORD $f"; \
+  git blame -l -t -M -C -n -w -p $f; \
+  echo "END_RECORD $f"; \
+done
+</code></pre>
+<p>The <em>git ls-tree</em> command prints the names of every file in
+the current tree. This is basically doing <em>find . -type f</em> except for
+files under version control by Git. <em>git blame</em> attempts to ascertain
+the history of each line in a file. It is worth pointing out arguments
+<em>-M</em> and <em>-C</em>. These attempt to find moves/copies of the line from
+within the same commit. If these are omitted, simple refactoring such as
+renaming a file or reordering code within a file would result in a
+improper commit attribution. Basically, Git would associate the line
+with the commit that changed it. With these flags, Git attempts to
+complete the chain and find the true origin of the line (to some
+degree).</p>
+<p>Now, something I thought was really cool is <em>git blame</em>'s porcelain
+output format (<em>-p</em>). Not only does it allow for relatively simple machine
+readability of the output (yay), but it also compacts the output
+so adjacent lines sharing the same history metadata share the
+same metadata/header block. In other words, it solves Dolske's <em>largest
+contiguous chunk</em> tiebreaker for free! Thanks, Git!</p>
+<p>I should also say that <em>git blame</em> isn't perfect for attributing code.
+But I think it is good enough to solve a Twitter challenge.</p>
+<p>I piped the output of the above command into a file so I could have the
+original data available to process. After all, this data is idempotent,
+so it makes no sense to <em>not</em> save it. After running for a while, I noticed
+things were running slower than I'd like. I think it took about 2 hours
+to obtain info for ~5000 files. No good. I played around a bit and
+realized the <em>-M</em> and <em>-C</em> flags were slowing things down. This is
+expected. But, I really wanted this data for a comprehensive data
+analysis.</p>
+<p>I re-discovered <a href="https://www.gnu.org/software/parallel/">GNU Parallel</a>
+and modified my one-liner to use <strong>all the cores</strong>:</p>
+<pre><code>git ls-tree -r --name-only HEAD | \
+parallel 'echo "BEGIN_RECORD {}"; git blame -l -t -M -C -n -w -p {}; echo "END_RECORD {}"'
+</code></pre>
+<p>This made things run <em>substantially</em> faster since I was now running on
+all 8 cores, not just 1. With GNU Parallel, this simple kind of
+parallelism is almost too easy. Now, I say <em>substantially</em> faster, but
+overall execution is still slow. How slow? Well, on my Sandy Bridge Macbook
+Pro:</p>
+<pre><code>real  525m49.149s
+user  3592m15.862s
+sys   201m4.482s
+</code></pre>
+<p>8:45 wall time and nearly 60 hours of CPU time. Yeah, I'm surprised
+my laptop didn't explode too! The output file was 1,099,071,448 bytes
+uncompressed and 155,354,423 bzipped.</p>
+<p>While Git was obtaining data, I set about writing a consumer and data
+processor. I'm sure the wheel of parsing this <em>porcelain</em> output format
+has been invented before. But, I hadn't coded any Perl in a while and
+figured this was as good of an excuse as any!</p>
+<p>The Perl script to do the parsing and data analysis is available at
+<a href="https://gist.github.com/2945604">https://gist.github.com/2945604</a>.
+The core parsing function simply calls a supplied callback whenever a
+new <em>block</em> of code from the same commit/file is encountered.</p>
+<p>I implemented a function that records a mapping of commit times to
+blocks. Finally, I wrote a simple function to write the results.</p>
+<h2>Results</h2>
+<p>What did 60 hours of CPU time tell us? Well, the oldest recorded line
+dates from 1998-03-28. This is actually the <em>Free the Lizard</em> commit -
+the first commit of open source Gecko to CVS. From this commit (Git
+commit 781c48087175615674 for those playing at home), a number of lines
+linger, including code for <em>mkdepend</em> and <em>nsinstall</em>.</p>
+<p>But, Dolske's question was about <em>shipping</em> code. Well, as far as I can
+tell, the oldest shipping code in the tree honor is shared by the
+following:</p>
+<ul>
+<li>js/jsd/jsd1640.rc (pretty much the whole file)</li>
+<li>js/jsd/jsd3240.rc (ditto)</li>
+<li>js/jsd/jsd_atom.c:47-73</li>
+<li>js/src/jsfriendapi.cpp:388-400</li>
+<li>js/src/yarr/YarrParser.h:295-523</li>
+<li>media/libjpeg/jdarith.c:21-336</li>
+<li>media/libjpeg/jctrans.c:20-178</li>
+<li>media/libjpeg (misc files all have large blocks)</li>
+<li>xpcom/components/nsComponentManager.cpp:897-901</li>
+<li>gfx/src/nsTransform2D.h (a couple 3-4 line chunks)</li>
+<li>toolkit/library/nsDllMain.cpp:22-31</li>
+<li>widget/windows/nsUXThemeData.cpp:213-257</li>
+<li>widget/windows/nsWindowGfx.cpp:756-815</li>
+<li>xpcom/ds/nsUnicharBuffer.cpp:14-33</li>
+<li>xpcom/glue/nsCRTGlue.cpp:128-174</li>
+</ul>
+<p>There are also a few small chunks of 1 or 2 lines in a couple dozen
+other files from that initial commit.</p>
+<h2>Further Analysis</h2>
+<p>If anyone is interested in performing additional analysis, you can just
+take my Gist and install your own <em>onBlock</em> and output formatting
+functions! Of course, you'll need a data set. My code is written so it
+will work with any Git repository. If you want to analyze Firefox, it
+will take hours of CPU time to extract the data from Git. To save some
+time, you can obtain a copy of the raw data from commit
+<a href="http://people.mozilla.org/~gszorc/mc-blame-0b961fb702a9576cb456.bz2">0b961fb702a9576cb456809410209adbbb956bc8</a>.</p>
+<p>There is certainly no shortage of interesting analysis that
+can be performed over this data set. Some that come to mind are a
+<em>scoreboard</em> for most lines of code in the current tree (friendly
+competition, anyone?) and a breakdown of active lines by the period they
+were introduced.</p>
+<p>I'll leave more advanced analysis as an exercise for the reader.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/06/18/finding-oldest-firefox-code#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="smaller-firefox-build-logs"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/05/23/smaller-firefox-build-logs" rel="bookmark" title="Permanent Link to Smaller Firefox Build Logs">Smaller Firefox Build Logs</a></h2>
   <small>May 23, 2012 at 08:50 AM | categories: 
@@ -551,395 +690,6 @@ smoother.</p>
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/07/improving-the-mozilla-build-system-experience#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="comparing-the-security-and-privacy-of-browser-syncing"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing" rel="bookmark" title="Permanent Link to Comparing the Security and Privacy of Browser Syncing">Comparing the Security and Privacy of Browser Syncing</a></h2>
-  <small>April 08, 2012 at 09:00 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/security'>security</a>, <a href='/blog/category/browsers'>browsers</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/internet'>internet</a>
- | <a href="http://gregoryszorc.com/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Many popular web browsers offer built-in synchronization of browser data
-(history, bookmarks, passwords, etc) across devices. In this post, I
-examine the data security and privacy aspects of some of them.</p>
-<h2>Chrome</h2>
-<p>Chrome and Chromium have comprehensive support for browser sync.</p>
-<p>When you sign in to Chrome (using your Google Account credentials),
-Chrome prompts you to set up sync. By default, all data types are
-uploaded to Google's servers.</p>
-<p>The default behavior is for Chrome to encrypt your passwords before
-uploading them to the server. All of your remaining data (history,
-bookmarks, etc) is uploaded to Google unencrypted. This means anyone
-with access to Google's servers has full access to your history, etc.</p>
-<p>Access to the uploaded data is governed by the
-<a href="https://www.google.com/chrome/intl/en/privacy.html">Google Chrome Privacy Notice</a>.
-This policy (pulled on April 3, 2012) states that the sync data is
-governed by the unified
-<a href="https://www.google.com/policies/privacy/">Google Privacy Policy</a>.
-This policy states (as pulled on April 4, 2012):</p>
-<pre><code>We use the information we collect from all of our services to
-provide, maintain, protect and improve them, to develop new ones,
-and to protect Google and our users. We also use this information
-to offer you tailored content – like giving you more relevant
-search results and ads.
-</code></pre>
-<p>In other words, you are granting Google the ability to use your synced
-data.</p>
-<p>An advanced settings dialog as part of the sync setup allows users to
-opt in to local encryption of all data - not just passwords - simply by
-clicking a checkbox. This same dialog also allows users to choose an
-alternate passphrase (not your Google Account password) for encrypting
-data.</p>
-<p>For encrypted data, Chrome uses an encryption scheme called Nigori. An
-<a href="http://www.links.org/files/nigori-overview.pdf">Overview</a> and <a href="http://www.links.org/files/nigori-protocol.html">protocol
-details</a> are
-<a href="http://www.links.org/?cat=38">available</a> from the author's website.</p>
-<p>This encryption scheme takes the user-supplied passphrase and uses
-<a href="http://tools.ietf.org/html/rfc2898">PBKDF2</a> to derive keys. It first
-derives a 64 bit salt key, <em>Suser</em>, using 1001 iterations of PBKDF2 with
-SHA1 using the username as the salt. Then, it performs 3 more PBKDF2
-derivations to produce three 128 bit keys from the original passphrase
-using the newly-derived salt key, producing <em>Kuser</em>, <em>Kenc</em>, and
-<em>Khmac</em>. For these, the PBKDF2 iteration counts are 1002, 1003, and 1004,
-respectively. <em>Kuser</em> and <em>Kenc</em> use AES as the PBKDF2 algorithm.
-<em>Kmac</em> uses SHA-1. <em>Kuser</em> is used to authenticate the client with the
-server. <em>Kenc</em> and <em>Kmac</em> are used to encrypt and sign data,
-respectively. Data is encrypted with AES-128 in CBC mode with a 16 byte
-IV. (It is worth noting that Chrome
-<a href="https://src.chromium.org/viewvc/chrome/trunk/src/sync/util/nigori.cc?annotate=129476#l157">does not use</a>
-a cryptographically-secure random number generator for the IV. I don't
-believe this amounts to anything more than a mild embarassment in this
-case.)</p>
-<p>When someone wishes to sync to a new Chrome instance, she simply enters her
-Google Account username and password (or custom sync passphrase)
-and data is downloaded from Google's servers and applied. The pre-PBKDF2
-passphrase is all that is needed. The new Chrome instance remembers
-the passphrase and syncing is automatic from that point on.</p>
-<h2>Opera</h2>
-<p>Opera supports syncing via <a href="http://www.opera.com/link/">Opera Link</a>.
-Opera Link supports syncing bookmarks, history, passwords, search engine
-plugins, and other data types.</p>
-<p>Opera is not open source and I have not been able to find technical
-details on how Opera Link is implemented. The two sources I found are a
-<a href="http://my.opera.com/operalink/blog/2011/05/03/security-of-synchronized-passwords-with-opera-link">blog post</a>
-and the <a href="http://www.opera.com/browser/tutorials/link/">Guide to Using Opera Link</a>.</p>
-<p>From those two documents, we know that Opera locally encrypts passwords.
-However, it is unclear whether other data is also encrypted locally. I
-can interpret the blog post to go either way. (If someone knows, please
-leave a comment with some kind of proof and I'll update this post.)</p>
-<p>The blog post gives a high-level overview of how encryption works. A
-lone comment is the only source of technical details:</p>
-<pre><code>for encryption we use AES-128, and we use a random salt that is
-part of each "blob" (one blob is a single field in each password
-entry)
-</code></pre>
-<p>As commenters in that post have pointed out, that is still very short on
-technical details.</p>
-<p>What I <em>think</em> is going on is that when you initially set up Opera Link,
-it generates a full-entropy 128 bit key from a random number generator.
-Uploaded data is encrypted with this key using AES-128 with a
-randomly-generated IV (or <em>salt</em> using terms from the blog post). The
-ciphertext and the IV are uploaded to Opera's servers. There may be HMAC
-or some other form of message verification involved, but I could find no
-evidence of that.</p>
-<p>Since Opera Link is tied to your Opera Account password, I'm guessing
-that Opera uses PBKDF2 to derive a key from the password. It then uses
-this key to symmetrically encrypt the randomly-generated encryption key.
-It then uploads the encrypted encryption key to Opera's servers.</p>
-<p>When someone wishes to sync with a new Opera instance, she simply enters
-her Opera Account credentials on the new Opera and Opera Link is set up
-automatically. This is a one-time set-up process.</p>
-<p>Data uploaded with Opera Link is goverened by an
-<a href="http://www.opera.com/privacy/#operalink">Opera Link Privacy Policy</a>.
-This policy states (pulled on April 4, 2012):</p>
-<pre><code>Opera will never disclose, share, or distribute an individual’s
-Linked data to any third party except where required by law or
-regulation, or in cases where you have chosen to grant access to your
-data to an Opera or third party application or service using Opera
-Link API. Opera restricts internal access to this information
-exclusively to those who need it for the operation of the Link
-service.
-</code></pre>
-<h2>Safari</h2>
-<p>Safari supports syncing via iCloud. Its offerings appear to currently be
-limited to bookmarks, possibly because iCloud is a relatively new
-offering from Apple.</p>
-<p>Configuration of iCloud is something that typically happens outside of
-Safari at the OS level. And, iCloud is deeply tied to your Apple ID.
-Users typically sign up for an Apple ID then enable iCloud support for a
-Safari feature (currently just bookmarks). During Apple ID setup, iCloud
-asks you some security questions. To connect a new device, you simply
-sign in to Apple ID, enable iCloud, and things just work.</p>
-<p>Technical details of iCloud's security model are hard to come by. What we
-do appear to know is that everything except email and
-notes is encrypted on Apple's servers. However, the current theory is
-that this encryption only occurs after the data hits Apple's servers or
-that Apple has the encryption key and can read your data without your
-knowledge.</p>
-<p>Data uploaded to iCloud is governed by the
-<a href="https://www.apple.com/legal/icloud/en/terms.html">iCloud Terms and Conditions</a>.
-This policy states (pulled on April 7, 2012):</p>
-<pre><code>You further consent and agree that Apple may collect, use, transmit,
-process and maintain information related to your Account, and any
-devices or computers registered thereunder, for purposes of providing
-the Service, and any features therein, to you. Information collected
-by Apple when you use the Service may also include technical or
-diagnostic information related to your use that may be used by Apple
-to support, improve and enhance Apple’s products and services.
-</code></pre>
-<p>If data is readable by Apple, this policy grants Apple the right to use it.</p>
-<p>I'm not going to speculate about the technical details of Apple's
-encryption model because I couldn't find any non-speculative sources to base
-it on. If you want to read the speculation of others, see Ars Technica
-posts
-<a href="http://arstechnica.com/apple/news/2012/03/how-safe-is-icloud-data-ars-investigates.ars">1</a>,
-<a href="http://arstechnica.com/apple/news/2012/04/apple-holds-the-master-key-when-it-comes-to-icloud-security-privacy.ars">2</a>,
-and <a href="http://arstechnica.com/apple/news/2012/04/can-apple-give-police-a-key-to-your-encrypted-iphone-data-ars-investigates.ars">3</a>
-and Matthew Green's <a href="http://blog.cryptographyengineering.com/2012/04/icloud-who-holds-key.html">response</a>.</p>
-<h2>Internet Explorer</h2>
-<p>Internet Explorer supports syncing of favorites via Windows Live Mesh.</p>
-<p>This was discovered after this post was originally written, which is why
-there are no additional details.</p>
-<h2>Firefox</h2>
-<p>Firefox has built-in support for syncing browser data via Firefox Sync.
-It doesn't sync as many data types as Chrome, but the basics (history,
-bookmarks, passwords, add-ons) are all there.</p>
-<p>When you initially create a Firefox Sync account, you are asked to
-create a Mozilla Services account by entering an e-mail address and
-password. Once this process is done, Firefox uploads data to the sync
-server in the background.</p>
-<p>By default, all data is encrypted locally before being uploaded to the
-server. There is no option to disable client-side encryption.</p>
-<p>Data uploaded to the server is governed by the
-<a href="https://services.mozilla.com/privacy-policy/">Firefox Sync Privacy Policy</a>.
-The summary (pulled on April 4, 2012) is quite clear:</p>
-<pre><code>* Your data is only used to provide the Firefox Sync service.
-* Firefox Sync on your computer encrypts your data before sending
-  it to us so the data isn’t sitting around on our servers in a
-  usable form.
-* We don’t sell your data or use ad networks on the Firefox Sync
-  webpages or service.
-</code></pre>
-<p>While Mozilla provides a default server for Firefox Sync, the server
-is open source (see their
-<a href="http://docs.services.mozilla.com/">documentation</a>) and
-anybody can run a server and point their clients at it.</p>
-<p>When a new account is created, Firefox creates a full-entropy 128 bit key
-via random number generation. It then derives two 256 bit keys through
-SHA-256 HMAC-based HKDF
-(<a href="http://tools.ietf.org/html/rfc5869">RFC 5869</a>). This key pair
-effectively constitutes a root encryption and signing key.</p>
-<p>Firefox then generates a completely new pair of full-entropy 256 bit
-keys via random number generation. This key pair is used to encrypt and
-sign all data uploaded to the server. This second key pair is called a
-<em>collection key</em>.</p>
-<p>Firefox takes your synced data, and performs AES-256 in CBC mode with a 16
-byte randomly-generated IV (unique for each record) with the <em>collection
-key's</em> symmetric encryption key. The ciphertext is then hashed with the
-HMAC key. The ciphertext, HMAC, and IV are uploaded to the server.</p>
-<p>The <em>collection key</em> is encrypted and signed with the root key pair and
-uploaded to the server as well. The root keys remain on the client and are
-never transmitted to the server.</p>
-<p>Technical details of the full crypto model are
-<a href="http://docs.services.mozilla.com/sync/storageformat5.html">available</a>.</p>
-<p>The e-mail and password for the Mozilla Services account are used to
-authenticate the HTTPS channel with the server using HTTP Basic Auth.</p>
-<p>When you wish to connect another Firefox instance to your Firefox Sync
-account, the root 128 bit key must be transferred to the new device.
-Firefox supports manually entering the 128 bit key as a 26 character
-value. More commonly,
-<a href="http://grouper.ieee.org/groups/1363/Research/contributions/hao-ryan-2008.pdf">Password Authenticated Key Exchange by Juggling</a>
-(J-PAKE) is used. One device displays 12 characters and establishes a
-channel with a central brokering server. The same 12 characters are
-entered on the pairing device. The two devices establish a
-cryptographically secure channel between them and proceed to exchange
-the Mozilla Account credentials, server information, and the 128 bit
-root key. While the J-PAKE server is hosted by Mozilla, the channel is
-secured between both endpoints, so the server operator can't read the
-root key as it passes through it.</p>
-<p>The new client then derives the root key pair via HKDF, downloads,
-verifies, and decrypts the collection key from the server, then
-uses that key pair for all subsequent encryption and verification
-operations.</p>
-<p>Once a client has been paired, it holds on to the root key indefinitely
-and a user doesn't need to take any subsequent action for syncing to
-occur.</p>
-<h2>LastPass</h2>
-<p><a href="https://lastpass.com/">LastPass</a> isn't a browser, but a password
-manager that can be integrated with all the popular browsers. I thought
-it would be interesting to throw it into the comparison, especially
-since LastPass is perceived to have an excellent security model.</p>
-<p>Technical details of LastPass's security model are
-<a href="http://helpdesk.lastpass.com/security-options/password-iterations-pbkdf2/">available</a>
-in the LastPass User Manual. The remaining details are
-<a href="https://lastpass.com/support.php?cmd=showfaq&amp;id=1096">found</a> on a
-help desk answer.</p>
-<p>LastPass encrypts all of your data locally before uploading it to the
-LastPass servers. It does this by making use of a master password.</p>
-<p>Data uploaded to LastPass's servers is governed by a
-<a href="https://lastpass.com/aboutus_privacy.php">Privacy Statement</a>. The
-summary that best reflects it (as pulled on April 4, 2012) is:</p>
-<pre><code>We don't allow you to send LastPass critically important information
-like your usernames, passwords, account notes, and LastPass master
-password; instead your LastPass master password is used locally to
-encrypt the important data that's sent to us so that no one,
-including LastPass employees ever can access it.
-</code></pre>
-<p>LastPass performs <em>N</em> iterations (default 500) of PBKDF2 using SHA256
-over your master password to produce a 256 bit encryption key. It then
-produces one additional iteration to produce a login key. Data is
-encrypted locally using AES-256 with the encryption key derived from
-your master password.  Encrypted data is uploaded to LastPass's servers.
-Your master password is never transmitted to LastPass. Instead, the
-login key is used to authenticate communications.</p>
-<p>The LastPass web interface downloads encrypted blobs and decrypts them
-locally using the PBKDF2-derived encryption key.</p>
-<p>To set up a new LastPass client, you download LastPass and present your
-username and master password. Typically, the master password needs to be
-presented every time you initially access your LastPass data (e.g. the
-first time you need to find a password after starting your browser).</p>
-<h2>Assessment</h2>
-<p>The following chart summarizes the security aspects of different
-browsers' sync features. Desirable traits for better security are bolded.</p>
-<table border="1">
-  <tr>
-    <th>Product</th>
-    <th>Encryption Defaults</th>
-    <th>Can Encrypt Everything?</th>
-    <th>Encryption Entropy Source</th>
-    <th>Server Knows Decryption Key?</th>
-    <th>Server-Side Data Recovery Difficulty</th>
-  </tr>
-  <tr>
-    <td>Chrome</td>
-    <td>Passwords encrypted; everything else stored in cleartext</td>
-    <td><strong>Yes</strong></td>
-    <td>User-supplied passphrase</td>
-    <td>Yes by default (Google Account password). <strong>No if using custom
-        passphrase</strong></td>
-    <td>No effort for unencrypted data. <strong>1001 PBKDF2-SHA1 + 1003
-        PBKDF2-AES iterations for encrypted data.</strong></td>
-  </tr>
-  <tr>
-    <td>Opera</td>
-    <td>Passwords encrypted; everything else unknown</td>
-    <td>Unknown</td>
-    <td>User-supplied passphrase</td>
-    <td>Yes. Can't change.</td>
-    <td>Unknown</td>
-  </tr>
-  <tr>
-    <td>Safari</td>
-    <td>On remote disks only?</td>
-    <td>No</td>
-    <td>Unknown. User-supplied password?</td>
-    <td>Yes (probably)</td>
-    <td>No effort for Apple (apparently)</td>
-  </tr>
-  <tr>
-    <td>Firefox</td>
-    <td><strong>Everything</strong></td>
-    <td><strong>Yes</strong> (default)</td>
-    <td><strong>128 bit randomly generated key</strong></td>
-    <td><strong>No</strong></td>
-    <td><strong>128 bit key + HKDF into AES-256</strong></td>
-  </tr>
-  <tr>
-    <td>LastPass</td>
-    <td><strong>Everything</strong> (only syncs passwords and notes)</td>
-    <td><strong>Yes</strong> (default)</td>
-    <td>User-supplied passphrase</td>
-    <td><strong>No</strong></td>
-    <td><strong>Variable PBKDF2-SHA256 iterations (default 500)</strong></td>
-  </tr>
-</table>
-
-<p>So much about Safari is unknown, so it will be ignored.</p>
-<p>Firefox and LastPass (and possibly Opera) are the only products that
-encrypt all data by default. Chrome (and possibly Opera) is the only
-product that does not encrypt all data by default.</p>
-<p>Firefox and LastPass are the only products that don't send the entropy
-source to the server by default. Chrome uses the Google Account
-password by default and this is sent to Google when logging in to
-various services. Opera sends the password to Opera when logging in to
-your Opera Account. Google allows you to change the entropy source to a
-custom passphrase so Google doesn't receive the entropy source.
-Opera does not.</p>
-<p>Sending the entropy source to the server is an important security
-consideration because it means you are giving the key to your data to
-someone else. Even if your data is encrypted locally, someone with the
-key can decrypt it. Services that send the entropy source to the server
-are subject to man-in-the-middle attacks and could be subverted by
-malicious or legal actions occurring on the server side (e.g. the
-service operator could be compelled through a subpoena to capture your
-entropy source and use it to decrypt your stored data, possibly without
-your knowledge).</p>
-<p>Firefox is the only product whose encryption source is full-entropy. All
-other products rely on taking a user-supplied passphrase and using
-"key-stretching" via PBKDF2 to increase the cost of a brute-force
-search.</p>
-<p>PBKDF2-derived encryption keys are common in the examined products.
-It is worth noting that PBKDF2 can be susceptible to dictionary and
-brute-force attacks because assumptions can be made about the input
-passphrase, such as its entropy and length. Systems often enforce rules
-on the source passphrase (e.g. between 5 and 15 characters and contains
-only letters and numbers). When cracking keys, you normally iterate
-through every possible permutation until you find one that works. When
-you can make assumptions about the input, you can eliminate a large
-number of these permutations. The products that use PBKDF2 are
-theoretically susceptible to this weakened brute-force search.</p>
-<p>Since Firefox does not rely on PBKDF2, it is the only examined product not
-theoretically susceptible to a weakened brute-force search. Instead, an
-attacker would have to churn through every permutation of a 128 bit root
-key, which would take billions of computer-years. (See
-<a href="https://en.wikipedia.org/w/index.php?title=Brute-force_attack&amp;oldid=482091625">Brute-force attack</a>
-on Wikipedia for more.)</p>
-<p>Firefox's additional security comes at the price of more complex device
-setup. Firefox users need to physically have a copy of the 128 bit root
-key or physical access to 2 devices when pairing. All other products
-rely on a passphrase which the user can carry around seemlessly in her
-head. In addition, if the Firefox root encryption key is lost, it is
-more likely that your data is not recoverable because the key is not in
-your head.</p>
-<h2>Conclusion</h2>
-<p>Considering just the security and privacy aspects, I can only recommend
-two of the examined products: Firefox Sync and LastPass. I am recommending
-them because they encrypt all data locally by default and they do not
-send the encryption key source to the server. Of these two, Firefox
-Sync is more secure for reasons outlined above.</p>
-<p>I can't recommend Safari because details about iCloud's encryption
-strategy are unknown. Furthermore, it appears Apple can recover your
-(possibly) encrypted data without your knowledge.</p>
-<p>I can't recommend Opera because your encryption key source (your Opera Account
-password) is sent to Opera's servers. Furthermore, not enough technical
-details of Opera Link are available to vet it.</p>
-<p>I can't recommend Chrome (at least in its default configuration) because
-it doesn't encrypt all data locally (only passwords) and you
-periodically send the encryption key source (your Google Account password)
-to Google's servers when using other Google services. If you enable
-encryption of all data and use a custom passphrase, Chrome's security model
-is essentially identical to LastPass's and thus can be recommended.</p>
-<p><strong>Disclaimer</strong>: I am currently employed by Mozilla and work on
-Firefox Sync. That being said, I believe this post has been objective
-and not subject to my bias towards Firefox and/or Firefox Sync. If you
-feel differently, please leave a comment and I will adjust the post as
-necessary.</p>
-<p><strong>Edit 2012-04-16</strong> Note that IE supports Bookmark sync via Windows Live
-Mesh (thanks to Nick Richards for pointing it out in the comments). Also
-removed an incorrect sentence from the Chrome section which incorrectly
-stated that the PBKDF2 iteration count was part of the hash in each
-iteration.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
  <a href="../14">« Previous Page</a>
   --  
  <a href="../16">Next Page »</a>
@@ -952,6 +702,7 @@ iteration.</p>
               <h2>Categories</h2>
               <ul>
                 <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
                 <li><a href="/blog/category/firefox">Firefox</a></li>
                 <li><a href="/blog/category/git">Git</a></li>
                 <li><a href="/blog/category/javascript">JavaScript</a></li>
@@ -959,6 +710,7 @@ iteration.</p>
                 <li><a href="/blog/category/mozilla">Mozilla</a></li>
                 <li><a href="/blog/category/puppet">Puppet</a></li>
                 <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
                 <li><a href="/blog/category/sync">Sync</a></li>
                 <li><a href="/blog/category/browsers">browsers</a></li>
                 <li><a href="/blog/category/build-system">build system</a></li>

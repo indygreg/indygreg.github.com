@@ -7,12 +7,685 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-14T19:13:54Z</updated>
+  <updated>2014-10-16T20:42:09Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name></name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[The Rabbit Hole of Using Docker in Automated Tests]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/10/16/the-rabbit-hole-of-using-docker-in-automated-tests" />
+    <id>http://gregoryszorc.com/blog/2014/10/16/the-rabbit-hole-of-using-docker-in-automated-tests</id>
+    <updated>2014-10-16T13:45:00Z</updated>
+    <published>2014-10-16T13:45:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Review Board" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Docker" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[The Rabbit Hole of Using Docker in Automated Tests]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/10/16/the-rabbit-hole-of-using-docker-in-automated-tests"><![CDATA[<p><strong>Warning: This post is long and rambling. There is marginal value in
+reading beyond the first few paragraphs unless you care about Docker.</strong></p>
+<p>I recently wrote about
+<a href="/blog/2014/10/14/robustly-testing-version-control-at-mozilla/">how Mozilla tests version control</a>.
+In this post, I want to talk about the part of that effort that consumed
+the most time: adding Docker support to the test harness.</p>
+<h2>Introducing the Problem and Desired End State</h2>
+<p>Running Docker containers inside tests just seems like an obvious thing
+you'd want to do. I mean, wouldn't it be cool if your tests could spin
+up MySQL, Redis, Cassandra, Nginx, etc inside Docker containers and test
+things against actual instances of the things running in your data
+centers? Of course it would! If you ask me, this approach beats
+<a href="https://en.wikipedia.org/wiki/Mock_object">mocking</a> because many
+questions around accuracy of the mocked interface are removed.
+Furthermore, you can run all tests locally, while on a plane: no data
+center or staging environment required. How cool is that! And,
+containers are all isolated so there's no need to pollute your system
+with extra packages and system services. Seems like wins all around.</p>
+<p>When Mozilla started adding customizations to the
+<a href="https://www.reviewboard.org/">Review Board</a> code review software in
+preparation for deploying it at Mozilla as a replacement for Bugzilla's
+Splinter, it quickly became apparant that we had a significant testing
+challenge ahead of us. We weren't just standing up Review Board and
+telling people to use it, we were integrating user authentication with
+Bugzilla, having Review Board update Bugzilla after key events, and
+were driving the initiation of code review in Review Board by pushing
+code to a Mercurial server. That's 3 user-visible services all
+communicating with each to expose a unified workflow. It's the kind of
+thing testing nightmares are made of.</p>
+<p>During my early involvement with the project, I recognized the challenge
+ahead and was quick to insist that we write automated tests for as much
+as possible. I insisted that all the code (there are multiple extensions
+to ReviewBoard, a Mercurial hook, and a Mercurial extension) live under
+one common repository and share testing. That way we could tinker with
+all the parts easily and test them in concern without having to worry
+about version sync. We moved all the code to the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+repository and Review Board was the driving force behind improvements to
+the test harness in that repository. We had Mercurial .t tests starting
+Django dev servers hosting Review Board running from per-test SQLite
+databases and all was nice. Pretty much every scenario involving
+the interaction between Mercurial and ReviewBoard was tested. If you
+cared about just these components, life was happy.</p>
+<p>A large piece of the integration story was lacking in this testing
+world: Bugzilla. We had somewhat complex code for having Review Board
+and Bugzilla talk to each other but no tests for it because nobody
+had yet hooked Bugzilla up to the tests. As my responsibilities in the
+project expanded from covering just the Mercurial and Review Board
+interaction to Bugzilla as well, I again looked at the situation and
+thought <em>there's a lot of complex interaction here and alpha testing
+has revealed the presence of many bugs: we need a better testing story.</em>
+So, I set out to integrate Bugzilla into the test harness.</p>
+<p>My goals were for Review Board tests to be able to make requests against
+a Bugzilla instance configured just like
+<a href="https://bugzilla.mozilla.org/">bugzilla.mozilla.org</a>, to allow tests to
+execute concurrently (don't make developers wait on machines), for
+tests to run as quickly as possible, to run tests in an environment as
+similar to production as possible, and to be able to run tests from a
+plane or train or anywhere without internet connectivity. I was unwilling
+to budge on these core testing requirements because they represent
+what's best from test accuracy and developer productivity standpoints:
+you want your tests to be representative of the real world and you want
+to enable people to hack on this service anywhere, anytime, and not be
+held back by tests that take too long to execute. Move fast and don't
+break things.</p>
+<p>Before I go on, it's time for a quick aside on tolerable waiting times.
+Throughout this article I talk about minimizing the run time of tests.
+This may sound like premature optimization. I argue it isn't, at least
+not if you are optimizing for developer productivity. There is a fair
+bit of academic research in this area.
+<a href="http://cba.unl.edu/research/articles/548/download.pdf">A study on tolerable waiting time: how long are Web users willing to
+wait</a>
+gets cited a lot. It says 2 seconds for web content. If you read a few
+paragraphs in, it references other literature. They disagree on specific
+thresholds, but one thing is common: the thresholds are typically low -
+just a few seconds. The latencies I deal with are all longer than
+what research says leads to badness. When given a choice, I want to
+optimize workflows for what humans are conditioned to tolerate. If I
+can't do that, I've failed and the software will be ineffective.</p>
+<p>The architecture of Bugzilla created some challenges and eliminated some
+implementation possibilities. First, I wasn't using any Bugzilla: I was
+using Mozilla's <em>branch</em> of Bugzilla that powers bugzilla.mozilla.org.
+Let's call it BMO. I <em>could</em> try hosting it from local SQLite files
+and running a local, Perl-based HTTP server (Bugzilla is written in
+Perl). But my experience with Perl and takeaways from talking to the
+BMO admins was that pain would likely be involved. Plus, this would be
+a departure from test accuracy. So, I would be using MySQL, Apache HTTPd,
+and mod_perl, just like BMO uses them in production.</p>
+<p>Running Apache and MySQL is always a... fun endeavor. It wasn't a strict
+requirement, but I also highly preferred that the tests didn't pollute the
+system they ran on. In other words, having tests connect to an
+already-running MySQL or Apache server felt like the wrong solution. That's
+just one more thing people must set up and run locally to run the tests.
+That's just one more thing that could differ from production and cause
+bad testing results. It felt like a dangerous approach. Plus, there's
+the requirement to run things concurrently. Could I have multiple tests
+talking to the same MySQL server concurrently? They'd have to use
+separate databases so they don't conflict. That's a possibility.
+Honestly, I didn't entertain the thought of running Apache and MySQL
+manually for too long. I knew about this thing called Docker and that it
+theoretically fit my use case perfectly: construct building blocks for
+your application and then dymanically hook things up. Perfect. I could
+build Docker containers for all the required services and have each test
+start a new, independent set of containers for just that test.</p>
+<p>So, I set out integrating Docker into the version-control-tools test
+harness. Specifically, my goal was to enable the running of independent
+BMO instances during individual tests. It sounded simple enough.</p>
+<p>What I didn't know was that integrating a Dockerized BMO into the test
+harness would take the better part of 2 weeks. And it's still not up to
+my standards. This post is the story about the trials and tribulations I
+encountered along the way. I hope it serves as a warning and potentially
+a guide for others attempting similar feats. If any Docker developers
+are reading, I hope it gives you ideas on how to improve Docker.</p>
+<h2>Running Bugzilla inside Docker</h2>
+<p>First thing's first: to run BMO inside Docker I needed to make Docker
+containers for BMO. Fortunately, David Lawrence has
+<a href="https://github.com/dklawren/docker-bugzilla">prior art</a> here. I
+<strong>really</strong> just wanted to take that code, dump it into
+version-control-tools and call it a day. In hindsight, I probably should
+have done that. Instead, armed with the knowledge of the Docker best
+practice of <em>one container per service</em> and David Lawrence's similar
+wishes to make his code conform to that ideal, I decided to spend some
+time to <em>fix</em> David's code so that MySQL and Apache were in separate
+containers, not part of a single container running supervisord. Easy
+enough, right?</p>
+<p>It was relatively easy extracting the MySQL and Apache parts of BMO into
+separate containers. For MySQL, I started with the
+<a href="https://github.com/docker-library/mysql">official MySQL container</a> from
+the Docker library and added a custom <em>my.cnf</em>. Simple enough. For
+Apache, I just copied everything from David's code that wasn't MySQL.
+I was able to manually hook the containers together using the Docker
+CLI. It sort of just worked. I was optimistic this project would only
+take a few hours.</p>
+<h2>A garbage collection bug in Docker</h2>
+<p>My first speed bump came as I was iterating on Dockerfiles. All of a
+sudden I get an error from Docker that it is out of space. Wat? I look
+at <em>docker images</em> and don't see anything too obvious eating up space.
+What could be going on? At this point, I'm using
+<a href="https://github.com/boot2docker/boot2docker">boot2docker</a> to host
+Docker. boot2docker is this nifty tool that allows Windows and OS X
+users to easily run Docker (Docker requires a Linux host). boot2docker
+spins up a Linux virtual machine running Docker and tells you how to
+point your local <em>docker</em> CLI interface at that VM. So, when Docker
+complains it is out of space, I knew immediately that the VM must be low
+on space. I SSH into it, run <em>df</em>, and sure enough, the VM is nearly out
+of space. But I looked at <em>docker images -a</em> and confirmed there's not
+enough data to fill the disk. What's going on? I can't find the issue
+right now, but it turns out there is a bug in Docker! When running
+Docker on aufs filesystems (like boot2docker does), Docker does not
+always remove
+<a href="https://docs.docker.com/userguide/dockervolumes/#creating-and-mounting-a-data-volume-container">data volumes containers</a>
+when deleting a container. It turns out that the MySQL containers from
+the official Docker library were creating a data-only container to hold
+persistent MySQL data that outlives the container itself. These
+containers are apparently light magic. They are containers that are
+attached to other containers, but they don't really show up in the
+Docker interfaces. When you delete the <em>host</em> container, these
+containers are supposed to be garbage collected. Except on aufs, they
+aren't. My MySQL containers were creating 1+ GB InnoDB data files on
+start and the associated data containers were sitting around after
+container deletion, effectively leaking 1+ GB every time I created a
+MySQL container, quickly filling the boot2docker disk. Derp.</p>
+<p>I worked around this problem by <em>forking</em> the official MySQL container.
+I didn't need persistent MySQL data (the containers only need to live
+for one invocation - for the lifetime of a single test), so I couldn't
+care less about persisted data volumes. So, I
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/68eca557382b">changed</a>
+the MySQL container to hold its data locally, not in a data volume
+container. The solution was simple enough. But it took me a while to
+identify the problem. Here I was seeing Docker do something extremely
+stupid. Surely my understanding of Docker was wrong and I was doing
+something stupid to cause it to leak data. I spent hours digging through
+the documentation to make sure I was doing things exactly as
+recommended. It wasn't until I started an Ubuntu VM and tried the same
+thing there did I realize this looked like a bug in boot2docker. A few
+Google searches later led me to a comment hiding at the bottom of an
+existing GitHub issue that pins aufs as the culprit. And here I thought
+Docker reached 1.0 and wouldn't have bad bugs like this. I certainly
+wouldn't expect boot2docker to be shipping a VM with a sub-par storage
+driver (shouldn't it be using devicemapper or btrfs instead). Whatever.</p>
+<h2>Wrangling with Mozilla's Branch of Bugzilla</h2>
+<p>At this point, I've got basic Docker containers for MySQL and
+Apache+mod_perl+Bugzilla being created. Now, I needed to convert from
+vanilla Bugzilla to BMO. Should be straightforward. Just change the Git
+remote URL and branch to check out. I did this and all-of-a-sudden my
+image started encountering errors building! It turns out that the BMO
+code base doesn't work on a fresh database! Fortunately, this is a
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769829">known issue</a> and
+I've worked around it previously. When I tackled it a few months ago, I
+spent a handful of hours disecting this problem. It wasn't pretty. But
+this time I knew what to do. I even had a
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/a15c08c2fac1/testing/puppet/manifests/bugzilla.pp">Puppet manifest</a>
+for installing BMO on a fresh machine. So, I just needed to translate
+that Puppet config into Dockerfile commands. No big deal, right? Well,
+when I did that Puppet config a few months ago, I based it on Ubuntu
+because I'm more familiar with Debian-based distros and figured Ubuntu
+would be the easiest since it tends to have the largest package
+diversity. Unfortunately, David's Docker work is based on Fedora. So, I
+spent some time converting the Dockerfile to Ubuntu rather than trying
+to port things to Fedora. Arguably the wrong decision since Mozilla
+operates the RedHat flavor of Linux distributions in production. But I
+was willing to trade accuracy for time here, having lost time dealing
+with the aufs bug.</p>
+<p>Unfortunately, I under-estimated how long it would take to port the image
+to Ubuntu. It didn't take so long from a code change perspective.
+Instead, most of the time was spent waiting for Docker to run the
+commands to build the image. In the final version, Apt is downloading
+and installing over 250 packages. And Bugzilla's bootstrap process
+installs dozens of packages from CPAN. Every time I made a small change,
+I invalidated Docker's image building cache, causing extreme delays
+while waiting for Apt and CPAN to do their thing. This experience
+partially contributed to my
+<a href="/blog/2014/10/13/deterministic-and-minimal-docker-images/">displeasure with how Docker currently handles image creation</a>.
+If Docker images were composed of pre-built pieces instead of stacked
+commands, my cache hit rate would have been much higher and I would have
+converted the image in no time. But no, that's not how things work.
+So I lost numerous hours through this 2 week process waiting for Docker
+images to perform operations I've already done elsewhere dozens of times
+before.</p>
+<h2>Docker Container Orchestration</h2>
+<p>After porting the Bugzilla image to Ubuntu and getting BMO to bootstrap
+in a manually managed container (up to this point I'm using the <em>docker</em>
+CLI to create images, start containers, etc), it was time to automate
+the process so that tests could run the containers. At this time, I
+started looking for tools that performed multiple container
+orchestration. I had multiple containers that needed to be treated as a
+single logical unit, so I figured I'd use an existing tool to solve this
+problem for me. Don't reinvent the wheel unless you have to, right?
+I discovered <a href="http://www.fig.sh/">Fig</a>, which seemed to fit the bill. I
+read that it is being integrated into Docker itself, so it must be best
+of breed. Even if it weren't its future seems to be more certain than
+other tools. So, I stopped my tools search and used Fig without much
+consideration for other tools.</p>
+<h2>Lack of a useful feature in Fig</h2>
+<p>I quickly
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/a15c08c2fac1/testing/docker/fig-bmo/fig.yml">whipped up a fig.yml</a>
+and figured it would <em>just work</em>. Nope! Starting the containers from
+scratch using Fig resulted in an error. I wasn't sure what the error was
+at first because Fig didn't tell me. After some investigation, I
+realized that my <em>bmoweb</em> container (the container holding Apache + BMO
+code) was failing in its
+<a href="https://docs.docker.com/reference/builder/#entrypoint">entrypoint</a>
+command (that's a command that runs when the container starts up, but
+not the primary command a container runs - that's a bit confusing I know -
+read the docs). I added some debug statements and quickly realized that
+Bugzilla was erroring connecting to MySQL. Strange, I thought. Fig is
+essentially a DSL around manual <em>docker</em> commands, so I checked
+everything by typing everything into the shell. No error. Again on a new
+set of containers. No error. I thought maybe my environment variable
+handling was wrong - that the dynamically allocated IP address and port
+number of the linked MySQL container being passed to the <em>bmoweb</em>
+container weren't getting honored. I added some logging to disprove that
+theory. The wheels inside my brain spun for a little bit. And, aided by
+some real-time logging, I realized I was dealing with a race condition:
+Fig was starting the MySQL and <em>bmoweb</em> containers concurrently and
+<em>bmoweb</em> was attempting to access the MySQL server <em>before</em> MySQL had
+fully initialized and started listening on its TCP port! That made
+sense. And I think it's a reasonable optimization for Fig to start
+containers concurrently to speed up start time. But surely a tool that
+orchestrates different containers has considered the problem of
+dependencies and has a mechanism to declare them to prevent these race
+conditions. I check the online docs and there's nothing to be found.
+A red panda weeps. So, I change the <em>bmoweb</em> entrypoint script to
+wait until it can open a TCP socket to MySQL before actually using MySQL
+and sure enough, the race condition goes away and the <em>bmoweb</em> container
+starts just fine!</p>
+<p>OK, I'm real close now. I can feel it.</p>
+<h2>Bootstrapping Bugzilla</h2>
+<p>I start playing around with manually starting and stopping containers as
+part of a toy test. The good news is things appear to work. The bad news
+is it is extremely slow. It didn't take long for me to realize that the
+reason for the slowness is Bugzilla's bootstrap on first run. Bugzilla,
+like many complex applications, has a first run step that sets up
+database schema, writes out some files on the filesystem, inserts some
+skeleton data in the database, creates an admin user, etc. Much to my
+dismay this was taking a long time. Something on the order of 25 to 30
+seconds. And that's on a Haswell with plenty of RAM and an SSD. Oy. The
+way things are currently implemented would result in a 25 to 30 second
+delay when running every test. Change 1 line and wait say 25s for any
+kind of output. Are you kidding me?! Unacceptable. It violated my core
+goal of having tests that are quick to run. Again, humans should not
+have to wait on machines.</p>
+<p>I think about this problem for like half a second and the solution is
+obvious: take a snapshot of the bootstrapped images and start instances
+of that snapshot from tests. In other words, you perform the common
+bootstrap operations once and only once. And, you can probably do that
+outside the scope of running tests so that the same snapshot can be used
+across multiple invocations of the test harness. Sounds simple!
+To the Docker uninitiated, it sounds like the solution would be to move
+the BMO bootstrapping into the Dockerfile code so it gets executed at
+image creation time. Yes, that would be ideal. Unfortunately, when
+building images via Dockerfile, you can't tell Docker to link that image
+to another container. Without container linking, you can't have MySQL.
+Without MySQL, you can't do BMO bootstrap. So, BMO bootstrap must be
+done during container startup. And in Docker land, that means putting it
+as part of your entrypoint script (where it was conveniently already
+located for this reason).</p>
+<h2>Talking Directly to the Docker API</h2>
+<p>Of course, the tools that I found that help with Docker image building
+and container orchestration don't seem to have an answer for this
+<em>create a snapshot of a bootstrapped container</em> problem. I'm sure
+<em>someone</em> has solved this problem. But in my limited searching, I
+couldn't find anything. And, I figured the problem would be easy enough
+to solve manually, so I set about creating a script to do it. I'm not a
+huge fan of shell script for automation. It's hard to debug and simple
+things can be hard and hard things can be harder. Plus, why solve
+solutions such as parsing output for relevant data when you can talk to
+an API directly and get native types. Since the existing
+test harness automation in version-control-tools was written in Python,
+I naturally decided to write some Python to create the bootstrapped
+images. So, I do a PyPI search and discover
+<a href="https://pypi.python.org/pypi/docker-py">docker-py</a>, a Python client
+library to the
+<a href="https://docs.docker.com/reference/api/docker_remote_api/">Docker Remote API</a>,
+an HTTP API that the Docker daemon runs and is what the <em>docker</em> CLI
+tool itself uses to interface with Docker. Good, now I have access to
+the full power of Docker and am not limited by what the <em>docker</em> CLI may
+not expose. So, I spent some time looking at source and the Docker
+Remote API documentation to get an understanding of my new abilities and
+what I'd need to do. I was pleasantly surprised to learn that the
+<em>docker</em> CLI is pretty similar to the Remote API and the Python API
+was similar as well, so the learning was pretty shallow. Yay for
+catching a break!</p>
+<h2>Confusion Over Container Stopping</h2>
+<p>I wrote some Python for building the BMO images, launching the
+containers, committing the result, and saving state to disk (so it could
+be consulted later - preventing a bootstrap by subsequent consumers).
+This was pleasantly smooth at first, but I encountered some bumps along
+the way. First, I didn't have a complete grasp on the differences
+between <em>stop</em> and <em>kill</em>. I was seeing some weird behavior by MySQL
+on startup and didn't know why. Turns out I was forcefully killing the
+container after bootstrap via the <em>kill</em> API and this was sending
+a <em>SIGKILL</em> to MySQL, effectively causing unclean shutdown. After some
+documentation reading, I realized <em>stop</em> is the better API - it issues
+<em>SIGTERM</em>, waits for a grace period, then issues <em>SIGKILL</em>. Issuing
+<em>SIGTERM</em> made MySQL shut down gracefully and this issue stemming from
+my ignorance was resolved. (If anyone from Docker is reading, I think
+the help output for <em>docker kill</em> should mention the forcefullness of
+the command versus <em>stop</em>. Not all of us remember the relative
+forcefullness of the POSIX signals and having documentation reinforce
+their cryptic meaning could help people select the proper command.)
+A few lines of Python later and I was talking directly to the Docker
+Remote API, doing everything I needed to do to save (<em>commit</em> in Docker
+parlance) a bootstrapped BMO environment for re-use among multiple
+tests.</p>
+<p>It was pretty easy to hook the bootstrapped images up to a single test.
+Just load the bootstrapped image IDs from the config file and start new
+containers based on them. That's Docker 101 (except I was using Python
+to do everything).</p>
+<h2>Concurrent Execution Confuses Bugzilla</h2>
+<p>Now that I could start Dockerized BMO from a single test, it was time to
+make things work concurrently. I hooked Docker up to a few tests and
+launched them in parallel to see what would happen. The containers
+appeared to start just fine! Great anticipation on my part to
+design for concurrency from the beginning, I thought. It appeared I was
+nearly done. Victory was near. So, I changed some tests to actually
+interact with BMO running from Docker. (Up until this point I was merely
+starting containers, not doing anything with them.) Immediately I see
+errors. <em>Cannot connect to Bugzilla http://... connection refused.</em> Huh?
+It took a few moments, but I realized the experience I had with MySQL
+starting and this error were very similar. I changed my <em>start BMO
+containers</em> code to wait for the HTTP server's TCP socket to start
+accepting connections before returning control and sure enough, I was
+able to make HTTP requests against Bugzilla running in Docker! Woo!</p>
+<p>Next step, make an authenticated query against Bugzilla running in
+Docker. HTTP request completes... with an internal server error. What?!
+I successfully browsed BMO from containers days before and was able to
+log in just fine - this shouldn't be happening. This problem took me
+ages to diagnose. I traced every step of provisioning and couldn't
+figure out what was going on. After resorting to print debugging in
+nearly every component, including Bugzilla's Perl code itself, I found
+the culprit: Bugzilla wasn't liking the dynamic nature of the MySQL and
+HTTP endpoints. You see, when you start Docker containers, network
+addresses change. The IP address assigned to the container is whatever
+is available to Docker at the time the container was started. Likewise
+the IP address and port number of linked services can change. So, your
+container entrypoint has to deal with this dynamic nature of addresses.
+For example, if you have a configuration file, you need to update that
+configuration file on every run with the proper network address info.
+My Bugzilla entrypoint script was doing this. Or so I thought. It turns
+out that Bugzilla's bootstrap process has multiple config files. There's
+an <em>answers</em> file that provides static answers to questions asked when
+running the bootstrap script (<em>checksetup.pl</em>). <em>checksetup.pl</em> will
+produce a <em>localconfig</em> file (actually a Perl script) containing all
+that data. There's also a <em>data/params</em> file containing yet more
+configuration options. And, the way I was running bootstrap,
+<em>checksetup.pl</em> refused to update files with new values. I initially had
+the entrypoint script updating only the answers file and running
+<em>checksetup.pl</em>, thinking <em>checksetup.pl</em> would update localconfig if
+the answers change. Nope! <em>checksetup.pl</em> only appears to update
+<em>localconfig</em> if <em>localconfig</em> is missing a value. So, here my
+entrypoint script was, successully calling <em>checksetup.pl</em> with the
+proper network values, which <em>checksetup.pl</em> was more than happy to use.
+But when I started the web application, it used the old values from
+<em>localconfig</em> and <em>data/params</em> and blew up. Derp. So, to have
+dynamic MySQL hosts and ports and a dynamic self-referential HTTP URL, I
+needed to manually update <em>localconfig</em> and <em>data/params</em> during the
+entrypoint script. The entrypoint script now
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/a15c08c2fac1/testing/docker/builder-bmoweb/entrypoint.py#l157">rewrites Perl scripts</a>
+during container load to reflect appropriate variables. Oy.</p>
+<h2>Resource Constraints</h2>
+<p>At some point I got working BMO containers running concurrently from
+multiple tests. This was a huge milestone. But it only revealed my next
+problem: resource constraints. The running containers were consuming
+gobs of memory and I couldn't run more than 2 or 3 tests concurrently
+before running out of memory. Before, I was able to run 8 tests
+concurrently no problem. Well crap, I just slowed down the test harness
+significantly by reducing concurrency. No bueno.</p>
+<p>Some quick investigation revealed the culprit was MySQL and Apache being
+greedier than they needed to be. MySQL was consuming 1GB RSS on start.
+Apache was something like 350 MB. It had been a while since I ran a
+MySQL server, so I had to scour the net for settings to put MySQL on a
+diet. The results were not promising. I knew enough about MySQL to know
+that the answers I found had similar quality to comments on the php.net
+function documentation circa 2004 (it was not uncommon to see things
+like SQL injection in the MySQL pages back then - who knows, maybe
+that's still the case). Anyway, a little tuning later and I was able to
+get MySQL using a few hundred MB RAM and I reduced the Apache worker
+pool to something reasonable (maybe 2) to free up enough memory to be
+able to run tests with the desired concurrency again. If using Docker as
+part of testing ever takes off, I imagine there will be two flavors of
+every container: low memory and regular. I'm not running a production
+service here: I'll happily trade memory for high-end performance as long
+as it doesn't impact my tests too much.</p>
+<h2>Caching, Invalidating, and Garbage Collecting Bootstrapped Images</h2>
+<p>As part of iterating on making BMO bootstrap work, I encountered another
+problem: knowing when to perform a bootstrap. As mentioned earlier,
+bootstrap was slow: 25 to 30 seconds. While I had reduced the cost of
+bootstrap to at most once per test suite execution (as opposed to once
+per test), there was still the potential for a painful 25-30s delay when
+running tests. Unacceptable! Furthermore, when I changed how bootstrap
+worked, I needed a way to invalidate the previous bootstrapped image.
+Otherwise, we may use an outdated bootstrapped image that doesn't
+represent the environment it needs to and test execution would fail. How
+should I do this?</p>
+<p>Docker has considered this problem and they have a solution: <em>build
+context</em>. When you do a <em>docker build</em>, Docker takes all the files from
+the directory containing the <em>Dockerfile</em> and makes them available to
+the environment doing the building. If you <em>ADD</em> one of these files in
+your Dockerfile, the image ID will change if the file changes,
+invalidating the cache used by Docker to build images. So, if I <em>ADD</em>ed
+the scripts that perform BMO bootstrap to my Docker images, Docker would
+automagically invalidate the built images and force a bootstrap for me.
+Nice! Unfortunately, <em>docker build</em> doesn't allow you to add files
+outside of the current directory to the build context. Internet
+sleuthing reveals the solution here is to copy things to a temporary
+directory and run <em>docker build</em> from that. Seriously? Fortunately, I
+was using the Docker API directly via Python. And that API simply takes
+an archive of files. And since you can create archives dynamically
+inside Python using e.g.
+<a href="https://docs.python.org/2/library/tarfile.html">tarfile</a>, it wasn't too
+difficult to build proper custom context archives that contained my extra
+data that could be used to invalidate bootstrapped images. I threw some
+simple <em>ADD</em> directives into my Dockerfiles and now I got bootstrapped
+image invalidation!</p>
+<p>To avoid having to perform bootstrap on every test run, I needed a
+mapping between the base images and the bootstrapped result. I ended up
+storing this in a simple JSON file. I realize now I could have queried
+Docker for images having the base image as its parent since there is
+supposed to be a 1:1 relationship between them. I may do this as a
+follow-up.</p>
+<p>With the look-up table in place, ensuring bootstrapped images were
+current involved doing a couple <em>docker build</em>s, finding the
+bootstrapped images from those base images, and doing the bootstrap if
+necessary. If everything is up-to-date, <em>docker build</em> finishes quickly
+and we have less than 1s of delay. Very acceptable. If things aren't
+current, well, there's not much you can do there if accuracy is
+important. I was happy with where I was.</p>
+<p>Once I started producing bootstrapped images every time the code
+impacting the generation of that image changed, I ran into a new
+problem: garbage collection. All those old bootstrapped images were
+piling up inside of Docker! I needed a way to prune them. Docker has
+support for associating a <em>repository</em> and a <em>tag</em> with images. Great, I
+thought, I'll just associate all images with a well-defined repository,
+leave the tag blank (because it isn't really relevant), and garbage
+collection will iterate over all images in to-be-pruned repositories
+and delete all but the most recent one. Of course, this simple solution
+did not work. As far as I can tell, Docker doesn't really let you have
+multiple untagged images. You can set a repository with no tag and
+Docker will automagically assign the <em>latest</em> tag to that image. But the
+second you create a new image in that repository, the original image
+loses that repository association. I'm not sure if this is by design or
+a bug, but it feels wrong to me. I want the ability to associate <em>tags</em>
+with images (and containers) so I can easily find all entities in a
+logical set. It seemed to me that <em>repository</em> facilitated that need
+(albeit with the restriction of only associating 1 identifier per
+image). My solution here was to assign type 1 UUIDs to the tag field for
+each image. This forced Docker to retain the <em>repository</em> association
+when new images were created. I chose type 1 UUIDs so I can later
+extract the time component embedded within and do time-based garbage
+collection e.g. <em>delete all images created more than a week ago</em>.</p>
+<h2>Making Things Work in Jenkins/Ubuntu</h2>
+<p>At about this point, I figured things were working well enough on my
+boot2docker machine that it was time to update the Jenkins virtual
+machine / Vagrant configuration to run Docker. So, I hacked up the
+provisioner to install the <em>docker.io</em> package and tried to run things.
+First, I had to update code that talks to Docker to know where Docker is
+in an Ubuntu VM. Before, I was keying things off DOCKER_HOST, which I
+guess is used by the <em>docker</em> CLI and boot2docker reminds you to set.
+Easy enough. When I finally got things talking to Docker, my scripts
+threw a cryptic error when talking to Docker. Huh? This worked in
+boot2docker! When in doubt, always check your package versions. Sure
+enough, Ubuntu was installing an old Docker version. I added the Docker
+Apt repo to the Vagrant provisioner and tried again. Bingo - working
+Docker in an Ubuntu VM!</p>
+<h2>Choice of storage engines</h2>
+<p>I started building the BMO Docker images quickly noticed something:
+building images was horribly slow. Specifically, the part where new
+images are committed was taking seemingly forever. 5 to 8 seconds or
+something. Ugh. This wouldn't really bother me except due to subsequent
+issues, I found myself changing images enough as part of debugging that
+image building latency became a huge time sink. I felt I was spending
+more time waiting for layers to commit than making progress. So, I
+I decided to do something about it. I remembered glancing at an
+<a href="https://developerblog.redhat.com/2014/09/30/overview-storage-scalability-docker/">overview of storage options in Docker</a>
+the week or two prior. I instinctively pinned the difference on
+different storage drivers between boot2docker and Ubuntu. Sure enough,
+boot2docker was using aufs and Ubuntu was using devicemapper. OK, now I
+identified a potential culprit. Time to test the theory. A few
+paragraphs into that blog post, I see a sorted list of storage driver
+priorities. I see aufs first, btrfs second, and devicemapper third. I
+know aufs has kernel inclusion issues (plus a nasty data leakage bug). I
+don't want that. devicemapper is slow. I figured the list is ordered for
+a reason and just attempted to use btrfs without really reading the
+article. Sure enough, btrfs is much faster at committing images
+than devicemapper. And, it isn't aufs. While images inside btrfs are
+building, I glance over the article and come to the conclusion that
+btrfs is in fact good enough for me.</p>
+<p>So now I'm running Docker on btrfs on Ubuntu and Docker on aufs in
+boot2docker. Hopefully that will be the last noticable difference
+between host environments. After all, Docker is supposed to abstract
+all this away, right? I wish.</p>
+<h2>The Mystery of Inconsistent State</h2>
+<p>It was here that I experienced the most baffling, mind bending puzzle
+yet. As I was trying to get things working on the Jenkins/Ubuntu VM -
+things that had already been proved out in boot2docker - I was running
+into inexplicable issues during creation of the bootstrapped BMO
+containers. It seemed that my bootstrapped containers were somehow
+missing data. It appeared as if bootstrap had completed but data written
+during bootstrap failed to write. You start the committed/bootstrapped
+image and bootstrap had obviously completed partially, but it appeared
+to have never finished. Same Docker version. Same images. Same build
+scripts. Only the host environment was different. Ummmm, Bueller?</p>
+<p>This problem had me totally and completely flabbergasted. My brain
+turned to mush exhausting possibilities. My initial instinct was this
+was a filesystem buffering problem. Different storage driver (btrfs vs
+aufs) means different semantics in how data is flushed, right? I once
+again started littering code with print statements to record the presence
+or non-presence of files and content therein. MySQL wasn't seeing all its
+data, so I double and triple check I'm shutting down MySQL correctly.
+Who knows, maybe one of the options I used to trim the fat from MySQL
+removed some of the safety from writing data and unclean shutdown is
+causing MySQL to lose data?</p>
+<p>While I was investigating this problem, I noticed an additional oddity:
+I was having trouble getting reliable debug output from running
+containers (<em>docker log -f</em>). It seemed as if I was losing log
+events. I could tell from the state of a container that something
+happened, but I was seeing no evidence from <em>docker logs -f</em> that that
+thing actually happened. Weird! On a hunch, a threw some
+<em>sys.stdout.flush()</em> calls in my Python scripts, and sure enough my
+missing output started arriving! Pipe buffering strikes again.
+So, now we have
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/a15c08c2fac1/testing/docker/builder-bmoweb/entrypoint.py#l18">dirty</a>
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/a15c08c2fac1/testing/docker-control.py#l48">hacks</a>
+in all the Python scripts related to Docker to unbuffer stdout to
+prevent data loss. Don't ask how much time was wasted tracking down bad
+theories due to stdout output being buffered.</p>
+<p>Getting back to the problem at hand, I still hand Docker containers
+seemingly lose data. And it was only happening when Ubuntu/btrfs was
+the host environment for Docker. I eventually exhausted all leads in my
+<em>filesystem wasn't flushed</em> theory. At some point, I compared the logs
+of <em>docker logs -f</em> between boot2docker and Ubuntu and eventually
+noticed that the <em>bmoweb</em> container in Ubuntu wasn't printing as much.
+This wasn't obvious at first because the output from bootstrap on Ubuntu
+looked fine. Besides, the script that waits for bootstrap to complete
+waits for the Apache HTTP TCP socket to come alive before it gracefully
+stops the container and snapshots the bootstrapped result: bootstrap
+<em>must</em> be completing, ignore what <em>docker logs -f</em> says.</p>
+<p>Eventually I hit an impasse and resort to context dumping <em>everything</em>
+on IRC. Ben Kero is around and he picks up on something almost
+immediately. He simply says <em>... systemd?</em>. I knew almost instantly
+what he was referring to and knew the theory fit the facts. Do you know
+what I was doing wrong?</p>
+<p>I still don't know what and quite frankly I don't care, but something in
+my Ubuntu host environment had a trigger on the TCP port the HTTP server
+would be listening on. Remember, I was detecting bootstrap completion by
+waiting until a TCP socket could be opened to the HTTP server. As soon
+as that connection was established, we stopped the containers gracefully
+and took a snapshot of the bootstrapped result. Except on Ubuntu
+something was accepting that socket open, giving a false positive to
+my wait code, and triggering early shutdown. Docker issued the signal to
+stop the container gracefully, but it wasn't finished bootstrapping yet,
+so it forcefully killed the container, resulting in bootstrap being in
+a remarkably-consistent-across-runs inconsistent state. Changing the
+code from <em>wait on TCP socket</em> to <em>wait for valid HTTP response</em> fixed
+the problem. And just for good measure, I changed the code waiting on
+the MySQL server to also try to establish an actual connection to the
+MySQL application layer, not merely a TCP socket.</p>
+<p>After solving this mystery, I thought there's no way I could be so blind
+as to not see the container receiving the stop signal during bootstrap.
+So, I changed things back to prove to myself I wasn't on crack. No
+matter how hard I tried, I could not get the logs to show that the
+signal was received. I think what was happening was that my script was
+starting the container and issuing the graceful stop so quickly that it
+wasn't captured by log clients. Sure enough, adding some sleeps in the
+proper places made it possible to catch the events in action. In
+hindsight, I suppose I could have used <em>docker events</em> to shed some
+light on this as well. If Docker persisted logs/output from containers
+and allowed me to scroll back in time, I think this would have saved me.
+Although, there's a chance my entrypoint script wouldn't have informed
+me about the received signal. Perhaps <em>checksetup.pl</em> was ignoring it?
+What I really need is a unified event + log stream from Docker
+containers so I can debug exactly what's going on.</p>
+<h2>Everything is Working, Right?</h2>
+<p>After solving the inconsistent bootstrap state problem, things were
+looking pretty good. I had BMO bootstrapping and running from tests on
+both boot2docker and Ubuntu hosts. Tests were seeing completely
+independent environments and there were no race conditions. I was nearly
+done.</p>
+<p>So, I started porting more and more tests to Docker. I started running
+tests more and more. Things worked. Most of the time. But I'm still
+frustrated by periodic apparent bugs in Docker. For example, our
+containers periodically fail to shut down. Our images periodically fail
+to delete.</p>
+<p>During container shutdown and delete at the end of tests, we periodically
+see error messagess like the following:</p>
+<div class="pygments_murphy"><pre>docker.errors.APIError: 500 Server Error: Internal Server Error (&quot;Cannot destroy container f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255: Driver aufs failed to remove root filesystem f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255: rename /mnt/sda1/var/lib/docker/aufs/mnt/f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255 /mnt/sda1/var/lib/docker/aufs/mnt/f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255-removing: device or resource busy&quot;)
+</pre></div>
+
+<div class="pygments_murphy"><pre>500 Server Error: Internal Server Error (&quot;Cannot destroy container 7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: Unable to remove filesystem for 7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: remove /mnt/sda1/var/lib/docker/containers/7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: directory not empty&quot;)
+</pre></div>
+
+<p>Due to the way we're executing tests (Mercurial's .t test format), this
+causes the test's output to change and the test to fail. Sadness.</p>
+<p>I <em>think</em> these errors are limited to boot2docker/aufs. But we haven't
+executed enough test runs in the Jenkins/Ubuntu/btrfs VM yet to be sure.
+This definitely smells like a bug in Docker and it is very annoying.</p>
+<h2>Conclusion</h2>
+<p>After much wrangling and going deeper in a rabbit hole than I ever felt
+was possible, I finally managed to get BMO running inside Docker as part
+of our test infrastructure. We're now building tests for complicated
+components that touch Mercurial, Review Board, and Bugzilla and people
+are generally happy with how things work.</p>
+<p>There are still a handful of bugs, workarounds, and components that
+aren't as optimal as I would like them to be. But you can't always have
+perfection.</p>
+<p>My takeaway from this ordeal is that Docker still has a number of
+bugs and user experience issues to resolve. I <strong>really</strong> want to support
+Docker and to see it succeed. But every time I try doing something
+non-trivial with Docker, I get bit hard. Yes, some of the
+issues I experienced were due to my own ignorance. But at the same time,
+if one of Docker's mantras is about simplicity and usability, then
+should there be such gaping cracks for people like me to fall through?</p>
+<p>In the end, the promise of Docker fits my use case almost perfectly. I
+know the architecture is a good fit for testing. We will likely stick
+with Docker, especially now that I've spent the time to make it work. I
+really wish this project would have taken a few days, not a few weeks.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name></name>
@@ -814,74 +1487,5 @@ in <em>~/.mozbuild/version-control-tools</em>.</p>
 <p>It is completely safe to install <em>firefoxtree</em> globally: the extension
 will only modify behavior of repositories that are clones of Firefox
 repositories.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name></name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Update Bugzilla Automatically on Push]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push" />
-    <id>http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push</id>
-    <updated>2014-06-30T23:15:00Z</updated>
-    <published>2014-06-30T23:15:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Update Bugzilla Automatically on Push]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push"><![CDATA[<p>Do you manually create Bugzilla comments when you push changes to a
-Firefox source repository? Yeah, I do too.</p>
-<p>That's always annoyed me.</p>
-<p>It is screaming to be automated.</p>
-<p>So I automated it.</p>
-<p>You can too. From a Firefox source checkout:</p>
-<p>$ ./mach mercurial-setup</p>
-<p>That should clone the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-repository into <em>~/.mozbuild/version-control-tools</em>.</p>
-<p>Then, add the following to your <em>~/.hgrc</em> file:</p>
-<div class="pygments_murphy"><pre><span class="k">[extensions]</span>
-<span class="na">bzpost</span> <span class="o">=</span> <span class="s">~/.mozbuild/version-control-tools/hgext/bzpost</span>
-
-<span class="k">[bugzilla]</span>
-<span class="na">username</span> <span class="o">=</span> <span class="s">me@example.com</span>
-<span class="na">password</span> <span class="o">=</span> <span class="s">password</span>
-</pre></div>
-
-<p>Now, when you <em>hg push</em> to a Firefox repository, the commit URLs will
-get posted to referenced bugs automatically.</p>
-<p>Please note that pushing to <em>release</em> trees such as mozilla-central is
-not yet supported. In due time.</p>
-<p>Please let me know if you run into any issues.</p>
-<h2>Estimated Cost Savings</h2>
-<p>Assuming the following:</p>
-<ul>
-<li>It costs Mozilla $200,000 per year per full-time engineer working on
-  Firefox (a general rule of thumb for non-senior positions is that your
-  true employee cost is 2x your base salary).</li>
-<li>Each full-time engineer works 40 hours per week for 46 weeks out of
-  the year.</li>
-<li>It takes 15 seconds to manually update Bugzilla for each push.</li>
-<li>There are 20,000 pushes requiring Bugzilla attention per year.</li>
-</ul>
-<p>We arrive at the following:</p>
-<ul>
-<li>Cost per employee per hour worked: $108.70</li>
-<li>Total person-time to manually update Bugzilla: ~83 hours</li>
-<li>Total cost to manually update Bugzilla after push: $9,058.</li>
-</ul>
-<p>I was intentionally conservative with all the inputs except time
-worked (I think many of us work more than 40 hour weeks).
-My estimates also don't take into account the lost productivity
-associated with getting mentally derailed by interacting with Bugzilla.
-With this in mind, I could very easily justify a total cost at
-least 2x-3x higher.</p>
-<p>It took me maybe 3 hours to crank this out. I could spend another few
-weeks on it full time and Mozilla would still save money (assuming
-100% adoption).</p>
-<p>I encourage people to run their own cost calculations on other tasks
-that can be automated. Inefficiencies multiplied by millions of dollars
-(your collective employee cost) result in large piles of money. Not
-having tools (even simple ones like this) is equivalent to setting
-loads of cash on fire.</p>]]></content>
   </entry>
 </feed>
