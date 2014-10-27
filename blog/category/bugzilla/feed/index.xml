@@ -10,19 +10,19 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 27 Oct 2014 22:25:37 GMT</pubDate>
+    <pubDate>Mon, 27 Oct 2014 22:31:33 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
     <item>
       <title>Implications of Using Bugzilla for Firefox Patch Development</title>
-      <link>http://gregoryszorc.com/blog/2014/11/27/implications-of-using-bugzilla-for-firefox-patch-development</link>
-      <pubDate>Thu, 27 Nov 2014 15:27:00 PST</pubDate>
+      <link>http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development</link>
+      <pubDate>Mon, 27 Oct 2014 15:27:00 PDT</pubDate>
       <category><![CDATA[Review Board]]></category>
       <category><![CDATA[Bugzilla]]></category>
       <category><![CDATA[Mozilla]]></category>
       <category><![CDATA[code review]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/11/27/implications-of-using-bugzilla-for-firefox-patch-development</guid>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development</guid>
       <description>Implications of Using Bugzilla for Firefox Patch Development</description>
       <content:encoded><![CDATA[<p>Mozilla is very close to rolling out a new
 <a href="http://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">code review tool based on Review Board</a>.

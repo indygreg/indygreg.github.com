@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-27T22:25:37Z</updated>
+  <updated>2014-10-27T22:31:33Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -19,16 +19,16 @@
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Implications of Using Bugzilla for Firefox Patch Development]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/11/27/implications-of-using-bugzilla-for-firefox-patch-development" />
-    <id>http://gregoryszorc.com/blog/2014/11/27/implications-of-using-bugzilla-for-firefox-patch-development</id>
-    <updated>2014-11-27T15:27:00Z</updated>
-    <published>2014-11-27T15:27:00Z</published>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development" />
+    <id>http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development</id>
+    <updated>2014-10-27T15:27:00Z</updated>
+    <published>2014-10-27T15:27:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="Review Board" />
     <category scheme="http://gregoryszorc.com/blog" term="Bugzilla" />
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
     <category scheme="http://gregoryszorc.com/blog" term="code review" />
     <summary type="html"><![CDATA[Implications of Using Bugzilla for Firefox Patch Development]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/11/27/implications-of-using-bugzilla-for-firefox-patch-development"><![CDATA[<p>Mozilla is very close to rolling out a new
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development"><![CDATA[<p>Mozilla is very close to rolling out a new
 <a href="http://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">code review tool based on Review Board</a>.
 When I became involved in the project, I viewed it as an opportunity to
 start from a clean slate and design the ideal code development workflow
