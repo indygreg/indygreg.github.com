@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-27T22:31:33Z</updated>
+  <updated>2014-10-27T23:29:55Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -98,7 +98,7 @@ focus on the high-level feedback. This is very difficult for some people.
 It is not an ideal disposition.
 <a href="http://benjamin.smedbergs.us/blog/2014-10-22/how-i-do-code-reviews-at-mozilla/">Benjamin Smedberg's recent post on code
 review</a>
-indirectly talks about some of this by describing his has rational
+indirectly talks about some of this by describing his rational
 approach of tackling high-level first.</p>
 <p>As review iterations occur, the bug devolves into a mix of comments
 related to high and low-level comments. It thus becomes harder and
@@ -128,7 +128,7 @@ linear series of flat text blobs. When you are commenting on code, you
 do get some code context printed out. But everything is plain text.</p>
 <p>The result of this is that tracking the progress on individual items of
 feedback - individual branches in our conceptual tree - is difficult. Code
-authors must pour through text comments and manually keep an inventory
+authors must pore through text comments and manually keep an inventory
 of their progress towards addressing the comments. Some people copy the
 review comment into another text box or text editor and delete items once
 they've fixed them locally! And, when it comes time to review the new
