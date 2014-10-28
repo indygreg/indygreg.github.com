@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-28T15:41:23Z</updated>
+  <updated>2014-10-28T18:06:07Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -15,7 +15,7 @@
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Using Docker to Build Firefox]]></title>
@@ -136,7 +136,7 @@ Linux.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Mozilla Build System Brain Dump]]></title>
@@ -426,7 +426,7 @@ something to say.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Bulk Analysis of Mozilla's Build and Test Data]]></title>
@@ -484,7 +484,7 @@ tool.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Omnipresent mach]]></title>
@@ -522,7 +522,7 @@ he saw it through from conception to implementation.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[moz.build Files and the Firefox Build System]]></title>
@@ -810,7 +810,7 @@ away.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Changes to How mach Loads mozconfigs]]></title>
@@ -845,7 +845,7 @@ output to file a bug. Please attach or link to your mozconfig.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Firefox Build System Presentation]]></title>
@@ -873,7 +873,7 @@ they don't work everywhere.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Mach Has Landed]]></title>
@@ -1042,7 +1042,7 @@ mach:</p>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Bootstrap Your System to Build Firefox]]></title>
@@ -1094,7 +1094,7 @@ I'm optimistic it will land in the next few weeks.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Visual Studio Project Generation for mozilla-central]]></title>

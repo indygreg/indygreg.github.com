@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-28T15:41:23Z</updated>
+  <updated>2014-10-28T18:06:07Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -15,7 +15,7 @@
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[MacBook Pro Firefox Build Times Comparison]]></title>
@@ -409,7 +409,7 @@ opportunity to upgrade, do it.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Distributed Compiling and Firefox]]></title>
@@ -534,7 +534,7 @@ work around distributed compiling, please have it tracked under
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[The State of the Firefox Build System (2013 Q3 Review)]]></title>
@@ -824,7 +824,7 @@ hard work. Wish us luck. Please help out where you can.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Build System Status Update 2013-05-14]]></title>
@@ -984,7 +984,7 @@ MozillaBuild Windows development environment. Cross your fingers.</p>]]></conten
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Mozilla Build System Brain Dump]]></title>
@@ -1274,7 +1274,7 @@ something to say.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[moz.build Files and the Firefox Build System]]></title>
@@ -1562,7 +1562,7 @@ away.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Firefox Build System Presentation]]></title>
@@ -1590,7 +1590,7 @@ they don't work everywhere.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Visual Studio Project Generation for mozilla-central]]></title>
@@ -1692,7 +1692,7 @@ comments!</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Build Firefox Faster with Build Splendid]]></title>
@@ -1796,7 +1796,7 @@ Refresh early and often.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[mozilla-central Build Times]]></title>

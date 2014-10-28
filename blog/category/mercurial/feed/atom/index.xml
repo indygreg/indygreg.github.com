@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-28T15:41:23Z</updated>
+  <updated>2014-10-28T18:06:07Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -15,7 +15,7 @@
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[The Rabbit Hole of Using Docker in Automated Tests]]></title>
@@ -688,7 +688,7 @@ really wish this project would have taken a few days, not a few weeks.</p>]]></c
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Robustly Testing Version Control at Mozilla]]></title>
@@ -877,7 +877,7 @@ good knowing that I played a part in making this change.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Mozilla Mercurial Statistics]]></title>
@@ -906,7 +906,7 @@ Git, Bitbucket, and GitHub. Sounds like a good data mining expedition...</p>]]><
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[On Monolithic Repositories]]></title>
@@ -1048,7 +1048,7 @@ with monolithic repositories...</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Reproducing Mozilla's Mercurial Server]]></title>
@@ -1166,7 +1166,7 @@ tuned.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Submit Feedback about Mercurial]]></title>
@@ -1197,7 +1197,7 @@ please email me. gps@mozilla.com.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Mercurial hooks move and testing Mercurial]]></title>
@@ -1251,7 +1251,7 @@ some tests today!</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Please run mach mercurial-setup]]></title>
@@ -1274,7 +1274,7 @@ be surprised if we add a notification to mach to remind you to do this.</p>]]></
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Repository-Centric Development]]></title>
@@ -1404,7 +1404,7 @@ world. Stay tuned.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Updates to firefoxtree Mercurial extension]]></title>

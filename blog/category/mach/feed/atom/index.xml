@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-10-28T15:41:23Z</updated>
+  <updated>2014-10-28T18:06:07Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -15,7 +15,7 @@
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Review Board at Mozilla]]></title>
@@ -127,7 +127,7 @@ what the future could hold.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[mach now lives in mozilla-central]]></title>
@@ -157,7 +157,7 @@ familiar infrastructure for patch contribution.</p>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Mozilla Build System Brain Dump]]></title>
@@ -447,7 +447,7 @@ something to say.</p>]]></content>
   </entry>
   <entry>
     <author>
-      <name></name>
+      <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
     <title type="html"><![CDATA[Omnipresent mach]]></title>
