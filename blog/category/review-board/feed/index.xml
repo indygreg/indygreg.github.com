@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 27 Oct 2014 23:29:55 GMT</pubDate>
+    <pubDate>Tue, 28 Oct 2014 00:12:54 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -275,8 +275,8 @@ term (unless someone <em>yells</em> at you for not doing it). This is a generic
 problem applicable to all organizations and tools. This is a problem that
 culture must ultimately rectify. But our tools shouldn't reinforce the
 disposition towards laziness: they should reward best practices.</p>
-<p>I don't Bugzilla and our interactions with it do an adequate job rewarding
-good commit message writing. Chances are your mechanism for posting
+<p>I don't believe Bugzilla and our interactions with it do an adequate job
+rewarding good commit message writing. Chances are your mechanism for posting
 reviews to Bugzilla or posting the publishing of a commit to Bugzilla
 (pasting the URL in the simple case) brings up a text box for you to type
 <em>review notes</em>, a patch description, or extra context for the landing. These
