@@ -10,10 +10,28 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 28 Oct 2014 18:06:07 GMT</pubDate>
+    <pubDate>Thu, 30 Oct 2014 18:14:54 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Soft Launch of MozReview</title>
+      <link>http://gregoryszorc.com/blog/2014/10/30/soft-launch-of-mozreview</link>
+      <pubDate>Thu, 30 Oct 2014 11:15:00 PDT</pubDate>
+      <category><![CDATA[Review Board]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[code review]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/10/30/soft-launch-of-mozreview</guid>
+      <description>Soft Launch of MozReview</description>
+      <content:encoded><![CDATA[<p>We performed a soft launch of MozReview: Mozilla's new code review tool
+yesterday!</p>
+<p>What does that mean? How do I use it? What are the features?
+How do I get in touch or contribute? These are all great questions.
+The answers to those and more can all be found in the
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview documentation</a>.
+If they aren't, it's a bug in the documentation. File a bug or submit a
+patch. Instructions to do that are in the documentation.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Implications of Using Bugzilla for Firefox Patch Development</title>
       <link>http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development</link>

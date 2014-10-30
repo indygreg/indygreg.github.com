@@ -51,6 +51,65 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-hooks-move-and-testing-mercurial"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial" rel="bookmark" title="Permanent Link to Mercurial hooks move and testing Mercurial">Mercurial hooks move and testing Mercurial</a></h2>
+  <small>August 18, 2014 at 03:10 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mozilla has a number of source repositories under
+<a href="https://hg.mozilla.org/hgcustom/">https://hg.mozilla.org/hgcustom/</a>
+that cumulatively define how version control works at Mozilla.</p>
+<p>Back in February, I
+<a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools/">launched an effort</a>
+to establish a unified Mercurial repository for all this code. That
+repository is <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+and it has slowly grown.</p>
+<p>The <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1052201">latest addition</a>
+to this repository is the import of the <em>hghooks</em> repository. This
+now-defunct repository contained all the server-side Mercurial hooks
+that Mozilla has deployed on <em>hg.mozilla.org</em>.</p>
+<p>Soon after that repository was imported into version-control-tools, we
+started executing the hooks tests as part of the existing test suite in
+version-control-tools. This means we get
+<a href="https://ci.mozilla.org/job/version-control-tools/">continuous integration</a>,
+<a href="https://ci.mozilla.org/job/version-control-tools/coveragepy/?">code coverage</a>,
+and the ability to run tests against multiple versions of Mercurial
+(2.5.4 through 3.1) in one go.</p>
+<p><strong>This is new for Mozilla and is a big deal.</strong> For the first time, we
+have a somewhat robust testing environment for Mercurial that is testing
+things we run in production.</p>
+<p>But we still have a long way to go. The ultimate goal is to get everything
+rolled into the version-control-tools repository and to write tests for
+everything people rely on. We also want the test environment to look as
+much like our production environment as possible. Once that's in place,
+most of the fear and uncertainty around upgrading or changing the server
+goes away. This will allow Mozilla to move faster and issues like our
+recent server problems can be diagnosed more quickly (Mercurial has
+added better logging in newer versions).</p>
+<p>If you want to contribute to this effort, <strong>please write tests for
+behavior you rely on.</strong> We're now relying on Mercurial's test harness
+and <a href="http://mercurial.selenic.com/wiki/WritingTests">test types</a>
+rather than low-level unit tests. This means our tests are now running
+a Mercurial server and running actual Mercurial commands. The tests thus
+explicitly verify that client-seen behavior is exactly as you intend.
+For an example, see the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/abc1c5bdca9b/hghooks/tests/test-prevent-webidl.t">WebIDL hook test</a>.</p>
+<p>So what are you waiting for? Find some gaps in code coverage and write
+some tests today!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="please-run-mach-mercurial-setup"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/07/25/please-run-mach-mercurial-setup" rel="bookmark" title="Permanent Link to Please run mach mercurial-setup">Please run mach mercurial-setup</a></h2>
   <small>July 25, 2014 at 10:00 AM | categories: 
@@ -457,80 +516,6 @@ running smoothly.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/15/python-packaging-do's-and-don'ts#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="update-bugzilla-automatically-on-push"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/06/30/update-bugzilla-automatically-on-push" rel="bookmark" title="Permanent Link to Update Bugzilla Automatically on Push">Update Bugzilla Automatically on Push</a></h2>
-  <small>June 30, 2014 at 11:15 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Do you manually create Bugzilla comments when you push changes to a
-Firefox source repository? Yeah, I do too.</p>
-<p>That's always annoyed me.</p>
-<p>It is screaming to be automated.</p>
-<p>So I automated it.</p>
-<p>You can too. From a Firefox source checkout:</p>
-<p>$ ./mach mercurial-setup</p>
-<p>That should clone the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-repository into <em>~/.mozbuild/version-control-tools</em>.</p>
-<p>Then, add the following to your <em>~/.hgrc</em> file:</p>
-<div class="pygments_murphy"><pre><span class="k">[extensions]</span>
-<span class="na">bzpost</span> <span class="o">=</span> <span class="s">~/.mozbuild/version-control-tools/hgext/bzpost</span>
-
-<span class="k">[bugzilla]</span>
-<span class="na">username</span> <span class="o">=</span> <span class="s">me@example.com</span>
-<span class="na">password</span> <span class="o">=</span> <span class="s">password</span>
-</pre></div>
-
-<p>Now, when you <em>hg push</em> to a Firefox repository, the commit URLs will
-get posted to referenced bugs automatically.</p>
-<p>Please note that pushing to <em>release</em> trees such as mozilla-central is
-not yet supported. In due time.</p>
-<p>Please let me know if you run into any issues.</p>
-<h2>Estimated Cost Savings</h2>
-<p>Assuming the following:</p>
-<ul>
-<li>It costs Mozilla $200,000 per year per full-time engineer working on
-  Firefox (a general rule of thumb for non-senior positions is that your
-  true employee cost is 2x your base salary).</li>
-<li>Each full-time engineer works 40 hours per week for 46 weeks out of
-  the year.</li>
-<li>It takes 15 seconds to manually update Bugzilla for each push.</li>
-<li>There are 20,000 pushes requiring Bugzilla attention per year.</li>
-</ul>
-<p>We arrive at the following:</p>
-<ul>
-<li>Cost per employee per hour worked: $108.70</li>
-<li>Total person-time to manually update Bugzilla: ~83 hours</li>
-<li>Total cost to manually update Bugzilla after push: $9,058.</li>
-</ul>
-<p>I was intentionally conservative with all the inputs except time
-worked (I think many of us work more than 40 hour weeks).
-My estimates also don't take into account the lost productivity
-associated with getting mentally derailed by interacting with Bugzilla.
-With this in mind, I could very easily justify a total cost at
-least 2x-3x higher.</p>
-<p>It took me maybe 3 hours to crank this out. I could spend another few
-weeks on it full time and Mozilla would still save money (assuming
-100% adoption).</p>
-<p>I encourage people to run their own cost calculations on other tasks
-that can be automated. Inefficiencies multiplied by millions of dollars
-(your collective employee cost) result in large piles of money. Not
-having tools (even simple ones like this) is equivalent to setting
-loads of cash on fire.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/2">« Previous Page</a>
   --  

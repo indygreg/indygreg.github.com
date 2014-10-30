@@ -10,10 +10,28 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 28 Oct 2014 18:06:07 GMT</pubDate>
+    <pubDate>Thu, 30 Oct 2014 18:14:54 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Soft Launch of MozReview</title>
+      <link>http://gregoryszorc.com/blog/2014/10/30/soft-launch-of-mozreview</link>
+      <pubDate>Thu, 30 Oct 2014 11:15:00 PDT</pubDate>
+      <category><![CDATA[Review Board]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[code review]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/10/30/soft-launch-of-mozreview</guid>
+      <description>Soft Launch of MozReview</description>
+      <content:encoded><![CDATA[<p>We performed a soft launch of MozReview: Mozilla's new code review tool
+yesterday!</p>
+<p>What does that mean? How do I use it? What are the features?
+How do I get in touch or contribute? These are all great questions.
+The answers to those and more can all be found in the
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview documentation</a>.
+If they aren't, it's a bug in the documentation. File a bug or submit a
+patch. Instructions to do that are in the documentation.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Implications of Using Bugzilla for Firefox Patch Development</title>
       <link>http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development</link>
@@ -1773,55 +1791,6 @@ Mozilla-specific or not. Comparisons to Git, GitHub and other
 version control tools and services are also welcome.</p>
 <p>If you have feedback that can't be captured in that moderator tool,
 please email me. gps@mozilla.com.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Mercurial hooks move and testing Mercurial</title>
-      <link>http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial</link>
-      <pubDate>Mon, 18 Aug 2014 15:10:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial</guid>
-      <description>Mercurial hooks move and testing Mercurial</description>
-      <content:encoded><![CDATA[<p>Mozilla has a number of source repositories under
-<a href="https://hg.mozilla.org/hgcustom/">https://hg.mozilla.org/hgcustom/</a>
-that cumulatively define how version control works at Mozilla.</p>
-<p>Back in February, I
-<a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools/">launched an effort</a>
-to establish a unified Mercurial repository for all this code. That
-repository is <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-and it has slowly grown.</p>
-<p>The <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1052201">latest addition</a>
-to this repository is the import of the <em>hghooks</em> repository. This
-now-defunct repository contained all the server-side Mercurial hooks
-that Mozilla has deployed on <em>hg.mozilla.org</em>.</p>
-<p>Soon after that repository was imported into version-control-tools, we
-started executing the hooks tests as part of the existing test suite in
-version-control-tools. This means we get
-<a href="https://ci.mozilla.org/job/version-control-tools/">continuous integration</a>,
-<a href="https://ci.mozilla.org/job/version-control-tools/coveragepy/?">code coverage</a>,
-and the ability to run tests against multiple versions of Mercurial
-(2.5.4 through 3.1) in one go.</p>
-<p><strong>This is new for Mozilla and is a big deal.</strong> For the first time, we
-have a somewhat robust testing environment for Mercurial that is testing
-things we run in production.</p>
-<p>But we still have a long way to go. The ultimate goal is to get everything
-rolled into the version-control-tools repository and to write tests for
-everything people rely on. We also want the test environment to look as
-much like our production environment as possible. Once that's in place,
-most of the fear and uncertainty around upgrading or changing the server
-goes away. This will allow Mozilla to move faster and issues like our
-recent server problems can be diagnosed more quickly (Mercurial has
-added better logging in newer versions).</p>
-<p>If you want to contribute to this effort, <strong>please write tests for
-behavior you rely on.</strong> We're now relying on Mercurial's test harness
-and <a href="http://mercurial.selenic.com/wiki/WritingTests">test types</a>
-rather than low-level unit tests. This means our tests are now running
-a Mercurial server and running actual Mercurial commands. The tests thus
-explicitly verify that client-seen behavior is exactly as you intend.
-For an example, see the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/abc1c5bdca9b/hghooks/tests/test-prevent-webidl.t">WebIDL hook test</a>.</p>
-<p>So what are you waiting for? Find some gaps in code coverage and write
-some tests today!</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
