@@ -193,6 +193,14 @@ involved.</p>
 <p>We need an alert on WSGI pool exhaustion. It took longer than it should
 have to identify this problem. However, now that we've encountered it,
 it should be obvious if/when it happens again.</p>
+<p>Firefox release automation is the largest single consumer of
+hg.mozilla.org. Since they are operating thousands of machines, any
+reduction in interaction or increase in efficiency will result in
+drastic load reductions on the server. Chris AtLee and Jordan Lund
+have been working on
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1050109">bug 1050109</a> to
+reduce clones of the mozharness and build/tools repositories, which
+should go a long way to dropping load on the server.</p>
 <h2>Timeline of Events</h2>
 <p>All times PST.</p>
 <p>November 6</p>
