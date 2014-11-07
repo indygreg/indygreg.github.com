@@ -51,6 +51,161 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-server-hiccup-2014-11-06"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/11/07/mercurial-server-hiccup-2014-11-06" rel="bookmark" title="Permanent Link to Mercurial Server Hiccup 2014-11-06">Mercurial Server Hiccup 2014-11-06</a></h2>
+  <small>November 07, 2014 at 11:00 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/11/07/mercurial-server-hiccup-2014-11-06#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>We had a hiccup on hg.mozilla.org yesterday. It resulted in prolonged
+tree closures for Firefox.
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1094922">Bug 1094922</a>
+tracks the issue.</p>
+<h2>What Happened</h2>
+<p>We noticed that many HTTP requests to hg.mozilla.org were getting 503
+responses. On initial glance, the servers were healthy. CPU was below
+100% utilization, I/O wait was reasonable. And there was little to no
+swapping. Furthermore, the logs showed a healthy stream of requests
+being successfully processed at levels that are typical. In other words,
+it looked like business as usual on the servers.</p>
+<p>Upon deeper investigation, we noticed that the WSGI process pool on the
+servers was fully saturated. There were were 24 slots/processes per server
+allocated to process Mercurial requests and all 24 of them were actively
+processing requests. This created a backlog of requests that had been
+accepted by the HTTP server but were waiting an internal dispatch/proxy
+to WSGI. To the client, this would appear as a request with a long lag
+before response generation.</p>
+<h2>Mitigation</h2>
+<p>This being an emergency (trees were already closed and developers were
+effectively unable to use hg.mozilla.org), we decided to increase the
+size of the WSGI worker pool. After all, we had CPU, I/O, and memory
+capacity to spare and we could identify the root cause later. We first
+bumped worker pool capacity from 24 to 36 and immediately saw a significant
+reduction in the number of pending requests awaiting a WSGI worker. We
+still had spare CPU, I/O, and memory capacity and were still seeing
+requests waiting on a WSGI worker, so we bumped the capacity to 48
+processes. At that time, we stopped seeing worker pool exhaustion and
+all incoming requests were being handed off to a WSGI worker as soon as
+they came in.</p>
+<p>At this time, things were looking pretty healthy from the server end.</p>
+<h2>Impact on Memory and Swapping</h2>
+<p>Increasing the number of WSGI processes had the side-effect of
+increasing the total amount of system memory used by Mercurial
+processes in two ways. First, more processes means more memory. That
+part is obvious. Second, more processes means fewer requests for each
+process per unit of time and thus it takes longer for each process to
+reach its max number of requests being being reaped. (It is a common
+practice in servers to have a single process hand multiple requests.
+This prevents overhead associated with spawning a new process and
+loading possibly expensive context in it.)</p>
+<p>We had our Mercurial WSGI processes configured to serve 100 requests
+before being reaped. With the doubling of WSGI processes from 24 to 48,
+those processes were lingering for 2x as long as before. Since the
+Mercurial processes grow over time (they are aggressive about caching
+repository data), this was slowly exhausting our memory pool.</p>
+<p>It took a few hours, but a few servers started flirting with high swap
+usage. (We don't expect the servers to swap.) This is how we identified
+that memory use wasn't sane.</p>
+<p>We lowered the maximum requests per process from 100 to 50 to match
+the ratio increase in the WSGI worker pool.</p>
+<h2>Mercurial Memory "Leak"</h2>
+<p>When we started looking at the memory usage of WSGI processes in more
+detail, we noticed something strange: RSS of Mercurial processes was
+growing steadily when processes were streaming bundle data. This seemed
+very odd to me. Being a Mercurial developer, I was pretty sure the
+behavior was wrong.</p>
+<p>I <a href="http://bz.selenic.com/show_bug.cgi?id=4443">filed a bug</a> against
+Mercurial.</p>
+<p>I was able to reproduce the issue locally and started running a
+bisection to find the regressing changeset. To my surprise, this issue
+has been around since Mercurial 2.7!</p>
+<p>I looked at the code in question, identified why so much memory was
+being allocated, and submitted patches to
+<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-November/063518.html">stop an unbounded memory growth during clone/pull</a>
+and to
+<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-November/063520.html">further reduce memory use during those operations</a>.
+Both of those patches have been queued to go in the next stable release
+of Mercurial, 3.2.1.</p>
+<p>Mercurial 3.2 is still not as memory efficient during clones as Mercurial
+2.5.4. If I have time, I'd like to formulate more patches. But the
+important fix - not growing memory unbounded during clone/pull - is
+fixed.</p>
+<p>Armed with the knowledge that Mercurial is leaky (although not a leak
+in the traditional sense since the memory was eventually
+getting garbage collected), we further reduced the max requests per
+process from 50 to 20. This will cause processes to get reaped sooner
+and will be more aggressive about keeping RSS growth in check.</p>
+<h2>Root Cause</h2>
+<p>We suspect the root cause of the event is a network event.</p>
+<p>Before this outage, we rarely had more than 10 requests being served
+from the WSGI worker pool. In other words, we were often well below 50%
+capacity. But something changed yesterday. More slots were being
+occupied and high-bandwidth operations were taking longer to complete.
+Kendall Libby noted that outbound traffic dropped by ~800 Mbps
+during the event. For reasons that still haven't been identified, the
+network became slower, clones weren't being processed as quickly, and
+clients were occupying WSGI processes for longer amounts of time. This
+eventually exhausted the available process pool, leading to HTTP 503's,
+intermittent service availability, and a tree closure.</p>
+<p>Interestingly, we noticed that in-flight HTTP requests are abnormally
+high again this morning. However, because the servers are now configured
+to handle the extra capacity, we seem to be powering through it without
+any issues.</p>
+<h2>In Hindsight</h2>
+<p>You can make the argument that the servers weren't configured to serve
+as much traffic as possible. After all, we were able to double the
+WSGI process pool without hitting CPU, I/O, and memory limits.</p>
+<p>The servers were conservatively configured. However, the worker pool
+was initially configured at 2x CPU core count. And as a general rule of
+thumb, you don't want your worker pool to be much greater than CPU
+count because that introduces context switching and can give each
+individual process a smaller slice of the CPU to process requests,
+leading to higher latency. Since clone operations often manage to
+peg a single CPU core, there is some justification for keeping the
+ratio of WSGI workers to CPU count low. Furthermore, we rarely came
+close to exhausting the WSGI worker pool before. There was little
+to no justification for increasing capacity to a threshold not normally
+seen.</p>
+<p>But at the same time, even with 4x workers to CPU cores, our CPU
+usage rarely flirts with 100% across all cores, even with the
+majority of workers occupied. Until we actually hit CPU (or I/O)
+limits, running a high multiplier seems like the right thing to do.</p>
+<p>Long term, we expect CPU usage during clone operations to drop
+dramatically. Mike Hommey has contributed a patch to Mercurial that
+allows servers to hand out a URL of a bundle file to fetch during
+clone. So, a server can say <em>I have your data: fetch this static file
+from S3 and then apply this small subset of the data that I'll give
+you.</em> When properly deployed and used at Mozilla, this will effectively
+drop server-side CPU usage for clones to nothing.</p>
+<h2>Timeline of Events</h2>
+<p>All times PST.</p>
+<p>November 6</p>
+<ul>
+<li>0705 - First Nagios alerts fire</li>
+<li>0819 - Trees closed</li>
+<li>0915 - WSGI process pool increased from 24 to 36</li>
+<li>0945 - WSGI process pool increased from 36 to 48</li>
+<li>1615 - Decrease max requests per process from 100 to 50</li>
+</ul>
+<p>November 7</p>
+<ul>
+<li>0012 - Patches to reduce memory usage submitted to Mercurial</li>
+<li>0800 - Mercurial patches accepted</li>
+<li>0915 - Decrease max requests per process from 50 to 20</li>
+</ul>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/11/07/mercurial-server-hiccup-2014-11-06#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="the-rabbit-hole-of-using-docker-in-automated-tests"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/10/16/the-rabbit-hole-of-using-docker-in-automated-tests" rel="bookmark" title="Permanent Link to The Rabbit Hole of Using Docker in Automated Tests">The Rabbit Hole of Using Docker in Automated Tests</a></h2>
   <small>October 16, 2014 at 01:45 PM | categories: 
@@ -1098,129 +1253,6 @@ with monolithic repositories...</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/09/on-monolithic-repositories#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="reproducing-mozilla's-mercurial-server"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/09/05/reproducing-mozilla's-mercurial-server" rel="bookmark" title="Permanent Link to Reproducing Mozilla's Mercurial Server">Reproducing Mozilla's Mercurial Server</a></h2>
-  <small>September 05, 2014 at 02:50 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Of of my first tasks in my
-<a href="/blog/2014/09/05/new-job-role/">new role</a> as a <em>Developer Productivity
-Engineer</em> is to help make Mozilla's Mercurial server better. Many of the
-awesome things we have planned rely on features in newer versions of
-Mercurial. It's therefore important for us to upgrade our Mercurial
-server to a modern version (we are currently running 2.5.4) and to keep
-our Mercurial server upgraded as time passes.</p>
-<p>There are a few reasons why we haven't historically upgraded our
-Mercurial server. First, as anyone who has maintained high-availability
-systems will tell you, there is the attitude of <em>if it isn't broken,
-don't fix it.</em> In other words, Mercurial 2.5.4 is working fine, so why
-mess with a good thing. This was all fine and dandy - until Mercurial
-started falling over in the last few weeks.</p>
-<p>But the blocker towards upgrading that I want to talk about today is
-systems verification. There has been extreme caution around upgrading
-Mercurial at Mozilla because it is a critical piece of Mozilla's
-infrastructure and if the upgrade were to not go well, the outage
-would be disastrous for developer productivity and could even jeopardize
-an emergency Firefox release.</p>
-<p>As much as I'd like to say that a modern version of Mercurial on the
-server would be a drop-in replacement (Mercurial has a great committment
-to backwards compatibility and has loose coupling between clients and
-servers such that upgrading servers should not impact clients), there is
-always a risk that something will change. And that risk is compounded by
-the amount of custom code we have running on our server.</p>
-<p>The way you protect against unexpected changes is testing. In the ideal
-world, you have a robust test suite that you run against a staging
-instance of a service to validate that any changes have no impact. In
-the absence of testing, you are left with fear, uncertainty, and doubt.
-FUD is an especially horrible philosophy when it comes to managing
-servers.</p>
-<p>Unfortunately, we don't really have a great testing infrastructure for
-Mozilla's Mercurial server. And I want to change that.</p>
-<h2>Reproducing the Server Environment</h2>
-<p>When writing tests, it is important for the thing being tested to be as
-similar as possible to the real thing. This is why so many people have
-an aversion to mocking: every time you alter the test environment, you run
-the risk that those differences from reality will mask changes seen in
-the real environment.</p>
-<p>So, it makes sense that a good first goal for creating a test suite against
-our Mercurial server should be to reproduce the production server and
-environment as closely as possible.</p>
-<p>I'm currently working on a Vagrant environment that attempts to
-reproduce the official environment as closely as possible. It starts
-one virtual machine for the SSH/master server. It starts a separate
-virtual machine for the hgweb/slave servers. The virtual machines are
-booting CentOS. This is different than production, where we run RHEL.
-But they are similar enough (and can share the same packages) that the
-differences shouldn't matter too much, at least for now.</p>
-<h2>Using Puppet</h2>
-<p>In production, Mozilla is using Puppet to manage the Mercurial servers.
-Unfortunately, the actual Puppet configs that Mozilla is running are
-behind a firewall, mainly for security reasons. This is potentially
-a huge setback for my reproducibility effort, as I'd like to have
-my virtual machines use the same exact Puppet configs as whats used
-in production so the environments match as closely as possible. This
-would also save me a lot of work from having to reinvent the wheel.</p>
-<p>Fortunately, Ben Kero has extracted the Mercurial-relevant Puppet
-config files into a
-<a href="https://github.com/bkero/puppet-module-hg">standalone repository</a>.
-Apparently that repository gets rolled into the production Puppet
-configs periodically. So, my virtual machines and production can share
-the same Mercurial Puppet files. Nice!</p>
-<p>It wasn't long after starting to use the standalone Puppet configs that
-I realized this would be a rabbit hole. This first manifests in the
-standalone Puppet code referencing things that exist in the hidden
-Mozilla Puppet files. So the liberation was only partially successful.
-Sad panda.</p>
-<p>So, I'm now in the process of creating a <em>fake Mozilla</em> Puppet
-environment that mimics the base Mozilla environment (from the closed
-repo) and am modifying the shared Puppet Mercurial code to work with
-both versions. This is a royal pain, but it needs to be done if we want
-to reproduce production and maintain peace of mind that test results
-reflect reality.</p>
-<p>Because reproducing runtime environments is important for reproducing
-and solving bugs and for testing, <strong>I call on the maintainers of
-Mozilla's closed Puppet repository to liberate it from behind its
-firewall</strong>. I'd like to see a public Puppet configuration tree available
-for all to use so that anyone anywhere can reproduce the state of a
-server or service operated by Mozilla to within reasonable
-approximation. Had this already been done, it would have saved me hours
-of work. As it stands, I'm reverse engineering systems and trying to
-cobble together understanding of how the Mozilla Puppet configs
-work and what parts of them can safely be ignored to reproduce an
-approximate testing environment.</p>
-<p>Along that vein, I finally got access to Mozilla's internal Puppet
-repository. This took a few meetings and apparently a lot of
-backroom chatter was generated - "developer's don't normally get access,
-oh my!" All I wanted was to see how systems are configured so I can
-help improve them. Instead, getting access felt like pulling teeth.
-This feels like a major roadblock towards productivity, reproducibility,
-and testing.</p>
-<p>Facebook gives its developers access to most production machines and
-trusts them to not be stupid. I know we (Mozilla) like to hold
-ourselves to a high standard of security and privacy. But not giving
-developers access to the configurations for the systems their code
-runs on feels like a very silly policy. I hope Mozilla invests in
-opening up this important code and data, if not to the world, at least
-to its trusted employees.</p>
-<p>Anyway, hopefully I'll soon have a Vagrant environment that allows
-people to build a standalone instance of Mozilla's Mercurial server.
-And once that's in place, I can start writing tests that basic services
-and workflows (including repository syncing) work as expected. Stay
-tuned.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/2">Next Page »</a>
 
