@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 07 Nov 2014 18:59:27 GMT</pubDate>
+    <pubDate>Fri, 07 Nov 2014 19:08:52 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -142,6 +142,19 @@ clone. So, a server can say <em>I have your data: fetch this static file
 from S3 and then apply this small subset of the data that I'll give
 you.</em> When properly deployed and used at Mozilla, this will effectively
 drop server-side CPU usage for clones to nothing.</p>
+<h2>Where to do Better</h2>
+<p>There was a long delay between the Nagios alerts firing and someone
+with domain-specific knowledge looking at the problem.</p>
+<p>The trees could have reopened earlier. We were pretty confident about
+the state of things at 1000. Trees opened in metered mode at 1246 and
+completely at 1909. Although, the swapping issue wasn't mitigated until
+1615, so you can argue that being conservative on the tree reopening
+was justified. There is a chance that full reopening could have
+triggered excessive swap and another round of chaos for everyone
+involved.</p>
+<p>We need an alert on WSGI pool exhaustion. It took longer than it should
+have to identify this problem. However, now that we've encountered it,
+it should be obvious if/when it happens again.</p>
 <h2>Timeline of Events</h2>
 <p>All times PST.</p>
 <p>November 6</p>
@@ -150,7 +163,9 @@ drop server-side CPU usage for clones to nothing.</p>
 <li>0819 - Trees closed</li>
 <li>0915 - WSGI process pool increased from 24 to 36</li>
 <li>0945 - WSGI process pool increased from 36 to 48</li>
+<li>1246 - Trees reopen in metered mode</li>
 <li>1615 - Decrease max requests per process from 100 to 50</li>
+<li>1909 - Trees open completely</li>
 </ul>
 <p>November 7</p>
 <ul>
