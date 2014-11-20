@@ -1,0 +1,183 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Test Drive the New Headless Try Repository
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="test-drive-the-new-headless-try-repository"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/11/20/test-drive-the-new-headless-try-repository" rel="bookmark" title="Permanent Link to Test Drive the New Headless Try Repository">Test Drive the New Headless Try Repository</a></h2>
+  <small>November 20, 2014 at 02:45 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial and Git both experience scaling pains as the number of heads
+in a repository approaches infinity. Operations like push and pull
+slow to a crawl and everyone gets frustrated.</p>
+<p>This is the problem Mozilla's Try repository has been dealing with
+for years. We know the solution doesn't scale. But we've been content
+kicking the can by resetting the repository (blowing away data)
+to make the symptoms temporarily go away.</p>
+<p>One of my official goals is to ship a scalable Try solution by the end
+of 2014.</p>
+<p>Today, I believe I finally have enough code cobbled together to
+produce a working concept. <strong>And I could use your help testing it.</strong></p>
+<p>I would like people to push their Try, code review, and other
+miscellaneous heads to a special repository. To do this:</p>
+<pre><code>$ hg push -r . -f http://hg.gregoryszorc.com/gecko-headless
+</code></pre>
+<p>That is:</p>
+<ul>
+<li>Consider the changeset belonging to the working copy</li>
+<li>Allow the creation of new heads</li>
+<li>Send it to the <em>gecko-headless</em> repo on hg.gregoryszorc.com</li>
+</ul>
+<p>Here's what happening.</p>
+<p>I have deployed a special repository to my personal server that I
+believe will behave very similarly to the final solution.</p>
+<p>When you push to this repository, instead of your changesets being
+applied directly to the repository, it siphons them off to a Mercurial
+bundle. It then saves this bundle somewhere along with some metadata
+describing what is inside.</p>
+<p>When you run <em>hg pull -r <node></em> on that repository and ask for a
+changeset that exists in the bundle, the server does some magic
+and returns data from the bundle file.</p>
+<p>Things this repository doesn't do:</p>
+<ul>
+<li><strong>This repository will not actually send changesets to Try for you.</strong></li>
+<li>You cannot <code>hg pull</code> or <code>hg clone</code> the repository and get all of the
+  commits from bundles. This isn't a goal. It will likely never be
+  supported.</li>
+<li>We do not yet record a pushlog entry for pushes to the repository.</li>
+<li>The hgweb HTML interface does not yet handle commits that only exist
+  in bundles.</li>
+</ul>
+<p>The purpose of this experiment is to expose the repository to some
+actual traffic patterns so I can see what's going on and get a feel
+for real-world performance, variability, bugs, etc. I plan to do all
+of this in the testing environment. But I'd like some real-world
+use on the actual Firefox repository to give me peace of mind.</p>
+<p>Please report any issues directly to me. Leave a comment here. Ping
+me on IRC. Send me an email. etc.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
