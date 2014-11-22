@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 20 Nov 2014 22:47:09 GMT</pubDate>
+    <pubDate>Sat, 22 Nov 2014 02:50:42 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -35,13 +35,14 @@ of 2014.</p>
 produce a working concept. <strong>And I could use your help testing it.</strong></p>
 <p>I would like people to push their Try, code review, and other
 miscellaneous heads to a special repository. To do this:</p>
-<pre><code>$ hg push -r . -f http://hg.gregoryszorc.com/gecko-headless
+<pre><code>$ hg push -r . -f ssh://hg@hg.gregoryszorc.com/gecko-headless
 </code></pre>
 <p>That is:</p>
 <ul>
 <li>Consider the changeset belonging to the working copy</li>
 <li>Allow the creation of new heads</li>
-<li>Send it to the <em>gecko-headless</em> repo on hg.gregoryszorc.com</li>
+<li>Send it to the <em>gecko-headless</em> repo on hg.gregoryszorc.com using
+  SSH</li>
 </ul>
 <p>Here's what happening.</p>
 <p>I have deployed a special repository to my personal server that I
@@ -60,8 +61,10 @@ and returns data from the bundle file.</p>
   commits from bundles. This isn't a goal. It will likely never be
   supported.</li>
 <li>We do not yet record a pushlog entry for pushes to the repository.</li>
-<li>The hgweb HTML interface does not yet handle commits that only exist
-  in bundles.</li>
+<li>The hgweb HTML interface does not <strong>yet</strong> handle commits that only
+  exist in bundles. People want this to work. It will eventually work.</li>
+<li>Pulling from the repository over HTTP with a vanilla Mercurial install
+  may not preserve phase data.</li>
 </ul>
 <p>The purpose of this experiment is to expose the repository to some
 actual traffic patterns so I can see what's going on and get a feel
@@ -69,7 +72,11 @@ for real-world performance, variability, bugs, etc. I plan to do all
 of this in the testing environment. But I'd like some real-world
 use on the actual Firefox repository to give me peace of mind.</p>
 <p>Please report any issues directly to me. Leave a comment here. Ping
-me on IRC. Send me an email. etc.</p>]]></content:encoded>
+me on IRC. Send me an email. etc.</p>
+<p><strong>Update 2014-11-21: People discovered a bug with pushed changesets
+accidentally being advanced to the public phase, despite the repository
+being non-publishing. I have fixed the issue. But you must now push to
+the repository over SSH, not HTTP.</strong></p>]]></content:encoded>
     </item>
     <item>
       <title>Mercurial Server Hiccup 2014-11-06</title>
