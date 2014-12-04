@@ -51,6 +51,267 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="thoughts-on-mercurial-(and-git)"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/05/12/thoughts-on-mercurial-(and-git)" rel="bookmark" title="Permanent Link to Thoughts on Mercurial (and Git)">Thoughts on Mercurial (and Git)</a></h2>
+  <small>May 12, 2013 at 12:00 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/git'>Git</a>
+ | <a href="http://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-(and-git)#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>My first experience with Mercurial (Firefox development)
+was very unpleasant. Coming from Git, I thought Mercurial was slow
+and perhaps even more awkward to use than Git. I frequently
+encountered repository corruption that required me to reclone. I thought
+the concept of a patch queue was silly compared to Git branches. It
+was all extremely frustrating and I dare say a hinderance to my
+productivity. It didn't help that I was surrounded by a bunch of people
+who had previous experience with Git and opined about every minute
+difference.</p>
+<p>Two years later and I'm on much better terms with Mercurial. I initially
+thought it might be Stockholm Syndrome, but after reflection I can point
+at specific changes and enlightenments that have reshaped my opinions.</p>
+<h2>Newer versions of Mercurial are much better</h2>
+<p>I first started using Mercurial in the 1.8 days and thought it was
+horrible. However, modern releases are much, much better. I've noticed
+a steady improvement in the quality and speed of Mercurial in the last
+few years.</p>
+<p><strong>If you aren't running 2.5 or later (Mercurial 2.6 was released earlier
+this month), you should take the time to upgrade today.</strong> When you upgrade,
+you should of course read the
+<a href="http://mercurial.selenic.com/wiki/WhatsNew">changelog</a> and
+<a href="http://mercurial.selenic.com/wiki/UpgradeNotes">upgrade notes</a> so you
+can make the most of the new features.</p>
+<h2>Proper configuration is key</h2>
+<p>For <em>my</em> workflow, the default configuration of Mercurial out of the box
+is... far from optimal. There are a number of basic changes that need to
+be made to satisfy <em>my</em> expectations for a version control tool.</p>
+<p>I used to think this was a shortcoming with Mercurial: why not ship a
+powerful and useful environment out of the box? But, after talking to a
+Mercurial core contributor, this is mostly by design. Apparently a
+principle of the Mercurial project is that the CLI tool (<em>hg</em>) should be
+simple by default and should minimize foot guns. They view actions like
+rebasing and patch queues as advanced and thus don't have them enabled
+by default. Seasoned developers may scoff at this. But, I see where
+Mercurial is coming from. I only need to refer everyone to her first
+experience with Git as an example of what happens when you don't aim for
+simplicity. (I've never met a Git user who didn't think it overly
+complicated at first.)</p>
+<p>Anyway, to get the most out of Mercurial, it is essential to configure
+it to your liking, much like you install plugins or extensions in your
+code editor.</p>
+<p><strong>Every person running Mercurial should go to
+<a href="http://mercurial.selenic.com/wiki/UsingExtensions">http://mercurial.selenic.com/wiki/UsingExtensions</a>
+and take the time to find extensions that will make your life better</strong>.
+You should also run <em>hg help hgrc</em> to view all the configuration
+options. There is a mountain of productivity wins waiting to be realized.</p>
+<p>For reference, my <a href="https://gist.github.com/indygreg/5511712">~/.hgrc</a>.
+Worth noting are some of the built-in externsions I've enabled:</p>
+<ul>
+<li>color - Colorize terminal output. Clear UX win.</li>
+<li>histedit - Provides  <em>git rebase --interactive</em> behavior.</li>
+<li>pager - Feed command output into a pager (like <em>less</em>). Clear UX win.</li>
+<li>progress - Draw progress bars on long-running operations. Clear UX
+  win.</li>
+<li>rebase - Ability to easily rebase patches on top of other heads.
+  This is a basic feature of patch management.</li>
+<li>transplant - Easily move patches between repositories, branches, etc.</li>
+</ul>
+<p>If I were on Linux, I'd also use the <em>inotify</em> extension, which installs
+filesystem watchers so operations like <em>hg status</em> are instantaneous.</p>
+<p>In addition to the built-in extensions, there are a number of 3rd party
+extensions that improve my Mozilla workflow:</p>
+<ul>
+<li><a href="https://bitbucket.org/sfink/mqext">mqext</a> - Automatically commit to
+  your patch queue when you qref, etc. This is a lifesaver. If that's
+  not enough, it suggests reviewers for your patch, suggests a bug
+  component, and let's you find bugs touching the files you are
+  touching.</li>
+<li><a href="https://github.com/pbiggar/trychooser">trychooser</a> - Easily push
+  changes to Mozilla's Try infrastructure.</li>
+<li><a href="https://hg.mozilla.org/users/robarnold_cmu.edu/qimportbz">qimportbz</a> -
+  Easily import patches from Bugzilla.</li>
+<li><a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">bzexport</a> -
+  Easily export patches to Bugzilla.</li>
+</ul>
+<p>I'm amazed more developers don't use these simple productivity wins.
+Could it be that people simply don't realize they are available?</p>
+<p>Mozilla has a <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=794580">bug</a>
+tracking easier configuration of the user's Mercurial environment. My
+hope is one day people simply run a single command and get a
+Mozilla-optimized Mercurial environment that <em>just works</em>. Along the same
+vein, if your extensions are out of date, it prompts you to update them.
+This is one of the benefits of a unified developer tool like mach: you
+can put these checks in one place and everyone can reap the benefits
+easily.</p>
+<h2>Mercurial is extensible</h2>
+<p>The major differentiator from almost every other version control system
+(especially Git) is the ease and degree to which Mercurial can be
+extended and contorted. <strong>If you take anything away from this
+post it should be that Mercurial is a flexible and agile tool.</strong></p>
+<p>If you want to change the behavior of a built-in command, you can write
+an extension that monkeypatches that command. If you want to write a new
+command, you can of course do that easily. You can have extensions
+interact with one another - all natively. You can even override the wire
+protocol to provide new <em>capabilities</em> to extend how peers communicate
+with one another. You can leverage this to transfer additional metadata
+or data types. This has nearly infinite potential. If that's not enough,
+it's possible to create a new branching/development primitive through
+just an extension alone! If you want to invent Git-style branches with
+Mercurial, you could do that! It may require client and server support,
+but it's possible.</p>
+<p>Mercurial accomplishes this by being written (mostly) in Python (as
+opposed to C) and by having a clear API on which extensions can be
+built. Writing extensions in Python is huge. You can easily drop into
+the debugger to learn the API and your write-test loop is much smaller.</p>
+<p>By contrast, most other version control systems (including Git) require
+you to parse output of commands (this is the UNIX piping principle).
+Mercurial supports this too, but the native Python API is so much more
+powerful. Instead of parsing output, you can just read the raw values
+from a Python data structure. Yes please.</p>
+<p>Since I imagine a lot of people at Mozilla will be reading this, here
+are some ways Mozilla could leverage the extensibility of Mercurial:</p>
+<ul>
+<li>Command to create try pushes (it exists - see above).</li>
+<li>Record who pushed what when (we have this - it's called the pushlog).</li>
+<li>Command to land patches. If inbound1 is closed,
+  automatically rebase on inbound2. etc. This could even be
+  monkeypatched into <em>hg push</em> so pushes to inbound are automatically
+  intercepted and magic ensues.</li>
+<li>Record the automation success/fail status against individual
+  revisions and integrate with commands (e.g. only pull up to the most
+  recent stable changeset).</li>
+<li>Command to create a review request for a patch or patch queue.</li>
+<li>Command to assist with reviews. Perhaps a reviewer wants to make minor
+  changes. Mercurial could download and apply the patch(es), wait for
+  your changes, then reupload to Bugzilla (or the review tool)
+  automatically.</li>
+<li>Annotating commits or pushes with automation info (which jobs to
+  run, etc).</li>
+<li>Find Bugzilla component for patch (it exists - see above).</li>
+<li>Expose custom protocol for configuring automation settings for a
+  repository or a head. e.g. clients (with access) could reconfigure
+  PGO scheduling, coalescing, etc without having to involve RelEng -
+  useful for twigs and lesser used repositories.</li>
+<li>So much more.</li>
+</ul>
+<p>Essentially, Mercurial itself could become the CLI tool code development
+centers around. Whether that is a good idea is up for
+debate. But, it can. And that says a lot about the flexibility of
+Mercurial.</p>
+<h2>Future potential of Mercurial</h2>
+<p>When you consider the previous three points, you arrive at a new one:
+Mercurial has a ton of future potential. The fact that extensions can
+evolve vanilla Mercurial into something that resembles Mercurial in
+name only is a testament to this.</p>
+<p>When I sat down with a Mercurial core contributor, they reinforced this.
+To them, Mercurial is a core library with a limited set of user-facing
+commands forming the stable API. Since core features (like storage) are
+internal APIs (not public commands - like Git), this means they aren't
+bound to backwards compatibility and can refactor internals as needed
+and evolve over time without breaking the world. That is a terrific
+luxury.</p>
+<p>An example of this future potential is
+<a href="http://mercurial.selenic.com/wiki/ChangesetEvolution">changeset evolution</a>.
+If you don't know what that is, you should because it's awesome. One of
+the things they figured out is how to propagate rebasing between
+clones!</p>
+<h2>Comparing to Git</h2>
+<p>Two years ago I would have said I would never opt to use Mercurial over
+Git. I cannot say that today.</p>
+<p>I do believe Git still has the advantage over Mercurial in a few areas:</p>
+<ul>
+<li>Branch management. Mercurial branches are a non-starter for
+  light-weigh work. Mercurial bookmarks are kinda-sorta like Git
+  branches, but not quite. I <em>really</em> like aspects of Git branches.
+  Hopefully changeset evolution will cover the remaining gaps and more.</li>
+<li>Patch conflict management. Git seems to do a better job of resolving
+  patch conflicts. But, I think this is mostly due to Mercurial's patch
+  queue extension not using the same merge code as built-in commands
+  (this is a fixable problem).</li>
+<li>Developer mind share and GitHub. The GitHub ecosystem makes up for
+  many of Git's shortcomings. Bitbucket isn't the same.</li>
+</ul>
+<p>However, I believe Mercurial has the upper hand for:</p>
+<ul>
+<li>Command line friendliness. Git's command line syntax is notoriously
+  awful and the concepts can be difficult to master.</li>
+<li>Extensibility. It's so easy to program custom workflows and commands
+  with Mercurial. If you want to hack your version control system,
+  Mercurial wins hands down. Where Mercurial embraces extensibility, I
+  couldn't even find a page listing all the useful Git <em>extensions</em>!</li>
+<li>Open source culture. Every time I've popped into the Mercurial IRC
+  channel I've had a good experience. I get a response quickly and
+  without snark. Git by contrast, well, let's just say I'd rather be
+  affiliated with the Mercurial crowd.</li>
+<li>Future potential. Git is a content addressable key-value store with a
+  version control system bolted on top. Mercurial is designed to be a
+  version control system. Furthermore, Mercurial's code base is much
+  easier to hack on than Git's. While Git has largely maintained feature
+  parity in the last few years, Mercurial has grown new features. I see
+  Mercurial evolving faster than Git and in ways Git cannot.</li>
+</ul>
+<p>It's worth calling out the major detractors for each.</p>
+<p>I think Git's major weakness is its lack of extensibility and inability
+to evolve (at least currently). Git will need to grow a better
+extensibility model with better abstractions to compete with Mercurial
+on new features. Or, the Git community will need to be receptive to
+experimental features living in the core. All of this will require
+some major API breakage. Unfortunately, I see little evidence this will
+occur. I'm unable to find a <em>vision</em> document for the future of Git, a
+branch with major new features, or interesting threads on the mailing
+list. I tried to ask in their IRC channel and got crickets.</p>
+<p>I think Mercurial's greatest weakness is lack of developer mindshare.
+Git and GitHub are where it's at. This is huge, especially for projects
+wanting collaboration.</p>
+<p>Of all those points, I want to stress the extensibility and future
+potential of Mercurial. If hacking your tools to maximize potential
+and awesomeness is your game, Mercurial wins. End of debate. However,
+if you don't want to harness these advantages, then I think Git and
+Mercurial are mostly on equal footing. But given the rate of
+development in the Mercurial project and relative stagnation of Git
+(I can't name a major new Git feature in years), I wouldn't be
+surprised if Mercurial's feature set obviously overtakes Git's in
+the next year or two. Mind share will of course take longer and will
+likely depend on what hosting sites like GitHub and Bitbucket do
+(I wouldn't be surprised if GitHub rebranded as <em>CodeHub</em> or
+something some day). Time will tell.</p>
+<h2>Extending case study</h2>
+<p><em>I have removed the case study that appeared in the original article
+because as Mike Hommey observed in the comments, it wasn't a totally
+accurate comparison. I don't believe the case study significantly added
+much to the post, so I likely won't write a new one.</em></p>
+<h2>Conclusion</h2>
+<p>From where I started with Mercurial, I never thought I'd say this. But
+here it goes: I like Mercurial.</p>
+<p>I started warming up when it became faster and more robust in recent
+versions in the last few years. When I learned about its flexibility and
+the fundamentals of the project and thus its future potential, I became
+a true fan.</p>
+<p>It's easy to not like Mercurial if you are a new user coming
+from Git and are forced to use a new tool. But, once you take the time to
+properly configure it and appreciate it for what it is and what it
+can be, Mercurial is easy to like.</p>
+<p>I think Mercurial and Git are both fine version control systems. I would
+happily use either one for a new project. If the social aspects of
+development (including encouraging new contributors) were important to
+me, I would likely select Git and GitHub. But, if I wanted something
+just for me or I was a large project looking for a system that scales
+and is flexible or was looking to the future, I'd go with Mercurial.</p>
+<p>Mercurial is a rising star in the version control world. It's getting
+faster and better and enabling others to more easily innovate through
+powerful extensions. The future is bright for this tool.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-(and-git)#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mozilla-automation-load-over-time"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/05/06/mozilla-automation-load-over-time" rel="bookmark" title="Permanent Link to Mozilla Automation Load Over Time">Mozilla Automation Load Over Time</a></h2>
   <small>May 06, 2013 at 11:45 AM | categories: 
@@ -537,48 +798,6 @@ tool.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="omnipresent-mach"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/03/03/omnipresent-mach" rel="bookmark" title="Permanent Link to Omnipresent mach">Omnipresent mach</a></h2>
-  <small>March 03, 2013 at 12:30 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/mach'>mach</a>
- | <a href="http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Matt Brubeck recently landed an awesome patch for mach in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=840588">bug 840588</a>:
-it allows mach to be used by any directory. I'm calling it
-<em>omnipresent mach</em>.</p>
-<p>Essentially, Matt changed the <em>mach</em> driver (the script in the root
-directory of mozilla-central) so instead of having it look in hard-coded
-relative paths for all its code, it walks up the directory tree and
-looks for signs of the source tree or the object directory.</p>
-<p>What this all means is that if you have the <em>mach</em> script installed in
-your $PATH and you just type <em>mach</em> in your shell from within any source
-directory or object directory, <em>mach</em> should just work. So, no more
-typing <em>./mach</em>: just copy <em>mach</em> to <em>~/bin</em>, <em>/usr/local/bin</em> or some
-other directory on your $PATH and you should just be able to type
-<em>mach</em>.</p>
-<p>Unfortunately, there are bound to be bugs here. Since <em>mach</em>
-traditionally was only executed with the current working directory as
-the top source directory, some commands are not prepared to handle a
-variable current working directory. Some commands will likely get
-confused when it comes resolving relative paths, etc. If you find
-an issue, please report it! A temporary workaround is to just invoke
-mach from the top source directory like you've always been doing.</p>
-<p>If you enjoy the feature, thank Matt: this was completely his idea and
-he saw it through from conception to implementation.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/11">« Previous Page</a>
   --  

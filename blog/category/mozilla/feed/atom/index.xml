@@ -7,12 +7,72 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-11-22T02:50:42Z</updated>
+  <updated>2014-12-04T16:40:28Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[The Mozlandia Tree Outage and Code Review]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review" />
+    <id>http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review</id>
+    <updated>2014-12-04T08:40:00Z</updated>
+    <published>2014-12-04T08:40:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Review Board" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="code review" />
+    <summary type="html"><![CDATA[The Mozlandia Tree Outage and Code Review]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review"><![CDATA[<p>You may have noticed the Firefox trees
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1107156">were closed</a>
+for the better part of yesterday.</p>
+<p>Long story short, a file containing URLs for Firefox installers was
+updated to reference https://ftp.mozilla.org/ from
+http://download-installer.cdn.mozilla.net/. The original, latter
+host is a CDN. The former is not. When thousands of clients started
+hitting ftp.mozilla.org, it overwhelmed the servers and network,
+causing timeouts and other badness.</p>
+<p>The change in question was accidental. It went through code review.
+From a code change standpoint, procedures were followed.</p>
+<p>It is tempting to point fingers at the people involved. However, I
+want us to consider placing blame elsewhere: on the code review
+tool.</p>
+<p>The diff being reviewed was to change the Firefox version number
+from 32.0 to 32.0.3. If you were asked to review this
+patch, I'm guessing your eyes would have glanced over everything in the
+URL except the version number part. I'm pretty sure mine would have.</p>
+<p>Let's take a look at what the reviewer saw in Bugzilla/Splinter (click
+to see full size):</p>
+<p><a href="/images/intraline-splinter.png">
+<img src="/images/intraline-splinter.png" width="600" />
+</a></p>
+<p>And here is what the reviewer would have seen had the review been
+conducted in MozReview:</p>
+<p><a href="/images/intraline-reviewboard.png">
+<img src="/images/intraline-reviewboard.png" width="600">
+</a></p>
+<p>Which tool makes the change of hostname more obvious? Bugzilla/Splinter
+or MozReview?</p>
+<p><strong>MozReview's support for intraline diffs more clearly draws attention to
+the hostname change. I posit that had this patch been reviewed with
+MozReview, the chances are greater we wouldn't have had a network
+outage yesterday.</strong></p>
+<p>And it isn't just intraline diffs that make Splinter/Bugzilla a
+sub-optimal code review tool. I recently blogged about the
+<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">numerous ways that using Bugzilla for code revie results in harder
+reviews and buggier
+code</a>.
+Every day we continue using Bugzilla/Splinter instead of investing in
+better code review tools is a day severe bugs like this can and will
+slip through the cracks.</p>
+<p>If there is any silver lining to this outage, I hope it is that we need
+to double down on our investment in developer tools, particularly code
+review.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -1909,123 +1969,5 @@ facilitate these workflows more than separate repositories and make
 me more productive as a result.</p>
 <p>Now, if only all the tools and processes we use and love would work
 with monolithic repositories...</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Reproducing Mozilla's Mercurial Server]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server" />
-    <id>http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server</id>
-    <updated>2014-09-05T14:50:00Z</updated>
-    <published>2014-09-05T14:50:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Reproducing Mozilla's Mercurial Server]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server"><![CDATA[<p>Of of my first tasks in my
-<a href="/blog/2014/09/05/new-job-role/">new role</a> as a <em>Developer Productivity
-Engineer</em> is to help make Mozilla's Mercurial server better. Many of the
-awesome things we have planned rely on features in newer versions of
-Mercurial. It's therefore important for us to upgrade our Mercurial
-server to a modern version (we are currently running 2.5.4) and to keep
-our Mercurial server upgraded as time passes.</p>
-<p>There are a few reasons why we haven't historically upgraded our
-Mercurial server. First, as anyone who has maintained high-availability
-systems will tell you, there is the attitude of <em>if it isn't broken,
-don't fix it.</em> In other words, Mercurial 2.5.4 is working fine, so why
-mess with a good thing. This was all fine and dandy - until Mercurial
-started falling over in the last few weeks.</p>
-<p>But the blocker towards upgrading that I want to talk about today is
-systems verification. There has been extreme caution around upgrading
-Mercurial at Mozilla because it is a critical piece of Mozilla's
-infrastructure and if the upgrade were to not go well, the outage
-would be disastrous for developer productivity and could even jeopardize
-an emergency Firefox release.</p>
-<p>As much as I'd like to say that a modern version of Mercurial on the
-server would be a drop-in replacement (Mercurial has a great committment
-to backwards compatibility and has loose coupling between clients and
-servers such that upgrading servers should not impact clients), there is
-always a risk that something will change. And that risk is compounded by
-the amount of custom code we have running on our server.</p>
-<p>The way you protect against unexpected changes is testing. In the ideal
-world, you have a robust test suite that you run against a staging
-instance of a service to validate that any changes have no impact. In
-the absence of testing, you are left with fear, uncertainty, and doubt.
-FUD is an especially horrible philosophy when it comes to managing
-servers.</p>
-<p>Unfortunately, we don't really have a great testing infrastructure for
-Mozilla's Mercurial server. And I want to change that.</p>
-<h2>Reproducing the Server Environment</h2>
-<p>When writing tests, it is important for the thing being tested to be as
-similar as possible to the real thing. This is why so many people have
-an aversion to mocking: every time you alter the test environment, you run
-the risk that those differences from reality will mask changes seen in
-the real environment.</p>
-<p>So, it makes sense that a good first goal for creating a test suite against
-our Mercurial server should be to reproduce the production server and
-environment as closely as possible.</p>
-<p>I'm currently working on a Vagrant environment that attempts to
-reproduce the official environment as closely as possible. It starts
-one virtual machine for the SSH/master server. It starts a separate
-virtual machine for the hgweb/slave servers. The virtual machines are
-booting CentOS. This is different than production, where we run RHEL.
-But they are similar enough (and can share the same packages) that the
-differences shouldn't matter too much, at least for now.</p>
-<h2>Using Puppet</h2>
-<p>In production, Mozilla is using Puppet to manage the Mercurial servers.
-Unfortunately, the actual Puppet configs that Mozilla is running are
-behind a firewall, mainly for security reasons. This is potentially
-a huge setback for my reproducibility effort, as I'd like to have
-my virtual machines use the same exact Puppet configs as whats used
-in production so the environments match as closely as possible. This
-would also save me a lot of work from having to reinvent the wheel.</p>
-<p>Fortunately, Ben Kero has extracted the Mercurial-relevant Puppet
-config files into a
-<a href="https://github.com/bkero/puppet-module-hg">standalone repository</a>.
-Apparently that repository gets rolled into the production Puppet
-configs periodically. So, my virtual machines and production can share
-the same Mercurial Puppet files. Nice!</p>
-<p>It wasn't long after starting to use the standalone Puppet configs that
-I realized this would be a rabbit hole. This first manifests in the
-standalone Puppet code referencing things that exist in the hidden
-Mozilla Puppet files. So the liberation was only partially successful.
-Sad panda.</p>
-<p>So, I'm now in the process of creating a <em>fake Mozilla</em> Puppet
-environment that mimics the base Mozilla environment (from the closed
-repo) and am modifying the shared Puppet Mercurial code to work with
-both versions. This is a royal pain, but it needs to be done if we want
-to reproduce production and maintain peace of mind that test results
-reflect reality.</p>
-<p>Because reproducing runtime environments is important for reproducing
-and solving bugs and for testing, <strong>I call on the maintainers of
-Mozilla's closed Puppet repository to liberate it from behind its
-firewall</strong>. I'd like to see a public Puppet configuration tree available
-for all to use so that anyone anywhere can reproduce the state of a
-server or service operated by Mozilla to within reasonable
-approximation. Had this already been done, it would have saved me hours
-of work. As it stands, I'm reverse engineering systems and trying to
-cobble together understanding of how the Mozilla Puppet configs
-work and what parts of them can safely be ignored to reproduce an
-approximate testing environment.</p>
-<p>Along that vein, I finally got access to Mozilla's internal Puppet
-repository. This took a few meetings and apparently a lot of
-backroom chatter was generated - "developer's don't normally get access,
-oh my!" All I wanted was to see how systems are configured so I can
-help improve them. Instead, getting access felt like pulling teeth.
-This feels like a major roadblock towards productivity, reproducibility,
-and testing.</p>
-<p>Facebook gives its developers access to most production machines and
-trusts them to not be stupid. I know we (Mozilla) like to hold
-ourselves to a high standard of security and privacy. But not giving
-developers access to the configurations for the systems their code
-runs on feels like a very silly policy. I hope Mozilla invests in
-opening up this important code and data, if not to the world, at least
-to its trusted employees.</p>
-<p>Anyway, hopefully I'll soon have a Vagrant environment that allows
-people to build a standalone instance of Mozilla's Mercurial server.
-And once that's in place, I can start writing tests that basic services
-and workflows (including repository syncing) work as expected. Stay
-tuned.</p>]]></content>
   </entry>
 </feed>

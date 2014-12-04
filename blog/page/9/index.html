@@ -51,6 +51,276 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="phabricator-is-awesome"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/10/14/phabricator-is-awesome" rel="bookmark" title="Permanent Link to Phabricator is Awesome">Phabricator is Awesome</a></h2>
+  <small>October 14, 2013 at 11:00 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/10/14/phabricator-is-awesome#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>When I talk to Mozillians who now work at Facebook, they all say
+something similar: <em>the tools at Facebook are amazing and put what
+Mozilla uses to shame</em>. Having worked at places with decent tools, I
+do know that Mozilla is behind the times. So it was easy for me to
+dismiss these observations as obvious. But, when you start asking them
+about specifics, one tool they are quick to name is
+<a href="http://phabricator.org/">Phabricator</a>.</p>
+<p>For those who don't want to follow the link, Phabricator is your
+all-in-on software engineering web application and platform. It has
+issue/bug tracking, code review, repository navigation, wikis, etc. It's
+the kitchen sink for software lifecycle management. And, it's open
+source and easy to extend. Sounds promising.</p>
+<p>After hearing Facebookers rave about Phabricator and having casually
+interacted with an instance to review patches to Clang, I was keen
+to have a closer look.</p>
+<p>So, I spent a lazy afternoon and installed Phabricator on an EC2
+instance (connection details below). Having interacted with the
+default setup for a few hours, I can say with high confidence
+that the Facebookers can back up their claim that Phabricator is
+pretty damn amazing. My initial impressions are that it's one of
+those tools that's so good that once you start using it, you'll
+never tolerate anything subpar again. Again, hearing the
+Mozillians-turned-Facebookers opine about Bugzilla, code review,
+etc, I think this initial impression might be right.</p>
+<p>In the sections below, I'll talk a bit about Phabricator and why I
+think it is superior to what Mozilla uses.</p>
+<h2>Integrated UI</h2>
+<p>One thing I really love about Phabricator is the integrated UI.
+Phabricator is essentially a collection of <em>applications</em> tied together
+by a single web interface. So, everything is readily available under one
+site/domain/service.</p>
+<p>This means everything is easier to find. You search for something and
+all the different components have their results surfaced. Contrast with
+Mozilla as of today, where you need separate searches for Bugzilla,
+MXR/DXR, wiki.mozilla.org, etherpad, MDN, etc.</p>
+<p>For IT, it means there is only a single service to run and scale. Less
+overhead to operate. Less effort to secure.</p>
+<h2>Arcanist command line tool</h2>
+<p>Phabricator ships with a command line tool called
+<a href="http://www.phabricator.com/docs/phabricator/article/Arcanist_User_Guide.html">Arcanist</a>.
+It is amazing.</p>
+<p>Projects put <em>.arcconfig</em> files under version control which contain the
+settings used to configure Arcanist for that project. They essentially
+point back towards the Phabricator instance for that project.</p>
+<p>You can do a lot with the Arcanism command line interface. Want to
+create a code review? <em>arc diff</em>. It opens up an editor and allows you
+to fill in details about the review. It then automatically publishes it
+for review. No leaving the command line necessary.</p>
+<p>You can download and apply patches undergoing code review by
+specifying their review identifier. e.g. <em>arc patch D1</em>.</p>
+<p>You can create tasks for yourself by running <em>arc todo</em>. The tasks are
+uploaded to Phabricator automatically and show up in your dashboard.</p>
+<p>If your repo has configured which tests apply to which paths, <em>arc unit</em>
+will run all tests impacted by the current patch. (If we ever get around
+to annotating this, it would significantly reduce load in automation by
+eliminating unnecessary tests.)</p>
+<p>There is an <em>arc land</em> command to land patches on the appropriate
+landing branch.</p>
+<p>Arcanist abstracts the differences between version control systems
+pretty well. You can use the same commands for Mercurial, Git, or
+Subversion.</p>
+<p>Arcanist is pretty nice. It reminds me a lot of mach and what I
+originally wanted mach to become with regard to helping to improve
+developer workflow.</p>
+<h2>Real Code Review</h2>
+<p>Phabricator features a real code review tool -
+<a href="http://www.phabricator.com/docs/phabricator/article/Differential_User_Guide.html">Differential</a>.</p>
+<p>Things like interdiff actually work. It integrates with the code
+repository, which means you can expand context right from the
+review interface. It can detect blocks
+of code that moved between files. It has a nice file tree for navigating
+changed files (optional feature). It hides whitespace only changes by
+default. You can specify a group of people for review and reviews will
+show up in the dashboard of individuals in that group. It has a flag
+to say whether a patch underwent <em>linting</em> before upload. (You can
+configure linting through Arcanist and have your patches linted before
+upload. If you properly deploy linting, style nits all but go away. As I
+like to say, every time I write a style nit in code review, my time is
+wasted and Mozilla is throwing away part of my salary.)</p>
+<p>Mozilla is apparently integrating ReviewBoard into Bugzilla. This is
+good. ReviewBoard's review features are infinitely better than Splinter
+(Bugzilla's current review interface). However, ReviewBoard is mostly a
+standalone tool. What makes Phabricator's approach better is that code
+review integrates tightly with everything else. This enables some pretty
+awesome scenarios. Keep reading for more.</p>
+<h2>Auditing</h2>
+<p>An interesting and potentially very useful feature of Phabricator is
+<a href="http://www.phabricator.com/docs/phabricator/article/Audit_User_Guide.html">auditing</a>.
+Where Differential handles pre-push code review, the Audit
+application supports post-push code review. You may say <em>but all changes
+at Mozilla must go through pre-push code review - there's no use for
+post-push code review</em>. Yes, but post-push review opens up a whole new
+realm of possibilities.</p>
+<p>It's possible for individual users or projects to set up rules to
+automatically trigger audits. For example, as build module owner, I'm
+very interested in ensuring people follow the code review policy of
+having a build peer review changes to make files. With Phabricator, I
+was able to easily configure a rule that automatically creates an audit
+every time a make file has changed but it wasn't signed off by a build
+peer. Front and center on my dashboard are a list of commits that I
+should probably look at. Neat!</p>
+<p>Audits are potentially useful for reviews that focus less on code. For
+example, Firefox Health Report and Telemetry are two Firefox features
+that collect data and send it (anonymously) to Mozilla. Audits could be
+used to flag a privacy review when probes are changed. We often don't
+want this privacy review to hold up code landing. But we do want to
+track that this review occurs before a patch is shipped to our Beta
+channel users. I think audits would be great for facilitating this.</p>
+<p>Of course, there is a web interface to create new audits. Any individual
+can watch anything they have access to. No process involved. Just log in
+and create a rule.</p>
+<p>Mozilla has audits today, but it isn't user intuitive. They commonly
+take the form of Bugzilla keywords or whiteboard entries. Phabricator's
+feature is much more powerful.</p>
+<h2>Creating rules as a result of actions</h2>
+<p>Phabricator has an application called <em>Herald</em> that allows users to
+install rules to do something as a result of an action.</p>
+<p>For example, I can create a rule against new review requests that will
+CC me or automatically add me as a reviewer if a certain file is touched
+by a patch.</p>
+<p>I can have Phabricator email me whenever a specific user makes a commit
+or when a commit touching a specific file is made.</p>
+<p>This feature is self-service. You just open the web interface and
+program custom rules to your heart's content.</p>
+<p>Herald is insanely useful. To my knowledge, Mozilla has nothing quite
+like it today. I wish we did. If Mozilla doesn't official deploy
+Phabricator, I may continue to run my own personal instance just so I
+can have this feature.</p>
+<p>Of course, there's an
+<a href="http://www.phabricator.com/docs/phabricator/article/Events_User_Guide_Installing_Event_Listeners.html">Event Listener API</a>
+so you can write your own events and rules. The sky is literally the
+limit here. For example, we could have all uploaded patches
+automatically submitted to Try so they run the release automation
+gamut. And, we could have Phabricator's background daemons poll for try
+results and report them directly in the web interface!</p>
+<h2>Module ownership defined inside Phabricator</h2>
+<p>Phabricator has a <em>modules</em> concept built into it called
+<a href="http://www.phabricator.com/docs/phabricator/article/Owners_Tool_User_Guide.html">Owners</a>. You
+create a <em>package</em> that has a single owner and a number of members. This
+package can be associated with multiple repositories and individual
+paths inside repositories.</p>
+<p>The power of this feature is realized when it is integrated with other
+components of Phabricator.</p>
+<p>For example, there is a checkbox for each <em>package</em> where you can
+automatically have Phabricator ensure that a package member is involved
+with code review touching files belonging to a package. It will also
+automatically report commits not reviewed by members of a package. How
+insanely useful is that!</p>
+<h2>Other applications and features.</h2>
+<p>Phabricator ships with a number of other applications and features.</p>
+<p>There's a blogging platform called
+<a href="http://www.phabricator.com/docs/phabricator/article/Phame_User_Guide.html">Phame</a>.</p>
+<p>There's a simple wiki called
+<a href="http://www.phabricator.com/docs/phabricator/article/Phriction_User_Guide.html">Phriction</a>.</p>
+<p>There's a simple polling application called
+<a href="http://www.phabricator.com/docs/phabricator/article/Slowvote_User_Guide.html">Slowvote</a>.</p>
+<p>There's a mechanism to upload and view files.</p>
+<p>There's a pastebin-like application called Paste. It integrates with
+authentication and authorization, so you can limit the audience of
+pastes.</p>
+<p>There's a JSON over HTTP API that allows you to do nearly everything.
+(I assume this is what Arcanist uses for everything.)</p>
+<p>There's a built-in badges mechanism called Tokens.</p>
+<p>You can exchange messages and chats with other users (similar to IRC)
+using Conpherence.</p>
+<p>There is a question and answer application called Ponder. People ask
+questions and other people answer them. You can search questions, of
+course. This helps build up a searchable knowledge base.</p>
+<p>There is a mockups viewing and collaboration tool called Pholio. You can
+upload mockups as photos and then annotate images through the web
+interface. e.g. you can create a rectangle and ask a question about what
+you see in that rectangle.</p>
+<p>There is a time tracking application called Phrequent.</p>
+<p>Phabricator can receive inbound email to update issues, reviews, etc.
+You can even file new bugs via email! Having used an email interface to
+Bugzilla at a previous job, I can say from experience this is extremely
+useful.</p>
+<p>Phabricator allows you to cherry pick which applications you have
+enabled. Want just code review and repository browsing without issue
+tracking? You can do that.</p>
+<h2>Test instance for Mozilla</h2>
+<p>As I alluded to above, I have installed an instance of Phabricator on
+EC2. My intention for this instance is for Mozillians to start playing
+with it and seeing if it's something they'll like.</p>
+<p>The test instance is available at
+<a href="http://phabricator.gregoryszorc.com/">http://phabricator.gregoryszorc.com/</a>.</p>
+<p>You can log in using OAuth with one of the configured service providers
+or by creating an account. Please note that I'm only serving on plain
+HTTP, so your password are sent in the clear.</p>
+<p>I have configured a few popular Mozilla repositories with the install.
+It's easy to configure new repositories. Send me their info and I'll add
+them!</p>
+<p>While the web UI is nice, Arcanist is essential to get the most out of
+Phabricator. To get <em>arc</em> working with your machine, follow the
+<a href="http://www.phabricator.com/docs/phabricator/article/Arcanist_Quick_Start.html">official instructions</a>
+to install Arcanist. For your <em>.arcconfig</em> file, use something like:</p>
+<pre><code>{
+  "project_id": "gecko",
+  "conduit_uri": "http://phabricator.gregoryszorc.com/"
+}
+</code></pre>
+<p>Then, have Arcanist fetch authentication credentials:</p>
+<pre><code>$ arc install-certificate
+</code></pre>
+<p>From there, run <em>arc help</em> and see what you can do!</p>
+<p>Of course, you'll need to adjust the <em>project_id</em> when appropriate.</p>
+<p>When you use this Phabricator instance, please keep the following in
+mind:</p>
+<ul>
+<li>I'm hosting this on my own dime and have the most powerful EC2
+  instance I felt like paying out of pocket. That instance sadly isn't
+  powerful enough. I installed Phabricator on my desktop at home and it
+  flies like a rocket ship. Please don't blame slowness on Phabricator.</li>
+<li>I didn't even attempt to tune the HTTP or MySQL servers yet. Expect
+  more slowness.</li>
+<li>The service and all the data inside could go away at any time. I don't
+  have monitoring of the service (yet). <strong>Use at your own risk.</strong></li>
+<li>At the time I wrote this, Phabricator was still indexing some
+  repositories, notably mozilla-central. Anything interacting with
+  source navigation appears to be slow as a result.</li>
+<li>The install is effectively a vanilla, out-of-the-box install. Things
+  like Mozilla styling could presumably be added. There are likely also
+  many sub-par configuration settings. Leave comments and I'll see about
+  changing things.</li>
+<li>The front page insists on a sign-in. However, I believe all of the
+  content should be accessible to the public. Contact me if you know of
+  a way to fix this!</li>
+<li>This could be hooked up with Persona. I couldn't find a Persona auth
+  provider and coding one is beyond my current PHP skills. If someone
+  writes one, let me know and I'll install it!</li>
+<li>I could hook up authentication against Mozilla's LDAP server. However,
+  I don't want your Mozilla credentials going to my personal server nor
+  traveling over the wire in the clear.</li>
+<li>I'm not an expert on Phabricator. I'll try to help where appropriate.
+  But don't count on me being a support desk.</li>
+</ul>
+<h2>Next steps at Mozilla</h2>
+<p>How should we use Phabricator at Mozilla? Good question!</p>
+<p>I encourage people to play around with my personal instance. Upload some
+patches. Perform some code reviews. Set up Herald rules to notify you of
+repository change events. Just keep in mind that I don't guarantee an
+SLA for my instance. So please don't rely on it.</p>
+<p>I anticipate that people will come to the conclusion that Phabricator is
+awesome and that Mozilla should install an officially supported instance
+on a mozilla.org domain with proper hardware. I'll likely be reaching
+out to IT shortly to see how feasible that is. But, I imagine it will
+get shuffled to the bottom of the priority queue unless people make
+noise. If you like Phabricator, tell other people about it. Let your
+management chain know how amazing it is. If enough of or the right
+people clamor for it, priorities can get changed.</p>
+<p>I hope you enjoy Phabricator!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/14/phabricator-is-awesome#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="why-firefox-builds-are-slow"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/10/01/why-firefox-builds-are-slow" rel="bookmark" title="Permanent Link to Why Firefox builds are slow">Why Firefox builds are slow</a></h2>
   <small>October 01, 2013 at 01:30 AM | categories: 
@@ -249,53 +519,6 @@ incomplete data, I apologize.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/08/30/visualizing-mozilla's-release-infrastructure-machine-efficiency#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-setup-wizard-for-firefox-development"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development" rel="bookmark" title="Permanent Link to Mercurial setup wizard for Firefox development">Mercurial setup wizard for Firefox development</a></h2>
-  <small>July 29, 2013 at 05:45 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I'm a big fan of tools that encourage and/or enforce the following of
-best practices and that help people become more productive.</p>
-<p>One of the tools that Firefox developers interact with nearly daily is
-Mercurial. As I've observed from coworkers and from community
-contributors, many don't have Mercurial configured for optimal
-development. For first-time contributors, this can manifest in patch
-rejection - an experience that can be embarassing and demotivating. This
-is frustrating to me because most issues are easily identifiable and
-correctable. And, when addressed, everyone wins.</p>
-<p>Anyway, I'm pleased to announce that there is now a configuration wizard
-in the Firefox source tree to help with configuring Mercurial. To run it,
-just type:</p>
-<pre><code>./mach mercurial-setup
-</code></pre>
-<p>Currently, it's aimed for first-time contributors. So, it's missing
-things that more seasoned developers rely on. But you need to start
-somewhere, right?</p>
-<p>Currently, the tool isn't advertised anywhere other than <em>mach help</em>.
-Please run it and report issues in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=794580">bug 794580</a> or
-file a new report. Once things have baked in, I'd like to add some kind
-of notification/tips system to mach where it will encourage you to do
-things like automatically run <em>mach mercurial-setup</em>. Until then, I
-recommend trying to remember to run <em>mach mercurial-setup</em> every few
-weeks to ensure your Mercurial environment is up to date and properly
-configured.</p>
-<p>I'd like to thank Nick Alexander for sharing my enthusiasm for helping
-contributors and for taking the time to review this work.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../8">« Previous Page</a>
   --  
