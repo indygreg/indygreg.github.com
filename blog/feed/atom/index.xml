@@ -7,12 +7,50 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-12-05T07:34:55Z</updated>
+  <updated>2014-12-18T17:42:15Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[mach sub-commands]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/12/18/mach-sub-commands" />
+    <id>http://gregoryszorc.com/blog/2014/12/18/mach-sub-commands</id>
+    <updated>2014-12-18T09:45:00Z</updated>
+    <published>2014-12-18T09:45:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[mach sub-commands]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/12/18/mach-sub-commands"><![CDATA[<p><a href="https://pypi.python.org/pypi/mach/">mach</a> - the generic command line
+dispatching tool that powers the <strong>mach</strong> command to aid Firefox
+development - now has support for sub-commands.</p>
+<p>You can now create simple and intuitive user interfaces involving
+sub-actions. e.g.</p>
+<pre><code>mach device sync
+mach device run
+mach device delete
+</code></pre>
+<p>Before, to do something like this would require a universal argument
+parser or separate mach commands. Both constitute a poor user
+experience (confusing array of available arguments or proliferation of
+top-level commands). Both result in <em>mach help</em> being difficult to
+comprehend. And that's not good for usability and approachability.</p>
+<p>Nothing in Firefox currently uses this feature. Although there is an
+in-progress patch in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1108293">bug 1108293</a>
+for providing a mach command to analyze C/C++ build dependencies.
+It is my hope that others write useful commands and functionality
+on top of this feature.</p>
+<p>The documentation for mach has also been rewritten. It is now
+<a href="https://ci.mozilla.org/job/mozilla-central-docs/Tree_Documentation/python/mach/index.html">exposed</a>
+as part of the in-tree Sphinx documentation.</p>
+<p>Everyone should thank <a href="https://mozillians.org/en-US/u/ahal/">Andrew Halberstadt</a>
+for promptly reviewing the changes!</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -1855,34 +1893,5 @@ As I was putting the finishing touches on this article, I discovered
 I hope the Docker community latches on to these ideas and makes
 deterministic, verifiable, and minimal images the default, not the
 exception.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Mozilla Mercurial Statistics]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/09/30/mozilla-mercurial-statistics" />
-    <id>http://gregoryszorc.com/blog/2014/09/30/mozilla-mercurial-statistics</id>
-    <updated>2014-09-30T13:17:00Z</updated>
-    <published>2014-09-30T13:17:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Mozilla Mercurial Statistics]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/09/30/mozilla-mercurial-statistics"><![CDATA[<p>I recently gained SSH access to Mozilla's Mercurial servers. This allows
-me to run some custom queries directly against the data. I was
-interested in some high-level numbers and thought I'd share the results.</p>
-<p>hg.mozilla.org hosts a total of 3,445 repositories. Of these, there are
-1,223 distinct root commits (i.e. distinct graphs). Altogether, there
-are 32,123,211 commits. Of those, there are 865,594 distinct commits (not
-double counting commits that appear in multiple repositories).</p>
-<p>We have a high ratio of total commits to distinct commits (about 37:1).
-This means we have high duplication of data on disk. This basically
-means a lot of repos are clones/forks of existing ones. No big surprise
-there.</p>
-<p>What is surprising to me is the low number of total distinct commits. I
-was expecting the number to run into the millions. (Firefox itself
-accounts for ~240,000 commits.) Perhaps a lot of the data is sitting in
-Git, Bitbucket, and GitHub. Sounds like a good data mining expedition...</p>]]></content>
   </entry>
 </feed>
