@@ -7,12 +7,185 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-12-18T17:42:15Z</updated>
+  <updated>2014-12-19T22:40:48Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Why hg.mozilla.org is Slow]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow" />
+    <id>http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow</id>
+    <updated>2014-12-19T14:40:00Z</updated>
+    <published>2014-12-19T14:40:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Why hg.mozilla.org is Slow]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow"><![CDATA[<p>At Mozilla, I often hear statements like <em>Mercurial is slow.</em> That's a
+very general statement. Depending on the context, it can mean one or
+more of several things:</p>
+<ul>
+<li>My Mercurial workflow is not very efficient</li>
+<li><em>hg</em> commands I execute are slow to run</li>
+<li><em>hg</em> commands I execute appear to stall</li>
+<li>The Mercurial server I'm interfacing with is slow</li>
+</ul>
+<p>I want to spend time talking about a specific problem: why
+hg.mozilla.org (the server) is slow.</p>
+<h2>What Isn't Slow</h2>
+<p><strong>If you are talking to hg.mozilla.org over HTTP or HTTP
+(https://hg.mozilla.org/), there should not currently be any server
+performance issues</strong>. Our Mercurial HTTP servers are pretty beefy and
+are able to absorb a lot of load.</p>
+<p>If https://hg.mozilla.org/ is slow, chances are:</p>
+<ul>
+<li>You are doing something like cloning a 1+ GB repository.</li>
+<li>You are asking the server to do something really expensive (like
+  generate JSON for 100,000 changesets via the pushlog query interface).</li>
+<li>You don't have a high bandwidth connection to the server.</li>
+<li>There is a network event.</li>
+</ul>
+<h2>Previous Network Events</h2>
+<p>There have historically been network capacity issues in the datacenter
+where hg.mozilla.org is hosted (SCL3).</p>
+<p>During Mozlandia, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1107156">excessive traffic to ftp.mozilla.org</a>
+essentially saturated the SCL3 network. During this time, requests to
+hg.mozilla.org were timing out: Mercurial traffic just couldn't traverse
+the network. Fortunately, events like this are quite rare.</p>
+<p>Up until recently, Firefox release automation was effectively
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096337">overwhelming the network</a>
+by doing some clownshoesy things.</p>
+<p>For example, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096653">gaia-central was being cloned all the time</a>
+We had a ~1.6 GB repository being cloned over a thousand times per day. We
+were transferring close to 2 TB of gaia-central data out of Mercurial servers
+per day</p>
+<p>We also found issues with
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096650">pushlogs sending 100+ MB responses</a>.</p>
+<p>And the <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1100574">build/tools repo was getting cloned for every job</a>. Ditto for mozharness.</p>
+<p>In all, <strong>we identified a few terabytes of excessive Mercurial traffic
+that didn't need to exist</strong>. This excessive traffic was saturating the
+SCL3 network and slowing down not only Mercurial traffic, but other
+traffic in SCL3 as well.</p>
+<p>Fortunately, people from Release Engineering were quick to respond to
+and fix the problems once they were identified. The problem is now
+firmly in control. Although, given the scale of Firefox's release
+automation, any new system that comes online that talks to version
+control is susceptible to causing server outages. I've already raised
+this concern when reviewing some TaskCluster code. The thundering herd
+of automation will be an ongoing concern. But I have plans to further
+mitigate risk in 2015. Stay tuned.</p>
+<p>Looking back at our historical data, it appears that we hit these
+network saturation limits a few times before we reached a tipping point
+in early November 2014. Unfortunately, we didn't realize this because up
+until recently, we didn't have a good source of data coming from the
+servers. We lacked the tooling to analyze what we had. We lacked the
+experience to know what to look for. Outages are effective flashlights.
+We learned a lot and know what we need to do with the data moving
+forward.</p>
+<h2>Available Network Bandwidth</h2>
+<p>One person pinged me on IRC with the comment <em>Git is cloning much faster
+than Mercurial.</em> I asked for timings and the Mercurial clone wall time
+for Firefox was much higher than I expected.</p>
+<p>The reason was network bandwidth. This person was performing a Git clone
+between 2 hosts in EC2 but was performing the Mercurial clone between
+hg.mozilla.org and a host in EC2. In other words, they were partially
+comparing the performance of a 1 Gbps network against a link over the
+public internet! When they did a fair comparison by removing the network
+connection as a variable, the clone times rebounded to what I expected.</p>
+<p>The single-homed nature of hg.mozilla.org in a single datacenter in
+northern California is not only bad for disaster recovery reasons, it
+also means that machines far away from SCL3 or connecting to SCL3 over a
+slow network aren't getting optimal performance.</p>
+<p>In 2015, expect us to build out a geo-distributed hg.mozilla.org so that
+connections are hitting a server that is closer and thus faster. This
+will probably be targeted at Firefox release automation in AWS first. We
+want those machines to have a fast connection to the server <strong>and</strong> we
+want their traffic isolated from the servers developers use so that
+hiccups in automation don't impact the ability for humans to access
+and interface with source code.</p>
+<h2>NFS on SSH Master Server</h2>
+<p>If you connect to http://hg.mozilla.org/ or https://hg.mozilla.org/, you
+are hitting a pool of servers behind a load balancer. These servers have
+repository data stored on local disk, where I/O is fast. In reality,
+most I/O is serviced by the page cache, so local disks don't come into
+play.</p>
+<p>If you connect to ssh://hg.mozilla.org/, you are hitting a single,
+master server. Its repository data is hosted on an NFS mount. I/O on the
+NFS mount is horribly slow. Any I/O intensive operation performed on the
+master is much, much slower than it should be. Such is the nature of
+NFS.</p>
+<p>We'll be exploring ways to mitigate this performance issue in 2015. But
+it isn't the biggest source of performance pain, so don't expect anything
+immediately.</p>
+<h2>Synchronous Replication During Pushes</h2>
+<p>When you <em>hg push</em> to hg.mozilla.org, the changes are first made on the
+SSH/NFS master server. They are subsequently mirrored out to the HTTP
+read-only slaves.</p>
+<p>As is currently implemented, the mirroring process is performed
+synchronously during the push operation. The server waits for the
+mirrors to complete (to a reasonable state) before it tells the client
+the push has completed.</p>
+<p>Depending on the repository, the size of the push, and server and
+network load, <strong>mirroring commonly adds 1 to 7 seconds to push times</strong>.
+This is time when a developer is sitting at a terminal, waiting for <em>hg
+push</em> to complete. The time for Try pushes can be larger: 10 to 20
+seconds is not uncommon (but fortunately not the norm).</p>
+<p>The current mirroring mechanism is overly simple and prone to many
+failures and sub-optimal behavior. I plan to work on fixing mirroring in
+2015. When I'm done, there should be no user-visible mirroring delay.</p>
+<h2>Pushlog Replication Inefficiency</h2>
+<p>Up until yesterday (when we
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1112415">deployed a rewritten pushlog extension</a>,
+the replication of pushlog data from master to server was very
+inefficient. Instead of tranferring a delta of pushes since last pull,
+we were literally copying the underlying SQLite file across the network!</p>
+<p>Try's pushlog is ~30 MB. mozilla-central and mozilla-inbound are in the
+same ballpark. 30 MB x 10 slaves is a lot of data to transfer. These
+operations were capable of periodically saturating the network, slowing
+everyone down.</p>
+<p>The rewritten pushlog extension performs a delta transfer automatically
+as part of <em>hg pull</em>. Pushlog synchronization now completes in
+milliseconds while commonly only consuming a few kilobytes of network
+traffic.</p>
+<p>Early indications reveal that deploying this change yesterday decreased the
+push times to repositories with long push history by 1-3s.</p>
+<h2>Try</h2>
+<p>Pretty much any interaction with the
+<a href="https://hg.mozilla.org/try">Try repository</a> is guaranteed to have poor
+performance. The Try repository is doing things that distributed
+versions control systems weren't designed to do. This includes Git.</p>
+<p>If you are using Try, all bets are off. Performance will be problematic
+until we roll out the <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1055298">headless try</a>
+repository.</p>
+<p>That being said, we've made changes recently to make Try perform better.
+<a href="https://twitter.com/lxt/status/546042588822642688">The median time for pushing to Try</a>
+has decreased significantly in the past few weeks. The first dip in
+mid-November was due to upgrading the server from Mercurial 2.5 to
+Mercurial 3.1 and from converting Try to use <em>generaldelta</em> encoding.
+The dip this week has been from merging all heads and from deploying the
+aforementioned pushlog changes. <strong>Pushing to Try is now significantly
+faster than 3 months ago.</strong></p>
+<h2>Conclusion</h2>
+<p>Many of the reasons for hg.mozilla.org slowness are known. More often
+than not, they are due to clownshoes or inefficiencies on Mozilla's
+part rather than fundamental issues with Mercurial.</p>
+<p><strong>We have made significant progress at making hg.mozilla.org faster.</strong>
+But we are not done. We are continuing to invest in fixing the
+sub-optimal parts and making hg.mozilla.org faster yet. I'm confident
+that within a few months, nobody will be able to say that the servers
+are a source of pain like they have been for years.</p>
+<p>Furthermore, Mercurial is investing in features to make the wire
+protocol faster, more efficient, and more powerful. When deployed,
+these should make pushes faster on <em>any</em> server. They will also enable
+workflow enhancements, such as Facebook's experimental extension to
+perform rebases as part of push (eliminating push races and having to
+manually rebase when you lose the push race).</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -1678,220 +1851,5 @@ the weeks of people time invested into improving the state of testing
 was well spent and will pay enormous dividends going forward. Looking
 back, the mountain of technical debt now looks like a mole hill. I feel
 good knowing that I played a part in making this change.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Deterministic and Minimal Docker Images]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images" />
-    <id>http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images</id>
-    <updated>2014-10-13T16:50:00Z</updated>
-    <published>2014-10-13T16:50:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="sysadmin" />
-    <category scheme="http://gregoryszorc.com/blog" term="Docker" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Deterministic and Minimal Docker Images]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images"><![CDATA[<p><a href="https://www.docker.com/">Docker</a> is a really nifty tool. It
-vastly lowers the barrier to distributing and executing applications. It
-forces people to think about building server side code as a collection
-of discrete applications and services. When it was released, I instantly
-realized its potential, including for uses it wasn't primary intended
-for, such as applications in automated build and test environments.</p>
-<p>Over the months, Docker's feature set has grown and many of its
-shortcomings have been addressed. It's more usable than ever. Most of my
-early complaints and concerns have been addressed or are actively being
-addressed.</p>
-<p>But one supposedly solved part of Docker still bothers me: image
-creation.</p>
-<p>One of the properties that gets people excited about Docker is the
-ability to ship execution environments around as data. Simply produce an
-image once, transfer it to a central server, pull it down from anywhere,
-and execute. That's pretty damn elegant. I dare say Docker has solved
-the image <em>distribution</em> problem. (Ignore for a minute that the
-implementation detail of how images map to filesystems still has a few
-quirks to work out. But they'll solve that.)</p>
-<p>The ease at which Docker manages images is brilliant. I, like many, was
-overcome with joy and marvelled at how amazing it was. But as I started
-producing more and more images, my initial excitement turned to
-frustration.</p>
-<p>The thing that bothers me most about images is that the de facto and
-recommended method for producing images is neither deterministic nor
-results in minimal images. I strongly believe that the current
-recommended and applied approach is far from optimal and has too many
-drawbacks. Let me explain.</p>
-<p>If you look at the Dockerfiles from the official
-<a href="https://github.com/docker-library">Docker library</a>
-(examples: <a href="https://github.com/docker-library/node/blob/51b1dd1984e287189106884c453ca506737eed78/0.11/Dockerfile">Node</a>,
-<a href="https://github.com/docker-library/mysql/blob/master/5.7/Dockerfile">MySQL</a>),
-you notice something in common: they tend to use <em>apt-get update</em> as one
-of their first steps. For those not familiar with Apt, that command will
-synchronize the package repository indexes with a remote server. In
-other words, depending on when you run the command, different versions
-of packages will be pulled down and the result of image creation will
-differ. The same thing happens when you clone a Git repository. Depending
-on when you run the command - when you create the image - you may get
-different output. If you create an image from scratch today, it could have
-a different version of say Python than it did the day before. This can be
-a big deal, especially if you are trying to use Docker to accurately
-reproduce environments.</p>
-<p>This non-determinism of building Docker images really bothers me. It
-seems to run counter to Docker's goal of facilitating reliable
-environments for running applications. Sure, one person can
-produce an image once, upload it to a Docker Registry server, and have
-others pull it. But there are applications where independent production
-of the same base image is important.</p>
-<p>One area is the security arena. There are many people who are
-justifiably paranoid about running binaries produced by others and
-pre-built Docker images set off all kinds of alarms. So, these people
-would rather build an image from source, from a Dockerfile, than pull
-binaries. Except then they build the image from a Dockerfile and the
-application doesn't run because of an incompatibility with a new
-version of some random package whose version wasn't pinned. Of course,
-you probably lost numerous hours tracing down this obscure reason. How
-frustrating! Determinism and verifiability as part of Docker image
-creation help solve this problem.</p>
-<p>Deterministic image building is also important for disaster recovery.
-What happens if your Docker Registry and all hosts with copies of its
-images go down? If you go to build the images from scratch again, what
-guarantee do you have that things will behave the same? Without
-determinism, you are taking a risk that things will be different and
-your images won't work as intended. That's scary. (Yes, Docker is no
-different here from existing tools that attempt to solve this problem.)</p>
-<p>What if your open source product relies on a proprietary component that
-can't be legally distributed? So much for Docker image distribution. The
-best you can do is provide a base image and instructions for completing
-the process. But if that doesn't work deterministically, your users now
-have varying Docker images, again undermining Docker's goal of
-increasing consistency.</p>
-<p>My other main concern about Docker images is that they tend to be large,
-both in size and in scope. Many Docker images use a full Linux install
-as their base. A lot of people start with a base e.g. Ubuntu or Debian
-install, <em>apt-get install</em> the required packages, do some extra
-configuration, and call it a day. Simple and straightforward, yes. But
-this practice makes me more than a bit uneasy.</p>
-<p>One of the themes surrounding Docker is minimalism. Containers are
-lighter than VMs; just ship your containers around; deploy dozens or
-hundreds of containers simultaneously; compose your applications of
-many, smaller containers instead of larger, monolithic ones. I get it
-and am totally on board. So why are Docker images built on top of the
-bloaty excess of a full operating system (modulo the kernel)? Do I
-really need a package manager in my Docker image? Do I need a compiler
-or header files so I can e.g. build binary Python extensions? No, I
-don't, thank you.</p>
-<p>As a security-minded person, I want my Docker images to consist of only
-the files they need, especially binary files. By leaving out
-non-critical elements from your image and your run-time environment,
-you are reducing the surface area to attack. If your application
-doesn't need a shell, don't include a shell and don't leave yourself
-potentially vulnerable to
-<a href="https://en.wikipedia.org/wiki/Shellshock_%28software_bug%29">shellshock</a>.
-I want the attacker who inevitably breaks out of my application into the
-outer container to get nothing, not something that looks like an operating
-system and has access to tools like curl and wget that could potentially
-be used to craft a more advanced attack (which might even be able to
-exploit a kernel vulnerability to break out of the container). Of
-course, you can and should pursue additional security protections in
-addition to attack surface reduction to secure your execution
-environment. Defense in depth. But that doesn't give Docker images a
-free pass on being bloated.</p>
-<p>Another reason I want smaller containers is... because they are smaller.
-People tend to have relatively slow upload bandwidth. Pushing Docker
-images that can be hundreds of megabytes clogs my tubes. However, I'll
-gladly push 10, 20, or even 50 megabytes of only the necessary data.
-When you factor in that Docker image creation isn't deterministic, you
-also realize that different people are producing different versions of
-images from the same Dockerfiles and that you have to spend extra
-bandwidth transferring the different versions around. This bites me all
-the time when I'm creating new images and am experimenting with the
-creation steps. I tend to bypass the fake caching mechanism (fake
-because the output isn't deterministic) and this really results in data
-explosion.</p>
-<p>I understand why Docker images are neither deterministic nor minimal:
-making them so is a hard problem. I think Docker was right to prioritize
-solving distribution (it opens up many new possibilities). But I really
-wish some effort could be put into making images deterministic (and thus
-verifiable) and more minimal. I think it would make Docker an even more
-appealing platform, especially for the security conscious. (As an aside,
-I would absolutely love if we could ship a
-<a href="https://brendaneich.com/2014/01/trust-but-verify/">verifiable Firefox</a>
-build, for example.)</p>
-<p>These are hard problems. But they are solvable. Here's how I would do
-it.</p>
-<p>First, let's tackle deterministic image creation. Despite computers and
-software being ideally deterministic, building software tends not to be,
-so deterministic image creation is a hard problem. Even
-tools like Puppet and Chef which claim to solve aspects of this problem
-don't do a very good job with determinism. Read my post on
-<a href="/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration/">The Importance of Time on Machine Provisioning</a>
-for more on the topic. But there are solutions. <a href="http://nixos.org/">NixOS</a>
-and the <a href="http://nixos.org/nix/">Nix</a> package manager have the potential
-to be used as the basis of a deterministic image building platform.
-The <a href="http://nixos.org/nix/about.html">high-level overview of Nix</a> is
-that the inputs and contents of a package determine the package ID. If
-you know how Git or Mercurial get their commit SHA-1's, it's pretty much
-the same concept. In theory, two people on different machines start with
-the same environment and bootstrap the exact same packages, all from
-source. <a href="https://gitian.org/">Gitian</a> is a similar solution. Although I
-prefer Nix's content-based approach and how it goes about managing
-packages and environments. Nix feels so right as a base for
-deterministically building software. Anyway, yes, fully verifiable
-build environments are turtles all the way down (I recommend reading
-<a href="https://blog.torproject.org/blog/deterministic-builds-part-two-technical-details">Tor's overview of the problem and their approach</a>.
-However, Nix's approach addresses many of the turtles and silences most
-of the critics. I would absolutely love if more and more Docker images
-were the result of a deterministic build process like Nix. Perhaps you
-could define the full set of packages (with versions) that would be
-used. Let's call this the package manifest. You would then PGP sign and
-distribute your manifest. You could then have Nix step through all the
-dependencies, compiling everything from source. If PGP verification
-fails, compilation output changes, or extra files are needed, the build
-aborts or issues a warning. I have a feeling the security-minded
-community would go crazy over this. I know I would.</p>
-<p>OK, so now you can use Nix to produce packages (and thus images)
-(more) deterministically. How do you make them minimal? Well, instead of
-just packaging the entire environment, I'd employ tools like
-<a href="http://www.floc.net/makejail/">makejail</a>. The purpose of makejail is to
-create minimal chroot <em>jail</em> environments. These are very similar to
-Docker/LXC containers. In fact, you can often take a tarball of a chroot
-directory tree and convert it into a Docker container! With makejail,
-you define a configuration file saying among other things what binaries
-to run inside the jail. makejail will trace file I/O of that binary and
-copy over accessed files. The result is an execution environment that
-(hopefully) contains only what you need. Then, create an archive of that
-environment and pipe it into <em>docker build</em> to create a minimal Docker
-image.</p>
-<p>In summary, Nix provides you with a reliable and verifiable build
-environment. Tools like makejail pair down the produced packages into
-something minimal, which you then turn into your Docker image. Regular
-people can still pull binary images, but they are much smaller and more
-in tune with Docker's principles of minimalism. The paranoid among us can
-produce the same bits from source (after verifying the inputs look
-credible and waiting through a few hours of compiling). Or, perhaps
-the individual files in the image could be signed and thus verified via
-trust somehow? The company deploying Docker can have peace of mind
-that disaster scenarios resulting in Docker image loss should not
-result in total loss of the image (just rebuild it exactly as it was
-before).</p>
-<p>You'll note that my proposed solution does not involve Dockerfiles as
-they exist today. I just don't think Dockerfile's design of stackable
-layers of commands is the right model, at least for people who care
-about determinism and minimalism. You really want a recipe that
-knows how to create a set of relevant files and some metadata like what
-ports to expose, what command to run on container start, etc and turn
-that into your Docker image. I suppose you could accomplish this all
-inside Dockerfiles. But that's a pretty radical departure from how
-Dockerfiles work today. I'm not sure the two solutions are compatible.
-Something to think about.</p>
-<p>I'm pretty sure of what it would take to add deterministic and verifiable
-building of minimal and more secure Docker images. And, if someone
-solved this problem, it could be applicable outside of Docker (again,
-Docker images are essentially chroot environments plus metadata).
-As I was putting the finishing touches on this article, I discovered
-<a href="http://zef.me/6049/nix-docker/">nix-docker</a>. It looks very promising!
-I hope the Docker community latches on to these ideas and makes
-deterministic, verifiable, and minimal images the default, not the
-exception.</p>]]></content>
   </entry>
 </feed>

@@ -51,6 +51,112 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="visual-studio-project-generation-for-mozilla-central"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central" rel="bookmark" title="Permanent Link to Visual Studio Project Generation for mozilla-central">Visual Studio Project Generation for mozilla-central</a></h2>
+  <small>August 28, 2012 at 12:00 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I have very alpha support for Visual Studio project generation for
+mozilla-central that daring people can dogfood.</p>
+<p>I want to emphasize that this is extremely alpha. Normally, I wouldn't
+release things as fragile as they are. But, I know Windows developers
+sorely miss Visual Studio, especially IntelliSense. The current Visual
+Studio projects support IntelliSense, so I want to get this in the hands
+of Windows developers ASAP.</p>
+<p>The current directions for making this all work are a bit hacky. Things
+will change once things have matured. For now, please excuse the mess.</p>
+<p>First, you will need to grab the code. If you use Git, set up a remote
+to my repository:</p>
+<pre><code>git remote add indygreg git://github.com/indygreg/mozilla-central.git
+git fetch indygreg
+</code></pre>
+<p>The branch of interest is <em>build-splendid</em>. I periodically rebase this
+branch on top of master. You have been warned.</p>
+<p>You can switch to this branch:</p>
+<pre><code>git checkout -b build-splendid indygreg/build-splendid
+</code></pre>
+<p>Alternatively, you can squash it down to a single commit and merge it
+into your local branch. Once you've done that, you can record the SHA-1
+of the commit and cherry-pick that wherever you like!</p>
+<pre><code>git merge --squash indygreg/build-splendid
+git commit
+</code></pre>
+<p>In the current state, you need to build the tree or the Visual Studio
+projects will complain about missing files. It doesn't matter if you
+build the tree before or after Visual Studio projects are generated.
+But, we might as well get it out of the way. From your MozillaBuild
+environment, run:</p>
+<pre><code>./mach build
+</code></pre>
+<p>That should <em>just work</em>. If it doesn't, you may need to configure
+mach.ini. See my <a href="http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid/">previous post</a>
+on how to configure mach.ini. As a reference, my Windows config is:</p>
+<pre><code>[build]
+
+configure_extra = --disable-webgl
+
+[compiler]
+
+[paths]
+source_directory = c:\dev\src\mozilla-central-git
+object_directory = c:\dev\src\mozilla-central-git\objdir
+</code></pre>
+<p>Now, to generate Visual Studio project files:</p>
+<pre><code>./mach backendconfig visualstudio
+</code></pre>
+<p>That should take about a minute to finish. When it's done, it should
+have created <em>objdir/msvc/mozilla.sln</em>. You should be able to load that
+in Visual Studio!</p>
+<p>You will need to regenerate Visual Studio project files when the build
+config changes. As a rule of thumb, do this every time you pull source.
+You don't need to perform a full build before you generate Visual Studio
+files (you do need to perform configure, however). However, if you have
+not performed a full build, Visual Studio may not be able to find some
+files, like headers generated from IDLs.</p>
+<p><strong>Please close the solution before regenerating the project files.</strong> If
+you don't, Visual Studio puts up a modal dialog for each project file
+that changed and you have to click through over a hundred of these. It's
+extremely frustrating. I'm investigating workarounds.</p>
+<h2>Current State</h2>
+<p>Currently, it only generates projects for C/C++ compilation (libraries).
+I still need to add support for IDL, headers, etc. However, each
+project has proper compiler flags, header search paths, etc. So,
+IntelliSense is happy and some things do manage to compile!</p>
+<p>Many parts are broken and sub-par.</p>
+<p>I've only tested on Visual Studio 2008. If you are running Visual Studio
+\2010, you can try to upgrade the solution. This <em>may</em> work. The backend
+supports generating solutions for different versions. But, I haven't
+tested things work on non-2008 and I don't want to expose untested behavior.</p>
+<p>Compiling within Visual Studio works for some things. On my system, I
+get a lot of <em>nullptr not defined</em> errors. I'm not sure why. This will
+hopefully be worked out soon.</p>
+<p>If you do manager to compile within Visual Studio, the output files
+don't go in the right places. So, if you do a build from the
+command-line, it will have to re-compile to pick up changes.</p>
+<p>Project names are based on the name of the library they produce. I'm not
+sure if this is the best solution.</p>
+<p>Project dependencies are not set up. They will be added later.</p>
+<p>Projects for linking libxul or building firefox.exe are not yet
+provided. Along the same vein, debugging support is not built-in. I'm
+working on it.</p>
+<p>Basically, IntelliSense works. You can now use Visual Studio as a rich
+editor. Hopefully this is a step in the right direction.</p>
+<p>I'm anxious to hear if this works for other people. Please leave
+comments!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="build-firefox-faster-with-build-splendid"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/08/15/build-firefox-faster-with-build-splendid" rel="bookmark" title="Permanent Link to Build Firefox Faster with Build Splendid">Build Firefox Faster with Build Splendid</a></h2>
   <small>August 15, 2012 at 02:30 PM | categories: 
@@ -1236,260 +1342,6 @@ faster. By how much, I have no clue.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mozilla-build-system-plan-of-attack"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/07/25/mozilla-build-system-plan-of-attack" rel="bookmark" title="Permanent Link to Mozilla Build System Plan of Attack">Mozilla Build System Plan of Attack</a></h2>
-  <small>July 25, 2012 at 11:30 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Since I published my <a href="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla%27s-build-system/">brain dump
-post</a>
-on improving Mozilla's build system for Gecko applications (including
-Firefox and Firefox OS), there has been some exciting progress.</p>
-<p>It wasn't stated in that original post, but the context for that post
-was to propose a plan in preparation of a meeting between the core
-contributors to the build system at Mozilla. I'm pleased to report that
-the plan was generally well-received.</p>
-<p>We pretty much all agreed that parts 1, 2, and 3 are all important and
-we should actively work towards them. Parts 4, 5, and 6 were a bit more
-contentious. There are some good parts and some bad parts. We're not
-ready to adopt them just quite yet. (Don't bother reading the original
-post to look up what these parts corresponded to - I'll cover that
-later.)</p>
-<p>Since that post and meeting, there has also been additional discussion
-around more specifics. I am going to share with you now where we stand.</p>
-<h2>BuildSplendid</h2>
-<p><strong>BuildSplendid</strong> is an umbrella term associated with projects/goals to
-make the developer experience (including building) better - more
-splendid if you will.</p>
-<p><strong>BuildSplendid</strong> started as the name of my personal Git branch for
-hacking on the build system. I'm encouraging others to adopt the term
-because, well, it is easier to refer to (people like project codenames).
-If it doesn't stick, that's fine by me - there are other terms that
-will.</p>
-<h2>BuildFaster</h2>
-<p>An important project inside <em>BuildSplendid</em> is <strong>BuildFaster</strong>.</p>
-<p><em>BuildFaster</em> focuses on the following goals:</p>
-<ol>
-<li>Making the <em>existing</em> build system faster, better, stronger (but not
-   harder).</li>
-<li>Making changes to the build system to facilitate the <em>future</em> use of
-   alternate build backends (like Tup or Ninja). Work to enable Visual
-   Studio, Xcode, etc project generation also falls here.</li>
-</ol>
-<p>The distinction between these goals can be murky. But, I'll try.</p>
-<p>Falling squarely in #1 are:</p>
-<ul>
-<li>Switching the buildbot infrastructure to use pymake on Windows</li>
-</ul>
-<p>Falling in #2 are:</p>
-<ul>
-<li>Making Makefile.in's data-centric</li>
-<li>Supporting multiple build backends</li>
-</ul>
-<p>Conflated between the two are:</p>
-<ul>
-<li>Ensuring Makefile's no-op if nothing has changed</li>
-<li>Optimizing existing make rules. This involves merging related
-  functionality as well as eliminating clown shoes in existing rules.</li>
-</ul>
-<p>The two goals of <em>BuildFaster</em> roughly map to the short-term and long-term
-strategies, respectively. There is consensus that recursive make (our
-existing build backend) does not scale and we will plateau in terms of
-performance no matter how optimal we make it. That doesn't mean we are
-giving up on it: there are things we can and should do so our existing
-non-recursive make backend builds faster.</p>
-<p>In parallel, we will also work towards the longer-term solution of
-supporting alternate build backends. <strong>This includes non-recursive
-make</strong> as well as things like Tup, Ninja, and even Visual Studio and
-Xcode. (I consider non-recursive make to be a separate build backend
-because changing our existing Makefile.in's to support non-recursive
-execution effectively means rewriting the input files (Makefile.in's).
-At that point, you've invented a new build backend.)</p>
-<p>For people who casually interact with the build system, these two goals
-will blend together. It is not important for most to know what bucket
-something falls under.</p>
-<h3>BuildFaster Action Items</h3>
-<p><em>BuildFaster</em> action items are being tracked in Bugzilla using the
-[BuildFaster:*] whiteboard annotation.</p>
-<p>There is no explicit tracking bug for the short-term goal (#1). Instead,
-we are relying on the whiteboard annotation.</p>
-<p>We are tracking the longer-term goal of supporting alternate build
-backends at <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774049">bug 774049</a>.</p>
-<p>The most important task to help us reach the goals is to make our
-Makefile.in's data centric. This means:</p>
-<ul>
-<li>Makefile.in's <strong>must</strong> consist of only simple variable assignment</li>
-<li>Makefile.in's <strong>must</strong> not rely on being evaluated to perform variable
-  assignment.</li>
-</ul>
-<p>Basically, our build config should be defined by static key-value pairs.</p>
-<p>This translates to:</p>
-<ul>
-<li>Move all rules out of Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">bug 769378</a></li>
-<li>Remove use of $(shell) from Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769390">bug 769390</a></li>
-<li>Remove filesystem functions from Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769407">bug 769407</a></li>
-<li>And more, as we identify the need</li>
-</ul>
-<p>While we have these tracking bugs on file, we still don't have bugs
-filed that track individual Makefile.in's that need updated. <strong>If you
-are a contributor, you can help by doing your part to file bugs for your
-Makefile.in's.</strong> If your Makefile.in violates the above rules, please
-file a bug in the <strong>Build Config</strong> component of the product it is under
-(typically <strong>Core</strong>). See the tree of the above bugs for examples.</p>
-<p>Also part of <em>BuildFaster</em> (but not relevant to most) is the task of
-changing the build system to support multiple backends. Currently,
-pieces like <em>configure</em> assume the Makefile.in to Makefile conversion is
-always what is wanted. These parts will be worked on by core
-contributors to the build system and thus aren't of concern to most.</p>
-<p>I will be the first to admit that a lot of the work to <em>purify</em>
-Makefile.in's to be data centric will look like a lot of busy work with
-little immediate gain. The real benefits to this work will manifest
-down the road. That being said, removing rules from Makefile.in's and
-implementing things as rules in rules.mk helps ensure that the
-implementation is proper (rules.mk is coded by make ninjas and thus
-probably does things <em>right</em>). This can lead to faster build times.</p>
-<h2>mozbuild</h2>
-<p><strong>mozbuild</strong> is a Python package that provides an API to the build system.</p>
-<p>What <em>mozbuild</em> will contain is still up in the air because it hasn't
-landed in mozilla-central yet. In the code I'm waiting on review to
-uplift to mozilla-central, <em>mozbuild</em> contains:</p>
-<ul>
-<li>An API for invoking the build system backend (e.g. launching make). It
-  basically reimplements client.mk because client.mk sucks and needs to
-  be replaced.</li>
-<li>An API for launching tests easily. This reimplements functionality in
-  testsuite-targets.mk, but in a much cleaner way. Running a single test
-  can now be done with a single Python function call. This may sound
-  boring, but it is very useful. You just import a module and pass a
-  filesystem path to a test file to a function and a test runs. Boom!</li>
-<li>Module for extracting compiler warnings from build output and storing
-  in a persisted database for post-build retrieval. Compiler warning
-  tracking \o/</li>
-<li>Module for converting build system output into structured logs. It
-  records things like time spent in different directories, etc. We could
-  use this for tracking build performance regressions. We just need a
-  arewe*yet.com domain...</li>
-<li>A replacement for .mozconfig's that sucks less (stronger validation,
-  settings for not just build config, convenient Python API, etc).</li>
-</ul>
-<p>And, upcoming features which I haven't yet tried to land in
-mozilla-central include:</p>
-<ul>
-<li>API for extracting metadata from Makefile.in's and other frontend
-  files. Want a Python class instance describing the IDLs defined in an
-  individual Makefile.in or across the entire tree? <em>mozbuild</em> can provide
-  that. This functionality will be used to configure alternate build
-  backends.</li>
-<li>Build backend API which allows for different build backends to be
-  configured (e.g. recursive make, Tup, Ninja, etc). When we support
-  multiple build backends, they'll live in <em>mozbuild</em>.</li>
-</ul>
-<p><em>mozbuild</em> can really be thought of as a clean backend to the build
-system and related functionality (like running tests). Everything in
-<em>mozbuild</em> could exist in make files or in .py files littered in
-<em>build/</em>, <em>config/</em>, etc. But, that would involve maintaining make files
-and/or not having a cohesive API. I wanted a clean slate that was free
-from the burdens of the existing world. <em>mozbuild</em> was born.</p>
-<p>I concede that there will be non-clear lines of division between
-<em>mozbuild</em> and other Python packages and/or Mozilla modules. For
-example, is <em>mozbuild</em> the appropriate location to define an API for
-taking the existing build configuration and launching a Mochitest? I'm
-not sure. For now, I'm stuffing functionality inside <em>mozbuild</em> unless
-there is a clear reason for it to exist elsewhere. If we want to
-separate (because of module ownership issues, for example), we can do
-that.</p>
-<p>My vision for <em>mozbuild</em> is for it to be the answer to the question
-<em>how does the Mozilla build system work?</em> You should be able to say,
-<em>look at the code in python/mozbuild and you will have all the answers.</em></p>
-<h3>mozbuild Action Items</h3>
-<p>The single action item for <em>mozbuild</em> is getting it landed. I have code
-written that I think is good enough for an initial landing (with obvious
-shortcomings being addressed in follow-up bugs). It just needs some love
-from reviewers.</p>
-<p>Landing <em>mozbuild</em> is tracked in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a>. I
-initially dropped a monolithic patch. I have since started splitting
-bits up into bite-sized patches to facilitate faster, smaller reviews.
-(See the blocking bugs.)</p>
-<h2>mach</h2>
-<p><em>mozbuild</em> is just a Python package - an API. It has no frontend.</p>
-<p>Enter <strong>mach</strong>.</p>
-<p><strong>mach</strong> is a command-line frontend to <em>mozbuild</em> and beyond.</p>
-<p>Currently, <em>mach</em> provides some convenient shortcuts for performing
-common tasks. e.g. you can run a test by tab-completing to its filename
-using your shell. It also provides nifty output in supported terminals,
-including colorizing and a basic progress indicator during building.</p>
-<p>You can think of <em>mach</em> as a replacement for <em>client.mk</em> and other make
-targets. But, <em>mach</em>'s purpose doesn't end there. My vision for <em>mach</em>
-is for it to be the one-stop shop for all your mozilla-central
-interaction needs.</p>
-<p>From a mozilla-central tree, you should be able to type
-<strong>./mach <action></strong> and do whatever you need to do. This could be
-building Firefox, running tests, uploading a patch to Bugzilla, etc.</p>
-<p>I'm capturing ideas for <em>mach</em> features in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774108">bug 774108</a>.</p>
-<h3>mach Action Items</h3>
-<p><em>mach</em> is in the same boat as <em>mozbuild</em>: it's waiting for reviewer
-love. If you are interested in reviewing it, please let me know.</p>
-<p>Once <em>mach</em> lands, I will be looking to the larger community to improve
-it. I want people to go wild implementing features. I believe that
-<em>mach</em> will have a significant positive impact on driving contributions
-to Mozilla because it will make the process much more streamlined and
-less prone to error. I think it is a no-brainer to check in <em>mach</em> as
-soon as possible so these wins can be realized.</p>
-<p>There is an open question of who will own <em>mach</em> in terms of module
-ownership. <em>mach</em> isn't really part of anything. Sure, it interacts with
-the build system, testing code, tools, etc. But, it isn't actually part
-of any of that. Maybe a new module will be created for it. I'm not
-familiar with how the modules system works and I would love to chat with
-someone about options here.</p>
-<h2>Project Interaction</h2>
-<p>How are all of these projects related?</p>
-<p><em>BuildFaster</em> is what everyone is working on today. It currently focuses
-on making the existing recursive make based build backend faster using
-whatever means necessary. <em>BuildFaster</em> could theoretically evolve to
-cover other build backends (like non-recursive make). Time will tell
-what falls under the <em>BuildFaster</em> banner.</p>
-<p><em>mozbuild</em> is immediately focused on providing the functionality to
-enable <em>mach</em> to land.</p>
-<p><em>mach</em> is about improving the overall developer experience when
-it comes to contributing to Firefox and other in-tree applications (like
-Firefox OS). It's related to the build system in that it provides a nice
-frontend to it. That's the only relationship. <em>mach</em> isn't part of the
-build system (at least not yet - it may eventually be used to perform
-actions on buildbot machines).</p>
-<p>Down the road, <em>mozbuild</em> will gain lots of new features core to the
-build system. It will learn how to extract metadata from Makefile.in's
-which can be used by other build backends. It will define a build
-backend interface and the various build backends will be implemented
-in mozbuild. Aspects of the existing build system currently implemented in
-make files or in various Python files scattered across the tree will be
-added to <em>mozbuild</em> and exposed with a clean, reusable, and testable
-API.</p>
-<p>Today, <em>BuildFaster</em> is the important project with all the attention.
-When <em>mach</em> lands, it will (hopefully) gather a lot of attention. But,
-it will be from a different group (the larger contributor community -
-not just build system people).</p>
-<p><em>mozbuild</em> today is only needed to support <em>mach</em>. But, once <em>mozbuild</em>
-lands and <em>mach</em> is on its own, <em>mozbuild</em>'s purpose  will shift to support
-<em>BuildFaster</em> and other activities under the <em>BuildSplendid</em> banner.</p>
-<h2>Conclusion</h2>
-<p>We have a lot of work ahead of us. Please look at the bugs linked above
-and help out in any way you can.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../14">« Previous Page</a>
   --  

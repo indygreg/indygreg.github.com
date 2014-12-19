@@ -19,6 +19,7 @@ Released   : 20101114
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     
   <title>Gregory Szorc's Digital Home
+  | Why hg.mozilla.org is Slow
 </title>
 <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
 <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
@@ -49,7 +50,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="why-hg.mozilla.org-is-slow"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/12/19/why-hg.mozilla.org-is-slow" rel="bookmark" title="Permanent Link to Why hg.mozilla.org is Slow">Why hg.mozilla.org is Slow</a></h2>
@@ -225,254 +226,12 @@ manually rebase when you lose the push race).</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mach-sub-commands"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/18/mach-sub-commands" rel="bookmark" title="Permanent Link to mach sub-commands">mach sub-commands</a></h2>
-  <small>December 18, 2014 at 09:45 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/18/mach-sub-commands#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p><a href="https://pypi.python.org/pypi/mach/">mach</a> - the generic command line
-dispatching tool that powers the <strong>mach</strong> command to aid Firefox
-development - now has support for sub-commands.</p>
-<p>You can now create simple and intuitive user interfaces involving
-sub-actions. e.g.</p>
-<pre><code>mach device sync
-mach device run
-mach device delete
-</code></pre>
-<p>Before, to do something like this would require a universal argument
-parser or separate mach commands. Both constitute a poor user
-experience (confusing array of available arguments or proliferation of
-top-level commands). Both result in <em>mach help</em> being difficult to
-comprehend. And that's not good for usability and approachability.</p>
-<p>Nothing in Firefox currently uses this feature. Although there is an
-in-progress patch in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1108293">bug 1108293</a>
-for providing a mach command to analyze C/C++ build dependencies.
-It is my hope that others write useful commands and functionality
-on top of this feature.</p>
-<p>The documentation for mach has also been rewritten. It is now
-<a href="https://ci.mozilla.org/job/mozilla-central-docs/Tree_Documentation/python/mach/index.html">exposed</a>
-as part of the in-tree Sphinx documentation.</p>
-<p>Everyone should thank <a href="https://mozillians.org/en-US/u/ahal/">Andrew Halberstadt</a>
-for promptly reviewing the changes!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/18/mach-sub-commands#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="a-crazy-day"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/04/a-crazy-day" rel="bookmark" title="Permanent Link to A Crazy Day">A Crazy Day</a></h2>
-  <small>December 04, 2014 at 11:34 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/04/a-crazy-day#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Today was one crazy day.</p>
-<p>The build peers all sat down with Release Engineering and Axel Hecht
-to talk l10n packaging. <a href="http://glandium.org/">Mike Hommey</a> has a
-Q1 goal to fix l10n packaging. There is buy-in from Release
-Engineering on enabling him in his quest to slay dragons. This
-will make builds faster and will pay off a massive mountain of
-technical debt that plagues multiple groups at Mozilla.</p>
-<p>The Firefox build system contributors sat down with a bunch of
-Rust people and we talked about what it would take to integrate
-Rust into the Firefox build system and the path towards shipping
-a Rust component in Firefox. It sounds like that is going to
-happen in 2015 (although we're not yet sure what component will
-be written in Rust). I consider it an achievement that the gathering
-of both groups didn't result in infinite rabbit holing about
-system architectures, toolchains, and the build people telling
-<em>horror stories</em> to wide-eyed Rust people about the crazy things
-we have to do to build and ship Firefox. Believe me, the
-temptation was there.</p>
-<p>People interested in the build system all sat down and reflected on
-the state of the build system and where we want to go. We agreed
-to create a build mode optimized for non-Gecko developers
-that downloads pre-built binaries - avoiding ~10 minutes of
-C/C++ compile time for builds. Mark my words, this will be one
-of those changes that once deployed will cause people to say
-"I can't believe we went so long without this."</p>
-<p>I joined Mark Côté and others to talk about priorities for
-MozReview. We'll be making major improvements to the UX and
-integrating static analysis into reviews. Push a patch for
-review and have machines do some of the work that humans are
-currently doing! We're tentatively planning a get-together in
-Toronto in January to sprint towards awesomeness.</p>
-<p>I ended the day by giving a long and rambling presentation about
-version control, with emphasis on Mercurial. I can't help but
-feel that I talked way too much. There's just so much knowledge
-to cover. A few people told me afterwards they learned a lot. I'd
-appreciate feedback if you attended. Anyway, I got a few nods
-from people as I was saying some somewhat contentious things.
-It's always good to have validation that I'm not on an island
-when I say crazy things.</p>
-<p>I hope to spend Friday chasing down loose ends from the week.
-This includes talking to some security gurus about another crazy
-idea of mine to integrate PGP into the code review and code
-landing workflow for Firefox. I'll share more details once
-I get a professional opinion on the security front.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/04/a-crazy-day#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="the-mozlandia-tree-outage-and-code-review"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review" rel="bookmark" title="Permanent Link to The Mozlandia Tree Outage and Code Review">The Mozlandia Tree Outage and Code Review</a></h2>
-  <small>December 04, 2014 at 08:40 AM | categories: 
-
-<a href='/blog/category/review-board'>Review Board</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>You may have noticed the Firefox trees
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1107156">were closed</a>
-for the better part of yesterday.</p>
-<p>Long story short, a file containing URLs for Firefox installers was
-updated to reference https://ftp.mozilla.org/ from
-http://download-installer.cdn.mozilla.net/. The original, latter
-host is a CDN. The former is not. When thousands of clients started
-hitting ftp.mozilla.org, it overwhelmed the servers and network,
-causing timeouts and other badness.</p>
-<p>The change in question was accidental. It went through code review.
-From a code change standpoint, procedures were followed.</p>
-<p>It is tempting to point fingers at the people involved. However, I
-want us to consider placing blame elsewhere: on the code review
-tool.</p>
-<p>The diff being reviewed was to change the Firefox version number
-from 32.0 to 32.0.3. If you were asked to review this
-patch, I'm guessing your eyes would have glanced over everything in the
-URL except the version number part. I'm pretty sure mine would have.</p>
-<p>Let's take a look at what the reviewer saw in Bugzilla/Splinter (click
-to see full size):</p>
-<p><a href="/images/intraline-splinter.png">
-<img src="/images/intraline-splinter.png" width="600" />
-</a></p>
-<p>And here is what the reviewer would have seen had the review been
-conducted in MozReview:</p>
-<p><a href="/images/intraline-reviewboard.png">
-<img src="/images/intraline-reviewboard.png" width="600">
-</a></p>
-<p>Which tool makes the change of hostname more obvious? Bugzilla/Splinter
-or MozReview?</p>
-<p><strong>MozReview's support for intraline diffs more clearly draws attention to
-the hostname change. I posit that had this patch been reviewed with
-MozReview, the chances are greater we wouldn't have had a network
-outage yesterday.</strong></p>
-<p>And it isn't just intraline diffs that make Splinter/Bugzilla a
-sub-optimal code review tool. I recently blogged about the
-<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">numerous ways that using Bugzilla for code revie results in harder
-reviews and buggier
-code</a>.
-Every day we continue using Bugzilla/Splinter instead of investing in
-better code review tools is a day severe bugs like this can and will
-slip through the cracks.</p>
-<p>If there is any silver lining to this outage, I hope it is that we need
-to double down on our investment in developer tools, particularly code
-review.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="test-drive-the-new-headless-try-repository"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/11/20/test-drive-the-new-headless-try-repository" rel="bookmark" title="Permanent Link to Test Drive the New Headless Try Repository">Test Drive the New Headless Try Repository</a></h2>
-  <small>November 20, 2014 at 02:45 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial and Git both experience scaling pains as the number of heads
-in a repository approaches infinity. Operations like push and pull
-slow to a crawl and everyone gets frustrated.</p>
-<p>This is the problem Mozilla's Try repository has been dealing with
-for years. We know the solution doesn't scale. But we've been content
-kicking the can by resetting the repository (blowing away data)
-to make the symptoms temporarily go away.</p>
-<p>One of my official goals is to ship a scalable Try solution by the end
-of 2014.</p>
-<p>Today, I believe I finally have enough code cobbled together to
-produce a working concept. <strong>And I could use your help testing it.</strong></p>
-<p>I would like people to push their Try, code review, and other
-miscellaneous heads to a special repository. To do this:</p>
-<pre><code>$ hg push -r . -f ssh://hg@hg.gregoryszorc.com/gecko-headless
-</code></pre>
-<p>That is:</p>
-<ul>
-<li>Consider the changeset belonging to the working copy</li>
-<li>Allow the creation of new heads</li>
-<li>Send it to the <em>gecko-headless</em> repo on hg.gregoryszorc.com using
-  SSH</li>
-</ul>
-<p>Here's what happening.</p>
-<p>I have deployed a special repository to my personal server that I
-believe will behave very similarly to the final solution.</p>
-<p>When you push to this repository, instead of your changesets being
-applied directly to the repository, it siphons them off to a Mercurial
-bundle. It then saves this bundle somewhere along with some metadata
-describing what is inside.</p>
-<p>When you run <em>hg pull -r <node></em> on that repository and ask for a
-changeset that exists in the bundle, the server does some magic
-and returns data from the bundle file.</p>
-<p>Things this repository doesn't do:</p>
-<ul>
-<li><strong>This repository will not actually send changesets to Try for you.</strong></li>
-<li>You cannot <code>hg pull</code> or <code>hg clone</code> the repository and get all of the
-  commits from bundles. This isn't a goal. It will likely never be
-  supported.</li>
-<li>We do not yet record a pushlog entry for pushes to the repository.</li>
-<li>The hgweb HTML interface does not <strong>yet</strong> handle commits that only
-  exist in bundles. People want this to work. It will eventually work.</li>
-<li>Pulling from the repository over HTTP with a vanilla Mercurial install
-  may not preserve phase data.</li>
-</ul>
-<p>The purpose of this experiment is to expose the repository to some
-actual traffic patterns so I can see what's going on and get a feel
-for real-world performance, variability, bugs, etc. I plan to do all
-of this in the testing environment. But I'd like some real-world
-use on the actual Firefox repository to give me peace of mind.</p>
-<p>Please report any issues directly to me. Leave a comment here. Ping
-me on IRC. Send me an email. etc.</p>
-<p><strong>Update 2014-11-21: People discovered a bug with pushed changesets
-accidentally being advanced to the public phase, despite the repository
-being non-publishing. I have fixed the issue. But you must now push to
-the repository over SSH, not HTTP.</strong></p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
- <a href="../2">Next Page »</a>
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               
