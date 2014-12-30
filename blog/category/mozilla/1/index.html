@@ -51,6 +51,65 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-pushlog-is-now-robust-against-interrupts"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts" rel="bookmark" title="Permanent Link to Mercurial Pushlog Is Now Robust Against Interrupts">Mercurial Pushlog Is Now Robust Against Interrupts</a></h2>
+  <small>December 30, 2014 at 12:25 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
+ | <a href="http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p><a href="https://hg.mozilla.org">hg.mozilla.org</a> - Mozilla's Mercurial server -
+has functionality called the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/pushlog.html">pushlog</a>
+which records who pushed what when. Essentially, it's a log of when
+a repository was changed. This is separate from the commit log because
+the commit log can be spoofed and the commit log doesn't record when
+commits were actually pushed.</p>
+<p>Since its inception, the pushlog has suffered from data consistency
+issues. If you aborted the push at a certain time, data was not inserted
+in the pushlog. If you aborted the push at another time, data existed in
+the pushlog but not in the repository (the repository would get rolled
+back but the pushlog data wouldn't).</p>
+<p><strong>I'm pleased to announce that the pushlog is now robust against
+interruptions and its updates are consistent with what is recorded by
+Mercurial.</strong> The pushlog database commit/rollback is tied to Mercurial's
+own transaction API. What Mercurial does to the push transaction, the
+pushlog follows.</p>
+<p>This former inconsistency has caused numerous problems over the years.
+When data was inconsistent, we often had to close trees until someone
+could SSH into the machines and manually run SQL to fix the problems.
+This also contributed to a culture of <em>don't press ctrl+c during push:
+it could corrupt Mercurial.</em> (Ctrl+c should be safe to press any time: if
+it isn't, there is a bug to be filed.)</p>
+<p>Any time you remove a source of tree closures is a cause for celebration.
+Please join me in celebrating your new freedom to abort pushes without
+concern for data inconsistency.</p>
+<p>In case you want to test things out, aborting pushes and (and rolling
+back the pushlog) should now result in something like:</p>
+<pre><code>pushing to ssh://hg.mozilla.org/mozilla-central
+searching for changes
+adding changesets
+adding manifests
+adding file changes
+added 1 changesets with 1 changes to 1 files
+Trying to insert into pushlog.
+Inserted into the pushlog db successfully.
+^C
+rolling back pushlog
+transaction abort!
+rollback completed
+</code></pre>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="firefox-source-documentation-versus-mdn"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/12/30/firefox-source-documentation-versus-mdn" rel="bookmark" title="Permanent Link to Firefox Source Documentation Versus MDN">Firefox Source Documentation Versus MDN</a></h2>
   <small>December 30, 2014 at 12:00 PM | categories: 
@@ -496,70 +555,6 @@ I get a professional opinion on the security front.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/04/a-crazy-day#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="the-mozlandia-tree-outage-and-code-review"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review" rel="bookmark" title="Permanent Link to The Mozlandia Tree Outage and Code Review">The Mozlandia Tree Outage and Code Review</a></h2>
-  <small>December 04, 2014 at 08:40 AM | categories: 
-
-<a href='/blog/category/review-board'>Review Board</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>You may have noticed the Firefox trees
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1107156">were closed</a>
-for the better part of yesterday.</p>
-<p>Long story short, a file containing URLs for Firefox installers was
-updated to reference https://ftp.mozilla.org/ from
-http://download-installer.cdn.mozilla.net/. The original, latter
-host is a CDN. The former is not. When thousands of clients started
-hitting ftp.mozilla.org, it overwhelmed the servers and network,
-causing timeouts and other badness.</p>
-<p>The change in question was accidental. It went through code review.
-From a code change standpoint, procedures were followed.</p>
-<p>It is tempting to point fingers at the people involved. However, I
-want us to consider placing blame elsewhere: on the code review
-tool.</p>
-<p>The diff being reviewed was to change the Firefox version number
-from 32.0 to 32.0.3. If you were asked to review this
-patch, I'm guessing your eyes would have glanced over everything in the
-URL except the version number part. I'm pretty sure mine would have.</p>
-<p>Let's take a look at what the reviewer saw in Bugzilla/Splinter (click
-to see full size):</p>
-<p><a href="/images/intraline-splinter.png">
-<img src="/images/intraline-splinter.png" width="600" />
-</a></p>
-<p>And here is what the reviewer would have seen had the review been
-conducted in MozReview:</p>
-<p><a href="/images/intraline-reviewboard.png">
-<img src="/images/intraline-reviewboard.png" width="600">
-</a></p>
-<p>Which tool makes the change of hostname more obvious? Bugzilla/Splinter
-or MozReview?</p>
-<p><strong>MozReview's support for intraline diffs more clearly draws attention to
-the hostname change. I posit that had this patch been reviewed with
-MozReview, the chances are greater we wouldn't have had a network
-outage yesterday.</strong></p>
-<p>And it isn't just intraline diffs that make Splinter/Bugzilla a
-sub-optimal code review tool. I recently blogged about the
-<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">numerous ways that using Bugzilla for code revie results in harder
-reviews and buggier
-code</a>.
-Every day we continue using Bugzilla/Splinter instead of investing in
-better code review tools is a day severe bugs like this can and will
-slip through the cracks.</p>
-<p>If there is any silver lining to this outage, I hope it is that we need
-to double down on our investment in developer tools, particularly code
-review.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/2">Next Page »</a>
 

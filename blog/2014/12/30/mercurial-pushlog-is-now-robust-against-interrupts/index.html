@@ -1,0 +1,175 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Mercurial Pushlog Is Now Robust Against Interrupts
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="mercurial-pushlog-is-now-robust-against-interrupts"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts" rel="bookmark" title="Permanent Link to Mercurial Pushlog Is Now Robust Against Interrupts">Mercurial Pushlog Is Now Robust Against Interrupts</a></h2>
+  <small>December 30, 2014 at 12:25 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
+ | <a href="http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p><a href="https://hg.mozilla.org">hg.mozilla.org</a> - Mozilla's Mercurial server -
+has functionality called the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/pushlog.html">pushlog</a>
+which records who pushed what when. Essentially, it's a log of when
+a repository was changed. This is separate from the commit log because
+the commit log can be spoofed and the commit log doesn't record when
+commits were actually pushed.</p>
+<p>Since its inception, the pushlog has suffered from data consistency
+issues. If you aborted the push at a certain time, data was not inserted
+in the pushlog. If you aborted the push at another time, data existed in
+the pushlog but not in the repository (the repository would get rolled
+back but the pushlog data wouldn't).</p>
+<p><strong>I'm pleased to announce that the pushlog is now robust against
+interruptions and its updates are consistent with what is recorded by
+Mercurial.</strong> The pushlog database commit/rollback is tied to Mercurial's
+own transaction API. What Mercurial does to the push transaction, the
+pushlog follows.</p>
+<p>This former inconsistency has caused numerous problems over the years.
+When data was inconsistent, we often had to close trees until someone
+could SSH into the machines and manually run SQL to fix the problems.
+This also contributed to a culture of <em>don't press ctrl+c during push:
+it could corrupt Mercurial.</em> (Ctrl+c should be safe to press any time: if
+it isn't, there is a bug to be filed.)</p>
+<p>Any time you remove a source of tree closures is a cause for celebration.
+Please join me in celebrating your new freedom to abort pushes without
+concern for data inconsistency.</p>
+<p>In case you want to test things out, aborting pushes and (and rolling
+back the pushlog) should now result in something like:</p>
+<pre><code>pushing to ssh://hg.mozilla.org/mozilla-central
+searching for changes
+adding changesets
+adding manifests
+adding file changes
+added 1 changesets with 1 changes to 1 files
+Trying to insert into pushlog.
+Inserted into the pushlog db successfully.
+^C
+rolling back pushlog
+transaction abort!
+rollback completed
+</code></pre>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

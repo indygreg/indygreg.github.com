@@ -7,12 +7,66 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-12-30T20:01:16Z</updated>
+  <updated>2014-12-30T20:26:46Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mercurial Pushlog Is Now Robust Against Interrupts]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts" />
+    <id>http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts</id>
+    <updated>2014-12-30T12:25:00Z</updated>
+    <published>2014-12-30T12:25:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
+    <summary type="html"><![CDATA[Mercurial Pushlog Is Now Robust Against Interrupts]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts"><![CDATA[<p><a href="https://hg.mozilla.org">hg.mozilla.org</a> - Mozilla's Mercurial server -
+has functionality called the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/pushlog.html">pushlog</a>
+which records who pushed what when. Essentially, it's a log of when
+a repository was changed. This is separate from the commit log because
+the commit log can be spoofed and the commit log doesn't record when
+commits were actually pushed.</p>
+<p>Since its inception, the pushlog has suffered from data consistency
+issues. If you aborted the push at a certain time, data was not inserted
+in the pushlog. If you aborted the push at another time, data existed in
+the pushlog but not in the repository (the repository would get rolled
+back but the pushlog data wouldn't).</p>
+<p><strong>I'm pleased to announce that the pushlog is now robust against
+interruptions and its updates are consistent with what is recorded by
+Mercurial.</strong> The pushlog database commit/rollback is tied to Mercurial's
+own transaction API. What Mercurial does to the push transaction, the
+pushlog follows.</p>
+<p>This former inconsistency has caused numerous problems over the years.
+When data was inconsistent, we often had to close trees until someone
+could SSH into the machines and manually run SQL to fix the problems.
+This also contributed to a culture of <em>don't press ctrl+c during push:
+it could corrupt Mercurial.</em> (Ctrl+c should be safe to press any time: if
+it isn't, there is a bug to be filed.)</p>
+<p>Any time you remove a source of tree closures is a cause for celebration.
+Please join me in celebrating your new freedom to abort pushes without
+concern for data inconsistency.</p>
+<p>In case you want to test things out, aborting pushes and (and rolling
+back the pushlog) should now result in something like:</p>
+<pre><code>pushing to ssh://hg.mozilla.org/mozilla-central
+searching for changes
+adding changesets
+adding manifests
+adding file changes
+added 1 changesets with 1 changes to 1 files
+Trying to insert into pushlog.
+Inserted into the pushlog db successfully.
+^C
+rolling back pushlog
+transaction abort!
+rollback completed
+</code></pre>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -1091,107 +1145,5 @@ involvement. The next component to land will likely be
 <a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack">mach</a>.
 It's (finally) been getting some review love (thanks Jeff Hammel!), so
 I'm optimistic it will land in the next few weeks.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Visual Studio Project Generation for mozilla-central]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central" />
-    <id>http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central</id>
-    <updated>2012-08-28T12:00:00Z</updated>
-    <published>2012-08-28T12:00:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="Firefox" />
-    <category scheme="http://gregoryszorc.com/blog" term="build system" />
-    <summary type="html"><![CDATA[Visual Studio Project Generation for mozilla-central]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2012/08/28/visual-studio-project-generation-for-mozilla-central"><![CDATA[<p>I have very alpha support for Visual Studio project generation for
-mozilla-central that daring people can dogfood.</p>
-<p>I want to emphasize that this is extremely alpha. Normally, I wouldn't
-release things as fragile as they are. But, I know Windows developers
-sorely miss Visual Studio, especially IntelliSense. The current Visual
-Studio projects support IntelliSense, so I want to get this in the hands
-of Windows developers ASAP.</p>
-<p>The current directions for making this all work are a bit hacky. Things
-will change once things have matured. For now, please excuse the mess.</p>
-<p>First, you will need to grab the code. If you use Git, set up a remote
-to my repository:</p>
-<pre><code>git remote add indygreg git://github.com/indygreg/mozilla-central.git
-git fetch indygreg
-</code></pre>
-<p>The branch of interest is <em>build-splendid</em>. I periodically rebase this
-branch on top of master. You have been warned.</p>
-<p>You can switch to this branch:</p>
-<pre><code>git checkout -b build-splendid indygreg/build-splendid
-</code></pre>
-<p>Alternatively, you can squash it down to a single commit and merge it
-into your local branch. Once you've done that, you can record the SHA-1
-of the commit and cherry-pick that wherever you like!</p>
-<pre><code>git merge --squash indygreg/build-splendid
-git commit
-</code></pre>
-<p>In the current state, you need to build the tree or the Visual Studio
-projects will complain about missing files. It doesn't matter if you
-build the tree before or after Visual Studio projects are generated.
-But, we might as well get it out of the way. From your MozillaBuild
-environment, run:</p>
-<pre><code>./mach build
-</code></pre>
-<p>That should <em>just work</em>. If it doesn't, you may need to configure
-mach.ini. See my <a href="http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid/">previous post</a>
-on how to configure mach.ini. As a reference, my Windows config is:</p>
-<pre><code>[build]
-
-configure_extra = --disable-webgl
-
-[compiler]
-
-[paths]
-source_directory = c:\dev\src\mozilla-central-git
-object_directory = c:\dev\src\mozilla-central-git\objdir
-</code></pre>
-<p>Now, to generate Visual Studio project files:</p>
-<pre><code>./mach backendconfig visualstudio
-</code></pre>
-<p>That should take about a minute to finish. When it's done, it should
-have created <em>objdir/msvc/mozilla.sln</em>. You should be able to load that
-in Visual Studio!</p>
-<p>You will need to regenerate Visual Studio project files when the build
-config changes. As a rule of thumb, do this every time you pull source.
-You don't need to perform a full build before you generate Visual Studio
-files (you do need to perform configure, however). However, if you have
-not performed a full build, Visual Studio may not be able to find some
-files, like headers generated from IDLs.</p>
-<p><strong>Please close the solution before regenerating the project files.</strong> If
-you don't, Visual Studio puts up a modal dialog for each project file
-that changed and you have to click through over a hundred of these. It's
-extremely frustrating. I'm investigating workarounds.</p>
-<h2>Current State</h2>
-<p>Currently, it only generates projects for C/C++ compilation (libraries).
-I still need to add support for IDL, headers, etc. However, each
-project has proper compiler flags, header search paths, etc. So,
-IntelliSense is happy and some things do manage to compile!</p>
-<p>Many parts are broken and sub-par.</p>
-<p>I've only tested on Visual Studio 2008. If you are running Visual Studio
-\2010, you can try to upgrade the solution. This <em>may</em> work. The backend
-supports generating solutions for different versions. But, I haven't
-tested things work on non-2008 and I don't want to expose untested behavior.</p>
-<p>Compiling within Visual Studio works for some things. On my system, I
-get a lot of <em>nullptr not defined</em> errors. I'm not sure why. This will
-hopefully be worked out soon.</p>
-<p>If you do manager to compile within Visual Studio, the output files
-don't go in the right places. So, if you do a build from the
-command-line, it will have to re-compile to pick up changes.</p>
-<p>Project names are based on the name of the library they produce. I'm not
-sure if this is the best solution.</p>
-<p>Project dependencies are not set up. They will be added later.</p>
-<p>Projects for linking libxul or building firefox.exe are not yet
-provided. Along the same vein, debugging support is not built-in. I'm
-working on it.</p>
-<p>Basically, IntelliSense works. You can now use Visual Studio as a rich
-editor. Hopefully this is a step in the right direction.</p>
-<p>I'm anxious to hear if this works for other people. Please leave
-comments!</p>]]></content>
   </entry>
 </feed>
