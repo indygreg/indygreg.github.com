@@ -40,6 +40,7 @@
 .pygments_murphy .nv { color: #003366 } /* Name.Variable */
 .pygments_murphy .ow { color: #000000; font-weight: bold } /* Operator.Word */
 .pygments_murphy .w { color: #bbbbbb } /* Text.Whitespace */
+.pygments_murphy .mb { color: #6600EE; font-weight: bold } /* Literal.Number.Bin */
 .pygments_murphy .mf { color: #6600EE; font-weight: bold } /* Literal.Number.Float */
 .pygments_murphy .mh { color: #005588; font-weight: bold } /* Literal.Number.Hex */
 .pygments_murphy .mi { color: #6666ff; font-weight: bold } /* Literal.Number.Integer */

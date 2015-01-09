@@ -51,6 +51,34 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="please-run-mach-mercurial-setup"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/07/25/please-run-mach-mercurial-setup" rel="bookmark" title="Permanent Link to Please run mach mercurial-setup">Please run mach mercurial-setup</a></h2>
+  <small>July 25, 2014 at 10:00 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/07/25/please-run-mach-mercurial-setup#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Hey there, Firefox developer! Do you use Mercurial? Please take the time
+right now to run <strong>mach mercurial-setup</strong> from your Firefox clone.</p>
+<p>It's been updated to ensure you are running a modern Mercurial version.
+More awesomely, it has support for a couple of new extensions to make
+you more productive. I think you'll like what you see.</p>
+<p><strong>mach mercurial-setup</strong> doesn't change your <em>hgrc</em> without
+confirmation. So it is safe to run to see what's available. You should
+consider running it periodically, say once a week or so. I wouldn't
+be surprised if we add a notification to mach to remind you to do this.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/25/please-run-mach-mercurial-setup#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="repository-centric-development"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/07/24/repository-centric-development" rel="bookmark" title="Permanent Link to Repository-Centric Development">Repository-Centric Development</a></h2>
   <small>July 24, 2014 at 08:23 PM | categories: 
@@ -218,13 +246,13 @@ the pulled Firefox repositories.</p>
 <p><em>firefoxtree</em> now provides a <em>hg fxheads</em> command that prints a
 concise output of the commits constituting the heads of the Firefox
 repos. e.g.</p>
-<div class="pygments_murphy"><pre>$ hg fxheads
-224969:0ec0b9ac39f0 aurora (sort of) bug 898554 - raise expected hazard count for b2g to 4 until they are fixed, a=bustage+hazbuild-only
-224290:6befadcaa685 beta Tagging /src/mdauto/build/mozilla-beta 1772e55568e4 with FIREFOX_RELEASE_31_BASE a=release CLOSED TREE
-224848:8e8f3ba64655 central Merge inbound to m-c a=merge
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg fxheads
+224969:0ec0b9ac39f0 aurora <span class="o">(</span>sort of<span class="o">)</span> bug <span class="m">898554</span> - raise expected hazard count <span class="k">for</span> b2g to <span class="m">4</span> <span class="k">until</span> they are fixed, <span class="nv">a</span><span class="o">=</span>bustage+hazbuild-only
+224290:6befadcaa685 beta Tagging /src/mdauto/build/mozilla-beta 1772e55568e4 with FIREFOX_RELEASE_31_BASE <span class="nv">a</span><span class="o">=</span>release CLOSED TREE
+224848:8e8f3ba64655 central Merge inbound to m-c <span class="nv">a</span><span class="o">=</span>merge
 225035:ec7f2245280c fx-team fx-team/default Merge m-c to fx-team
-224877:63c52b7ddc28 inbound Bug 1039197 - Always build js engine with zlib. r=luke
-225044:1560f67f4f93 release release/default tip Automated checkin: version bump for firefox 31.0 release. DONTBUILD CLOSED TREE a=release
+224877:63c52b7ddc28 inbound Bug <span class="m">1039197</span> - Always build js engine with zlib. <span class="nv">r</span><span class="o">=</span>luke
+225044:1560f67f4f93 release release/default tip Automated checkin: version bump <span class="k">for</span> firefox 31.0 release. DONTBUILD CLOSED TREE <span class="nv">a</span><span class="o">=</span>release
 </pre></div>
 
 <p>Please note that the output is based upon local-only knowledge: you'll
@@ -503,85 +531,6 @@ loads of cash on fire.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="track-firefox-repositories-with-local-only-mercurial-tags"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags" rel="bookmark" title="Permanent Link to Track Firefox Repositories with Local-Only Mercurial Tags">Track Firefox Repositories with Local-Only Mercurial Tags</a></h2>
-  <small>June 30, 2014 at 10:25 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>After reading my recent
-<a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
-a number of people asked me about my development workflow. While I
-still owe a full answer to that question, one of the cornerstores
-is a unified Mercurial repository. Instead of having separate clones
-for mozilla-central, mozilla-inbound, aurora, beta, etc, I have a
-single clone with the changesets from all the repositories.</p>
-<p>I feel having a unified repository has made me more productive. I no
-longer have to waste time shuffling changesets between local clones.
-This introduced all kinds of extra cognitive load and manual
-processes that slowed me down. I highly encourage others to adopt
-unified repositories.</p>
-<p>Because the various Firefox repositories don't have unique branches
-or bookmarks tracking the various heads, aggregating multiple
-repositories introduces a client-side problem of identifying
-which head is which. If you merely do a <em>hg pull</em>, you'll get a
-bunch of anonymous heads.</p>
-<p>To solve this problem, you'll need to employ minor client-side
-magic. Previously, I <a href="/2013/07/22/mercurial-extension-for-gecko-development/">recommended</a>
-my heavyweight <em>mozext</em> extension.</p>
-<p>Today, I'm proud to announce a new, lighter extension:
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">firefoxtree</a>.
-When pulling from a known Firefox repository, this extension will add
-a local-only Mercurial tag for that repository. For example,
-when pulling mozilla-central, the <em>central</em> tag will be created.</p>
-<p>Local-only tags are a Mercurial feature only available to
-extensions. A local-only tag is effectively an overlay of tags
-that don't get transferred as part of push and pull operations.
-They behave like normal tags: you can <em>hg up</em> to them and reference
-them elsewhere changeset identifiers are used. They are also read
-only: if you update to a tag and then commit, the tag will not
-move forward (contrast with branches or bookmarks).</p>
-<h2>Example Usage</h2>
-<p>Clone <em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and add
-the following to your <em>.hg/hgrc</em>:</p>
-<pre><code>[extensions]
-firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
-</code></pre>
-<p>To use, simply pull from a Firefox repo:</p>
-<div class="pygments_murphy"><pre>$ hg pull https://hg.mozilla.org/mozilla-central
-
-$ hg up central
-
-# Do your development work.
-
-# Time to land.
-$ hg pull https://hg.mozilla.org/integration/mozilla-inbound
-$ hg rebase -d inbound
-$ hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
-$ hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
-</pre></div>
-
-<p>Please note that <em>hg push</em> tries to push all local changes on all
-heads to a remote by default. When operating a unified repo, you'll
-need to use the <em>-r</em> argument to <em>hg push</em> and <em>hg out</em> to limit
-what changesets are considered. I most frequently use <em>-r .</em> to limit
-changes to the current checked out changeset.</p>
-<p>Also note that this extension conflicts with my <em>mozext</em> extension.
-I hope to update <em>mozext</em> to make it behave in the same manner. (It
-was easier to write a new extension than to update mozext.)</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../4">« Previous Page</a>
   --  

@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2014-12-30T20:26:46Z</updated>
+  <updated>2015-01-09T23:29:33Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -101,7 +101,7 @@ environment for building Firefox.</p>
 simple.</p>
 <p>Then, it's just a matter of creating a new container with our build
 environment:</p>
-<div class="pygments_murphy"><pre>curl https://gist.github.com/indygreg/5608534/raw/30704c59364ce7a8c69a02ee7f1cfb23d1ffcb2c/Dockerfile | docker build
+<div class="pygments_murphy"><pre>curl https://gist.github.com/indygreg/5608534/raw/30704c59364ce7a8c69a02ee7f1cfb23d1ffcb2c/Dockerfile <span class="p">|</span> docker build
 </pre></div>
 
 <p>The output will look something like:</p>

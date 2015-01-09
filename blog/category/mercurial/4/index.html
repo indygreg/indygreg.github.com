@@ -51,6 +51,85 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="track-firefox-repositories-with-local-only-mercurial-tags"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags" rel="bookmark" title="Permanent Link to Track Firefox Repositories with Local-Only Mercurial Tags">Track Firefox Repositories with Local-Only Mercurial Tags</a></h2>
+  <small>June 30, 2014 at 10:25 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>After reading my recent
+<a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
+a number of people asked me about my development workflow. While I
+still owe a full answer to that question, one of the cornerstores
+is a unified Mercurial repository. Instead of having separate clones
+for mozilla-central, mozilla-inbound, aurora, beta, etc, I have a
+single clone with the changesets from all the repositories.</p>
+<p>I feel having a unified repository has made me more productive. I no
+longer have to waste time shuffling changesets between local clones.
+This introduced all kinds of extra cognitive load and manual
+processes that slowed me down. I highly encourage others to adopt
+unified repositories.</p>
+<p>Because the various Firefox repositories don't have unique branches
+or bookmarks tracking the various heads, aggregating multiple
+repositories introduces a client-side problem of identifying
+which head is which. If you merely do a <em>hg pull</em>, you'll get a
+bunch of anonymous heads.</p>
+<p>To solve this problem, you'll need to employ minor client-side
+magic. Previously, I <a href="/2013/07/22/mercurial-extension-for-gecko-development/">recommended</a>
+my heavyweight <em>mozext</em> extension.</p>
+<p>Today, I'm proud to announce a new, lighter extension:
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">firefoxtree</a>.
+When pulling from a known Firefox repository, this extension will add
+a local-only Mercurial tag for that repository. For example,
+when pulling mozilla-central, the <em>central</em> tag will be created.</p>
+<p>Local-only tags are a Mercurial feature only available to
+extensions. A local-only tag is effectively an overlay of tags
+that don't get transferred as part of push and pull operations.
+They behave like normal tags: you can <em>hg up</em> to them and reference
+them elsewhere changeset identifiers are used. They are also read
+only: if you update to a tag and then commit, the tag will not
+move forward (contrast with branches or bookmarks).</p>
+<h2>Example Usage</h2>
+<p>Clone <em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and add
+the following to your <em>.hg/hgrc</em>:</p>
+<pre><code>[extensions]
+firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
+</code></pre>
+<p>To use, simply pull from a Firefox repo:</p>
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg pull https://hg.mozilla.org/mozilla-central
+
+<span class="nv">$ </span>hg up central
+
+<span class="c"># Do your development work.</span>
+
+<span class="c"># Time to land.</span>
+<span class="nv">$ </span>hg pull https://hg.mozilla.org/integration/mozilla-inbound
+<span class="nv">$ </span>hg rebase -d inbound
+<span class="nv">$ </span>hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
+<span class="nv">$ </span>hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
+</pre></div>
+
+<p>Please note that <em>hg push</em> tries to push all local changes on all
+heads to a remote by default. When operating a unified repo, you'll
+need to use the <em>-r</em> argument to <em>hg push</em> and <em>hg out</em> to limit
+what changesets are considered. I most frequently use <em>-r .</em> to limit
+changes to the current checked out changeset.</p>
+<p>Also note that this extension conflicts with my <em>mozext</em> extension.
+I hope to update <em>mozext</em> to make it behave in the same manner. (It
+was easier to write a new extension than to update mozext.)</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="please-stop-using-mq"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/06/23/please-stop-using-mq" rel="bookmark" title="Permanent Link to Please Stop Using MQ">Please Stop Using MQ</a></h2>
   <small>June 23, 2014 at 11:50 AM | categories: 
@@ -282,27 +361,27 @@ child of d5741ada659d, then there should be absolutely no way
 that 23d165967da3 should fail to apply directly to d5741ada659d.
 The problem is that mq fails to update the parent changeset when
 you push patches on top of a new parent! e.g.</p>
-<div class="pygments_murphy"><pre># Let&#39;s create a root commit.
-$ echo &#39;foo&#39; &gt; foo
-$ hg commit -A -m &#39;initial commit&#39;
+<div class="pygments_murphy"><pre><span class="c"># Let&#39;s create a root commit.</span>
+<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;foo&#39;</span> &gt; foo
+<span class="nv">$ </span>hg commit -A -m <span class="s1">&#39;initial commit&#39;</span>
 adding foo
-$ hg log
+<span class="nv">$ </span>hg log
 changeset:   0:23d165967da3
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:05 2014 -0700
+date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
 summary:     initial commit
 </pre></div>
 
 <p>Notice the changeset of that commit. <em>023d165...</em>.</p>
 <p>Now let's create a new mq patch.</p>
-<div class="pygments_murphy"><pre>$ echo &#39;patch 1&#39; &gt; foo
-$ hg qnew -m &#39;make mq patch 1&#39; p1
+<div class="pygments_murphy"><pre><span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;patch 1&#39;</span> &gt; foo
+<span class="nv">$ </span>hg qnew -m <span class="s1">&#39;make mq patch 1&#39;</span> p1
 
-# Creating an mq patch creates a file in .hg/patches.
-$ cat .hg/patches/p1
-# HG changeset patch
-# Parent 23d165967da39e5846976eb6ed967f1058827ffa
-# User Gregory Szorc &lt;gps@mozilla.com&gt;
+<span class="c"># Creating an mq patch creates a file in .hg/patches.</span>
+<span class="nv">$ </span>cat .hg/patches/p1
+<span class="c"># HG changeset patch</span>
+<span class="c"># Parent 23d165967da39e5846976eb6ed967f1058827ffa</span>
+<span class="c"># User Gregory Szorc &lt;gps@mozilla.com&gt;</span>
 make p1
 
 diff --git a/foo b/foo
@@ -317,49 +396,49 @@ diff --git a/foo b/foo
 store.</p>
 <p>Now let's pop that patch, create a new commit, and push the old mq
 patch.</p>
-<div class="pygments_murphy"><pre>$ hg qpop
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg qpop
 popping p1
 patch queue now empty
 
-$ echo &#39;bar&#39; &gt; bar
-$ hg commit -A -m &#39;second commit&#39;
+<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;bar&#39;</span> &gt; bar
+<span class="nv">$ </span>hg commit -A -m <span class="s1">&#39;second commit&#39;</span>
 adding bar
 
-$ hg log
+<span class="nv">$ </span>hg log
 changeset:   1:d5741ada659d
 tag:         tip
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:37 2014 -0700
+date:        Sun Jun <span class="m">22</span> 13:48:37 <span class="m">2014</span> -0700
 summary:     second commit
 
 changeset:   0:23d165967da3
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:05 2014 -0700
+date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
 summary:     initial commit
 
-$ hg qpush
+<span class="nv">$ </span>hg qpush
 applying p1
 now at: p1
 
-$ hg log --graph
+<span class="nv">$ </span>hg log --graph
 @ changeset:   2:64851294d038
-| tag:         p1
-| tag:         qbase
-| tag:         qtip
-| tag:         tip
-| user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-| date:        Sun Jun 22 14:27:55 2014 -0700
-| summary:     make mq patch 1
-|
+<span class="p">|</span> tag:         p1
+<span class="p">|</span> tag:         qbase
+<span class="p">|</span> tag:         qtip
+<span class="p">|</span> tag:         tip
+<span class="p">|</span> user:        Gregory Szorc &lt;gps@mozilla.com&gt;
+<span class="p">|</span> date:        Sun Jun <span class="m">22</span> 14:27:55 <span class="m">2014</span> -0700
+<span class="p">|</span> summary:     make mq patch 1
+<span class="p">|</span>
 o changeset:   1:d5741ada659d
-| tag:         qparent
-| user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-| date:        Sun Jun 22 13:48:37 2014 -0700
-| summary:     second commit
-|
+<span class="p">|</span> tag:         qparent
+<span class="p">|</span> user:        Gregory Szorc &lt;gps@mozilla.com&gt;
+<span class="p">|</span> date:        Sun Jun <span class="m">22</span> 13:48:37 <span class="m">2014</span> -0700
+<span class="p">|</span> summary:     second commit
+<span class="p">|</span>
 o changeset:   0:23d165967da3
   user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-  date:        Sun Jun 22 13:48:05 2014 -0700
+  date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
   summary:     initial commit
 </pre></div>
 
@@ -367,10 +446,10 @@ o changeset:   0:23d165967da3
 <em>d5741ada659d</em> because it was pushed while the working directory
 was sitting at <em>d5741ada659d</em>.</p>
 <p>But let's see what mq says:</p>
-<div class="pygments_murphy"><pre>$ hg cat .hg/patches/p1
-# HG changeset patch
-# Parent 23d165967da39e5846976eb6ed967f1058827ffa
-# User Gregory Szorc &lt;gps@mozilla.com&gt;
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg cat .hg/patches/p1
+<span class="c"># HG changeset patch</span>
+<span class="c"># Parent 23d165967da39e5846976eb6ed967f1058827ffa</span>
+<span class="c"># User Gregory Szorc &lt;gps@mozilla.com&gt;</span>
 make p1
 
 diff --git a/foo b/foo
@@ -488,43 +567,43 @@ line examples.</p>
 <p>I use bookmarks for managing my <em>feature branches</em>. I use one
 bookmark per logical feature. This workflow is very similar to
 using Git branches.</p>
-<div class="pygments_murphy"><pre># Create a new bookmark for the new feature I&#39;m developing.
-$ hg bookmark gps/my-new-feature
+<div class="pygments_murphy"><pre><span class="c"># Create a new bookmark for the new feature I&#39;m developing.</span>
+<span class="nv">$ </span>hg bookmark gps/my-new-feature
 
-# make changes to files
-(gps/my-new-feature) $ hg commit
-# make more changes)
-(gps/my-new-feature) $ hg commit
-# keep making small changes
-(gps/my-new-features) $ hg commit
+<span class="c"># make changes to files</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit
+<span class="c"># make more changes)</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit
+<span class="c"># keep making small changes</span>
+<span class="o">(</span>gps/my-new-features<span class="o">)</span> <span class="nv">$ </span>hg commit
 
-# I decide I want to reorder or merge a few commits. I look at the
-# DAG to see which changeset to rewrite.
-(gps/my-new-features) $ hg log --graph
+<span class="c"># I decide I want to reorder or merge a few commits. I look at the</span>
+<span class="c"># DAG to see which changeset to rewrite.</span>
+<span class="o">(</span>gps/my-new-features<span class="o">)</span> <span class="nv">$ </span>hg log --graph
 
-(gps/my-new-feature) $ hg histedit 5e907ed10e22
-# this opens an editor where I can say what changes to make)
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg histedit 5e907ed10e22
+<span class="c"># this opens an editor where I can say what changes to make)</span>
 
-# Let&#39;s start a new feature.
-(gps/my-new-feature) $ hg up central
-(leaving bookmark gps/my-new-feature)
-$ hg bookmark gps/feature2
-# Make some changes
-(gps/feature2) $ hg commit
+<span class="c"># Let&#39;s start a new feature.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg up central
+<span class="o">(</span>leaving bookmark gps/my-new-feature<span class="o">)</span>
+<span class="nv">$ </span>hg bookmark gps/feature2
+<span class="c"># Make some changes</span>
+<span class="o">(</span>gps/feature2<span class="o">)</span> <span class="nv">$ </span>hg commit
 
-# I got review on my original feature. Let&#39;s push it.
-(gps/feature2) $ hg up gps/my-new-feature
-(activating bookmark gps/marionette-restart)
+<span class="c"># I got review on my original feature. Let&#39;s push it.</span>
+<span class="o">(</span>gps/feature2<span class="o">)</span> <span class="nv">$ </span>hg up gps/my-new-feature
+<span class="o">(</span>activating bookmark gps/marionette-restart<span class="o">)</span>
 
-(gps/my-new-feature) $ hg pull gecko
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg pull gecko
 pulling from http://hg.stage.mozaws.net/gecko
-searching for changes
+searching <span class="k">for</span> changes
 adding changesets
 adding manifests
 adding file changes
-added 118 changesets with 543 changes to 328 files (+1 heads)
+added <span class="m">118</span> changesets with <span class="m">543</span> changes to <span class="m">328</span> files <span class="o">(</span>+1 heads<span class="o">)</span>
 OBSEXC: pull obsolescence markers
-OBSEXC: looking for common markers in 215590 nodes
+OBSEXC: looking <span class="k">for</span> common markers in <span class="m">215590</span> nodes
 OBSEXC: no unknown remote markers
 OBSEXC: DONE
 updating bookmark aurora
@@ -536,18 +615,18 @@ updating bookmark esr24
 updating bookmark fx-team
 updating bookmark inbound
 updating bookmark release
-(run &#39;hg heads .&#39; to see heads, &#39;hg merge&#39; to merge)
+<span class="o">(</span>run <span class="s1">&#39;hg heads .&#39;</span> to see heads, <span class="s1">&#39;hg merge&#39;</span> to merge<span class="o">)</span>
 
-(gps/my-new-feature) $ hg rebase -d fx-team
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg rebase -d fx-team
 
-# Verify I&#39;m about to push what I want to push.
-(gps/my-new-feature) $ hg out -r . fx-team
+<span class="c"># Verify I&#39;m about to push what I want to push.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg out -r . fx-team
 
-# And push the changes.
-(gps/my-new-feature) $ hg push -r . fx-team
+<span class="c"># And push the changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg push -r . fx-team
 
-# And delete the bookmark that I don&#39;t need any more.
-(gps/my-new-feature) $ hg bookmark -d gps/my-new-feature
+<span class="c"># And delete the bookmark that I don&#39;t need any more.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg bookmark -d gps/my-new-feature
 </pre></div>
 
 <p>That's how bookmarks work. If you upgrade to Mercurial 3.0 or newer,
@@ -562,48 +641,48 @@ bookmark. This helps me keep track of what head I'm committing to.</p>
 This is the extension that is implementing the <em>Changeset Evolution</em>
 feature. Eventually the functionality will be merged into core
 Mercurial. One such workflow with <em>evolve</em> is as follows.</p>
-<div class="pygments_murphy"><pre># Create a bookmark for a new feature
-$ hg bookmark gps/my-new-feature
+<div class="pygments_murphy"><pre><span class="c"># Create a bookmark for a new feature</span>
+<span class="nv">$ </span>hg bookmark gps/my-new-feature
 
-# Make some changes.
-(gps/my-new-feature) $ hg commit -m &#39;first commit&#39;
+<span class="c"># Make some changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit -m <span class="s1">&#39;first commit&#39;</span>
 
-# Make some more changes.
-(gps/my-new-feature) $ hg commit -m &#39;second commit&#39;
+<span class="c"># Make some more changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit -m <span class="s1">&#39;second commit&#39;</span>
 
-# Submit code for review. (Exact commands excluded.)
+<span class="c"># Submit code for review. (Exact commands excluded.)</span>
 
-# Wait for review comments. There is a nit on the first commit.
-$ hg previous
-[204142] first commit
+<span class="c"># Wait for review comments. There is a nit on the first commit.</span>
+<span class="nv">$ </span>hg previous
+<span class="o">[</span>204142<span class="o">]</span> first commit
 
-# Make changes
-$ hg amend
-1 new unstable changesets
+<span class="c"># Make changes</span>
+<span class="nv">$ </span>hg amend
+<span class="m">1</span> new unstable changesets
 
-# (amend is provided by evolve. It is equivalent to hg commit --amend)
+<span class="c"># (amend is provided by evolve. It is equivalent to hg commit --amend)</span>
 
-# evolve is the command that looks at the history rewriting markers
-# and knows how to rebase, etc other changesets in the face of
-# rewriting.
-$ hg evolve
-move:[204143] second commit
-atop:[204144] first commit
+<span class="c"># evolve is the command that looks at the history rewriting markers</span>
+<span class="c"># and knows how to rebase, etc other changesets in the face of</span>
+<span class="c"># rewriting.</span>
+<span class="nv">$ </span>hg evolve
+move:<span class="o">[</span>204143<span class="o">]</span> second commit
+atop:<span class="o">[</span>204144<span class="o">]</span> first commit
 merging foo
 warning: conflicts during merge.
-merging foo incomplete! (edit conflicts, then use &#39;hg resolve --mark&#39;)
+merging foo incomplete! <span class="o">(</span>edit conflicts, <span class="k">then</span> use <span class="s1">&#39;hg resolve --mark&#39;</span><span class="o">)</span>
 evolve failed!
-fix conflict and run &quot;hg evolve --continue&quot;
-abort: unresolved merge conflicts (see hg help resolve)
+fix conflict and run <span class="s2">&quot;hg evolve --continue&quot;</span>
+abort: unresolved merge conflicts <span class="o">(</span>see hg <span class="nb">help </span>resolve<span class="o">)</span>
 
-# Manually address conflict markers in file &quot;foo&quot;
-$ hg resolve -m foo
+<span class="c"># Manually address conflict markers in file &quot;foo&quot;</span>
+<span class="nv">$ </span>hg resolve -m foo
 no more unresolved files
 
-$ hg evolve --continue
+<span class="nv">$ </span>hg evolve --continue
 grafting revision 204143
 
-# And I&#39;m ready to push.
+<span class="c"># And I&#39;m ready to push.</span>
 </pre></div>
 
 <p>If you really love the concept of mq and patch queues and absolutely
@@ -1166,95 +1245,6 @@ changing its default configuration.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/02/05/the-mercurial-revlog#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="aggregating-version-control-info-at-mozilla"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/01/21/aggregating-version-control-info-at-mozilla" rel="bookmark" title="Permanent Link to Aggregating Version Control Info at Mozilla">Aggregating Version Control Info at Mozilla</a></h2>
-  <small>January 21, 2014 at 10:50 AM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/python'>Python</a>
- | <a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Over the winter break, I set out on an ambitious project to create
-a service to help developers and others manage the flury
-of patches going into Firefox. While the project is far from complete,
-I'm ready to unleash the first part of the project upon the world.</p>
-<p>If you point your browsers to
-<a href="http://moztree.gregoryszorc.com/">moztree.gregoryszorc.com</a>, you'll
-hopefully see some documentation about what I've built.
-<a href="https://bitbucket.org/indygreg/moz-tree-utopia">Source code</a> is
-available and free, of course. Patches very welcome.</p>
-<p>Essentially, I built a centralized indexing service for version
-control repositories with Mozilla's extra metadata thrown in.
-I tell it what repositories to mirror, and it clones everything,
-fetches data such as the pushlog and Git SHA-1 mappings, and
-stores everything in a central database. It then exposes this
-aggregated data through world-readable web services.</p>
-<p>Currently, I have the service indexing the popular project branches
-for Firefox (central, aurora, beta, release, esr, b2g, inbound, fx-team,
-try, etc). You can view the
-<a href="http://moztree.gregoryszorc.com/api/repos">full list</a> via the web
-service. As a bonus, I'm also serving these repositories via
-<a href="http://hg.gregoryszorc.com/">hg.gregoryszorc.com</a>. My server appears
-to be significantly faster than
-<a href="https://hg.mozilla.org">hg.mozilla.org</a>. If you want to use it for
-your daily needs, go for it. I make no SLA guarantees, however.</p>
-<p>I'm also using this service as an opportunity to experiment with
-alternate forms of Mercurial hosting. I have mirrors of mozilla-central
-and the try repository with generaldelta and lz4 compression enabled.
-I may blog about what those are eventually. The teaser is that they can
-make Mercurial perform a lot faster under some conditions. I'm also
-using ZFS under the hood to manage repositories. Each repository is a
-ZFS filesystem. This means I can create repository copies on the server
-(user repositories anyone?) at a nearly free cost. Contrast this to the
-traditional method of full clones, which take lots of time, memory, CPU,
-and storage.</p>
-<p>Anyway, some things you can do with the existing web service:</p>
-<ul>
-<li>Obtain metadata about Mercurial changesets.
-  <a href="http://moztree.gregoryszorc.com/api/changeset/940b2974f35b">Example</a>.</li>
-<li>Look up metadata about Git commits.
-  <a href="http://moztree.gregoryszorc.com/api/git-sha1/40438af67c321">Example</a>.</li>
-<li>Obtain a <a href="http://moztree.gregoryszorc.com/api/spore">SPORE descriptor</a>
-  describing the web service endpoints. This allows you to auto-generate
-  clients from descriptors. Yay!</li>
-</ul>
-<p>Obviously, that's not a lot. But adding new endpoints is relatively
-straightforward. See the <a href="https://bitbucket.org/indygreg/moz-tree-utopia/src/tip/repodata/web/app.py">source</a>.
-It's literally as easy as defining a URL mapping and writing a
-database query.</p>
-<p>The performance is also not the best. I just haven't put in the effort
-to tune things yet. All of the querying hits the database, not
-Mercurial. So, making things faster should merely be a matter of
-database and hosting optimization. Patches welcome!</p>
-<p>Some ideas that I haven't had time to implement yet:</p>
-<ul>
-<li>Return changests in a specific repository</li>
-<li>Return recently pushed changesets</li>
-<li>Return pushes for a given user</li>
-<li>Return commits for a given author</li>
-<li>Return commits referencing a given bug</li>
-<li>Obtain TBPL URLs for pushes with changeset</li>
-<li>Integrate bugzilla metadata</li>
-</ul>
-<p>Once those are in place, I foresee this service powering a number of
-dashboards. Patches welcome.</p>
-<p>Again, this service is only the tip of what's possible. There's a lot
-that could be built on this service. I have ideas. Others have ideas.</p>
-<p>The project includes a Vagrant file and Puppet
-manifests for provisioning the server. It's a one-liner to get a
-development environment up and running. It should be really easy to
-contribute to this project. Patches welcome.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/3">« Previous Page</a>
   --  

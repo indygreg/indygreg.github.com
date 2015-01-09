@@ -51,6 +51,39 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="style-changes-on-hg.mozilla.org"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/09/style-changes-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to Style Changes on hg.mozilla.org">Style Changes on hg.mozilla.org</a></h2>
+  <small>January 09, 2015 at 03:25 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/09/style-changes-on-hg.mozilla.org#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Starting today and continuing through next week, there will be a number
+of styling changes made to <a href="https://hg.mozilla.org/">hg.mozilla.org</a>.</p>
+<p>The main goal of the work is to bring the style up-to-date with upstream
+Mercurial. This will result in more features being available to the web
+interface, hopefully making it more useful. This includes display of
+bookmarks and the Mercurial help documentation. As part of this work,
+we're also removing some files on the server that shouldn't be used. If
+you start getting 404s or notice an unexpected theme change, this is
+probably the reason why.</p>
+<p>If you'd like to look over the changes before they are made or would
+like to file a bug against a regression (we suspect there will be
+minor regressions due to the large nature of the changes), head on
+over to <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1117021">bug 1117021</a>
+or ping people in #vcs on IRC.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/09/style-changes-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mercurial-pushlog-is-now-robust-against-interrupts"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts" rel="bookmark" title="Permanent Link to Mercurial Pushlog Is Now Robust Against Interrupts">Mercurial Pushlog Is Now Robust Against Interrupts</a></h2>
   <small>December 30, 2014 at 12:25 PM | categories: 
@@ -492,69 +525,6 @@ for promptly reviewing the changes!</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/18/mach-sub-commands#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="a-crazy-day"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/04/a-crazy-day" rel="bookmark" title="Permanent Link to A Crazy Day">A Crazy Day</a></h2>
-  <small>December 04, 2014 at 11:34 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/04/a-crazy-day#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Today was one crazy day.</p>
-<p>The build peers all sat down with Release Engineering and Axel Hecht
-to talk l10n packaging. <a href="http://glandium.org/">Mike Hommey</a> has a
-Q1 goal to fix l10n packaging. There is buy-in from Release
-Engineering on enabling him in his quest to slay dragons. This
-will make builds faster and will pay off a massive mountain of
-technical debt that plagues multiple groups at Mozilla.</p>
-<p>The Firefox build system contributors sat down with a bunch of
-Rust people and we talked about what it would take to integrate
-Rust into the Firefox build system and the path towards shipping
-a Rust component in Firefox. It sounds like that is going to
-happen in 2015 (although we're not yet sure what component will
-be written in Rust). I consider it an achievement that the gathering
-of both groups didn't result in infinite rabbit holing about
-system architectures, toolchains, and the build people telling
-<em>horror stories</em> to wide-eyed Rust people about the crazy things
-we have to do to build and ship Firefox. Believe me, the
-temptation was there.</p>
-<p>People interested in the build system all sat down and reflected on
-the state of the build system and where we want to go. We agreed
-to create a build mode optimized for non-Gecko developers
-that downloads pre-built binaries - avoiding ~10 minutes of
-C/C++ compile time for builds. Mark my words, this will be one
-of those changes that once deployed will cause people to say
-"I can't believe we went so long without this."</p>
-<p>I joined Mark Côté and others to talk about priorities for
-MozReview. We'll be making major improvements to the UX and
-integrating static analysis into reviews. Push a patch for
-review and have machines do some of the work that humans are
-currently doing! We're tentatively planning a get-together in
-Toronto in January to sprint towards awesomeness.</p>
-<p>I ended the day by giving a long and rambling presentation about
-version control, with emphasis on Mercurial. I can't help but
-feel that I talked way too much. There's just so much knowledge
-to cover. A few people told me afterwards they learned a lot. I'd
-appreciate feedback if you attended. Anyway, I got a few nods
-from people as I was saying some somewhat contentious things.
-It's always good to have validation that I'm not on an island
-when I say crazy things.</p>
-<p>I hope to spend Friday chasing down loose ends from the week.
-This includes talking to some security gurus about another crazy
-idea of mine to integrate PGP into the code review and code
-landing workflow for Firefox. I'll share more details once
-I get a professional opinion on the security front.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/04/a-crazy-day#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 

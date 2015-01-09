@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 30 Dec 2014 20:26:46 GMT</pubDate>
+    <pubDate>Fri, 09 Jan 2015 23:29:33 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -91,7 +91,7 @@ it's necessary (the test passes most of the time, doesn't it?).</p>
 more robust tests without all of the extra work. Here is how you would
 use task-based tests:</p>
 <div class="pygments_murphy"><pre><span class="nx">add_task</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">yield</span> <span class="nx">do_something</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="nx">do_something</span><span class="p">();</span>
   <span class="c1">// The next line throws an Error by accident!</span>
   <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
 <span class="p">});</span>

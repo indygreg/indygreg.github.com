@@ -51,6 +51,85 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="track-firefox-repositories-with-local-only-mercurial-tags"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags" rel="bookmark" title="Permanent Link to Track Firefox Repositories with Local-Only Mercurial Tags">Track Firefox Repositories with Local-Only Mercurial Tags</a></h2>
+  <small>June 30, 2014 at 10:25 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>After reading my recent
+<a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
+a number of people asked me about my development workflow. While I
+still owe a full answer to that question, one of the cornerstores
+is a unified Mercurial repository. Instead of having separate clones
+for mozilla-central, mozilla-inbound, aurora, beta, etc, I have a
+single clone with the changesets from all the repositories.</p>
+<p>I feel having a unified repository has made me more productive. I no
+longer have to waste time shuffling changesets between local clones.
+This introduced all kinds of extra cognitive load and manual
+processes that slowed me down. I highly encourage others to adopt
+unified repositories.</p>
+<p>Because the various Firefox repositories don't have unique branches
+or bookmarks tracking the various heads, aggregating multiple
+repositories introduces a client-side problem of identifying
+which head is which. If you merely do a <em>hg pull</em>, you'll get a
+bunch of anonymous heads.</p>
+<p>To solve this problem, you'll need to employ minor client-side
+magic. Previously, I <a href="/2013/07/22/mercurial-extension-for-gecko-development/">recommended</a>
+my heavyweight <em>mozext</em> extension.</p>
+<p>Today, I'm proud to announce a new, lighter extension:
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">firefoxtree</a>.
+When pulling from a known Firefox repository, this extension will add
+a local-only Mercurial tag for that repository. For example,
+when pulling mozilla-central, the <em>central</em> tag will be created.</p>
+<p>Local-only tags are a Mercurial feature only available to
+extensions. A local-only tag is effectively an overlay of tags
+that don't get transferred as part of push and pull operations.
+They behave like normal tags: you can <em>hg up</em> to them and reference
+them elsewhere changeset identifiers are used. They are also read
+only: if you update to a tag and then commit, the tag will not
+move forward (contrast with branches or bookmarks).</p>
+<h2>Example Usage</h2>
+<p>Clone <em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and add
+the following to your <em>.hg/hgrc</em>:</p>
+<pre><code>[extensions]
+firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
+</code></pre>
+<p>To use, simply pull from a Firefox repo:</p>
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg pull https://hg.mozilla.org/mozilla-central
+
+<span class="nv">$ </span>hg up central
+
+<span class="c"># Do your development work.</span>
+
+<span class="c"># Time to land.</span>
+<span class="nv">$ </span>hg pull https://hg.mozilla.org/integration/mozilla-inbound
+<span class="nv">$ </span>hg rebase -d inbound
+<span class="nv">$ </span>hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
+<span class="nv">$ </span>hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
+</pre></div>
+
+<p>Please note that <em>hg push</em> tries to push all local changes on all
+heads to a remote by default. When operating a unified repo, you'll
+need to use the <em>-r</em> argument to <em>hg push</em> and <em>hg out</em> to limit
+what changesets are considered. I most frequently use <em>-r .</em> to limit
+changes to the current checked out changeset.</p>
+<p>Also note that this extension conflicts with my <em>mozext</em> extension.
+I hope to update <em>mozext</em> to make it behave in the same manner. (It
+was easier to write a new extension than to update mozext.)</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="please-stop-using-mq"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/06/23/please-stop-using-mq" rel="bookmark" title="Permanent Link to Please Stop Using MQ">Please Stop Using MQ</a></h2>
   <small>June 23, 2014 at 11:50 AM | categories: 
@@ -282,27 +361,27 @@ child of d5741ada659d, then there should be absolutely no way
 that 23d165967da3 should fail to apply directly to d5741ada659d.
 The problem is that mq fails to update the parent changeset when
 you push patches on top of a new parent! e.g.</p>
-<div class="pygments_murphy"><pre># Let&#39;s create a root commit.
-$ echo &#39;foo&#39; &gt; foo
-$ hg commit -A -m &#39;initial commit&#39;
+<div class="pygments_murphy"><pre><span class="c"># Let&#39;s create a root commit.</span>
+<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;foo&#39;</span> &gt; foo
+<span class="nv">$ </span>hg commit -A -m <span class="s1">&#39;initial commit&#39;</span>
 adding foo
-$ hg log
+<span class="nv">$ </span>hg log
 changeset:   0:23d165967da3
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:05 2014 -0700
+date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
 summary:     initial commit
 </pre></div>
 
 <p>Notice the changeset of that commit. <em>023d165...</em>.</p>
 <p>Now let's create a new mq patch.</p>
-<div class="pygments_murphy"><pre>$ echo &#39;patch 1&#39; &gt; foo
-$ hg qnew -m &#39;make mq patch 1&#39; p1
+<div class="pygments_murphy"><pre><span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;patch 1&#39;</span> &gt; foo
+<span class="nv">$ </span>hg qnew -m <span class="s1">&#39;make mq patch 1&#39;</span> p1
 
-# Creating an mq patch creates a file in .hg/patches.
-$ cat .hg/patches/p1
-# HG changeset patch
-# Parent 23d165967da39e5846976eb6ed967f1058827ffa
-# User Gregory Szorc &lt;gps@mozilla.com&gt;
+<span class="c"># Creating an mq patch creates a file in .hg/patches.</span>
+<span class="nv">$ </span>cat .hg/patches/p1
+<span class="c"># HG changeset patch</span>
+<span class="c"># Parent 23d165967da39e5846976eb6ed967f1058827ffa</span>
+<span class="c"># User Gregory Szorc &lt;gps@mozilla.com&gt;</span>
 make p1
 
 diff --git a/foo b/foo
@@ -317,49 +396,49 @@ diff --git a/foo b/foo
 store.</p>
 <p>Now let's pop that patch, create a new commit, and push the old mq
 patch.</p>
-<div class="pygments_murphy"><pre>$ hg qpop
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg qpop
 popping p1
 patch queue now empty
 
-$ echo &#39;bar&#39; &gt; bar
-$ hg commit -A -m &#39;second commit&#39;
+<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;bar&#39;</span> &gt; bar
+<span class="nv">$ </span>hg commit -A -m <span class="s1">&#39;second commit&#39;</span>
 adding bar
 
-$ hg log
+<span class="nv">$ </span>hg log
 changeset:   1:d5741ada659d
 tag:         tip
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:37 2014 -0700
+date:        Sun Jun <span class="m">22</span> 13:48:37 <span class="m">2014</span> -0700
 summary:     second commit
 
 changeset:   0:23d165967da3
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun 22 13:48:05 2014 -0700
+date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
 summary:     initial commit
 
-$ hg qpush
+<span class="nv">$ </span>hg qpush
 applying p1
 now at: p1
 
-$ hg log --graph
+<span class="nv">$ </span>hg log --graph
 @ changeset:   2:64851294d038
-| tag:         p1
-| tag:         qbase
-| tag:         qtip
-| tag:         tip
-| user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-| date:        Sun Jun 22 14:27:55 2014 -0700
-| summary:     make mq patch 1
-|
+<span class="p">|</span> tag:         p1
+<span class="p">|</span> tag:         qbase
+<span class="p">|</span> tag:         qtip
+<span class="p">|</span> tag:         tip
+<span class="p">|</span> user:        Gregory Szorc &lt;gps@mozilla.com&gt;
+<span class="p">|</span> date:        Sun Jun <span class="m">22</span> 14:27:55 <span class="m">2014</span> -0700
+<span class="p">|</span> summary:     make mq patch 1
+<span class="p">|</span>
 o changeset:   1:d5741ada659d
-| tag:         qparent
-| user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-| date:        Sun Jun 22 13:48:37 2014 -0700
-| summary:     second commit
-|
+<span class="p">|</span> tag:         qparent
+<span class="p">|</span> user:        Gregory Szorc &lt;gps@mozilla.com&gt;
+<span class="p">|</span> date:        Sun Jun <span class="m">22</span> 13:48:37 <span class="m">2014</span> -0700
+<span class="p">|</span> summary:     second commit
+<span class="p">|</span>
 o changeset:   0:23d165967da3
   user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-  date:        Sun Jun 22 13:48:05 2014 -0700
+  date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
   summary:     initial commit
 </pre></div>
 
@@ -367,10 +446,10 @@ o changeset:   0:23d165967da3
 <em>d5741ada659d</em> because it was pushed while the working directory
 was sitting at <em>d5741ada659d</em>.</p>
 <p>But let's see what mq says:</p>
-<div class="pygments_murphy"><pre>$ hg cat .hg/patches/p1
-# HG changeset patch
-# Parent 23d165967da39e5846976eb6ed967f1058827ffa
-# User Gregory Szorc &lt;gps@mozilla.com&gt;
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg cat .hg/patches/p1
+<span class="c"># HG changeset patch</span>
+<span class="c"># Parent 23d165967da39e5846976eb6ed967f1058827ffa</span>
+<span class="c"># User Gregory Szorc &lt;gps@mozilla.com&gt;</span>
 make p1
 
 diff --git a/foo b/foo
@@ -488,43 +567,43 @@ line examples.</p>
 <p>I use bookmarks for managing my <em>feature branches</em>. I use one
 bookmark per logical feature. This workflow is very similar to
 using Git branches.</p>
-<div class="pygments_murphy"><pre># Create a new bookmark for the new feature I&#39;m developing.
-$ hg bookmark gps/my-new-feature
+<div class="pygments_murphy"><pre><span class="c"># Create a new bookmark for the new feature I&#39;m developing.</span>
+<span class="nv">$ </span>hg bookmark gps/my-new-feature
 
-# make changes to files
-(gps/my-new-feature) $ hg commit
-# make more changes)
-(gps/my-new-feature) $ hg commit
-# keep making small changes
-(gps/my-new-features) $ hg commit
+<span class="c"># make changes to files</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit
+<span class="c"># make more changes)</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit
+<span class="c"># keep making small changes</span>
+<span class="o">(</span>gps/my-new-features<span class="o">)</span> <span class="nv">$ </span>hg commit
 
-# I decide I want to reorder or merge a few commits. I look at the
-# DAG to see which changeset to rewrite.
-(gps/my-new-features) $ hg log --graph
+<span class="c"># I decide I want to reorder or merge a few commits. I look at the</span>
+<span class="c"># DAG to see which changeset to rewrite.</span>
+<span class="o">(</span>gps/my-new-features<span class="o">)</span> <span class="nv">$ </span>hg log --graph
 
-(gps/my-new-feature) $ hg histedit 5e907ed10e22
-# this opens an editor where I can say what changes to make)
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg histedit 5e907ed10e22
+<span class="c"># this opens an editor where I can say what changes to make)</span>
 
-# Let&#39;s start a new feature.
-(gps/my-new-feature) $ hg up central
-(leaving bookmark gps/my-new-feature)
-$ hg bookmark gps/feature2
-# Make some changes
-(gps/feature2) $ hg commit
+<span class="c"># Let&#39;s start a new feature.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg up central
+<span class="o">(</span>leaving bookmark gps/my-new-feature<span class="o">)</span>
+<span class="nv">$ </span>hg bookmark gps/feature2
+<span class="c"># Make some changes</span>
+<span class="o">(</span>gps/feature2<span class="o">)</span> <span class="nv">$ </span>hg commit
 
-# I got review on my original feature. Let&#39;s push it.
-(gps/feature2) $ hg up gps/my-new-feature
-(activating bookmark gps/marionette-restart)
+<span class="c"># I got review on my original feature. Let&#39;s push it.</span>
+<span class="o">(</span>gps/feature2<span class="o">)</span> <span class="nv">$ </span>hg up gps/my-new-feature
+<span class="o">(</span>activating bookmark gps/marionette-restart<span class="o">)</span>
 
-(gps/my-new-feature) $ hg pull gecko
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg pull gecko
 pulling from http://hg.stage.mozaws.net/gecko
-searching for changes
+searching <span class="k">for</span> changes
 adding changesets
 adding manifests
 adding file changes
-added 118 changesets with 543 changes to 328 files (+1 heads)
+added <span class="m">118</span> changesets with <span class="m">543</span> changes to <span class="m">328</span> files <span class="o">(</span>+1 heads<span class="o">)</span>
 OBSEXC: pull obsolescence markers
-OBSEXC: looking for common markers in 215590 nodes
+OBSEXC: looking <span class="k">for</span> common markers in <span class="m">215590</span> nodes
 OBSEXC: no unknown remote markers
 OBSEXC: DONE
 updating bookmark aurora
@@ -536,18 +615,18 @@ updating bookmark esr24
 updating bookmark fx-team
 updating bookmark inbound
 updating bookmark release
-(run &#39;hg heads .&#39; to see heads, &#39;hg merge&#39; to merge)
+<span class="o">(</span>run <span class="s1">&#39;hg heads .&#39;</span> to see heads, <span class="s1">&#39;hg merge&#39;</span> to merge<span class="o">)</span>
 
-(gps/my-new-feature) $ hg rebase -d fx-team
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg rebase -d fx-team
 
-# Verify I&#39;m about to push what I want to push.
-(gps/my-new-feature) $ hg out -r . fx-team
+<span class="c"># Verify I&#39;m about to push what I want to push.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg out -r . fx-team
 
-# And push the changes.
-(gps/my-new-feature) $ hg push -r . fx-team
+<span class="c"># And push the changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg push -r . fx-team
 
-# And delete the bookmark that I don&#39;t need any more.
-(gps/my-new-feature) $ hg bookmark -d gps/my-new-feature
+<span class="c"># And delete the bookmark that I don&#39;t need any more.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg bookmark -d gps/my-new-feature
 </pre></div>
 
 <p>That's how bookmarks work. If you upgrade to Mercurial 3.0 or newer,
@@ -562,48 +641,48 @@ bookmark. This helps me keep track of what head I'm committing to.</p>
 This is the extension that is implementing the <em>Changeset Evolution</em>
 feature. Eventually the functionality will be merged into core
 Mercurial. One such workflow with <em>evolve</em> is as follows.</p>
-<div class="pygments_murphy"><pre># Create a bookmark for a new feature
-$ hg bookmark gps/my-new-feature
+<div class="pygments_murphy"><pre><span class="c"># Create a bookmark for a new feature</span>
+<span class="nv">$ </span>hg bookmark gps/my-new-feature
 
-# Make some changes.
-(gps/my-new-feature) $ hg commit -m &#39;first commit&#39;
+<span class="c"># Make some changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit -m <span class="s1">&#39;first commit&#39;</span>
 
-# Make some more changes.
-(gps/my-new-feature) $ hg commit -m &#39;second commit&#39;
+<span class="c"># Make some more changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit -m <span class="s1">&#39;second commit&#39;</span>
 
-# Submit code for review. (Exact commands excluded.)
+<span class="c"># Submit code for review. (Exact commands excluded.)</span>
 
-# Wait for review comments. There is a nit on the first commit.
-$ hg previous
-[204142] first commit
+<span class="c"># Wait for review comments. There is a nit on the first commit.</span>
+<span class="nv">$ </span>hg previous
+<span class="o">[</span>204142<span class="o">]</span> first commit
 
-# Make changes
-$ hg amend
-1 new unstable changesets
+<span class="c"># Make changes</span>
+<span class="nv">$ </span>hg amend
+<span class="m">1</span> new unstable changesets
 
-# (amend is provided by evolve. It is equivalent to hg commit --amend)
+<span class="c"># (amend is provided by evolve. It is equivalent to hg commit --amend)</span>
 
-# evolve is the command that looks at the history rewriting markers
-# and knows how to rebase, etc other changesets in the face of
-# rewriting.
-$ hg evolve
-move:[204143] second commit
-atop:[204144] first commit
+<span class="c"># evolve is the command that looks at the history rewriting markers</span>
+<span class="c"># and knows how to rebase, etc other changesets in the face of</span>
+<span class="c"># rewriting.</span>
+<span class="nv">$ </span>hg evolve
+move:<span class="o">[</span>204143<span class="o">]</span> second commit
+atop:<span class="o">[</span>204144<span class="o">]</span> first commit
 merging foo
 warning: conflicts during merge.
-merging foo incomplete! (edit conflicts, then use &#39;hg resolve --mark&#39;)
+merging foo incomplete! <span class="o">(</span>edit conflicts, <span class="k">then</span> use <span class="s1">&#39;hg resolve --mark&#39;</span><span class="o">)</span>
 evolve failed!
-fix conflict and run &quot;hg evolve --continue&quot;
-abort: unresolved merge conflicts (see hg help resolve)
+fix conflict and run <span class="s2">&quot;hg evolve --continue&quot;</span>
+abort: unresolved merge conflicts <span class="o">(</span>see hg <span class="nb">help </span>resolve<span class="o">)</span>
 
-# Manually address conflict markers in file &quot;foo&quot;
-$ hg resolve -m foo
+<span class="c"># Manually address conflict markers in file &quot;foo&quot;</span>
+<span class="nv">$ </span>hg resolve -m foo
 no more unresolved files
 
-$ hg evolve --continue
+<span class="nv">$ </span>hg evolve --continue
 grafting revision 204143
 
-# And I&#39;m ready to push.
+<span class="c"># And I&#39;m ready to push.</span>
 </pre></div>
 
 <p>If you really love the concept of mq and patch queues and absolutely
@@ -918,7 +997,7 @@ it's necessary (the test passes most of the time, doesn't it?).</p>
 more robust tests without all of the extra work. Here is how you would
 use task-based tests:</p>
 <div class="pygments_murphy"><pre><span class="nx">add_task</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">yield</span> <span class="nx">do_something</span><span class="p">();</span>
+  <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="nx">do_something</span><span class="p">();</span>
   <span class="c1">// The next line throws an Error by accident!</span>
   <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
 <span class="p">});</span>
@@ -1014,276 +1093,6 @@ moved to a new repository, now you know what's going on.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="the-mercurial-revlog"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/02/05/the-mercurial-revlog" rel="bookmark" title="Permanent Link to The Mercurial Revlog">The Mercurial Revlog</a></h2>
-  <small>February 05, 2014 at 04:26 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/02/05/the-mercurial-revlog#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial stores lots of its data in append-only,
-intended-to-be-immutable data structures called <em>revlogs</em>. Each revlog is
-backed by a file on the filesystem. The main component of a revlog
-is a <em>revision</em>. When a new revision arrives, its content is compared
-against the previous revision in the file and a zlib-compressed
-delta/diff is generated. If the delta is smaller than the entry
-itself, the delta is appended to the revlog. If the compressed delta
-itself or the stream of deltas that must be applied to recreate the
-original text is larger than the source text, the compressed full content
-is appended to the revlog. In other words, Mercurial tries to maintain
-a balance between file size/growth rate and read times in terms of
-both I/O and CPU.</p>
-<p>The <em>changelog</em> is a <em>revlog</em> that holds information about every
-changeset/commit in the repository. The <em>manifest</em> is a <em>revlog</em> that
-holds details about which files are present in every changeset. There
-exist a separate <em>revlog</em> for each file/path ever present in the
-repository. These are called <em>filelogs</em>.</p>
-<p>When you commit a change touching a single file, Mercurial will append
-a revision to the changelog describing the commit, a revision to the
-manifest describing the set of files active in that specific commit,
-and a new revision to a filelog.</p>
-<p>You can poke around your repository's revlogs by running some debug
-commands. For example:</p>
-<pre><code># Show high-level information about the manifest revlog
-$ hg debugrevlog -m
-
-# Show details about each entry in the manifest revlog (this
-# actually reads data from an index to the data revlog - pretend
-# there aren't index files for now)
-$ hg debugindex -m
-
-# Dump the content of a single entry in the changelog.
-$ hg debugdata -c 2
-</code></pre>
-<p>I'm generally a big fan of append-only data structures because I love
-the beneficial caching properties and linear I/O performance.
-Mercurial and the revlog can take advantage of these properties for
-some performance wins under key scenarios, especially server
-operation (pushing commits doesn't necessarily invalidate cached revlog
-entries, allowing the page cache to service many reads).</p>
-<h2>Edge cases and deficiencies</h2>
-<p>As with any system trying to solve a complex problem, the revlog
-storage format doesn't always work as well as intended.</p>
-<p>Let's start by taking by looking at how revlogs do delta storage. I said
-earlier that revlogs try to store a compressed delta against the
-previous entry. Well, that previous entry is the previous physical
-revision in the file/revlog, not the parent revision. You see,
-entries/revisions in revlogs have a numeric index (0, 1, 2, 3, ...),
-a SHA-1 hash of their content, and a link to the logical <em>parent</em> of
-the entry. e.g. say you have two commits in your repo, one made after
-the other:</p>
-<pre><code>0:8ba995b74e18
-1:9b2a99adc05e
-</code></pre>
-<p>The revlog has entries at indexes 0 and 1. They are also accessible
-by their hash/node values of 8ba995b74e18 and 9b2a99adc05e. The parent
-of 1 is 0. The entry for 0 is the full, compressed content of 0. The
-entry for 1 is likely a compressed delta from 0 to 1. As we commit,
-we keep appending new entries. These exist as compressed deltas until
-the sizes of 0..n is greater than n by itself. At that time, a
-compressed version of n is stored.</p>
-<p>This model works great for linear histories, as changes from n to n+1
-are usually small. Mercurial can store a very small delta for each
-entry. The world is good.</p>
-<p>This model works great when entries in revlogs are small. By having
-small entries (and small changes), the number of deltas required to
-eclipse the size of a single entry remains small, in effect keeping the length
-of a <em>delta chain</em> in check. Limiting the length of delta chains is good
-because it keeps the cost of looking up a single revision's content low.
-If you have a delta chain of 1000, for example, Mercurial will need to read
-1000 revlog entries and apply 1000 deltas to obtain the original value.
-That can get expensive computationally. Since reads are linear, I/O
-should remain in check. But you do need to scan a lot of bytes to read
-in all the deltas and you need to perform a lot of the same computations
-(such as zlib decompression).</p>
-<p>Let's talk a little about where the revlog starts to break down.</p>
-<p>First, there's the issue of multiple, interleaved branches in the
-revlog. Say we have a repository with many branches/heads. We alternate
-committing between all the heads. This can play havoc with the default
-revlog delta compression. Since revlogs compress against the previous
-<em>physical</em> entry in the revlog, if there is lots of alternating between
-branches and the contents of those branches diverges significantly, the
-deltas can grow quite large and full revisions will be stored with
-higher frequency. This means more storage space and more CPU tasked
-with resolving deltas (since deltas are larger). Although, CPU is kept
-in check since delta chains tend to be smaller since full revisions are
-stored with higher frequency.</p>
-<p>Second, we have an issue with delta chain explosion of large entries
-with small turnover. If your base content is large and it isn't changing
-that much, it will take hundreds or even thousands of revisions before
-the sum of the delta sizes outgrows that of an entry. This means delta
-chains can be very long and Mercurial will have to spend a lot of CPU
-to resolve a single entry.</p>
-<p>Third, revlogs are using zlib for compression. As many
-<a href="http://pokecraft.first-world.info/wiki/Quick_Benchmark:_Gzip_vs_Bzip2_vs_LZMA_vs_XZ_vs_LZ4_vs_LZO">benchmarks</a>
-have shown, zlib isn't the fastest or most efficient compression
-algorithm in the world. It's likely justified as a reasonable default.
-But alternatives exist. The choice of zlib has implications, especially
-when other factors (such as excessively long delta chains) come into
-play.</p>
-<p>Let's talk about mitigation strategies.</p>
-<h2>True parent deltas</h2>
-<p>While I wasn't around for the original design decisions of revlogs, I'm
-guessing they were strongly influenced by the fact that sequential I/O
-on magnetic disks is much, much faster than random I/O. With SSDs and
-flash storage growing in popularity - a medium that offers random I/O
-commonly over 100 MB/s - this buys us the luxury of asking <em>do revlogs
-need to be optimized for sequential I/O</em> and <em>how can revlogs change to
-take advantage of fast random I/O</em>.</p>
-<p>One of the ways revlogs can adapt to fast random I/O is to store the
-delta against the logical parent, not the physical. The delta chain will
-thus <em>skip</em> revisions in the revlog. e.g. the chain could be 1, 2, 5, 6,
-10, not n, n+1, n+2, .... This would keep deltas small and would reduce
-the overall size of the revlog. Although, it would likely increase the
-length of delta chains, especially when dealing with non-linear
-histories.</p>
-<p>It turns out Mercurial has a setting that enables this -
-<strong>format.generaldelta</strong>. To create a repository with this enabled, run:</p>
-<pre><code>$ hg --config format.generaldelta=true init path/to/repo
-</code></pre>
-<p>The revlogs in that repository with now have deltas computed against the
-logical parent!</p>
-<p>To verify you are using general delta, look for <strong>generaldelta</strong> in the
-<em>.hg/requires</em> file. If it isn't there, you probably don't have
-generaldelta enabled. <strong>Please note that cloning a generaldelta repo
-won't necessarily give your repo generaldelta. You need to have the
-custom config option set on the client or the client will likely use the
-defaults.</strong></p>
-<p>On repositories with lots of interleaved heads, this can make a huge
-difference. As a pathalogical example, Mozilla's
-<a href="https://hg.mozilla.org/try/">Try</a> repository (where people push heads
-to trigger test/automation runs) has over 22,000 heads. The on-disk
-size of the repository is 3117 MB with the standard settings and 2139 MB
-with generaldelta! The bulk of this difference comes from the manifest
-revlog, which is 954 MB smaller with generaldelta.</p>
-<h2>Alternate compression format</h2>
-<p>Mercurial uses zlib for revlog compression by default. This is a safe
-choice. It's relatively fast and yields relatively good compression.</p>
-<p>Since Mercurial is highly extensible, it's possible to plug in a custom
-compression format for revlogs. Facebook's
-<a href="https://bitbucket.org/facebook/lz4revlog/">lz4revlog extension</a> will
-use lz4 for compression. lz4 is faster than zlib, but compression isn't
-as good. Repositories with lz4 are commonly ~1.5x larger. But CPU bound
-tasks can be significantly faster.</p>
-<p>In theory, any compression format can be used. However, it's not
-trivially selectable in Mercurial (yet), so someone will need to provide
-an extension that implements your desired compression format.</p>
-<h2>Alternate storage backends</h2>
-<p>In theory, Mercurial revlogs can be backed by anything. This is the
-extensibility of Mercurial at work. There's just a Mercurial extension
-sitting between using SQL, S3, Cassandra, or any other storage backend
-for revlogs.</p>
-<p>It's also possible to write custom revlog implementations that change
-the file layout for interesting scaling possibilities. For example,
-modern filesystems like ZFS and btrfs support block-level deduplication
-and transparent compression. If you had block-aligned revlog entries
-with deduplication enabled, servers could in theory only store each
-revision at most once. Another idea is to let the filesystem handle
-the compression. This would cause compression to occur in kernel space
-(rather than inside Python userspace). This may have beneficial
-performance properties. It may not. It may depend on the repository.
-These would be interesting experiments to conduct!</p>
-<h2>Caveat with alternate revlog implementations</h2>
-<p>Before you go experimenting with alternative revlog implementations,
-be forewarned that wall time performance for push and pull operations
-may suffer!</p>
-<p>Currently, Mercurial isn't as smart as it could be when it comes to
-transferring <em>bundles</em> of changeset data between repositories. Let me
-explain.</p>
-<p>When Mercurial transfers changeset data between repositories, it often
-uses an encoding format called a <a href="http://mercurial.selenic.com/wiki/BundleFormat">bundle</a>.
-A bundle is effectively a custom archive format for revlog data. If
-you've ever used <em>hg bundle</em> or <em>hg unbundle</em> to transfer repository
-data, you've explicitly interacted with bundles. But what's lesser known
-is that the <em>hg push</em> and <em>hg pull</em> operations also transfer bundles.
-The only major difference is that they are created on the fly and their
-existence is hidden from view.</p>
-<p>In theory, bundles can be encoded a number of different ways. The most
-common tunable is the compression format. Over the wire, bundles are
-zlib (or even uncompressed). If you run <em>hg bundle</em>, you'll likely
-produce a bzip2 bundle. (This is why <em>hg unbundle</em> can be slower than
-<em>hg clone</em> - the CPU time spent for bzip2 is much greater than for
-zlib.) But a problem with bundles as they exist today is that the format
-is rather static when it comes to what's transferred over the wire.
-Unless you've mucked about with settings, the client and server will
-send a zlib-compressed bundle using the physical revlog order. In other
-words, the bundle format is the Mercurial defaults.</p>
-<p>If Mercurial were completely dumb, transferring bundles would involve
-1) determining the full text of a revlog entry 2) compressing that entry
-into a bundle 3) sending that data to a peer 4) decompressing that entry
-5) appending that entry to the appropriate revlog (which involves
-recompression). Fortunately, Mercurial is a bit smarter than that:
-Mercurial can detect when compressed bits in a bundle will match what
-is on disk and will avoid the unncessary compression operations.</p>
-<p>Anyway, the current bundle transfer mechanism falls apart when there is
-a mismatch between client and server configurations or even when the
-server or client is using non-defaults. You can think of this as a
-revlog impedance mismatch. Essentially, when the client and server are
-operating with different or uncommon types of revlogs, Mercurial tends
-to default to the lowest common denominator, or zlib deltas against the
-physical parent. If, for example, a client wants to use generaldelta
-with a server employing defaults, the client will have to convert the
-server's deltas into generaldelta deltas. This requires a non-trivial
-amount of CPU and pull operations become slower. I believe the opposite
-is also true: generaldelta clients will emit generaldelta bundles,
-causing the server to recompute the deltas.</p>
-<p><strong>When it comes to custom revlog formats today, essentially nobody
-wins.</strong></p>
-<p>The good news is this will be fixed. There is an
-<a href="http://mercurial.selenic.com/wiki/BundleFormat2">effort</a> to improve the
-bundle format and wire protocols to make matters better. A little
-protocol negotiation can go a long way to make the situation a lot
-better. That said, there is still the underlying problem that some
-clients may want settings that differ from the server's. e.g. clients
-with SSDs likely want generaldelta because they don't need sequential
-I/O and SSD space is more expensive, so the smaller repository sizes
-achieved with generaldelta are appreciated. But a server operator may
-not want to force generaldelta on all clients because it would make
-clients on mechanical hard drives slower! The point is revlog impedance
-mismatch will occur and someone needs to spend the CPU cycles to rectify
-the matter. I suspect this will be pushed to clients since distributed
-CPU load is easier to deal with than centralized on the server. But, I
-wouldn't be surprised if Mercurial allowed server operators to configure
-the behavior. It's a hard problem. Time will tell.</p>
-<p>In the mean time, just know that if you experiment with custom revlog
-settings, push and pull operations will likely be slower. You may not
-notice this on day-to-day operations. But on things like initial clone,
-you could experience a massive slow-down.</p>
-<p>Here's some timings with
-<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a> with a
-Mercurial 1.9 server and client on the same SSD-backed multi-core machine:</p>
-<ul>
-<li>clone default settings - 4:25</li>
-<li>clone --uncompressed - 0:49</li>
-<li>clone from generaldelta - 14:11</li>
-<li>clone from generaldelta to generaldelta - 16:49</li>
-<li>clone from generaldelta --uncompressed - 0:50</li>
-<li>pull 2250 changesets, default from default - 6.7s</li>
-<li>pull 2250 changesets, default from generaldelta - 17.9s</li>
-<li>pull 2250 changesets, generaldelta from default - 28.5s</li>
-<li>pull 2250 changesets, generaldelta from generaldelta - 20.0s</li>
-</ul>
-<p>As you can see, anything involving compression and generaldelta is
-much slower. Once <em>bundle format 2</em> is fully implemented, I expect the
-situation to improve.  Until then, know that you'll get a ~2.5-4x
-slowdown from using generaldelta. You'll have to measure other
-revlog formats for their impact.</p>
-<p>In conclusion, Mercurial's revlog file format is an interesting and
-tunable data structure. It works pretty well for most repositories. But
-if you are the 1%, you might want to spend some time to investigate
-changing its default configuration.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/02/05/the-mercurial-revlog#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/5">« Previous Page</a>
   --  
