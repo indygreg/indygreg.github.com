@@ -51,6 +51,154 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="things-mozilla-could-do-with-mercurial"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/17/things-mozilla-could-do-with-mercurial" rel="bookmark" title="Permanent Link to Things Mozilla Could Do with Mercurial">Things Mozilla Could Do with Mercurial</a></h2>
+  <small>January 17, 2014 at 03:00 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/17/things-mozilla-could-do-with-mercurial#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>As I've <a href="/blog/category/mercurial/">written before</a>, Mercurial is a
+highly extensible version control system. You can do things with
+Mercurial you can't do in other version control systems.</p>
+<p>In this post, I'll outline some of the cool things Mozilla could do with
+Mercurial. But first, I want to outline some features of Mercurial that
+many don't know exist.</p>
+<h2>pushkey and listkeys command</h2>
+<p>The Mercurial wire protocol (how two Mercurial peer repositories
+talk to each other over a network) contains two very useful commands:
+<em>pushkey</em> and <em>listkeys</em>. These commands allow the storage and listing
+of arbitrary key-value pair metadata in the repository.</p>
+<p>This generic storage mechanism is how Mercurial stores and synchronizes
+bookmarks and phases information, for example.</p>
+<p>By implementing a Mercurial extension, you can have Mercurial store
+key-value data for any arbitrary data namespace. You can then write
+a simple extension that synchronizes this data as part of the push
+and pull operations.</p>
+<h2>Extending the wire protocol</h2>
+<p>For cases where you want to transmit arbitrary data to/from Mercurial
+servers and where the <em>pushkey</em> framework isn't robust enough, it's
+possible to implement custom commands in the Mercurial wire protocol.</p>
+<p>A server installs an extension making the commands available. A client
+installs an extension knowing how to use the commands. Arbitrary data
+is transferred or custom actions are performed.</p>
+<p>When it comes to custom commands, the sky is really the limit. You
+could do pretty much anything from transfer extra data types (this
+is how the <a href="http://mercurial.selenic.com/wiki/LargefilesExtension">largefiles extension</a>
+works) to writing commands that interact with remote agents.</p>
+<h2>Custom revision set queries and templating</h2>
+<p>Mercurial offers a rich framework for querying repository data and
+for formatting data. The querying is called <em>revision sets</em> and the
+later <em>templates</em>. If you are unfamiliar with the feature, I
+encourage you to run <em>hg help revset</em> and <em>hg help templates</em> right
+now to discover the awesomeness.</p>
+<p>As I've <a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata/">demonstrated</a>,
+you can do some very nifty things with custom revision sets and
+templating!</p>
+<h2>The possibilities</h2>
+<p>Now that you know some ways Mercurial can be extended, let's talk about
+some cool use cases at Mozilla. I want to be clear that I'm not
+advocating we do these things, just that they are possible and maybe
+they are a little cool.</p>
+<h3>Storing pushlog data</h3>
+<p>Mozilla records information about who pushed what changesets where and
+when in what's called the <em>pushlog</em>. The pushlog data is currently
+stored in a SQLite database inside the repository on the server. The
+data is made available via a HTTP+JSON API.</p>
+<p>We could go a step further and make the pushlog data available via
+<em>listkeys</em> so Mercurial clients could download pushlog data with the
+same channel used to pull core repository data. (Currently, we have
+to open a new TCP connection and talk to the HTTP+JSON API.) This
+would make fetching of pushlog data faster, especially for clients
+on slow connections.</p>
+<p>I concede this is an iterative improvement and adds little value beyond
+what we currently have. But if I were designing pushlog storage from
+scratch, this is how I'd do it.</p>
+<h3>Storing a changeset's automation results</h3>
+<p>The <em>pushkey</em> framework could be used to mark specific changesets
+as passing automation. When release automation or a sheriff determines
+that a changeset/push is green, they could issue an authenticated
+<em>pushkey</em> command to the Mercurial server stating such. Clients
+could then easily obtain a list of all changesets that are green.</p>
+<p>Why stop there? We could also record automation failures in Mercurial as
+well. Depending on how complex this gets, we may outgrow <em>pushkey</em>
+and require a separate command. But that's all doable.</p>
+<p>Anyway, clients could download automation results for a specific
+changeset as part of the repository data. The same extension that
+pulls down that data could also monkeypatch the bisection algorithm used
+by <em>hg bisect</em> to automatically skip over changesets that didn't pass
+automation. You'll never bisect a backed out changeset again!</p>
+<p>If this automation data were stored on the Try repository, the autoland
+tool would just need to query the Mercurial repo to see which changesets
+are candidates for merging into mainline - there would be no need for
+a separate database and web service!</p>
+<h3>Marking a changeset as reviewed</h3>
+<p>Currently, Mozilla's review procedure is very patch and Bugzilla
+centric. But it doesn't have to be that way. (I argue it shouldn't be
+that way.)</p>
+<p>Imagine a world where code review is initiated by pushing changesets
+to a special server, kind of like how Try magically turns pushes into
+automation jobs.</p>
+<p>In this world, reviews could be initiated by issuing a <em>pushkey</em>
+or custom command to the server. This could even initiate
+server-side static analysis that would hold off publishing the review
+unless static analysis checks passed!</p>
+<p>Granted review could be recorded by having someone issue a
+<em>pushkey</em> command to mark a changeset as reviewed. The channel to the
+Mercurial server is authenticated via SSH, so the user behind the
+current SSH key is the reviewer. The Mercurial server could store this
+username as part of the repository data. The autoland tool could then
+pull down the reviewer data and only consider changesets that have an
+appropriate reviewer.</p>
+<p>It <em>might</em> also be possible to integrate crypto magic into this
+workflow so reviewers could digitally sign a changeset as reviewed.
+This could help with the verification of the Firefox source code
+that Brendan Eich <a href="https://brendaneich.com/2014/01/trust-but-verify/">recently outlined</a>.</p>
+<p>Like the automation data above, no separate
+database would be required: all data would be part of the repository.
+All you need to build is a Mercurial extension.</p>
+<h3>Encouraging best practices</h3>
+<p>Mozillians have written a handful of useful Mercurial extensions to
+help people become more productive. We have also noticed that many
+developers are still (unknowingly?) running old, slow, and buggy
+Mercurial releases. We want people to have the best experience possible.
+How do we do that?</p>
+<p>One idea is to install an extension on the server that strongly
+recommands or even requires users follow best practices (minimal HG
+version, installed extensions, etc).</p>
+<p>I have developed a <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=941856">proof-of-concept</a>
+that does just this.</p>
+<h3>Rich querying of metadata</h3>
+<p>When you start putting more metadata into Mercurial (or at least write
+Mercurial extensions to aggregate this metadata), all kinds of
+interesting query opportunities open up. Using revsets and templates,
+you can do an awful lot to use Mercurial as a database of sorts
+to extract useful reports.</p>
+<p>I dare say reports like
+<a href="http://oduinn.com/blog/2013/12/03/infrastructure-load-for-november-2013/">John O'duinn's Monthly Infrastructure Load</a>
+posts could be completely derived from Mercurial. I've
+<a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata/">demonstrated</a>
+this ability previously. That's only the tip of the iceburg.</p>
+<h2>Summary</h2>
+<p>We could enable a lot of new and useful scenarios by extending
+Mercurial. We could accomplish this without introducing new
+services and tools into our already complicated infrastructure
+and workflows.</p>
+<p>The possibilities I've suggested are by no means exhaustive. I encourage
+others to dream up new and interesting ideas. Who knows, maybe some of
+them may actually happen.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/17/things-mozilla-could-do-with-mercurial#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mach-now-lives-in-mozilla-central"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/09/mach-now-lives-in-mozilla-central" rel="bookmark" title="Permanent Link to mach now lives in mozilla-central">mach now lives in mozilla-central</a></h2>
   <small>January 09, 2014 at 10:55 AM | categories: 
@@ -272,63 +420,6 @@ requests my way!</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="importance-of-hosting-your-version-control-server"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/11/13/importance-of-hosting-your-version-control-server" rel="bookmark" title="Permanent Link to Importance of Hosting Your Version Control Server">Importance of Hosting Your Version Control Server</a></h2>
-  <small>November 13, 2013 at 09:25 AM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The subject of where to host version control repositories comes up a lot
-at Mozilla. It takes many forms:</p>
-<ul>
-<li>We should move the Firefox repository to GitHub</li>
-<li>I should be allowed to commit to GitHub</li>
-<li>I want the canonical repository to be hosted by Bitbucket</li>
-</ul>
-<p>When Firefox development is concerned, Release Engineerings puts down
-their foot and insists the canonical repository be hosted by Mozilla,
-under a Mozilla hostname. When that's not possible, they set up a mirror
-on Mozilla infrastructure.</p>
-<p>I think a
-<a href="https://groups.google.com/d/topic/jenkinsci-dev/-myjRIPcVwU/discussion">recent issue with the Jenkins project</a>
-demonstrates why hosting your own version control server is important.
-The gist is someone force pushed to a bunch of repos hosted on GitHub.
-They needed to involve GitHub support to recover from the issue. While
-it appears they largely recovered (and GitHub support deserves kudos - I
-don't want to take away from their excellence), this problem would have
-been avoided or the response time significantly decreased if the Jenkins
-people had direct control over the Git server: they either could have
-installed a custom hook that would have prevented the pushes or had
-access to the reflog so they could have easily seen the last pushed
-revision and easily forced pushed back to it. GitHub doesn't have a
-mechanism for defining pre-* hooks, doesn't allow defining custom
-hooks (a security and performance issue for them), and doesn't
-expose the reflog data.</p>
-<p>Until repository hosting services expose full repository data (such as
-reflogs) and allow you to define custom hooks, accidents like these will
-happen and the recovery time will be longer than if you hosted the repo
-yourself.</p>
-<p>It's possible repository hosting services like GitHub and Bitbucket will
-expose these features or provide a means to quickly recover. If so,
-kudos to them. But larger, more advanced projects will likely employ
-custom hooks and considering custom hooks are a massive security and
-performance issue for any hosted service provider, I'm not going to
-hold my breath this particular feature is rolled out any time soon.
-This is unfortunate, as it makes projects seemingly choose between
-low risk/low convenience and GitHub's vibrant developer community.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../7">« Previous Page</a>
   --  

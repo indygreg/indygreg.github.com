@@ -51,6 +51,176 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="code-first-and-the-rise-of-the-dvcs-and-github"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github" rel="bookmark" title="Permanent Link to Code First and the Rise of the DVCS and GitHub">Code First and the Rise of the DVCS and GitHub</a></h2>
+  <small>January 10, 2015 at 12:35 PM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The ascendancy of GitHub has very little to do with its namesake tool,
+Git.</p>
+<p>What GitHub did that was so radical for its time and the strategy that
+GitHub continues to execute so well on today is the approach of
+putting <em>code first</em> and enabling change to be a frictionless process.</p>
+<p>In case you weren't around for the pre-GitHub days or don't remember,
+they were not pleasant. Tools around code management were a far cry
+from where they are today (I still argue the tools are pretty bad, but
+that's for another post). Centralized version control systems were
+prevalent (CVS and Subversion in open source, Perforce, ClearCase,
+Team Foundation Server, and others in the corporate world). Tools for
+looking at and querying code had horrible, ugly interfaces and came out
+of a previous era of web design and browser capabilities. It felt like
+a chore to do anything, including committing code. Yes, the world
+had awesome services like <a href="https://sourceforge.net/">SourceForge</a>,
+but they weren't the same as GitHub is today.</p>
+<p>Before I get to my central thesis, I want to highlight some supporting
+reasons for GitHub's success. There were two developments in the second
+half of the 2000s the contributed to the success of GitHub: the rises
+of the distributed version control system (DVCS) and the modern web.</p>
+<p>While distributed version control systems like Sun WorkShop TeamWare and
+BitKeeper existed earlier, it wasn't until the second half of the 2000s
+that DVCS systems took off. You can argue part of the reason for this
+was open source: my recollection is there wasn't a well-known DVCS
+available as free software before 2005. Speaking of 2005, it was a big
+year for DVCS projects: Git, Mercurial, and Bazaar all had initial
+releases. Suddenly, there were old-but-new ideas on how to do source
+control being exposed to new and willing-to-experiment audiences. DVCS
+were a critical leap from traditional version control because they
+(theoretically) impose less process and workflow limitations on users.
+With traditional version control, you needed to be online to commit,
+meaning you were managing patches, not commits, in your local
+development workflow. There were some forms of branching and merging,
+but they were a far cry from what is available today and were often too
+complex for mere mortals to use. As more and more people were exposed to
+<em>distributed</em> version control, they welcomed its less-restrictive and
+more powerful workflows. They realized that source control tools don't
+have to be so limiting. <em>Distributed</em> version control also promised all
+kinds of revamped workflows that could be harnessed. There were
+potential wins all around.</p>
+<p>Around the same time that open source DVCS systems were emerging, web
+browsers were evolving from an application to render static pages to a
+platform for running web <em>applications</em>. Web sites using JavaScript
+to dynamically manipulate web page content (DHTML as it was known back
+then) were starting to hit their stride. I believe it was GMail that
+turned the most heads as to the full power of the <em>modern web</em>
+experience, with its novel-for-its-time extreme reliance on
+XMLHttpRequest for dynamically changing page content. People were
+realizing that powerful, desktop-like applications could be built for
+the web and could run everywhere.</p>
+<p>GitHub launched in April 2008 standing on the shoulders of both the
+emerging interest in the Git content tracking tool and the capabilities
+of modern browsers.</p>
+<p>I wasn't an early user of GitHub. My recollection is that GitHub was
+mostly a Rubyist's playground back then. I wasn't a Ruby programmer, so
+I had little reason to use GitHub in the early stages. But people did
+start using GitHub. And in the spirit of Ruby (on Rails), GitHub moved
+fast, or at least was projecting the notion that they were. While other
+services built on top of DVCS tools - like Bitbucket - did exist back then,
+GitHub seemed to have momentum associated with it. (Look at the archives
+for <a href="https://github.com/blog">GitHub's</a> and
+<a href="https://blog.bitbucket.org/">Bitbucket's</a> respective blogs. GitHub has
+hundreds of blog entries; Bitbucket numbers in the dozens.) Developers
+everywhere up until this point had all been dealing with sub-optimal tools
+and workflows. Some of us realized it. Others hadn't. Many of those who
+did saw GitHub as a beacon of hope: we have all these new ideas and new
+potentials with distributed version control and here is a service under
+active development trying to figure out how to exploit that. Oh, and
+it's free for open source. Sign me up!</p>
+<p>GitHub did capitalize on a market opportunity. They also capitalized on
+the value of marketing and the perception that they were moving fast and
+providing features that people - especially in open source - wanted.
+This captured the early adopters market. But I think what really set
+GitHub apart and led to the success they are enjoying today is their
+<em>code first</em> approach and their desire to make contribution easy, and
+even fun and sociable.</p>
+<p>As developers, our job is to solve problems. We often do that by writing
+and changing code. And this often involves working as part of a team, or
+collaborating. To collaborate, we need tools. You eventually need some
+processes. And as I
+<a href="/blog/2015/01/09/firefox-contribution-process-debt/">recently blogged</a>,
+this can lead to <em>process debt</em> and inefficiencies associated with them.</p>
+<p>Before GitHub, the <em>process debt</em> for contributing to other projects was
+high. You often had to subscribe to mailing lists in order to submit
+patches as emails. Or, you had to create an account on someone's bug
+tracker or code review tool before you could send patches. Then you had
+to figure out how to use these tools and any organization or
+project-specific extensions and workflows attached to them. It was quite
+involved and a lot could go wrong. Many projects and organizations (like
+Mozilla) still practice this traditional methology. Furthermore (and as
+I've
+<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">written before</a>),
+these traditional, single patch/commit-based tools often aren't
+effective at ensuring the desired output of high quality software.</p>
+<p>Before GitHub solved <em>process debt</em> via commoditization of knowledge via
+market dominance, they took another approach: emphasizing <em>code first</em>
+development.</p>
+<p>GitHub is all about the <strong>code</strong>. You load a project page and you see
+<strong>code</strong>. You may think a README with basic project information would be
+the first thing on a <em>project</em> page. But it isn't. <em>Code</em>, like data,
+is king.</p>
+<p>Collaboration and contribution on GitHub revolve around the <em>pull
+request</em>. It's a way of saying, <em>hey, I made a change, will you take
+it?</em> There's nothing too novel in the concept of the <em>pull request</em>:
+it's fundamentally no different than sending emails with patches to a
+mailing list. But what is so special is GitHub's execution. Gone are
+the days of configuring and using one-off tools and processes. Instead,
+we have the friendly confines of a clean, friendly, and modern web
+experience. While GitHub is built upon the Git tool, you don't even
+need to use Git (a tool
+<a href="http://git-man-page-generator.lokaltog.net/">lampooned</a>
+for its
+<a href="http://stevelosh.com/blog/2013/04/git-koans/">horrible usability and approachability</a>)
+to contribute on GitHub! Instead, you can
+<a href="https://help.github.com/articles/github-flow-in-the-browser/">do everything from your browser</a>.
+That warrants repeating: <strong>you don't need to leave your browser to
+contribute on GitHub</strong>. GitHub has essentially reduced <em>process debt</em>
+to <em>edit a text document</em> territory, and pretty much anybody who has
+used a computer can do that. This has enabled GitHub to dabble into
+non-code territory, such as its
+<a href="https://government.github.com/">GitHub and Government</a> initiative to
+foster community involvement in government. (GitHub is really a platform
+for easily seeing and changing <em>any</em> content or data. But, please, let
+me continue using <em>code</em> as a stand-in, since I want to focus on the
+developer audience.)</p>
+<p>GitHub took an overly-complicated and fragmented world of varying
+contribution processes and made the new world revolve around code and a
+unified and simple process for change - the <em>pull request</em>.</p>
+<p>Yes, there are other reasons for GitHub's success. You can make strong
+arguments that GitHub has capitalized on the social and psychological
+aspects of coding and human desire for success and happiness. I agree.</p>
+<p>You can also argue GitHub succeeded because of Git. That statement is
+more or less technically accurate, but I don't think it is a sound
+argument. Git may have been the most feature complete open source
+DVCS at the time GitHub came into existence. But that doesn't mean there
+is something special about Git that no other DVCS has that makes GitHub
+popular. Had another tool been more feature complete or had the backing
+of a project as large as Linux at the time of GitHub's launch, we could
+very well be looking at a successful service built on something that
+isn't Git. Git had early market advantage and I argue its popularity
+today - a lot of it via GitHub - is largely a result of its early
+advantages over competing tools. And, I would go so far to say that when
+you consider the poor usability of Git and the pain that its users go
+through when first learning it, more accurate statements would be that
+<em>GitHub succeeded in spite of Git</em> and <em>Git owes much of its success to
+GitHub</em>.</p>
+<p>When I look back at the rise of GitHub, I see a service that has
+succeeded by putting people first by allowing them to capitalize
+on more productive workflows and processes. They've done this by
+emphasizing <em>code</em>, not process, as the means for change. Organizations
+and projects should take note.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="on-monolithic-repositories"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/09/09/on-monolithic-repositories" rel="bookmark" title="Permanent Link to On Monolithic Repositories">On Monolithic Repositories</a></h2>
   <small>September 09, 2014 at 10:00 AM | categories: 
@@ -476,63 +646,6 @@ contribute to this project. Patches welcome.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="importance-of-hosting-your-version-control-server"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/11/13/importance-of-hosting-your-version-control-server" rel="bookmark" title="Permanent Link to Importance of Hosting Your Version Control Server">Importance of Hosting Your Version Control Server</a></h2>
-  <small>November 13, 2013 at 09:25 AM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The subject of where to host version control repositories comes up a lot
-at Mozilla. It takes many forms:</p>
-<ul>
-<li>We should move the Firefox repository to GitHub</li>
-<li>I should be allowed to commit to GitHub</li>
-<li>I want the canonical repository to be hosted by Bitbucket</li>
-</ul>
-<p>When Firefox development is concerned, Release Engineerings puts down
-their foot and insists the canonical repository be hosted by Mozilla,
-under a Mozilla hostname. When that's not possible, they set up a mirror
-on Mozilla infrastructure.</p>
-<p>I think a
-<a href="https://groups.google.com/d/topic/jenkinsci-dev/-myjRIPcVwU/discussion">recent issue with the Jenkins project</a>
-demonstrates why hosting your own version control server is important.
-The gist is someone force pushed to a bunch of repos hosted on GitHub.
-They needed to involve GitHub support to recover from the issue. While
-it appears they largely recovered (and GitHub support deserves kudos - I
-don't want to take away from their excellence), this problem would have
-been avoided or the response time significantly decreased if the Jenkins
-people had direct control over the Git server: they either could have
-installed a custom hook that would have prevented the pushes or had
-access to the reflog so they could have easily seen the last pushed
-revision and easily forced pushed back to it. GitHub doesn't have a
-mechanism for defining pre-* hooks, doesn't allow defining custom
-hooks (a security and performance issue for them), and doesn't
-expose the reflog data.</p>
-<p>Until repository hosting services expose full repository data (such as
-reflogs) and allow you to define custom hooks, accidents like these will
-happen and the recovery time will be longer than if you hosted the repo
-yourself.</p>
-<p>It's possible repository hosting services like GitHub and Bitbucket will
-expose these features or provide a means to quickly recover. If so,
-kudos to them. But larger, more advanced projects will likely employ
-custom hooks and considering custom hooks are a massive security and
-performance issue for any hosted service provider, I'm not going to
-hold my breath this particular feature is rolled out any time soon.
-This is unfortunate, as it makes projects seemingly choose between
-low risk/low convenience and GitHub's vibrant developer community.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/git/2">Next Page »</a>
 

@@ -10,10 +10,170 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sat, 10 Jan 2015 00:46:53 GMT</pubDate>
+    <pubDate>Sun, 11 Jan 2015 20:36:14 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Code First and the Rise of the DVCS and GitHub</title>
+      <link>http://gregoryszorc.com/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github</link>
+      <pubDate>Sat, 10 Jan 2015 12:35:00 PST</pubDate>
+      <category><![CDATA[Git]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github</guid>
+      <description>Code First and the Rise of the DVCS and GitHub</description>
+      <content:encoded><![CDATA[<p>The ascendancy of GitHub has very little to do with its namesake tool,
+Git.</p>
+<p>What GitHub did that was so radical for its time and the strategy that
+GitHub continues to execute so well on today is the approach of
+putting <em>code first</em> and enabling change to be a frictionless process.</p>
+<p>In case you weren't around for the pre-GitHub days or don't remember,
+they were not pleasant. Tools around code management were a far cry
+from where they are today (I still argue the tools are pretty bad, but
+that's for another post). Centralized version control systems were
+prevalent (CVS and Subversion in open source, Perforce, ClearCase,
+Team Foundation Server, and others in the corporate world). Tools for
+looking at and querying code had horrible, ugly interfaces and came out
+of a previous era of web design and browser capabilities. It felt like
+a chore to do anything, including committing code. Yes, the world
+had awesome services like <a href="https://sourceforge.net/">SourceForge</a>,
+but they weren't the same as GitHub is today.</p>
+<p>Before I get to my central thesis, I want to highlight some supporting
+reasons for GitHub's success. There were two developments in the second
+half of the 2000s the contributed to the success of GitHub: the rises
+of the distributed version control system (DVCS) and the modern web.</p>
+<p>While distributed version control systems like Sun WorkShop TeamWare and
+BitKeeper existed earlier, it wasn't until the second half of the 2000s
+that DVCS systems took off. You can argue part of the reason for this
+was open source: my recollection is there wasn't a well-known DVCS
+available as free software before 2005. Speaking of 2005, it was a big
+year for DVCS projects: Git, Mercurial, and Bazaar all had initial
+releases. Suddenly, there were old-but-new ideas on how to do source
+control being exposed to new and willing-to-experiment audiences. DVCS
+were a critical leap from traditional version control because they
+(theoretically) impose less process and workflow limitations on users.
+With traditional version control, you needed to be online to commit,
+meaning you were managing patches, not commits, in your local
+development workflow. There were some forms of branching and merging,
+but they were a far cry from what is available today and were often too
+complex for mere mortals to use. As more and more people were exposed to
+<em>distributed</em> version control, they welcomed its less-restrictive and
+more powerful workflows. They realized that source control tools don't
+have to be so limiting. <em>Distributed</em> version control also promised all
+kinds of revamped workflows that could be harnessed. There were
+potential wins all around.</p>
+<p>Around the same time that open source DVCS systems were emerging, web
+browsers were evolving from an application to render static pages to a
+platform for running web <em>applications</em>. Web sites using JavaScript
+to dynamically manipulate web page content (DHTML as it was known back
+then) were starting to hit their stride. I believe it was GMail that
+turned the most heads as to the full power of the <em>modern web</em>
+experience, with its novel-for-its-time extreme reliance on
+XMLHttpRequest for dynamically changing page content. People were
+realizing that powerful, desktop-like applications could be built for
+the web and could run everywhere.</p>
+<p>GitHub launched in April 2008 standing on the shoulders of both the
+emerging interest in the Git content tracking tool and the capabilities
+of modern browsers.</p>
+<p>I wasn't an early user of GitHub. My recollection is that GitHub was
+mostly a Rubyist's playground back then. I wasn't a Ruby programmer, so
+I had little reason to use GitHub in the early stages. But people did
+start using GitHub. And in the spirit of Ruby (on Rails), GitHub moved
+fast, or at least was projecting the notion that they were. While other
+services built on top of DVCS tools - like Bitbucket - did exist back then,
+GitHub seemed to have momentum associated with it. (Look at the archives
+for <a href="https://github.com/blog">GitHub's</a> and
+<a href="https://blog.bitbucket.org/">Bitbucket's</a> respective blogs. GitHub has
+hundreds of blog entries; Bitbucket numbers in the dozens.) Developers
+everywhere up until this point had all been dealing with sub-optimal tools
+and workflows. Some of us realized it. Others hadn't. Many of those who
+did saw GitHub as a beacon of hope: we have all these new ideas and new
+potentials with distributed version control and here is a service under
+active development trying to figure out how to exploit that. Oh, and
+it's free for open source. Sign me up!</p>
+<p>GitHub did capitalize on a market opportunity. They also capitalized on
+the value of marketing and the perception that they were moving fast and
+providing features that people - especially in open source - wanted.
+This captured the early adopters market. But I think what really set
+GitHub apart and led to the success they are enjoying today is their
+<em>code first</em> approach and their desire to make contribution easy, and
+even fun and sociable.</p>
+<p>As developers, our job is to solve problems. We often do that by writing
+and changing code. And this often involves working as part of a team, or
+collaborating. To collaborate, we need tools. You eventually need some
+processes. And as I
+<a href="/blog/2015/01/09/firefox-contribution-process-debt/">recently blogged</a>,
+this can lead to <em>process debt</em> and inefficiencies associated with them.</p>
+<p>Before GitHub, the <em>process debt</em> for contributing to other projects was
+high. You often had to subscribe to mailing lists in order to submit
+patches as emails. Or, you had to create an account on someone's bug
+tracker or code review tool before you could send patches. Then you had
+to figure out how to use these tools and any organization or
+project-specific extensions and workflows attached to them. It was quite
+involved and a lot could go wrong. Many projects and organizations (like
+Mozilla) still practice this traditional methology. Furthermore (and as
+I've
+<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">written before</a>),
+these traditional, single patch/commit-based tools often aren't
+effective at ensuring the desired output of high quality software.</p>
+<p>Before GitHub solved <em>process debt</em> via commoditization of knowledge via
+market dominance, they took another approach: emphasizing <em>code first</em>
+development.</p>
+<p>GitHub is all about the <strong>code</strong>. You load a project page and you see
+<strong>code</strong>. You may think a README with basic project information would be
+the first thing on a <em>project</em> page. But it isn't. <em>Code</em>, like data,
+is king.</p>
+<p>Collaboration and contribution on GitHub revolve around the <em>pull
+request</em>. It's a way of saying, <em>hey, I made a change, will you take
+it?</em> There's nothing too novel in the concept of the <em>pull request</em>:
+it's fundamentally no different than sending emails with patches to a
+mailing list. But what is so special is GitHub's execution. Gone are
+the days of configuring and using one-off tools and processes. Instead,
+we have the friendly confines of a clean, friendly, and modern web
+experience. While GitHub is built upon the Git tool, you don't even
+need to use Git (a tool
+<a href="http://git-man-page-generator.lokaltog.net/">lampooned</a>
+for its
+<a href="http://stevelosh.com/blog/2013/04/git-koans/">horrible usability and approachability</a>)
+to contribute on GitHub! Instead, you can
+<a href="https://help.github.com/articles/github-flow-in-the-browser/">do everything from your browser</a>.
+That warrants repeating: <strong>you don't need to leave your browser to
+contribute on GitHub</strong>. GitHub has essentially reduced <em>process debt</em>
+to <em>edit a text document</em> territory, and pretty much anybody who has
+used a computer can do that. This has enabled GitHub to dabble into
+non-code territory, such as its
+<a href="https://government.github.com/">GitHub and Government</a> initiative to
+foster community involvement in government. (GitHub is really a platform
+for easily seeing and changing <em>any</em> content or data. But, please, let
+me continue using <em>code</em> as a stand-in, since I want to focus on the
+developer audience.)</p>
+<p>GitHub took an overly-complicated and fragmented world of varying
+contribution processes and made the new world revolve around code and a
+unified and simple process for change - the <em>pull request</em>.</p>
+<p>Yes, there are other reasons for GitHub's success. You can make strong
+arguments that GitHub has capitalized on the social and psychological
+aspects of coding and human desire for success and happiness. I agree.</p>
+<p>You can also argue GitHub succeeded because of Git. That statement is
+more or less technically accurate, but I don't think it is a sound
+argument. Git may have been the most feature complete open source
+DVCS at the time GitHub came into existence. But that doesn't mean there
+is something special about Git that no other DVCS has that makes GitHub
+popular. Had another tool been more feature complete or had the backing
+of a project as large as Linux at the time of GitHub's launch, we could
+very well be looking at a successful service built on something that
+isn't Git. Git had early market advantage and I argue its popularity
+today - a lot of it via GitHub - is largely a result of its early
+advantages over competing tools. And, I would go so far to say that when
+you consider the poor usability of Git and the pain that its users go
+through when first learning it, more accurate statements would be that
+<em>GitHub succeeded in spite of Git</em> and <em>Git owes much of its success to
+GitHub</em>.</p>
+<p>When I look back at the rise of GitHub, I see a service that has
+succeeded by putting people first by allowing them to capitalize
+on more productive workflows and processes. They've done this by
+emphasizing <em>code</em>, not process, as the means for change. Organizations
+and projects should take note.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Firefox Contribution Process Debt</title>
       <link>http://gregoryszorc.com/blog/2015/01/09/firefox-contribution-process-debt</link>
@@ -789,174 +949,6 @@ me on IRC. Send me an email. etc.</p>
 accidentally being advanced to the public phase, despite the repository
 being non-publishing. I have fixed the issue. But you must now push to
 the repository over SSH, not HTTP.</strong></p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Mercurial Server Hiccup 2014-11-06</title>
-      <link>http://gregoryszorc.com/blog/2014/11/07/mercurial-server-hiccup-2014-11-06</link>
-      <pubDate>Fri, 07 Nov 2014 11:00:00 PST</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/11/07/mercurial-server-hiccup-2014-11-06</guid>
-      <description>Mercurial Server Hiccup 2014-11-06</description>
-      <content:encoded><![CDATA[<p>We had a hiccup on hg.mozilla.org yesterday. It resulted in prolonged
-tree closures for Firefox.
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1094922">Bug 1094922</a>
-tracks the issue.</p>
-<h2>What Happened</h2>
-<p>We noticed that many HTTP requests to hg.mozilla.org were getting 503
-responses. On initial glance, the servers were healthy. CPU was below
-100% utilization, I/O wait was reasonable. And there was little to no
-swapping. Furthermore, the logs showed a healthy stream of requests
-being successfully processed at levels that are typical. In other words,
-it looked like business as usual on the servers.</p>
-<p>Upon deeper investigation, we noticed that the WSGI process pool on the
-servers was fully saturated. There were were 24 slots/processes per server
-allocated to process Mercurial requests and all 24 of them were actively
-processing requests. This created a backlog of requests that had been
-accepted by the HTTP server but were waiting an internal dispatch/proxy
-to WSGI. To the client, this would appear as a request with a long lag
-before response generation.</p>
-<h2>Mitigation</h2>
-<p>This being an emergency (trees were already closed and developers were
-effectively unable to use hg.mozilla.org), we decided to increase the
-size of the WSGI worker pool. After all, we had CPU, I/O, and memory
-capacity to spare and we could identify the root cause later. We first
-bumped worker pool capacity from 24 to 36 and immediately saw a significant
-reduction in the number of pending requests awaiting a WSGI worker. We
-still had spare CPU, I/O, and memory capacity and were still seeing
-requests waiting on a WSGI worker, so we bumped the capacity to 48
-processes. At that time, we stopped seeing worker pool exhaustion and
-all incoming requests were being handed off to a WSGI worker as soon as
-they came in.</p>
-<p>At this time, things were looking pretty healthy from the server end.</p>
-<h2>Impact on Memory and Swapping</h2>
-<p>Increasing the number of WSGI processes had the side-effect of
-increasing the total amount of system memory used by Mercurial
-processes in two ways. First, more processes means more memory. That
-part is obvious. Second, more processes means fewer requests for each
-process per unit of time and thus it takes longer for each process to
-reach its max number of requests being being reaped. (It is a common
-practice in servers to have a single process hand multiple requests.
-This prevents overhead associated with spawning a new process and
-loading possibly expensive context in it.)</p>
-<p>We had our Mercurial WSGI processes configured to serve 100 requests
-before being reaped. With the doubling of WSGI processes from 24 to 48,
-those processes were lingering for 2x as long as before. Since the
-Mercurial processes grow over time (they are aggressive about caching
-repository data), this was slowly exhausting our memory pool.</p>
-<p>It took a few hours, but a few servers started flirting with high swap
-usage. (We don't expect the servers to swap.) This is how we identified
-that memory use wasn't sane.</p>
-<p>We lowered the maximum requests per process from 100 to 50 to match
-the ratio increase in the WSGI worker pool.</p>
-<h2>Mercurial Memory "Leak"</h2>
-<p>When we started looking at the memory usage of WSGI processes in more
-detail, we noticed something strange: RSS of Mercurial processes was
-growing steadily when processes were streaming bundle data. This seemed
-very odd to me. Being a Mercurial developer, I was pretty sure the
-behavior was wrong.</p>
-<p>I <a href="http://bz.selenic.com/show_bug.cgi?id=4443">filed a bug</a> against
-Mercurial.</p>
-<p>I was able to reproduce the issue locally and started running a
-bisection to find the regressing changeset. To my surprise, this issue
-has been around since Mercurial 2.7!</p>
-<p>I looked at the code in question, identified why so much memory was
-being allocated, and submitted patches to
-<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-November/063518.html">stop an unbounded memory growth during clone/pull</a>
-and to
-<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-November/063520.html">further reduce memory use during those operations</a>.
-Both of those patches have been queued to go in the next stable release
-of Mercurial, 3.2.1.</p>
-<p>Mercurial 3.2 is still not as memory efficient during clones as Mercurial
-2.5.4. If I have time, I'd like to formulate more patches. But the
-important fix - not growing memory unbounded during clone/pull - is
-in place.</p>
-<p>Armed with the knowledge that Mercurial is leaky (although not a leak
-in the traditional sense since the memory was eventually
-getting garbage collected), we further reduced the max requests per
-process from 50 to 20. This will cause processes to get reaped sooner
-and will be more aggressive about keeping RSS growth in check.</p>
-<h2>Root Cause</h2>
-<p>We suspect the root cause of the event is a network event.</p>
-<p>Before this outage, we rarely had more than 10 requests being served
-from the WSGI worker pool. In other words, we were often well below 50%
-capacity. But something changed yesterday. More slots were being
-occupied and high-bandwidth operations were taking longer to complete.
-Kendall Libby noted that outbound traffic dropped by ~800 Mbps
-during the event. For reasons that still haven't been identified, the
-network became slower, clones weren't being processed as quickly, and
-clients were occupying WSGI processes for longer amounts of time. This
-eventually exhausted the available process pool, leading to HTTP 503's,
-intermittent service availability, and a tree closure.</p>
-<p>Interestingly, we noticed that in-flight HTTP requests are abnormally
-high again this morning. However, because the servers are now configured
-to handle the extra capacity, we seem to be powering through it without
-any issues.</p>
-<h2>In Hindsight</h2>
-<p>You can make the argument that the servers weren't configured to serve
-as much traffic as possible. After all, we were able to double the
-WSGI process pool without hitting CPU, I/O, and memory limits.</p>
-<p>The servers were conservatively configured. However, the worker pool
-was initially configured at 2x CPU core count. And as a general rule of
-thumb, you don't want your worker pool to be much greater than CPU
-count because that introduces context switching and can give each
-individual process a smaller slice of the CPU to process requests,
-leading to higher latency. Since clone operations often manage to
-peg a single CPU core, there is some justification for keeping the
-ratio of WSGI workers to CPU count low. Furthermore, we rarely came
-close to exhausting the WSGI worker pool before. There was little
-to no justification for increasing capacity to a threshold not normally
-seen.</p>
-<p>But at the same time, even with 4x workers to CPU cores, our CPU
-usage rarely flirts with 100% across all cores, even with the
-majority of workers occupied. Until we actually hit CPU (or I/O)
-limits, running a high multiplier seems like the right thing to do.</p>
-<p>Long term, we expect CPU usage during clone operations to drop
-dramatically. Mike Hommey has contributed a patch to Mercurial that
-allows servers to hand out a URL of a bundle file to fetch during
-clone. So, a server can say <em>I have your data: fetch this static file
-from S3 and then apply this small subset of the data that I'll give
-you.</em> When properly deployed and used at Mozilla, this will effectively
-drop server-side CPU usage for clones to nothing.</p>
-<h2>Where to do Better</h2>
-<p>There was a long delay between the Nagios alerts firing and someone
-with domain-specific knowledge looking at the problem.</p>
-<p>The trees could have reopened earlier. We were pretty confident about
-the state of things at 1000. Trees opened in metered mode at 1246 and
-completely at 1909. Although, the swapping issue wasn't mitigated until
-1615, so you can argue that being conservative on the tree reopening
-was justified. There is a chance that full reopening could have
-triggered excessive swap and another round of chaos for everyone
-involved.</p>
-<p>We need an alert on WSGI pool exhaustion. It took longer than it should
-have to identify this problem. However, now that we've encountered it,
-it should be obvious if/when it happens again.</p>
-<p>Firefox release automation is the largest single consumer of
-hg.mozilla.org. Since they are operating thousands of machines, any
-reduction in interaction or increase in efficiency will result in
-drastic load reductions on the server. Chris AtLee and Jordan Lund
-have been working on
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1050109">bug 1050109</a> to
-reduce clones of the mozharness and build/tools repositories, which
-should go a long way to dropping load on the server.</p>
-<h2>Timeline of Events</h2>
-<p>All times PST.</p>
-<p>November 6</p>
-<ul>
-<li>0705 - First Nagios alerts fire</li>
-<li>0819 - Trees closed</li>
-<li>0915 - WSGI process pool increased from 24 to 36</li>
-<li>0945 - WSGI process pool increased from 36 to 48</li>
-<li>1246 - Trees reopen in metered mode</li>
-<li>1615 - Decrease max requests per process from 100 to 50</li>
-<li>1909 - Trees open completely</li>
-</ul>
-<p>November 7</p>
-<ul>
-<li>0012 - Patches to reduce memory usage submitted to Mercurial</li>
-<li>0800 - Mercurial patches accepted</li>
-<li>0915 - Decrease max requests per process from 50 to 20</li>
-</ul>]]></content:encoded>
     </item>
   </channel>
 </rss>

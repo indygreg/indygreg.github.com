@@ -51,6 +51,63 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="importance-of-hosting-your-version-control-server"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/11/13/importance-of-hosting-your-version-control-server" rel="bookmark" title="Permanent Link to Importance of Hosting Your Version Control Server">Importance of Hosting Your Version Control Server</a></h2>
+  <small>November 13, 2013 at 09:25 AM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The subject of where to host version control repositories comes up a lot
+at Mozilla. It takes many forms:</p>
+<ul>
+<li>We should move the Firefox repository to GitHub</li>
+<li>I should be allowed to commit to GitHub</li>
+<li>I want the canonical repository to be hosted by Bitbucket</li>
+</ul>
+<p>When Firefox development is concerned, Release Engineerings puts down
+their foot and insists the canonical repository be hosted by Mozilla,
+under a Mozilla hostname. When that's not possible, they set up a mirror
+on Mozilla infrastructure.</p>
+<p>I think a
+<a href="https://groups.google.com/d/topic/jenkinsci-dev/-myjRIPcVwU/discussion">recent issue with the Jenkins project</a>
+demonstrates why hosting your own version control server is important.
+The gist is someone force pushed to a bunch of repos hosted on GitHub.
+They needed to involve GitHub support to recover from the issue. While
+it appears they largely recovered (and GitHub support deserves kudos - I
+don't want to take away from their excellence), this problem would have
+been avoided or the response time significantly decreased if the Jenkins
+people had direct control over the Git server: they either could have
+installed a custom hook that would have prevented the pushes or had
+access to the reflog so they could have easily seen the last pushed
+revision and easily forced pushed back to it. GitHub doesn't have a
+mechanism for defining pre-* hooks, doesn't allow defining custom
+hooks (a security and performance issue for them), and doesn't
+expose the reflog data.</p>
+<p>Until repository hosting services expose full repository data (such as
+reflogs) and allow you to define custom hooks, accidents like these will
+happen and the recovery time will be longer than if you hosted the repo
+yourself.</p>
+<p>It's possible repository hosting services like GitHub and Bitbucket will
+expose these features or provide a means to quickly recover. If so,
+kudos to them. But larger, more advanced projects will likely employ
+custom hooks and considering custom hooks are a massive security and
+performance issue for any hosted service provider, I'm not going to
+hold my breath this particular feature is rolled out any time soon.
+This is unfortunate, as it makes projects seemingly choose between
+low risk/low convenience and GitHub's vibrant developer community.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="thoughts-on-mercurial-(and-git)"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/05/12/thoughts-on-mercurial-(and-git)" rel="bookmark" title="Permanent Link to Thoughts on Mercurial (and Git)">Thoughts on Mercurial (and Git)</a></h2>
   <small>May 12, 2013 at 12:00 PM | categories: 
