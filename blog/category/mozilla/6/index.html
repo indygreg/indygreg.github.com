@@ -51,6 +51,97 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="updates-to-firefoxtree-mercurial-extension"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension" rel="bookmark" title="Permanent Link to Updates to firefoxtree Mercurial extension">Updates to firefoxtree Mercurial extension</a></h2>
+  <small>July 16, 2014 at 07:55 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>My <a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
+has been generating a lot of interest for bookmark-based workflows at
+Mozilla. To make adoption easier, I
+<a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags/">quickly authored</a>
+an <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">extension</a>
+to add <em>remote refs</em> of Firefox repositories to Mercurial.</p>
+<p>There was still a bit of confusion and gripes about workflows that I
+thought it would be best to update the extension to make things more
+pleasant.</p>
+<h2>Automatic tree names</h2>
+<p>People wanted an ability to easy pull/aggregate the various Firefox
+trees without additional configuration to an hgrc file.</p>
+<p>With <em>firefoxtree</em>, you can now <em>hg pull central</em> or <em>hg pull inbound</em>
+or <em>hg pull aurora</em> and it just works.</p>
+<p>Pushing with aliases doesn't yet work. It is slightly harder to do in
+the Mercurial API. I have a solution, but I'm validating some code paths
+to ensure it is safe. This feature will likely appear soon.</p>
+<h2>fxheads commands</h2>
+<p>Once people adopted unified repositories with heads from multiple
+repositories, they asked how they could quickly identify the heads of
+the pulled Firefox repositories.</p>
+<p><em>firefoxtree</em> now provides a <em>hg fxheads</em> command that prints a
+concise output of the commits constituting the heads of the Firefox
+repos. e.g.</p>
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg fxheads
+224969:0ec0b9ac39f0 aurora <span class="o">(</span>sort of<span class="o">)</span> bug <span class="m">898554</span> - raise expected hazard count <span class="k">for</span> b2g to <span class="m">4</span> <span class="k">until</span> they are fixed, <span class="nv">a</span><span class="o">=</span>bustage+hazbuild-only
+224290:6befadcaa685 beta Tagging /src/mdauto/build/mozilla-beta 1772e55568e4 with FIREFOX_RELEASE_31_BASE <span class="nv">a</span><span class="o">=</span>release CLOSED TREE
+224848:8e8f3ba64655 central Merge inbound to m-c <span class="nv">a</span><span class="o">=</span>merge
+225035:ec7f2245280c fx-team fx-team/default Merge m-c to fx-team
+224877:63c52b7ddc28 inbound Bug <span class="m">1039197</span> - Always build js engine with zlib. <span class="nv">r</span><span class="o">=</span>luke
+225044:1560f67f4f93 release release/default tip Automated checkin: version bump <span class="k">for</span> firefox 31.0 release. DONTBUILD CLOSED TREE <span class="nv">a</span><span class="o">=</span>release
+</pre></div>
+
+<p>Please note that the output is based upon local-only knowledge: you'll
+need to pull to ensure data is current.</p>
+<h2>Reject pushing multiple heads</h2>
+<p>People were complaining that bookmark-based workflows resulted in
+Mercurial trying to push multiple heads to a remote. This complaint
+stems from the fact that Mercurial's default push behavior is to find
+all commits missing from the remote and push them. This behavior is
+extremely frustrating for Firefox development because the Firefox repos
+only have a single head and pushing multiple heads will only result in
+a server hook rejecting the push (after wasting a lot of time
+transferring that commit data).</p>
+<p><em>firefoxtree</em> now will refuse to push multiple heads to a known Firefox
+repo before any commit data is sent. In other words, we fail fast so
+your time is saved.</p>
+<p><em>firefoxtree</em> also changes the default behavior of <em>hg push</em> when
+pushing to a Firefox repo. If no <em>-r</em> argument is specified, <em>hg push</em>
+to a Firefox repo will automatically remap to <em>hg push -r .</em>. In other
+words, we attempt to push the working copy's commit by default. This
+change establishes sensible default and likely working behavior when
+typing just <em>hg push</em>.</p>
+<p>I am a bit on the fence about changing the default behavior of <em>hg
+push</em>. On one hand, it makes total sense. On the other, silently
+changing the default behavior of a built-in command is a little
+dangerous. I can easily see this backfiring when people interact with
+non-Firefox repos. I encourage people to get in the habit of typing
+<em>hg push -r <rev></em> because that's what you should be doing.</p>
+<h2>Installing firefoxtree</h2>
+<p>Within the next 48 hours, <em>mach mercurial-setup</em> should prompt to
+install <em>firefoxtree</em>. Until then, clone
+<em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and ensure your
+<em>~/.hgrc</em> file has the following:</p>
+<pre><code>[extensions]
+firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
+</code></pre>
+<p>You likely already have a copy of version-control-tools
+in <em>~/.mozbuild/version-control-tools</em>.</p>
+<p>It is completely safe to install <em>firefoxtree</em> globally: the extension
+will only modify behavior of repositories that are clones of Firefox
+repositories.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="python-packaging-do's-and-don'ts"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/07/15/python-packaging-do's-and-don'ts" rel="bookmark" title="Permanent Link to Python Packaging Do's and Don'ts">Python Packaging Do's and Don'ts</a></h2>
   <small>July 15, 2014 at 05:20 PM | categories: 
@@ -1058,94 +1149,6 @@ experience will sway you.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/23/please-stop-using-mq#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="using-mercurial-for-status-reports"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/04/01/using-mercurial-for-status-reports" rel="bookmark" title="Permanent Link to Using Mercurial for Status Reports">Using Mercurial for Status Reports</a></h2>
-  <small>April 01, 2014 at 12:30 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial has a pair of amazing features called
-<a href="http://www.selenic.com/hg/help/revsets">Revisions Sets</a>
-and <a href="http://www.selenic.com/hg/help/templates">Templates</a>. Combined,
-they allow you to query Mercurial like a database and to generate custom
-reports from obtained data.</p>
-<p>As I've <a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata/">demonstrated</a>,
-you can write Mercurial extensions to provide custom revision set
-queries and template functions and keywords. My
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">mozext</a>
-extension aggregates Mozilla's <em>pushlog</em> data into a local SQLite
-database and makes this data available to revision sets and templates.</p>
-<p>My hack of the day is to use revision sets and templates to create a
-weekly status report:</p>
-<div class="pygments_murphy"><pre>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
---template &#39;* {ifeq(reviewer, &quot;gps&quot;, &quot;Review: &quot;, &quot;Landing: &quot;)}{firstline(desc)}\n&#39;
-</pre></div>
-
-<p>When I run this, I get the output:</p>
-<div class="pygments_murphy"><pre>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
-* Review: Bug 987146 - Represent SQL queries more efficiently. r=gps.
-* Review: Bug 987984 - VirtualenvManager.call_setup() should use self.python_path instead of sys.executable, r=gps
-* Landing: Bug 987398 - Part 1: Run mochitests from manifests with mach; r=ahal
-* Landing: Bug 987398 - Part 2: Handle install-to-subdir in TestResolver; r=ahal
-* Landing: Bug 987414 - Pass multiple test arguments to mach testing commands; r=ahal
-* Review: Bug 988141 - Clean up config/recurse.mk after bug 969164. r=gps
-* Landing: Bug 973992 - Support experiments add-ons; r=Unfocused
-* Review: Bug 927672 - Force pymake to fall back to mozmake when run on build slaves. r=gps
-* Review: Bug 989147 - Use new sccache for Linux and Android builds. r=gps
-* Review: Bug 989147 - Add missing part of the patch from rebase conflict. r=gps
-* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
-* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
-* Landing: Backed out changeset 4834a3833639 and c580afddd1cb (bug 985084 and bug 97500)
-* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
-* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
-* Landing: Bug 989137 - Part 1: Uninstall unknown experiments; r=Unfocused
-* Landing: Bug 989137 - Part 2: Don&#39;t use a global logger; r=gfritzsche
-* Landing: Bug 989137 - Part 3: Log.jsm API to get a Logger that prefixes messages; r=bsmedberg
-* Landing: Bug 989137 - Part 4: Use a prefixing logger for Experiments logging; r=gfritzsche
-* Landing: Bug 989137 - Part 5: Prefix each log message with the instance of the object; r=gfritzsche
-* Review: Bug 988849 - Add mach target for jit tests; r=gps
-* Landing: Bug 989137 - Part 6: Create experiment XPIs during the build; r=bsmedberg
-* Landing: Bug 989137 - Part 7: Remove unncessary content from test experiments; r=Unfocused
-* Landing: Bug 985084 - Part 2: Properly report userDisabled in the API; r=Unfocused
-</pre></div>
-
-<p>Which I can then copy and paste directly into the
-<a href="http://benjamin.smedbergs.us/weekly-updates.fcgi/">status tool</a> to
-capture all my weekly code contributions! That takes a few seconds to
-run and saves me a few minutes of typing.</p>
-<p>For the curious, let's break that Mercurial command down.</p>
-<ul>
-<li>public() selects all <em>public</em> changesets. These are changesets in the
-  repository that have been pushed to a publishing repository. In other
-  words, patches that landed in Firefox.</li>
-<li>me() is a custom revset from my <em>mozext</em> extension that parses the
-  commit message and selects changesets that I authored or reviewed.</li>
-<li>firstpushdate("-7") is a custom revset from my <em>mozext</em> extension. It
-  selects changesets that were first pushed in the last 7 days (using
-  pushlog data stored in a local SQLite database).</li>
-</ul>
-<p>The template piece should be easy to read. I have a simple branch
-testing whether the changeset is a review or not, then output a label
-followed by the first line of the commit message.</p>
-<p>I have this command saved under the <em>[alias]</em> section of my <em>~/.hgrc</em>
-file so I can just type <em>hg statusreport</em>.</p>
-<p>While there is room to improve the tool (stripping <em>r=</em> lines from
-commit messages for example), I think it's a pretty cool hack and shows
-how Mercurial can grow to solve problems you don't think your version
-control system knows how to solve.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/5">« Previous Page</a>
   --  
