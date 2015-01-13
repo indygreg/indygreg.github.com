@@ -7,12 +7,57 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-01-12T21:06:04Z</updated>
+  <updated>2015-01-13T23:57:13Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Major bzexport Updates]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates" />
+    <id>http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates</id>
+    <updated>2015-01-13T15:55:00Z</updated>
+    <published>2015-01-13T15:55:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Major bzexport Updates]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates"><![CDATA[<p>The <em>bzexport</em> Mercurial extension - an extension that enables you to
+easily create new Bugzilla bugs and upload patches to Bugzilla for
+review - just received some
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1033394">major updates</a>.</p>
+<p>First, we now have automated test coverage of bzexport! This is built on
+top of the version control test harness I
+<a href="/blog/2014/10/14/robustly-testing-version-control-at-mozilla/">previously blogged about</a>.
+As part of the tests, we start Docker containers that run the same code
+that's running on <a href="https://bugzilla.mozilla.org/">bugzilla.mozilla.org</a>,
+so interactions with Bugzilla are properly tested. This is much, much
+better than mocking HTTP requests and responses because if Bugzilla
+changes, our tests will detect it. Yay continuous integration.</p>
+<p>Second, bzexport now uses Bugzilla' REST API instead of the legacy bzAPI
+endpoint for all but 1 HTTP request. This should make BMO maintainers
+very happy.</p>
+<p>Third and finally, bzexport now uses shared code for obtaining Bugzilla
+credentials. The behavior is
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/auth.html">documented</a>,
+of course. Behavior is <strong>not backwards compatible</strong>. If you were using some
+old configuration values, you will now see warnings when running bzexport.
+These warnings are actionable, so I shouldn't need to describe them
+here.</p>
+<p>Please obtain the new code by pulling the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository. Or, if you have a Firefox clone, run <em>mach mercurial-setup</em>.</p>
+<p>If you find any regressions, file a bug in the
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20bzexport">Developers Services :: Mercurial: bzexport</a>
+component and have it depend on
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1033394">bug 1033394</a>.</p>
+<p>Thanks go out to Steve Fink, Ed Morley, and Ted Mielczarek for looking
+at the code.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -1606,36 +1651,5 @@ people to build a standalone instance of Mozilla's Mercurial server.
 And once that's in place, I can start writing tests that basic services
 and workflows (including repository syncing) work as expected. Stay
 tuned.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Submit Feedback about Mercurial]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/08/19/submit-feedback-about-mercurial" />
-    <id>http://gregoryszorc.com/blog/2014/08/19/submit-feedback-about-mercurial</id>
-    <updated>2014-08-19T18:30:00Z</updated>
-    <published>2014-08-19T18:30:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Submit Feedback about Mercurial]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/08/19/submit-feedback-about-mercurial"><![CDATA[<p>Are you a Mozillian who uses Mercurial? Do you have a complaint,
-suggestion, observation, or any other type of feedback you'd like
-to give to the maintainers of Mercurial? Now's your chance.</p>
-<p>There is a large gathering of Mercurial contributors next weekend
-in Munich. The
-<a href="http://mercurial.selenic.com/wiki/3.2sprint#Possible_Topics">topics list</a>
-is already impressive. But Mozilla's <em>delegation</em> (Mike Hommey,
-Ben Kero, and myself) would love to advance Mozilla's concerns to
-the wider community.</p>
-<p>To leave or vote for feedback, please visit
-<a href="https://hgfeedback.paas.allizom.org/e/august-2014-summit">https://hgfeedback.paas.allizom.org/e/august-2014-summit</a>
-before August 29 so your voice may be heard.</p>
-<p>I encourage you to leave feedback about any small, big or small,
-Mozilla-specific or not. Comparisons to Git, GitHub and other
-version control tools and services are also welcome.</p>
-<p>If you have feedback that can't be captured in that moderator tool,
-please email me. gps@mozilla.com.</p>]]></content>
   </entry>
 </feed>

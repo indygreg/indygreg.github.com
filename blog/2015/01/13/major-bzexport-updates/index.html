@@ -1,0 +1,166 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Major bzexport Updates
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="major-bzexport-updates"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/13/major-bzexport-updates" rel="bookmark" title="Permanent Link to Major bzexport Updates">Major bzexport Updates</a></h2>
+  <small>January 13, 2015 at 03:55 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The <em>bzexport</em> Mercurial extension - an extension that enables you to
+easily create new Bugzilla bugs and upload patches to Bugzilla for
+review - just received some
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1033394">major updates</a>.</p>
+<p>First, we now have automated test coverage of bzexport! This is built on
+top of the version control test harness I
+<a href="/blog/2014/10/14/robustly-testing-version-control-at-mozilla/">previously blogged about</a>.
+As part of the tests, we start Docker containers that run the same code
+that's running on <a href="https://bugzilla.mozilla.org/">bugzilla.mozilla.org</a>,
+so interactions with Bugzilla are properly tested. This is much, much
+better than mocking HTTP requests and responses because if Bugzilla
+changes, our tests will detect it. Yay continuous integration.</p>
+<p>Second, bzexport now uses Bugzilla' REST API instead of the legacy bzAPI
+endpoint for all but 1 HTTP request. This should make BMO maintainers
+very happy.</p>
+<p>Third and finally, bzexport now uses shared code for obtaining Bugzilla
+credentials. The behavior is
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/auth.html">documented</a>,
+of course. Behavior is <strong>not backwards compatible</strong>. If you were using some
+old configuration values, you will now see warnings when running bzexport.
+These warnings are actionable, so I shouldn't need to describe them
+here.</p>
+<p>Please obtain the new code by pulling the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository. Or, if you have a Firefox clone, run <em>mach mercurial-setup</em>.</p>
+<p>If you find any regressions, file a bug in the
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20bzexport">Developers Services :: Mercurial: bzexport</a>
+component and have it depend on
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1033394">bug 1033394</a>.</p>
+<p>Thanks go out to Steve Fink, Ed Morley, and Ted Mielczarek for looking
+at the code.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
