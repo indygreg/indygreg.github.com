@@ -51,6 +51,65 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="new-repository-for-mozilla-version-control-tools"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools" rel="bookmark" title="Permanent Link to New Repository for Mozilla Version Control Tools">New Repository for Mozilla Version Control Tools</a></h2>
+  <small>February 05, 2014 at 07:15 PM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Version control systems can be highly useful tools.</p>
+<p>At Mozilla, we've made numerous improvements and customizations to our
+version control tools. We have <a href="https://hg.mozilla.org/hgcustom/hghooks/">custom hooks</a>
+that run on the server. We have a <a href="https://hg.mozilla.org/hgcustom/hg_templates/">custom skin</a>
+for Mercurial's web interface. Mozillians have written a handful of
+Mercurial extensions to aid with common developer tasks, such as
+<a href="https://bitbucket.org/sfink/trychooser">pushing to try</a>,
+<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">interacting with Bugzilla</a>,
+<a href="https://bitbucket.org/sfink/mqext">making mq more useful</a>, and more.</p>
+<p>These have all come into existence in an organic manner, one after the
+other. Individuals have seen an itch and scratched it. Good for them.
+Good for Mozilla.</p>
+<p>Unfortunately, the collection of amassed tools has become quite large.
+They have become difficult to discover and keep up to date. The
+consistency in quality and style between the tools varies. Each tool has
+separate processes for updating and changing.</p>
+<p>I contacted the maintainers of the popular version control tools at
+Mozilla with a simple proposal: let's maintain all our tools under one
+repo. This would allow us to increase cohesion, share code, maintain a
+high quality bar, share best practices, etc. There were no major
+objections, so we now have a <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">unified repository</a>
+containing our version control tools!</p>
+<p>Currently, we only have a few Mercurial extensions in there. A goal is
+to accumulate as much of the existing Mercurial infrastructure into
+that repository as possible. Client code. Server code. All of the code.
+I want developers to be able to install the same hooks on their clients
+as what's running on the server: why should your local repo let you
+commit something that the server will reject? I want developers to be
+able to reasonably reproduce Mozilla's canonical version control server
+configuration locally. That way, you can test things locally with a high
+confidence that your changes will work the same way on production. This
+allows deployments to move faster and with less friction.</p>
+<p>The immediate emphasis will be on moving extensions into this repo and
+deprecating the old homes on user repositories. Over time, we'll move
+into consolidating server code and getting hg.mozilla.org and
+git.mozilla.org to use this repository. But that's a lower priority: the
+most important goal right now is to make it easier and friendlier for
+people to run productivity-enhancing tools.</p>
+<p>So, if you see your Mercurial extensions alerting you that they've been
+moved to a new repository, now you know what's going on.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="the-mercurial-revlog"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/02/05/the-mercurial-revlog" rel="bookmark" title="Permanent Link to The Mercurial Revlog">The Mercurial Revlog</a></h2>
   <small>February 05, 2014 at 04:26 PM | categories: 
@@ -672,41 +731,6 @@ them may actually happen.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/17/things-mozilla-could-do-with-mercurial#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mach-now-lives-in-mozilla-central"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/01/09/mach-now-lives-in-mozilla-central" rel="bookmark" title="Permanent Link to mach now lives in mozilla-central">mach now lives in mozilla-central</a></h2>
-  <small>January 09, 2014 at 10:55 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/mach'>mach</a>
- | <a href="http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p><a href="https://pypi.python.org/pypi/mach/">mach</a> -- the generic command
-line interface framework that is behind the <em>mach</em> tool used to
-build Firefox -- now has its canonical home in
-<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mach/">mozilla-central</a>,
-the canonical repository for Firefox. The
-<a href="https://github.com/indygreg/mach">previous home</a> has been updated to
-reflect the change.</p>
-<p>mach will continue to be released on
-<a href="https://pypi.python.org/pypi/mach/">PyPI</a> and installable via <strong>pip
-install mach</strong>.</p>
-<p>I made the change because keeping multiple repositories in sync
-wasn't something I wanted to spend time doing. Furthermore,
-Mozillians have been contributing a steady stream of improvements to
-the mach core recently and it makes sense to leverage Mozilla's
-familiar infrastructure for patch contribution.</p>
-<p>This decision may be revisited in the future. Time will tell.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/7">« Previous Page</a>
   --  
