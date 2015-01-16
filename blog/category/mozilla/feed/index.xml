@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 16 Jan 2015 18:50:18 GMT</pubDate>
+    <pubDate>Fri, 16 Jan 2015 19:00:10 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -18,7 +18,9 @@
       <title>Bugzilla and the Future of Firefox Development</title>
       <link>http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development</link>
       <pubDate>Fri, 16 Jan 2015 10:50:00 PST</pubDate>
+      <category><![CDATA[Bugzilla]]></category>
       <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[code review]]></category>
       <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development</guid>
       <description>Bugzilla and the Future of Firefox Development</description>
       <content:encoded><![CDATA[<p><a href="https://bugzilla.mozilla.org">Bugzilla</a> has played a major role in the

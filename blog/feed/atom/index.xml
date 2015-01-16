@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-01-16T18:50:18Z</updated>
+  <updated>2015-01-16T19:00:10Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -23,7 +23,9 @@
     <id>http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development</id>
     <updated>2015-01-16T10:50:00Z</updated>
     <published>2015-01-16T10:50:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Bugzilla" />
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <category scheme="http://gregoryszorc.com/blog" term="code review" />
     <summary type="html"><![CDATA[Bugzilla and the Future of Firefox Development]]></summary>
     <content type="html" xml:base="http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development"><![CDATA[<p><a href="https://bugzilla.mozilla.org">Bugzilla</a> has played a major role in the
 Firefox development process for over 15 years. <strong>With upcoming changes
