@@ -51,6 +51,260 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mozilla-build-system-plan-of-attack"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/07/25/mozilla-build-system-plan-of-attack" rel="bookmark" title="Permanent Link to Mozilla Build System Plan of Attack">Mozilla Build System Plan of Attack</a></h2>
+  <small>July 25, 2012 at 11:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Since I published my <a href="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla%27s-build-system/">brain dump
+post</a>
+on improving Mozilla's build system for Gecko applications (including
+Firefox and Firefox OS), there has been some exciting progress.</p>
+<p>It wasn't stated in that original post, but the context for that post
+was to propose a plan in preparation of a meeting between the core
+contributors to the build system at Mozilla. I'm pleased to report that
+the plan was generally well-received.</p>
+<p>We pretty much all agreed that parts 1, 2, and 3 are all important and
+we should actively work towards them. Parts 4, 5, and 6 were a bit more
+contentious. There are some good parts and some bad parts. We're not
+ready to adopt them just quite yet. (Don't bother reading the original
+post to look up what these parts corresponded to - I'll cover that
+later.)</p>
+<p>Since that post and meeting, there has also been additional discussion
+around more specifics. I am going to share with you now where we stand.</p>
+<h2>BuildSplendid</h2>
+<p><strong>BuildSplendid</strong> is an umbrella term associated with projects/goals to
+make the developer experience (including building) better - more
+splendid if you will.</p>
+<p><strong>BuildSplendid</strong> started as the name of my personal Git branch for
+hacking on the build system. I'm encouraging others to adopt the term
+because, well, it is easier to refer to (people like project codenames).
+If it doesn't stick, that's fine by me - there are other terms that
+will.</p>
+<h2>BuildFaster</h2>
+<p>An important project inside <em>BuildSplendid</em> is <strong>BuildFaster</strong>.</p>
+<p><em>BuildFaster</em> focuses on the following goals:</p>
+<ol>
+<li>Making the <em>existing</em> build system faster, better, stronger (but not
+   harder).</li>
+<li>Making changes to the build system to facilitate the <em>future</em> use of
+   alternate build backends (like Tup or Ninja). Work to enable Visual
+   Studio, Xcode, etc project generation also falls here.</li>
+</ol>
+<p>The distinction between these goals can be murky. But, I'll try.</p>
+<p>Falling squarely in #1 are:</p>
+<ul>
+<li>Switching the buildbot infrastructure to use pymake on Windows</li>
+</ul>
+<p>Falling in #2 are:</p>
+<ul>
+<li>Making Makefile.in's data-centric</li>
+<li>Supporting multiple build backends</li>
+</ul>
+<p>Conflated between the two are:</p>
+<ul>
+<li>Ensuring Makefile's no-op if nothing has changed</li>
+<li>Optimizing existing make rules. This involves merging related
+  functionality as well as eliminating clown shoes in existing rules.</li>
+</ul>
+<p>The two goals of <em>BuildFaster</em> roughly map to the short-term and long-term
+strategies, respectively. There is consensus that recursive make (our
+existing build backend) does not scale and we will plateau in terms of
+performance no matter how optimal we make it. That doesn't mean we are
+giving up on it: there are things we can and should do so our existing
+non-recursive make backend builds faster.</p>
+<p>In parallel, we will also work towards the longer-term solution of
+supporting alternate build backends. <strong>This includes non-recursive
+make</strong> as well as things like Tup, Ninja, and even Visual Studio and
+Xcode. (I consider non-recursive make to be a separate build backend
+because changing our existing Makefile.in's to support non-recursive
+execution effectively means rewriting the input files (Makefile.in's).
+At that point, you've invented a new build backend.)</p>
+<p>For people who casually interact with the build system, these two goals
+will blend together. It is not important for most to know what bucket
+something falls under.</p>
+<h3>BuildFaster Action Items</h3>
+<p><em>BuildFaster</em> action items are being tracked in Bugzilla using the
+[BuildFaster:*] whiteboard annotation.</p>
+<p>There is no explicit tracking bug for the short-term goal (#1). Instead,
+we are relying on the whiteboard annotation.</p>
+<p>We are tracking the longer-term goal of supporting alternate build
+backends at <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774049">bug 774049</a>.</p>
+<p>The most important task to help us reach the goals is to make our
+Makefile.in's data centric. This means:</p>
+<ul>
+<li>Makefile.in's <strong>must</strong> consist of only simple variable assignment</li>
+<li>Makefile.in's <strong>must</strong> not rely on being evaluated to perform variable
+  assignment.</li>
+</ul>
+<p>Basically, our build config should be defined by static key-value pairs.</p>
+<p>This translates to:</p>
+<ul>
+<li>Move all rules out of Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">bug 769378</a></li>
+<li>Remove use of $(shell) from Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769390">bug 769390</a></li>
+<li>Remove filesystem functions from Makefile.in's <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769407">bug 769407</a></li>
+<li>And more, as we identify the need</li>
+</ul>
+<p>While we have these tracking bugs on file, we still don't have bugs
+filed that track individual Makefile.in's that need updated. <strong>If you
+are a contributor, you can help by doing your part to file bugs for your
+Makefile.in's.</strong> If your Makefile.in violates the above rules, please
+file a bug in the <strong>Build Config</strong> component of the product it is under
+(typically <strong>Core</strong>). See the tree of the above bugs for examples.</p>
+<p>Also part of <em>BuildFaster</em> (but not relevant to most) is the task of
+changing the build system to support multiple backends. Currently,
+pieces like <em>configure</em> assume the Makefile.in to Makefile conversion is
+always what is wanted. These parts will be worked on by core
+contributors to the build system and thus aren't of concern to most.</p>
+<p>I will be the first to admit that a lot of the work to <em>purify</em>
+Makefile.in's to be data centric will look like a lot of busy work with
+little immediate gain. The real benefits to this work will manifest
+down the road. That being said, removing rules from Makefile.in's and
+implementing things as rules in rules.mk helps ensure that the
+implementation is proper (rules.mk is coded by make ninjas and thus
+probably does things <em>right</em>). This can lead to faster build times.</p>
+<h2>mozbuild</h2>
+<p><strong>mozbuild</strong> is a Python package that provides an API to the build system.</p>
+<p>What <em>mozbuild</em> will contain is still up in the air because it hasn't
+landed in mozilla-central yet. In the code I'm waiting on review to
+uplift to mozilla-central, <em>mozbuild</em> contains:</p>
+<ul>
+<li>An API for invoking the build system backend (e.g. launching make). It
+  basically reimplements client.mk because client.mk sucks and needs to
+  be replaced.</li>
+<li>An API for launching tests easily. This reimplements functionality in
+  testsuite-targets.mk, but in a much cleaner way. Running a single test
+  can now be done with a single Python function call. This may sound
+  boring, but it is very useful. You just import a module and pass a
+  filesystem path to a test file to a function and a test runs. Boom!</li>
+<li>Module for extracting compiler warnings from build output and storing
+  in a persisted database for post-build retrieval. Compiler warning
+  tracking \o/</li>
+<li>Module for converting build system output into structured logs. It
+  records things like time spent in different directories, etc. We could
+  use this for tracking build performance regressions. We just need a
+  arewe*yet.com domain...</li>
+<li>A replacement for .mozconfig's that sucks less (stronger validation,
+  settings for not just build config, convenient Python API, etc).</li>
+</ul>
+<p>And, upcoming features which I haven't yet tried to land in
+mozilla-central include:</p>
+<ul>
+<li>API for extracting metadata from Makefile.in's and other frontend
+  files. Want a Python class instance describing the IDLs defined in an
+  individual Makefile.in or across the entire tree? <em>mozbuild</em> can provide
+  that. This functionality will be used to configure alternate build
+  backends.</li>
+<li>Build backend API which allows for different build backends to be
+  configured (e.g. recursive make, Tup, Ninja, etc). When we support
+  multiple build backends, they'll live in <em>mozbuild</em>.</li>
+</ul>
+<p><em>mozbuild</em> can really be thought of as a clean backend to the build
+system and related functionality (like running tests). Everything in
+<em>mozbuild</em> could exist in make files or in .py files littered in
+<em>build/</em>, <em>config/</em>, etc. But, that would involve maintaining make files
+and/or not having a cohesive API. I wanted a clean slate that was free
+from the burdens of the existing world. <em>mozbuild</em> was born.</p>
+<p>I concede that there will be non-clear lines of division between
+<em>mozbuild</em> and other Python packages and/or Mozilla modules. For
+example, is <em>mozbuild</em> the appropriate location to define an API for
+taking the existing build configuration and launching a Mochitest? I'm
+not sure. For now, I'm stuffing functionality inside <em>mozbuild</em> unless
+there is a clear reason for it to exist elsewhere. If we want to
+separate (because of module ownership issues, for example), we can do
+that.</p>
+<p>My vision for <em>mozbuild</em> is for it to be the answer to the question
+<em>how does the Mozilla build system work?</em> You should be able to say,
+<em>look at the code in python/mozbuild and you will have all the answers.</em></p>
+<h3>mozbuild Action Items</h3>
+<p>The single action item for <em>mozbuild</em> is getting it landed. I have code
+written that I think is good enough for an initial landing (with obvious
+shortcomings being addressed in follow-up bugs). It just needs some love
+from reviewers.</p>
+<p>Landing <em>mozbuild</em> is tracked in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a>. I
+initially dropped a monolithic patch. I have since started splitting
+bits up into bite-sized patches to facilitate faster, smaller reviews.
+(See the blocking bugs.)</p>
+<h2>mach</h2>
+<p><em>mozbuild</em> is just a Python package - an API. It has no frontend.</p>
+<p>Enter <strong>mach</strong>.</p>
+<p><strong>mach</strong> is a command-line frontend to <em>mozbuild</em> and beyond.</p>
+<p>Currently, <em>mach</em> provides some convenient shortcuts for performing
+common tasks. e.g. you can run a test by tab-completing to its filename
+using your shell. It also provides nifty output in supported terminals,
+including colorizing and a basic progress indicator during building.</p>
+<p>You can think of <em>mach</em> as a replacement for <em>client.mk</em> and other make
+targets. But, <em>mach</em>'s purpose doesn't end there. My vision for <em>mach</em>
+is for it to be the one-stop shop for all your mozilla-central
+interaction needs.</p>
+<p>From a mozilla-central tree, you should be able to type
+<strong>./mach <action></strong> and do whatever you need to do. This could be
+building Firefox, running tests, uploading a patch to Bugzilla, etc.</p>
+<p>I'm capturing ideas for <em>mach</em> features in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774108">bug 774108</a>.</p>
+<h3>mach Action Items</h3>
+<p><em>mach</em> is in the same boat as <em>mozbuild</em>: it's waiting for reviewer
+love. If you are interested in reviewing it, please let me know.</p>
+<p>Once <em>mach</em> lands, I will be looking to the larger community to improve
+it. I want people to go wild implementing features. I believe that
+<em>mach</em> will have a significant positive impact on driving contributions
+to Mozilla because it will make the process much more streamlined and
+less prone to error. I think it is a no-brainer to check in <em>mach</em> as
+soon as possible so these wins can be realized.</p>
+<p>There is an open question of who will own <em>mach</em> in terms of module
+ownership. <em>mach</em> isn't really part of anything. Sure, it interacts with
+the build system, testing code, tools, etc. But, it isn't actually part
+of any of that. Maybe a new module will be created for it. I'm not
+familiar with how the modules system works and I would love to chat with
+someone about options here.</p>
+<h2>Project Interaction</h2>
+<p>How are all of these projects related?</p>
+<p><em>BuildFaster</em> is what everyone is working on today. It currently focuses
+on making the existing recursive make based build backend faster using
+whatever means necessary. <em>BuildFaster</em> could theoretically evolve to
+cover other build backends (like non-recursive make). Time will tell
+what falls under the <em>BuildFaster</em> banner.</p>
+<p><em>mozbuild</em> is immediately focused on providing the functionality to
+enable <em>mach</em> to land.</p>
+<p><em>mach</em> is about improving the overall developer experience when
+it comes to contributing to Firefox and other in-tree applications (like
+Firefox OS). It's related to the build system in that it provides a nice
+frontend to it. That's the only relationship. <em>mach</em> isn't part of the
+build system (at least not yet - it may eventually be used to perform
+actions on buildbot machines).</p>
+<p>Down the road, <em>mozbuild</em> will gain lots of new features core to the
+build system. It will learn how to extract metadata from Makefile.in's
+which can be used by other build backends. It will define a build
+backend interface and the various build backends will be implemented
+in mozbuild. Aspects of the existing build system currently implemented in
+make files or in various Python files scattered across the tree will be
+added to <em>mozbuild</em> and exposed with a clean, reusable, and testable
+API.</p>
+<p>Today, <em>BuildFaster</em> is the important project with all the attention.
+When <em>mach</em> lands, it will (hopefully) gather a lot of attention. But,
+it will be from a different group (the larger contributor community -
+not just build system people).</p>
+<p><em>mozbuild</em> today is only needed to support <em>mach</em>. But, once <em>mozbuild</em>
+lands and <em>mach</em> is on its own, <em>mozbuild</em>'s purpose  will shift to support
+<em>BuildFaster</em> and other activities under the <em>BuildSplendid</em> banner.</p>
+<h2>Conclusion</h2>
+<p>We have a lot of work ahead of us. Please look at the bugs linked above
+and help out in any way you can.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="one-year-at-mozilla"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/07/18/one-year-at-mozilla" rel="bookmark" title="Permanent Link to One Year at Mozilla">One Year at Mozilla</a></h2>
   <small>July 18, 2012 at 12:00 AM | categories: 
@@ -1250,190 +1504,6 @@ leave a comment on the aforementioned bug and we'll go from there.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/23/smaller-firefox-build-logs#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="python-bindings-updates-in-clang-3.1"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/05/14/python-bindings-updates-in-clang-3.1" rel="bookmark" title="Permanent Link to Python Bindings Updates in Clang 3.1">Python Bindings Updates in Clang 3.1</a></h2>
-  <small>May 14, 2012 at 12:05 AM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/clang'>Clang</a>, <a href='/blog/category/compilers'>compilers</a>
- | <a href="http://gregoryszorc.com/blog/2012/05/14/python-bindings-updates-in-clang-3.1#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p><a href="http://clang.llvm.org/">Clang</a> 3.1 is scheduled to be released any hour
-now. And, I'm proud to say that I've contributed to it! Specifically,
-I've contributed improvements to the Python bindings, which are an
-interface to
-<a href="http://clang.llvm.org/doxygen/group__CINDEX.html">libclang</a>, the C
-interface to Clang.</p>
-<p>Since 3.1 is being released today, I wanted to share some of the new
-features in this release. An exhaustive list of newly supported APIs is
-available in the
-<a href="http://clang.llvm.org/docs/ReleaseNotes.html#pythonchanges">release notes</a>.</p>
-<h2>Diagnostic Metadata</h2>
-<p><em>Diagnostics</em> are how Clang represents warnings and errors during
-compilation. The Python bindings
-now allow you to get at more metadata. Of particilar interest is
-<strong>Diagnostic.option</strong>. This property allows you to see the compiler flag
-that triggered the diagnostic. Or, you could query
-<strong>Diagnostic.disable_option</strong> for the compiler flag that would silence
-this diagnostic.</p>
-<p>These might be useful if you are analyzing diagnostics produced by the
-compiler. For example, you could parse source code using the Python
-bindings and collect aggregate information on all the diagnostics
-encountered.</p>
-<p>Here is an example:</p>
-<pre><code>from clang.cindex import Index
-
-index = Index.create()
-tu = index.parse('hello.c')
-
-for diag in tu.diagnostics:
-    print diag.severity
-    print diag.location
-    print diag.spelling
-    print diag.option
-</code></pre>
-<p>Or, if you are using the Python bindings from trunk:</p>
-<pre><code>from clang.cindex import TranslationUnit
-
-tu = TranslationUnit.from_source('hello.c')
-...
-</code></pre>
-<p>Sadly, the patch that enabled this simpler usage did not make the 3.1
-branch.</p>
-<h2>Finding Entities from Source Location</h2>
-<p>Two new APIs, <strong>SourceLocation.from_position</strong> and
-<strong>Cursor.from_location</strong>, allow you to easily extract a cursor in the AST
-from any arbitrary point in a file.</p>
-<p>Say you want to find the element in the AST that occupies column 6 of
-line #10 in the file <em>foo.c</em>:</p>
-<pre><code>from clang.cindex import Cursor
-from clang.cindex import Index
-from clang.cindex import SourceLocation
-
-index = Index.create()
-tu = index.parse('foo.c')
-
-f = File.from_name(tu, 'foo.c')
-
-location = SourceLocation.from_position(tu, f, 10, 6)
-cursor = Cursor.from_location(tu, location)
-</code></pre>
-<p>Of course, you could do this by iterating over cursors in the AST until
-one with the desired source range is found. But, that would involve more
-API calls.</p>
-<p>I would like to say that these APIs feel klunky to me. There is lots of
-redundancy in there. In my opinion, there should just be a
-<strong>TranslationUnit.get_cursor(file='foo.c', line=10, column=6)</strong> that
-does the right thing. Maybe that will make it into a future release.
-Maybe it won't. After all, the Python bindings are really a thin wrapper
-around the C API and an argument can be made that there should be
-minimal extra logic and complexity in the Python bindings. Time will
-tell.</p>
-<h2>Type Metadata</h2>
-<p>It is now possible to access more metadata on <strong>Type</strong> instances. For
-example, you can:</p>
-<ul>
-<li>See what the elements of an array are using <strong>Type.get_array_element_type</strong></li>
-<li>See how many elements are in a static array using
-  <strong>Type.get_array_element_count</strong></li>
-<li>Determine if a function is variadic using <strong>Type.is_function_variadic</strong></li>
-<li>Inspect the Types of function arguments using <strong>Type.argument_types</strong></li>
-</ul>
-<p>In this example, I will show how to iterate over all the functions
-declared in a file and to inspect their arguments.</p>
-<pre><code>from clang.cindex import CursorKind
-from clang.cindex import Index
-from clang.cindex import TypeKind
-
-index = Index.create()
-tu = index.parse('hello.c')
-
-for cursor in tu.cursor.get_children():
-    # Ignore AST elements not from the main source file (e.g.
-    # from included files).
-    if not cursor.location.file or cursor.location.file.name != 'hello.c':
-        continue
-
-    # Ignore AST elements not a function declaration.
-    if cursor.kind != CursorKind.FUNCTION_DECL:
-        continue
-
-    # Obtain the return Type for this function.
-    result_type = cursor.type.get_result()
-
-    print 'Function: %s' % cursor.spelling
-    print '  Return type: %s' % result_type.kind.spelling
-    print '  Arguments:'
-
-    # Function has no arguments.
-    if cursor.type.kind == TypeKind.FUNCTIONNOPROTO:
-        print '    None'
-        continue
-
-    for arg_type in cursor.argument_types():
-        print '    %s' % arg_type.kind.spelling
-</code></pre>
-<p>This example is overly simplified. A more robust solution would also
-inspect the Type instances to see if they are constants, check for
-pointers, check for variadic functions, etc.</p>
-<p>An example application of these APIs is to build a tool which
-automatically generated
-<a href="http://docs.python.org/library/ctypes.html">ctypes</a> or similar
-<a href="https://en.wikipedia.org/wiki/Foreign_function_interface">FFI</a>
-bindings. Many of these tools today use custom parsers. Why invent a
-custom (and likely complex) parser when you can call out into Clang and
-have it to all the heavy lifting for you?</p>
-<h2>Future Features</h2>
-<p>As I write this, there are already a handful of Python binding features
-checked into Clang's SVN trunk that were made after the 3.1 branch was cut.
-And, I'm actively working at integrating many more.</p>
-<p>Still to come to the Python bindings are:</p>
-<ul>
-<li>Better memory management support (currently, not all references are
-  kept everywhere, so it is possible for a GC to collect and dispose of
-  objects that should be alive, even though they are not in scope).</li>
-<li>Support for token API (lexer output)</li>
-<li>More complete coverage of Cursor and Type APIs</li>
-<li>More friendly APIs</li>
-</ul>
-<p>I have a personal goal for the Python bindings to cover 100% of the
-functionality in libclang. My work towards that goal is captured in my
-<a href="https://github.com/indygreg/clang/tree/python_features/">python features</a>
-branch on GitHub. I periodically clean up a patch, submit it for review,
-apply feedback, and commit. That branch is highly volatile and I do
-rebase. You have been warned.</p>
-<p>Furthermore, I would like to add additional functionality to libclang
-[and expose it to Python]. For example, I would love for libclang to
-support code generation (i.e. compiling), not just parsing. This would
-enable all kinds of nifty scenarios (like channeling your build system's
-compiler calls through a proxy which siphons off metadata such as
-diagnostics).</p>
-<h2>Credits and Getting Involved</h2>
-<p>I'm not alone in my effort to improve Clang's Python bindings.
-Anders Waldenborg has landed a number of patches to add functionality
-and tests. He has also been actively reviewing patches and implementing
-official LLVM Python bindings! On the reviewing front, Manuel Klimek has been
-invaluable. I've lost track of how many bugs he's caught and good
-suggestions he's made. Tobias Grosser and Chandler Carruth have also
-reviewed their fair share of patches and handled community contributions.</p>
-<p>If you are interested in contributing to the Python bindings, we could
-use your help! You can find me in <a href="http://llvm.org/docs/#irc">#llvm</a> as
-IndyGreg. If I'm not around, the LLVM community is generally pretty helpful,
-so I'm sure you'll get an answer. If you prefer email, send it to the
-<a href="http://lists.cs.uiuc.edu/mailman/listinfo/cfe-dev">cfe-dev</a> list.</p>
-<p>If you have any questions, leave them in the comments or ask using one
-of the methods above.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/05/14/python-bindings-updates-in-clang-3.1#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../17">« Previous Page</a>
   --  

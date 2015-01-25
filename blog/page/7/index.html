@@ -51,6 +51,162 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="python-packaging-do's-and-don'ts"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/07/15/python-packaging-do's-and-don'ts" rel="bookmark" title="Permanent Link to Python Packaging Do's and Don'ts">Python Packaging Do's and Don'ts</a></h2>
+  <small>July 15, 2014 at 05:20 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/07/15/python-packaging-do's-and-don'ts#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Are you someone who casually interacts with Python but don't know the
+inner workings of Python? Then this post is for you. Read on to learn
+why some things are the way they are and how to avoid making some
+common mistakes.</p>
+<h2>Always use Virtualenvs</h2>
+<p>It is an easy trap to view <a href="https://virtualenv.pypa.io/en/latest/virtualenv.html">virtualenvs</a>
+as an obstacle, a distraction towards accomplishing something. People
+see me adding virtualenvs to build instructions and they say <em>I don't
+use virtualenvs, they aren't necessary, why are you doing that?</em></p>
+<p>A virtualenv is effectively an overlay on top of your system Python
+install. Creating a virtualenv can be thought of as copying your system
+Python environment into a local location. When you modify virtualenvs,
+you are modifying an isolated container. Modifying virtualenvs has no
+impact on your system Python.</p>
+<p>A goal of a virtualenv is to isolate your system/global Python install
+from unwanted changes. When you accidentally make a change to a
+virtualenv, you can just delete the virtualenv and start over from
+scratch. When you accidentally make a change to your system Python, it
+can be much, much harder to recover from that.</p>
+<p>Another goal of virtualenvs is to allow different versions of packages
+to exist. Say you are working on two different projects and each
+requires a specific version of Django. With virtualenvs, you install one
+version in one virtualenv and a different version in another virtualenv.
+Things happily coexist because the virtualenvs are independent.
+Contrast with trying to manage both versions of Django in your system
+Python installation. Trust me, it's not fun.</p>
+<p>Casual Python users may not encounter scenarios where virtualenvs make
+their lives better... until they do, at which point they realize their
+system Python install is beyond saving. People who eat, breath, and die
+Python run into these scenarios all the time. We've learned how bad life
+without virtualenvs can be and so we use them everywhere.</p>
+<p>Use of virtualenvs is a best practice. Not using virtualenvs will result
+in something unexpected happening. It's only a matter of time.</p>
+<p>Please use virtualenvs.</p>
+<h2>Never use sudo</h2>
+<p>Do you use sudo to install a Python package? You are doing it wrong.</p>
+<p>If you need to use sudo to install a Python package, that almost
+certainly means you are installing a Python package to your
+system/global Python install. And this means you are modifying your
+system Python instead of isolating it and keeping it pristine.</p>
+<p>Instead of using sudo to install packages, create a virtualenv and
+install things into the virtualenv. There should never be permissions
+issues with virtualenvs - the user that creates a virtualenv has full
+realm over it.</p>
+<h2>Never modify the system Python environment</h2>
+<p>On some systems, such as OS X with Homebrew, you don't need sudo to
+install Python packages because the user has write access to the Python
+directory (<em>/usr/local</em> in Homebrew).</p>
+<p>For the reasons given above, don't muck around with the system Python
+environment. Instead, use a virtualenv.</p>
+<h2>Beware of the package manager</h2>
+<p>Your system's package manager (apt, yum, etc) is likely using root and/or
+installing Python packages into the system Python.</p>
+<p>For the reasons given above, this is bad. Try to use a virtualenv, if
+possible. Try to not use the system package manager for installing
+Python packages.</p>
+<h2>Use pip for installing packages</h2>
+<p>Python packaging has historically been a mess. There are a handful of
+tools and APIs for installing Python packages. As a casual Python user,
+you only need to know of one of them:
+<a href="https://pip.pypa.io/en/latest/">pip</a>.</p>
+<p>If someone says <em>install a package</em>, you should be thinking <em>create a
+virtualenv, activate a virtualenv, <code>pip install &lt;package&gt;</code></em>. <strong>You
+should never run <code>pip install</code> outside of a virtualenv.</strong> (The exception
+is to install virtualenv and pip itself, which you almost certainly want
+in your system/global Python.)</p>
+<p>Running <em>pip install <package></em> will install packages from
+<a href="https://pypi.python.org/pypi">PyPI</a>, the Python Packaging Index by
+default. It's Python's official package repository.</p>
+<p>There are a lot of old and outdated tutorials online about Python
+packaging. Beware of bad content. For example, if you see documentation
+that says <em>use easy_install</em>, you should be thinking, <em>easy_install is
+a legacy package installer that has largely been replaced by pip, I
+should use pip instead</em>. When in doubt, consult the
+<a href="https://python-packaging-user-guide.readthedocs.org/en/latest/index.html">Python packaging user guide</a>
+and do what it recommends.</p>
+<h2>Don't trust the Python in your package manager</h2>
+<p>The more Python programming you do, the more you learn to not trust the
+Python package provided by your system / package manager.</p>
+<p>Linux distributions such as Ubuntu that sit on the forward edge of
+versions are better than others. But I've run into enough problems with
+the OS or package manager maintained Python (especially on OS X), that
+I've learned to distrust them.</p>
+<p>I use <a href="https://github.com/yyuu/pyenv">pyenv</a> for installing and managing
+Python distributions from source. pyenv also installs virtualenv and
+pip for me, packages that I believe should be in all Python installs
+by default. As a more experienced Python programmer, I find pyenv 
+<em>just works</em>.</p>
+<p>If you are just a beginner with Python, it is probably safe to ignore
+this section. Just know that as soon as something weird happens, start
+suspecting your default Python install, especially if you are on OS X.
+If you suspect trouble, use something like pyenv to enforce a buffer so
+the system can have its Python and you can have yours.</p>
+<h2>Recovering from the past</h2>
+<p>Now that you know the preferred way to interact with Python, you are
+probably thinking <em>oh crap, I've been wrong all these years - how do I
+fix it?</em></p>
+<p>The goal is to get a Python install <em>somewhere</em> that is as pristine as
+possible. You have two approaches here: cleaning your existing Python or
+creating a new Python install.</p>
+<p>To clean your existing Python, you'll want to purge it of pretty much
+all packages not installed by the core Python distribution. The
+exception is virtualenv, pip, and setuptools - you almost certainly want
+those installed globally. On Homebrew, you can uninstall everything related to
+Python and blow away your Python directory, typically
+/usr/local/lib/python*. Then, <em>brew install python</em>. On Linux distros,
+this is a bit harder, especially since most Linux distros rely on Python
+for OS features and thus they may have installed extra packages. You
+could try a similar approach on Linux, but I don't think it's worth it.</p>
+<p>Cleaning your system Python and attempting to keep it pure are ongoing
+tasks that are very difficult to keep up with. All it takes is one
+dependency to get pulled in that trashes your system Python. Therefore,
+I shy away from this approach.</p>
+<p>Instead, I install and run Python from my user directory. I use
+<a href="https://github.com/yyuu/pyenv">pyenv</a>. I've also heard great things
+about <a href="http://conda.pydata.org/miniconda.html">Miniconda</a>. With either
+solution, you get a Python in your home directory that starts clean and
+pure. Even better, it is completely independent from your system Python.
+So if your package manager does something funky, there is a buffer. And,
+if things go wrong with your userland Python install, you can always
+nuke it without fear of breaking something in system land. This seems to
+be the best of both worlds.</p>
+<p>Please note that installing packages in the system Python shouldn't be
+evil. When you create virtualenvs, you can - and should - tell
+virtualenv to not use the system site-packages (i.e. <em>don't use
+non-core packages from the system installation</em>). This is the default
+behavior in virtualenv. It should provide an adequate buffer. But from
+my experience, things still manage to bleed through. My userland Python
+install is extra safety. If something wrong happens, I can only blame
+myself.</p>
+<h2>Conclusion</h2>
+<p>Python's long and complicated history of package management makes it
+very easy for you to shoot yourself in the foot. The long list of
+outdated tutorials on The Internet make this a near certainty for casual
+Python users. Using the guidelines in this post, you can adhere to best
+practices that will cut down on surprises and rage and keep your Python
+running smoothly.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/15/python-packaging-do's-and-don'ts#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="update-bugzilla-automatically-on-push"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/06/30/update-bugzilla-automatically-on-push" rel="bookmark" title="Permanent Link to Update Bugzilla Automatically on Push">Update Bugzilla Automatically on Push</a></h2>
   <small>June 30, 2014 at 11:15 PM | categories: 
@@ -990,124 +1146,6 @@ control system knows how to solve.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="how-promises-and-tasks-are-improving-tests"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/03/30/how-promises-and-tasks-are-improving-tests" rel="bookmark" title="Permanent Link to How Promises and Tasks are Improving Tests">How Promises and Tasks are Improving Tests</a></h2>
-  <small>March 30, 2014 at 02:15 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/javascript'>JavaScript</a>
- | <a href="http://gregoryszorc.com/blog/2014/03/30/how-promises-and-tasks-are-improving-tests#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I was a very early adoptor of promises and
-<a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Task.jsm">Tasks</a>
-in Firefox's JavaScript code base. To me, promises on their own are ok.
-The ability to chain promises together and tack one error handler on
-the end sure beats the
-<a href="http://tritarget.org/blog/2012/11/28/the-pyramid-of-doom-a-javascript-style-trap/">Pyramid of Doom</a>
-and having to pass errors into callbacks everywhere. But what really
-lured me in were tasks: using generators (then a feature only available
-in SpiderMonkey) to represent async code flow as nice, easy-to-read
-procedural flow that nearly every programming can relate to. It made
-code much easier to read and grok. I've been using tasks ever since.</p>
-<p>When I started writing new APIs that returned promises instead of using
-callbacks, I found myself writing a lot of tests consuming promises and
-using tasks. So, I
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=819033">added an add_task</a>
-API to our xpcshell test harness to make writing task-based unit tests
-involve less boilerplate. That API is now used heavily for new xpcshell
-tests.</p>
-<p>While I initially added <em>add_task()</em> to cut down on the boilerplate for
-writing tests, I only recently realized it has another benefit: it's
-helped cut down on hung tests!</p>
-<p>Before, with callback-based APIs, we'd code tests like so:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-     <span class="nx">Assert</span><span class="p">.</span><span class="nx">ok</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">success</span><span class="p">);</span>
-     <span class="nx">run_next_test</span><span class="p">();</span>
-  <span class="p">});</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>Or another pattern:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// The next line throws an Error by accident!</span>
-    <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
-    <span class="nx">run_next_test</span><span class="p">();</span>
-  <span class="p">});</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>In the first example, the test will hang if the callback never gets
-called. The test harness driver will eventually terminate
-the test (after a multi-second delay with no output). Not good.</p>
-<p>In the second example, we are still susceptible to the callback not
-being called. But we have a different problem: an untrapped Error is
-thrown from a callback! This results in the same behavior:
-<em>run_next_test()</em> (the function that says to advance to the next test)
-won't execute and the test will hang until it times out.</p>
-<p>A more proper way to write this test is:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">try</span> <span class="p">{</span>
-      <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
-    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">ex</span><span class="p">)</span> <span class="p">{</span>
-      <span class="nx">do_report_unexpected_exception</span><span class="p">(</span><span class="nx">ex</span><span class="p">);</span>
-    <span class="p">}</span>
-
-    <span class="nx">run_next_test</span><span class="p">();</span>
-  <span class="p">});</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>In reality, few people surround all their callbacks with try..catch
-blocks because, well, it's a lot of typing and people don't always think
-it's necessary (the test passes most of the time, doesn't it?).</p>
-<p>What promises and task-based tests are doing is enabling us to write
-more robust tests without all of the extra work. Here is how you would
-use task-based tests:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_task</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="nx">do_something</span><span class="p">();</span>
-  <span class="c1">// The next line throws an Error by accident!</span>
-  <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
-<span class="p">});</span>
-</pre></div>
-
-<p>Here, the Error thrown by the test function is thrown within the context
-of an executing Task. It is caught by the Task and converted into a
-rejected promise. <strong>The test harness sees that failure immediately
-and no timeout occurs!</strong> This can cut down on overhead when writing
-tests, especially if you are trying to debug a hang.</p>
-<p>Furthermore, the test is 4 lines versus 10. Less typing means you have
-more time to write additional tests or you can focus on writing other
-patches.</p>
-<p>Finally, the task-based test functions are easier to understand. That 4
-line, procedural test is much easier to grok than its callback-based
-counterpart.</p>
-<p>And before I conclude, I should mention that we can do more with
-promises. For example, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=976205">bug 976205</a> is making uncaught promise errors turn into test failures!
-There is also an awesome patch in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=867742">bug 867742</a> to
-introduce a unified JavaScript test harness API for defining JavaScript
-tests in our tree (currently the APIs for xpcshell tests and mochitests
-are different, leading to cognitive dissonance and lower productivity).
-<strong>If you want to be a hero to the Firefox developer community, help
-finish that patch.</strong></p>
-<p>Given that so much Firefox feature development time (at Mozilla) is
-spent writing and debugging tests, I encourage everyone to consider
-promises and tasks for his or her next feature so that you can cut
-down on development time and complete projects faster.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/03/30/how-promises-and-tasks-are-improving-tests#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../6">« Previous Page</a>
   --  

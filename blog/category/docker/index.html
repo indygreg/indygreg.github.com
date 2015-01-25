@@ -51,6 +51,132 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="end-to-end-testing-with-docker"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/24/end-to-end-testing-with-docker" rel="bookmark" title="Permanent Link to End to End Testing with Docker">End to End Testing with Docker</a></h2>
+  <small>January 24, 2015 at 11:10 PM | categories: 
+
+<a href='/blog/category/docker'>Docker</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/testing'>testing</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/24/end-to-end-testing-with-docker#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I've written an extensive testing <em>framework</em> for Mozilla's
+<a href="https://mozilla-version-control-tools.readthedocs.org/">version control tools</a>.
+Despite it being a little rough around the edges, I'm a bit proud of it.</p>
+<p>When you run tests for MozReview, Mozilla's heavily modified
+<a href="https://www.reviewboard.org/">Review Board</a> code review tool, the
+following things happen:</p>
+<ul>
+<li>A MySQL server is started in a Docker container.</li>
+<li>A Bugzilla server (running the same code as
+  <a href="https://bugzilla.mozilla.org/">bugzilla.mozilla.org</a>) is started on
+  an Apache httpd server with mod_perl inside a Docker container.</li>
+<li>A RabbitMQ server mimicking
+  <a href="https://pulse.mozilla.org/">pulse.mozilla.org</a> is started in a Docker
+  container.</li>
+<li>A Review Board Django development server is started.</li>
+<li>A Mercurial HTTP server is started</li>
+</ul>
+<p>In the future, we'll likely also need to add support for various other
+services to support MozReview and other components of version control
+tools:</p>
+<ul>
+<li>The Autoland HTTP service will be started in a Docker container, along
+  with any other requirements it may have.</li>
+<li>An IRC server will be started in a Docker container.</li>
+<li>Zookeeper and Kafka will be started on multiple Docker containers</li>
+</ul>
+<p>The entire setup is pretty cool. You have actual services running on
+your local machine. Mike Conley and Steven MacLeod even did some pair
+coding of MozReview while on a plane last week. I think it's pretty cool
+this is even possible.</p>
+<p>There is very little mocking in the tests. If we need an external
+service, we try to spin up an instance inside a local container.
+This way, we can't have unexpected test successes or failures due to
+bugs in mocking. We have very high confidence that if something works
+against local containers, it will work in production.</p>
+<p>I currently have each test file owning its own set of Docker
+containers and processes. This way, we get full test isolation and can
+run tests concurrently without race conditions. This drastically reduces
+overall test execution time and makes individual tests easier to reason
+about.</p>
+<p>As cool as the test setup is, there's a bunch I wish were better.</p>
+<p>Spinning up and shutting down all those containers and processes takes a
+lot of time. We're currently sitting around 8s startup time and 2s
+shutdown time. 10s overhead per test is unacceptable. When I make a one
+line change, I want the tests to be instantenous. 10s is too long for
+me to sit idly by. Unfortunately, I've already gone to great pains to
+make test overhead as short as possible.
+<a href="http://www.fig.sh/">Fig</a> wasn't good enough for me for various reasons.
+I've reimplemented my own orchestration directly on top of the
+<a href="https://docker-py.readthedocs.org/en/latest/">docker-py package</a> to
+achieve some significant performance wins. Using
+<a href="http://pythonhosted.org//futures/">concurrent.futures</a> to perform
+operations against multiple containers concurrently was a big win.
+<em>Bootstrapping</em> containers (running their first-run entrypoint scripts
+and committing the result to be used later by tests) was a bigger win
+(first run of Bugzilla is 20-25 seconds).</p>
+<p>I'm at the point of optimizing startup where the longest pole is the
+initialization of the services inside Docker containers themselves.
+MySQL takes a few seconds to start accepting connections. Apache +
+Bugzilla has a semi-involved initialization process. RabbitMQ takes
+about 4 seconds to initialize. There are some cascading dependencies in
+there, so the majority of startup time is waiting for processes to
+finish their startup routine.</p>
+<p>Another concern with running all these containers is memory usage. When
+you start running 6+ instances of MySQL + Apache, RabbitMQ, + ..., it
+becomes really easy to exhaust system memory, incur swapping, and have
+performance fall off a cliff. I've spent a non-trivial amount of time
+figuring out the minimal amount of memory I can make services consume
+while still not sacrificing too much performance.</p>
+<p>It is quite an experience having the problem of trying to minimize
+resource usage and startup time for various applications. Searching the
+internet will happily give you recommended settings for applications.
+You can find out how to make a service start in 10s instead of 60s or
+consume 100 MB of RSS instead of 1 GB. But what the internet won't tell
+you is how to make the service start in 2s instead of 3s or consume as
+little memory as possible. I reckon I'm past the point of diminishing
+returns where most people don't care about any further performance wins.
+But, because of how I'm using containers for end-to-end testing and I
+have a surplus of short-lived containers, it is clearly I problem I need
+to solve.</p>
+<p>I might be able to squeeze out a few more seconds of reduction by
+further optimizing startup and shutdown. But, I doubt I'll reduce things
+below 5s. If you ask me, that's still not good enough. I want no more
+than 2s overhead per test. And I don't think I'm going to get that
+unless I start utilizing containers across multiple tests. And I really
+don't want to do that because it sacrifices test purity. Engineering is
+full of trade-offs.</p>
+<p>Another takeaway from implementing this test harness is that the
+pre-built Docker images available from the Docker Registry almost always
+become useless. I eventually make a customization that can't be
+shoehorned into the readily-available image and I find myself having
+to reinvent the wheel. I'm not a fan of the <em>download and run a binary</em>
+model, especially given Docker's less-than-stellar history on the
+security and cryptography fronts (I'll trust Linux distributions to get
+package distribution right, but I'm not going to be trusting the Docker
+Registry quite yet), so it's not a huge loss. I'm at the point where
+I've lost faith in Docker Registry images and my default position is to
+implement my own builder. Containers are supposed to do one thing, so
+it usually isn't that difficult to roll my own images.</p>
+<p>There's a lot to love about Docker and containerized test execution. But
+I feel like I'm foraging into new territory and solving problems
+like startup time minimization that I shouldn't really have to be
+solving. I think I can justify it given the increased accuracy from the
+tests and the increased confidence that brings. I just wish the cost
+weren't so high. Hopefully as others start leaning on containers and
+Docker more for test execution, people start figuring out how to make
+some of these problems disappear.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/24/end-to-end-testing-with-docker#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="the-rabbit-hole-of-using-docker-in-automated-tests"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/10/16/the-rabbit-hole-of-using-docker-in-automated-tests" rel="bookmark" title="Permanent Link to The Rabbit Hole of Using Docker in Automated Tests">The Rabbit Hole of Using Docker in Automated Tests</a></h2>
   <small>October 16, 2014 at 01:45 PM | categories: 
