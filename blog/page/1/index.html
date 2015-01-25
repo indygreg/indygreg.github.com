@@ -51,6 +51,52 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="automatic-python-static-analysis-on-mozreview"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/24/automatic-python-static-analysis-on-mozreview" rel="bookmark" title="Permanent Link to Automatic Python Static Analysis on MozReview">Automatic Python Static Analysis on MozReview</a></h2>
+  <small>January 24, 2015 at 11:30 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A bunch of us were in Toronto last week hacking on MozReview.</p>
+<p>One of the cool things we did was deploy a bot for performing Python
+static analysis. If you submit some .py files to MozReview, the bot
+should leave a review. If it finds violations (it uses
+<a href="https://flake8.readthedocs.org/">flake8</a> internally), it will open
+an issue for each violation. It also leaves a comment that should
+hopefully give enough detail on how to fix the problem.</p>
+<p>While we haven't done much in the way of performance optimizations,
+the bot typically submits results less than 10 seconds after the review
+is posted! So, a human should never be reviewing Python that the bot
+hasn't seen. This means you can stop thinking about style nits and start
+thinking about what the code does.</p>
+<p>This bot should be considered an alpha feature. The code for the bot
+isn't even checked in yet. We're running the bot against production
+to get a feel for how it behaves. If things don't go well, we'll turn
+it off until the problems are fixed.</p>
+<p>We'd like to eventually deploy C++, JavaScript, etc bots. Python won out
+because it was the easiest to integrate (it has sane and efficient
+tooling that is compatible with Mozilla's code bases - most existing
+JavaScript tools won't work with Gecko-flavored JavaScript, sadly).</p>
+<p>I'd also like to eventually make it easier to locally run the same
+static analysis we run in MozReview. Addressing problems locally before
+pushing is a no-brainer since it avoids needless context switching from
+other people and is thus better for productivity. This will come in
+time.</p>
+<p>Report issues in #mozreview or in the Developer Services :: MozReview
+Bugzilla component.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="end-to-end-testing-with-docker"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/24/end-to-end-testing-with-docker" rel="bookmark" title="Permanent Link to End to End Testing with Docker">End to End Testing with Docker</a></h2>
   <small>January 24, 2015 at 11:10 PM | categories: 
@@ -503,201 +549,6 @@ at the code.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="utilizing-github-for-firefox-development"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/01/12/utilizing-github-for-firefox-development" rel="bookmark" title="Permanent Link to Utilizing GitHub for Firefox Development">Utilizing GitHub for Firefox Development</a></h2>
-  <small>January 12, 2015 at 11:00 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/01/12/utilizing-github-for-firefox-development#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Recent posts on my blog have talked about the
-<a href="/blog/2015/01/09/firefox-contribution-process-debt/">difficulty submitting changes to Firefox</a>
-and the <a href="/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github/">rise of GitHub</a>.
-I encourage you to stop reading this post and read them now if you
-haven't already.</p>
-<p>As I was looking at the
-<a href="/blog/2015/01/09/firefox-contribution-process-debt/#list-of-process-debt">list of process debt contributing to Firefox</a>,
-one thought kept creeping into my mind: <strong>how many of these items go
-away if we utilize GitHub?</strong></p>
-<p>As I mentioned in these two posts, GitHub's popularity has essentially
-commoditized many items on this list, especially the parts around source
-control and submitting patches for consideration (just fork and open a
-pull request). It seems that everyone these days is on GitHub and asking
-people to use GitHub to send changes to Firefox would almost certainly
-be well-received by contributors and even Mozilla staff.</p>
-<p>Here's what I think: <strong>Mozilla should utilize GitHub for Firefox
-development.</strong></p>
-<p>The verb in that sentence is important: I purposefully said <em>utilize</em>
-and not something like <em>switch to</em>. <strong>To switch or not to switch to
-GitHub for Firefox development is a false dillemma and a logical
-fallacy.</strong> So is the question about <em>switching to Git</em>. As I explain later,
-there is a spectrum of options available and <em>switching</em> or <em>not
-switching</em> are on the extremes. <em>Utilize</em> doesn't preclude a binary
-<em>switch</em> or <em>don't switch</em> outcome, but it does keep an array of options
-on the table for consideration.</p>
-<p>So, how should Mozilla <em>utilize</em> GitHub for Firefox development?</p>
-<p>I think that insisting people establish Bugzilla accounts and upload
-patches to Bugzilla/bugs is an anitquated practice in desperate need of
-an overhaul. I think that if someone has written code, they should be
-able to essentially throw it over a wall to initiate the change process.
-They should be able to do this in a manner that incurs little to no
-<em>process debt</em>. We, Mozilla, should be able to take only code and
-integrate it into Firefox, assuming a trusted person - a module owner
-or peer - agrees and grants review. <strong>GitHub pull requests would
-facilitate a lesser-involved code contribution mechanism.</strong></p>
-<p>Another benefit of GitHub is that the web interface goes further than
-just code submission: they also have facilities for editing files. It's
-possible to
-<a href="https://help.github.com/articles/editing-files-in-another-user-s-repository/">edit a file in someone else's repository and create a pull request</a>
-direct from the web interface! My
-<a href="/blog/2015/01/09/firefox-contribution-process-debt/">post on process debt</a>
-began by comparing the process of <em>edit a wiki</em> versus the current
-Firefox change process. GitHub's web-based editing essentially reduces
-the gap to cosmetic differences. <strong>GitHub's ease of contributing purely
-via the browser would open the door to more contribution for
-lesser-involved changes</strong> (sometimes referred to as <em>good first bugs</em>).</p>
-<p>To state it explicitly, <strong>I support the use of GitHub pull requests for
-submitting changes to Firefox</strong>.</p>
-<p>Now, there are some concerns and challenges about doing this. These
-include:</p>
-<ul>
-<li>Fragmentation of code review and tracking could be problematic for
-  Mozilla staff and other highly-active individuals.</li>
-<li>GitHub can lose some parts of code review after rebasing and force
-  pushes. <strong>Edit: Comments below indicate this is no longer a problem.
-  Great!</strong></li>
-<li>You can only assign 1 reviewer per pull request.</li>
-<li>GitHub sends an email/notification per review comment. This can be
-  extremely annoying for some mail clients.</li>
-<li>GitHub doesn't have a mechanism for dealing with security bugs.</li>
-<li>Data sovereignty concerns (all data hosted on GitHub and subject to
-  their data retention and access policies). Their API has query limits,
-  which can limit machine use somewhat.</li>
-<li>GitHub's model favors merges over rebases. Merges have a number of
-  downsides, especially for large projects, and we strongly prefer to
-  maintain our mostly-linear Firefox repository history.</li>
-<li>GitHub's model favors appending commits rather than rewriting commits.
-  (This is due to Git badness when you force push.) Mozilla favors a
-  world where the final commit is what's reviewed and landed.</li>
-<li>Git != Mercurial. Firefox is canonically stored in Mercurial. There is
-  some impedence mismatch here. But nothing tools can't overcome.</li>
-<li>The <em>Merge Pull Request</em> button is almost completely useless for
-  Firefox's existing and future workflows. This partially invalidates
-  other niceness the pure GitHub pull request workflow buys you.</li>
-<li>Everything is lumped into a single bucket. We lose component-level
-  subscriptions, making following harder.</li>
-<li>Following the entire Firefox project on GitHub would produce an
-  overwhelming fire hose of data.</li>
-<li>We don't control GitHub and our options for extending it to extract
-  even more process optimization are limited to what their APIs support
-  and what they choose to implement.</li>
-<li>We are at the whim of GitHub should they ever change a feature or API.</li>
-<li>See also <a href="https://github.com/servo/servo/wiki/Github-challenges">Servo's list of challenges</a>.</li>
-</ul>
-<p>Some of these issues can be overcome by tools and automation (which I
-would happily build in my capacity as a Developer Productivity Engineer
-at Mozilla). Others are more fundamental and seemingly would require
-buy-in and/or support from very senior Mozillians.</p>
-<p>If Mozilla were to go forward utilizing GitHub pull requests for
-Firefox, I think it should be done incrementally rather than going
-all-in and attempting the entire GitHub workflow from the start.
-Although, this would mean diverging from GitHub's well-known practices,
-which would <em>increase</em> process debt from the GitHub base level. I don't
-like that. But I think it is a step in the right direction. Partial
-reduction in process debt is better than no reduction.</p>
-<p>What do I mean by <em>incrementally</em> start accepting pull requests? Well,
-<strong>I don't think code review should initially be conducted on GitHub</strong>.
-When you look at the above list of concerns, many of them are around code
-review and interacting with pull requests. I think there's too much
-badness and risk there to make me comfortable about <em>moving</em> things to
-GitHub and giving GitHub exclusive domain over this important data,
-at least initially.</p>
-<p>But if code review isn't conducted on GitHub, what's the value of a pull
-request? <strong>A pull request would be a well-defined and well-understood
-mechanism for importing data into Mozilla's systems</strong>. For example,
-submitting a pull request would automatically result in the creation
-of a review request on
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>
-or even a bug/attachment/review on Bugzilla.
-This would allow people to send code to Mozilla easily while
-simultaneously allowing Mozillians to use familiar tools and processes
-without the aforementioned concerns with GitHub. That appears to be
-win-win.</p>
-<p>Once we have a simple mechanism in place for turning pull requests into
-MozReview's review requests, we can start playing around with the
-syncing of code review activity between Mozilla and GitHub so review
-activity on either system results in cross-posting. There is precedent
-for this today. <a href="http://gerrithub.io/">GerritHub</a> has bi-directional
-syncing of code review activity between GitHub and Gerrit. Facebook also
-does something similar, syncing data between their internal Phabricator
-instance. Mozilla to GitHub sync would not be difficult: we control all
-those systems and I'm pretty confident in our ability to make a GitHub API
-call when a MozReview review request is updated (we already make
-Bugzilla API calls, so we know this works). GitHub to Mozilla is a bit more
-difficult. But, others have done it: I'm confident we can too.</p>
-<p>I see bi-directional syncing of GitHub pull request / code review data
-between GitHub and Mozilla as achievable and relatively free from
-controversy. I think we should experiment with this sometime in 2015,
-probably in Q2, once MozReview is in better condition to <em>host</em> GitHub
-pull requests. Although, supporting Git in MozReview is on my Q1 goals
-list, so maybe I sneak this into Q1. Time will tell.</p>
-<p>At this time, I believe using GitHub for the ingestion of proposed
-Firefox commits into existing Mozilla systems should be the limit of
-Firefox's GitHub presence, at least as far as day-to-day development
-goes. If other groups want to use GitHub more actively and they find a
-way to make that work while placating everyone who cares, power to them.
-But I think moving the pendulum any further toward GitHub - including
-things like making GitHub the exclusive location for code review data,
-utilizing GitHub Issues, and making Git[Hub] the canonical Firefox
-repository - remain difficult and controverial propositions. I believe
-each of these to be medium to high cost and risk with low to medium
-reward. I believe it would be wise to defer these questions until we
-have data about the value of GitHub pull requests for Firefox
-development.</p>
-<p>To summarize, I propose using GitHub pull requests as an alternate,
-supported front end to the code contribution pathway. We would eliminate
-a lot of <em>process debt</em> for non-Mozillians by supporting a known process.
-Mozillians on the review and code submission side of the process
-shouldn't have to worry about change because, well, it shouldn't matter
-if a commit came from GitHub or elsewhere: it will all appear mostly
-the same. I'm not saying that we will never expand our utilization
-of GitHub for Firefox development beyond this scope. But I am saying
-that I don't think it would be prudent to do so today.</p>
-<p>And that's how and why I think Mozilla should utilize GitHub for Firefox
-development.</p>
-<h2>Addendum</h2>
-<p>While I'm here, <strong>it's important to note that GitHub does not and will
-likely never solve many items from our list of Firefox contribution
-process debt</strong>. GitHub is not a build system nor a tool for running
-and analyzing code and tests. We still have many, many deficiencies
-and usability concerns here. We have historically under-invested in
-this area and utilizing GitHub in any capacity won't address these
-other issues. In addition, <strong>Firefox is a magnitude larger and more
-complex than the vast majority of projects on GitHub. We will always
-be burdened with the cost of our success - of coping with and
-maintaining the additional complexity associated with that scale</strong>.
-Firefox is <em>at least</em> the 0.1%. There's a good chance GitHub and/or many
-of the amazing services associated with it (like Travis-CI) won't scale to
-our needs. I'd love to be proved wrong here, but the reality is
-supporting a marginal use case like Firefox likely isn't at the top of
-goals for GitHub and related organizations unless it is in their
-business interest (read: financial interest) to do so. One can hope that
-as these companies try to capture more of the enterprise market via
-offerings such as GitHub Enterprise that they invest in the features
-and scalability that large projects and organizations like Mozilla and
-Firefox need.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/12/utilizing-github-for-firefox-development#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 
