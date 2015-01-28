@@ -10,10 +10,42 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 25 Jan 2015 07:34:26 GMT</pubDate>
+    <pubDate>Wed, 28 Jan 2015 04:18:23 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Commit Part Numbers and MozReview</title>
+      <link>http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview</link>
+      <pubDate>Tue, 27 Jan 2015 20:17:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[code review]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview</guid>
+      <description>Commit Part Numbers and MozReview</description>
+      <content:encoded><![CDATA[<p>It is common for commit messages in Firefox to contains strings like
+<em>Part 1</em>, <em>Part 2</em>, etc. See
+<a href="https://hg.mozilla.org/projects/build-system/pushloghtml?changeset=5cb8bcab09cc">this push</a>
+for <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">bug 784841</a>
+for an extreme multi-part example.</p>
+<p>When code review is conducted in Bugzilla, these identifiers are
+necessary because Bugzilla orders attachments/patches in the order they
+were updated or their patch title (I'm not actually sure!). If part
+numbers were omitted, it could be very confusing trying to figure out
+which order patches should be applied in.</p>
+<p>However, when code review is conducted in
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>,
+<strong>there is no need for explicit part numbers to convey ordering</strong> because
+the ordering of commits is implicitly defined by the repository history
+that you pushed to MozReview!</p>
+<p>I argue that if you are using MozReview, you should stop writing <em>Part
+N</em> in your commit messages, as it provides little to no benefit.</p>
+<p>I, for one, welcome this new world order: I've previously wasted a lot
+of time rewriting commit messages to reflect new part ordering after
+doing history rewriting. With MozReview, that overhead is gone and I
+barely pay a penalty for rewriting history, something that often
+produces a more reviewable series of commits and makes reviewing
+and landing a complex patch series significantly easier.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Automatic Python Static Analysis on MozReview</title>
       <link>http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview</link>

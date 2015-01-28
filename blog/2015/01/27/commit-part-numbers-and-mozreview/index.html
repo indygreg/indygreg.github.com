@@ -1,0 +1,158 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Commit Part Numbers and MozReview
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="commit-part-numbers-and-mozreview"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/27/commit-part-numbers-and-mozreview" rel="bookmark" title="Permanent Link to Commit Part Numbers and MozReview">Commit Part Numbers and MozReview</a></h2>
+  <small>January 27, 2015 at 08:17 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>It is common for commit messages in Firefox to contains strings like
+<em>Part 1</em>, <em>Part 2</em>, etc. See
+<a href="https://hg.mozilla.org/projects/build-system/pushloghtml?changeset=5cb8bcab09cc">this push</a>
+for <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">bug 784841</a>
+for an extreme multi-part example.</p>
+<p>When code review is conducted in Bugzilla, these identifiers are
+necessary because Bugzilla orders attachments/patches in the order they
+were updated or their patch title (I'm not actually sure!). If part
+numbers were omitted, it could be very confusing trying to figure out
+which order patches should be applied in.</p>
+<p>However, when code review is conducted in
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>,
+<strong>there is no need for explicit part numbers to convey ordering</strong> because
+the ordering of commits is implicitly defined by the repository history
+that you pushed to MozReview!</p>
+<p>I argue that if you are using MozReview, you should stop writing <em>Part
+N</em> in your commit messages, as it provides little to no benefit.</p>
+<p>I, for one, welcome this new world order: I've previously wasted a lot
+of time rewriting commit messages to reflect new part ordering after
+doing history rewriting. With MozReview, that overhead is gone and I
+barely pay a penalty for rewriting history, something that often
+produces a more reviewable series of commits and makes reviewing
+and landing a complex patch series significantly easier.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

@@ -10,10 +10,42 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 25 Jan 2015 07:34:26 GMT</pubDate>
+    <pubDate>Wed, 28 Jan 2015 04:18:23 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Commit Part Numbers and MozReview</title>
+      <link>http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview</link>
+      <pubDate>Tue, 27 Jan 2015 20:17:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[code review]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview</guid>
+      <description>Commit Part Numbers and MozReview</description>
+      <content:encoded><![CDATA[<p>It is common for commit messages in Firefox to contains strings like
+<em>Part 1</em>, <em>Part 2</em>, etc. See
+<a href="https://hg.mozilla.org/projects/build-system/pushloghtml?changeset=5cb8bcab09cc">this push</a>
+for <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">bug 784841</a>
+for an extreme multi-part example.</p>
+<p>When code review is conducted in Bugzilla, these identifiers are
+necessary because Bugzilla orders attachments/patches in the order they
+were updated or their patch title (I'm not actually sure!). If part
+numbers were omitted, it could be very confusing trying to figure out
+which order patches should be applied in.</p>
+<p>However, when code review is conducted in
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>,
+<strong>there is no need for explicit part numbers to convey ordering</strong> because
+the ordering of commits is implicitly defined by the repository history
+that you pushed to MozReview!</p>
+<p>I argue that if you are using MozReview, you should stop writing <em>Part
+N</em> in your commit messages, as it provides little to no benefit.</p>
+<p>I, for one, welcome this new world order: I've previously wasted a lot
+of time rewriting commit messages to reflect new part ordering after
+doing history rewriting. With MozReview, that overhead is gone and I
+barely pay a penalty for rewriting history, something that often
+produces a more reviewable series of commits and makes reviewing
+and landing a complex patch series significantly easier.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Automatic Python Static Analysis on MozReview</title>
       <link>http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview</link>
@@ -1015,55 +1047,6 @@ like to file a bug against a regression (we suspect there will be
 minor regressions due to the large nature of the changes), head on
 over to <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1117021">bug 1117021</a>
 or ping people in #vcs on IRC.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Mercurial Pushlog Is Now Robust Against Interrupts</title>
-      <link>http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts</link>
-      <pubDate>Tue, 30 Dec 2014 12:25:00 PST</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[Firefox]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts</guid>
-      <description>Mercurial Pushlog Is Now Robust Against Interrupts</description>
-      <content:encoded><![CDATA[<p><a href="https://hg.mozilla.org">hg.mozilla.org</a> - Mozilla's Mercurial server -
-has functionality called the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/pushlog.html">pushlog</a>
-which records who pushed what when. Essentially, it's a log of when
-a repository was changed. This is separate from the commit log because
-the commit log can be spoofed and the commit log doesn't record when
-commits were actually pushed.</p>
-<p>Since its inception, the pushlog has suffered from data consistency
-issues. If you aborted the push at a certain time, data was not inserted
-in the pushlog. If you aborted the push at another time, data existed in
-the pushlog but not in the repository (the repository would get rolled
-back but the pushlog data wouldn't).</p>
-<p><strong>I'm pleased to announce that the pushlog is now robust against
-interruptions and its updates are consistent with what is recorded by
-Mercurial.</strong> The pushlog database commit/rollback is tied to Mercurial's
-own transaction API. What Mercurial does to the push transaction, the
-pushlog follows.</p>
-<p>This former inconsistency has caused numerous problems over the years.
-When data was inconsistent, we often had to close trees until someone
-could SSH into the machines and manually run SQL to fix the problems.
-This also contributed to a culture of <em>don't press ctrl+c during push:
-it could corrupt Mercurial.</em> (Ctrl+c should be safe to press any time: if
-it isn't, there is a bug to be filed.)</p>
-<p>Any time you remove a source of tree closures is a cause for celebration.
-Please join me in celebrating your new freedom to abort pushes without
-concern for data inconsistency.</p>
-<p>In case you want to test things out, aborting pushes and (and rolling
-back the pushlog) should now result in something like:</p>
-<pre><code>pushing to ssh://hg.mozilla.org/mozilla-central
-searching for changes
-adding changesets
-adding manifests
-adding file changes
-added 1 changesets with 1 changes to 1 files
-Trying to insert into pushlog.
-Inserted into the pushlog db successfully.
-^C
-rolling back pushlog
-transaction abort!
-rollback completed
-</code></pre>]]></content:encoded>
     </item>
   </channel>
 </rss>
