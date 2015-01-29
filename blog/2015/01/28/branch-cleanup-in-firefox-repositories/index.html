@@ -1,0 +1,172 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Branch Cleanup in Firefox Repositories
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="branch-cleanup-in-firefox-repositories"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/28/branch-cleanup-in-firefox-repositories" rel="bookmark" title="Permanent Link to Branch Cleanup in Firefox Repositories">Branch Cleanup in Firefox Repositories</a></h2>
+  <small>January 28, 2015 at 08:35 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mozilla has historically done some funky things with the Firefox
+Mercurial repositories. One of the things we've done is create
+a bunch of named branches to track the Firefox release process.
+These are branch names like <em>GECKO20b12_2011022218_RELBRANCH</em>.</p>
+<p>Over in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=927219">bug 927219</a>,
+we started the process of cleaning up some cruft left over from
+many of these old branches.</p>
+<p>For starters, the old named branches in the Firefox repositories
+are being actively closed. When you <em>hg commit --close-branch</em>,
+Mercurial creates a special commit that says <em>this branch is closed</em>.
+Branches that are closed are automatically hidden from the output
+of <em>hg branches</em> and <em>hg heads</em>. As a result, the output of these
+commands is now much more usable.</p>
+<p>Closed branches still constitute <em>heads</em> on the DAG. And several heads
+lead to degraded performance in some situations (notably push and pull
+times - the same thing happens in Git). I'd like to eventually merge
+these old heads so that repositories only have 1 or a small number of
+DAG heads. However, extra care must be taken before that step. Stay
+tuned.</p>
+<p>Anyway, for the average person reading, you probably won't be impacted
+by these changes at all. The greatest impact will be from the person who
+lands the first change on top of any repository whose last commit
+was a branch close. If you commit on top of the <em>tip</em> commit,
+you'll be committing on top of a previously closed branch! You'll
+instead want to <em>hg up default</em> after you pull to ensure you are on
+the proper DAG head! And even then, if you have local commits, you may
+not be based on top of the appropriate commit! A simple run of
+<em>hg log --graph</em> should help you decipther the state of the world.
+(Please note that the usability problems around discovering the
+appropriate head to land on are a result of our poor branching strategy
+for the Firefox repositories. We probably should have named branches
+tracking the active Gecko releases. But that ship sailed years ago
+and fixing that is pretty far down the priority list. Wallpapering
+over things with the
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/firefoxtree.html">firefoxtree extensions</a>
+is my recommended solution until matters are fixed.)</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

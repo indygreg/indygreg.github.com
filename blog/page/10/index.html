@@ -51,6 +51,74 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="why-do-projects-support-old-python-releases"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/08/why-do-projects-support-old-python-releases" rel="bookmark" title="Permanent Link to Why do Projects Support old Python Releases">Why do Projects Support old Python Releases</a></h2>
+  <small>January 08, 2014 at 05:00 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I see a number of open source projects supporting old versions
+of Python. Mercurial supports 2.4, for example. I have to ask: why do
+projects continue to support old Python releases?</p>
+<p>Consider:</p>
+<ul>
+<li><a href="http://python.org/download/releases/2.4.6/">Python 2.4</a> was last
+  released on December 19, 2008 and <strong>there will be no more releases of
+  Python 2.4</strong>.</li>
+<li><a href="http://python.org/download/releases/2.5.6/">Python 2.5</a> was last
+  released on May 26, 2011 and <strong>there will be no more releases of
+  Python 2.5</strong>.</li>
+<li><a href="http://python.org/download/releases/2.6.9/">Python 2.6</a> was last
+  released on October 29, 2013 and <strong>there will be no more releases of
+  Python 2.6</strong>.</li>
+<li><strong>Everything before Python 2.7 is end-of-lifed</strong></li>
+<li>Python 2.7 continues to see periodic releases, but mostly for bug fixes.</li>
+<li>Practically all of the work on CPython is happening in the 3.3 and 3.4
+  branches. Other implementations continue to support 2.7.</li>
+<li>Python 2.7 has been available since July 2010</li>
+<li>Python 2.7 provides some very compelling language features over
+  earlier releases that developers want to use</li>
+<li>It's much easier to write dual compatible 2/3 Python when 2.7 is the
+  only 2.x release considered.</li>
+<li>Python 2.7 can be installed in userland relatively easily (see
+  projects like <a href="https://github.com/yyuu/pyenv">pyenv</a>).</li>
+</ul>
+<p>Given these facts, I'm not sure why projects insist on supporting old
+and end-of-lifed Python releases.</p>
+<p><strong>I think maintainers of Python projects should seriously consider
+dropping support for Python 2.6 and below.</strong> Are there really that many
+people on systems that don't have Python 2.7 easily available? Why are
+we Python developers inflicting so much pain on ourselves to support
+antiquated Python releases?</p>
+<p>As a data point, I successfully transitioned Firefox's build system
+from requiring Python 2.5+ to 2.7.3+ and it was relatively
+<a href="https://groups.google.com/d/msg/mozilla.dev.platform/djN02O03APc/OS8A9LuHX0sJ">pain</a>
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=870420">free</a>.
+Sure, a few people complained. But as far as I know, not very many new
+developers are coming in and complaining about the requirement.
+If we can do it with a few thousand developers, I'm guessing your
+project can as well.</p>
+<p><strong>Update 2014-01-09 16:05:00 PST</strong>: This post is being discussed on
+<a href="http://developers.slashdot.org/story/14/01/09/1940232/why-do-projects-continue-to-support-old-python-releases">Slashdot</a>. A lot of the comments
+talk about Python 3. Python 3 is its own set of
+considerations. The intended focus of this post is strictly about
+dropping support for Python 2.6 and below. Python 3 is related
+in that porting Python 2.x to Python 3 is much easier the higher
+the Python 2.x version. This especially holds true when you want
+to write Python that works simultaneously in both 2.x and 3.x.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="on-multiple-patches-in-bugs"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/07/on-multiple-patches-in-bugs" rel="bookmark" title="Permanent Link to On Multiple Patches in Bugs">On Multiple Patches in Bugs</a></h2>
   <small>January 07, 2014 at 04:40 PM | categories: 
@@ -256,201 +324,6 @@ running an older, buggy Mercurial.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="using-mercurial-to-query-mozilla-metadata"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata" rel="bookmark" title="Permanent Link to Using Mercurial to query Mozilla metadata">Using Mercurial to query Mozilla metadata</a></h2>
-  <small>November 08, 2013 at 09:42 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I have updated my
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension tailored for Gecko/Firefox development</a>
-with features that support rich querying of Mozilla/Gecko-development
-specific metadata!</p>
-<p>The extension now comes with a bug full of
-<a href="http://www.selenic.com/hg/help/revsets">revision set</a> selectors and
-<a href="http://www.selenic.com/hg/help/templates">template keywords</a>. You can
-use them to query and format Mozilla-central metadata from the
-repository.</p>
-<h2>Revision set selectors</h2>
-<p>You can now select changesets referencing a specific bug number:</p>
-<pre><code>hg log -r 'bug(931383)'
-</code></pre>
-<p>Or that were reviewed by a specific person:</p>
-<pre><code>hg log -r 'reviewer(gps)'
-</code></pre>
-<p>Or were reviewed or not reviewed:</p>
-<pre><code>hg log -r 'reviewed()'
-hg log -r 'not reviewed()'
-</code></pre>
-<p>You can now select changesets that are present in a specific tree:</p>
-<pre><code>hg log -r 'tree(central)'
-</code></pre>
-<p>I've also introduced support to query changesets <em>you</em> influenced:</p>
-<pre><code>hg log -r 'me()'
-</code></pre>
-<p>(This finds changesets you authored or reviewed.)</p>
-<p>You can select changesets that initially landed on a specific tree:</p>
-<pre><code>hg log -r 'firstpushtree(central)'
-</code></pre>
-<p>You can select changesets marked as <em>DONTBUILD</em>:</p>
-<pre><code>hg log -r 'dontbuild()'
-</code></pre>
-<p>You can select changesets that don't reference a bug:</p>
-<pre><code>hg log -r 'nobug()'
-</code></pre>
-<p>You can select changesets that were <em>push heads</em> for a tree:</p>
-<pre><code>hg log -r 'pushhead(central)'
-</code></pre>
-<p>(This would form the basis of a push-aware bisection tool - an excellent
-idea for a future feature in this extension.)</p>
-<p>You can combine these revset selector functions with other revset
-selectors to do some pretty powerful things.</p>
-<p>To select all changesets on inbound but not central:</p>
-<pre><code>hg log -r 'tree(inbound) - tree(central)'
-</code></pre>
-<p>To find all your contributions on beta but not release:</p>
-<pre><code>hg log -r 'me() &amp; (tree(beta) - tree(release))'
-</code></pre>
-<p>To find all changesets referencing a specific bug that have landed in
-Aurora:</p>
-<pre><code>hg log -r 'bug(931383) and tree(aurora)'
-</code></pre>
-<p>To find all changesets marked <em>DONTBUILD</em> that landed directly on central:</p>
-<pre><code>hg log -r 'dontbuild() and firstpushtree(central)'
-</code></pre>
-<p>To find all non-merge changesets that don't reference a bug:</p>
-<pre><code>hg log -r 'not merge() and nobug()'
-</code></pre>
-<p>Neato!</p>
-<h2>Template keywords</h2>
-<p>You can also now print some Mozilla information when using templates.</p>
-<p>To print the main bug of a changeset, use:</p>
-<pre><code>{bug}
-</code></pre>
-<p>To retrieve all referenced bugs:</p>
-<pre><code>{bugs} {join(bugs, ', ')}
-</code></pre>
-<p>To print the reviewers:</p>
-<pre><code>{reviewer} {join(reviewers, ', ')}
-</code></pre>
-<p>To print the first version a changeset appeared in a specific channel:</p>
-<pre><code>{firstrelease} {firstbeta} {firstaurora} {firstnightly}
-</code></pre>
-<p>To print the <strong>estimated</strong> first Aurora and Nightly date for a
-changeset, use:</p>
-<pre><code>{auroradate} {nightlydate}
-</code></pre>
-<p>(Getting the exact first Aurora and Nightly dates requires consulting
-3rd party services, which we don't currently do. I'd like to
-eventually integrate these into the extension. For now, it just
-estimates dates from the pushlog data.)</p>
-<p>You can also print who and where pushed a changeset:</p>
-<pre><code>{firstpushuser} {firstpushtree}
-</code></pre>
-<p>You can also print the TBPL URL with the results of the first push:</p>
-<pre><code>{firstpushtbpl}
-</code></pre>
-<p>Here is an example that prints channel versions and dates for each
-changesets:</p>
-<pre><code>hg log --template '{rev} Nightly: {firstnightly} {nightlydate}; Aurora {firstaurora} {auroradate}; Beta: {firstbeta}; Release: {firstrelease}\n'
-</code></pre>
-<h2>Putting it all together</h2>
-<p>Of course, you can combine selectors and templates to create some
-mighty powerful queries.</p>
-<p>To look at your impact on Mozilla, do something like:</p>
-<pre><code>hg log --template '{rev} Bug {bug}; Release {firstrelease}\n' -r 'me()'
-</code></pre>
-<p>You can easily forumate a status report for your activity in the past
-week:</p>
-<pre><code>hg log --template '{firstline(desc)}\n' -r 'firstpushdate(-7) and me()'
-</code></pre>
-<p>You can also query Mercurial to see where changesets have been landing
-in the past 30 days:</p>
-<pre><code>hg log --template '{firstpushtree}\n' -r 'firstpushdate(-30)' | sort | uniq -c
-</code></pre>
-<p>You can see who has been reviewing lots of patches lately:</p>
-<pre><code>hg log --template '{join(reviewers, "\n")}\n' -r 'firstpushdate(-30)' | sort | uniq -c | sort -n
-</code></pre>
-<p>(smaug currently has the top score, edging out my 116 reviews with 137.)</p>
-<p>If you want to reuse templates (instead of having to type them on the
-command line), you can save them as <em>style files</em>. Search
-<a href="https://www.google.com/search?q=mercurial+style+files">the Internets</a>
-to learn how to use them. You can even change your default style so
-the default output from <em>hg log</em> contains everything you'd ever want to
-know about a changeset!</p>
-<h2>Keeping it running</h2>
-<p>Many of the queries rely on data derived from multiple repositories and
-pushlog data that is external to the repository.</p>
-<p>To get best results, you'll need to be running a monolithic/unified
-Mercurial repository. You can either assemble one locally with this
-extension by periodically pulling from the separate repos:</p>
-<pre><code>hg pull releases
-hg pull integration
-</code></pre>
-<p>Or, you can pull from
-<a href="http://hg.gregoryszorc.com/gecko">my personal unified repo</a>.</p>
-<p>You will also need to ensure the pushlog data is current. If you pull
-directly from the official repos, this will happen automatically. To be
-sure, run:</p>
-<pre><code>hg pushlogsync
-</code></pre>
-<p>Finally, you can force a repopulation of cached bug data by running:</p>
-<pre><code>hg buginfo --reset
-</code></pre>
-<p>Over time, I want all this to automagically work. Stay tuned.</p>
-<h2>Comments and future improvements</h2>
-<p>I implemented this feature to save myself from having to go troving
-through Bugzilla and repository history to answer questions and to
-obtain metrics. I can now answer many questions via simple Mercurial
-one-liners.</p>
-<p>Custom revision set selectors and template keywords are a pretty nifty
-feature of Mercurial. They demonstrate how you can extend Mercurial to
-be aware of more than just tracking commits and files. As I've
-<a href="/blog/2013/05/12/thoughts-on-mercurial-%28and-git%29/">said before</a>
-and will continue to say, the extensibility of Mercurial is
-really its killer feature, especially for organizations with
-well-defined processes (like Mozilla). The kind of extensibility I
-achieved with this extension with custom queries and formatting
-functions is just not possible with Git (at least not with the reference
-C implementation that the overwhelming majority of Git users use).</p>
-<p>There are numerous improvements that can be made to the extension.
-Obviously more revision set selectors and template keywords can be
-added. The parsing routine to extract bugs and reviewers isn't the most
-robust in the world. I copied some existing Mozilla code. It does well
-at detecting string patters but doesn't cope well with extracting lists.</p>
-<p>I'd also love to better integrate Mercurial with automation
-results so you can do things like expose a <em>greenpush()</em> selector and do
-things like <em>hg up -r 'last(tree(inbound)) and greenpush()'</em> (which
-of course could be exposed as <em>lastgreen(inbound)</em>. Wouldn't
-that be cool! (This would be possible if we had better APIs for querying
-individual push results.) It would also be possible to have the
-Mercurial server expose this data as repository data so clients pull it
-automatically. That would prevent clients from all needing to query the
-same 3rd party services. Just a crazy thought.</p>
-<p>Speed can be an issue. Calculating the release information
-(<em>{firstnightly}</em> etc) is currently slower than I'd like. This is mostly
-due to me using inefficient algorithms and not caching things where I
-should. Speed issues should be fixed in due time.</p>
-<p>Please let me know if you run into any problems or have suggestions for
-improvements. If you want to implement your own revision set selectors
-or template keywords, it's <a href="https://hg.mozilla.org/users/gszorc_mozilla.com/hgext-gecko-dev/file/35bb3c96d786/__init__.py#l705">easier</a>
-than you think! I will happily accept patches. Keep in mind that
-Mercurial can integrate with 3rd party services. So if you want to
-supplement repository data with data from a HTTP+JSON web service,
-that's very doable. The sky is the limit.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../9">« Previous Page</a>
   --  
