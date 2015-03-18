@@ -51,6 +51,101 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-extension-for-gecko-development"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/07/22/mercurial-extension-for-gecko-development" rel="bookmark" title="Permanent Link to Mercurial Extension for Gecko Development">Mercurial Extension for Gecko Development</a></h2>
+  <small>July 22, 2013 at 10:27 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>My weekend was spent hacking on Mercurial extensions. First, I worked on
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=827123">porting the pushlog extension off SQLite</a>.
+This will eventually enable Mozilla to move Mercurial hosting off NFS
+and should make <a href="https://hg.mozilla.org/">hg.mozilla.org</a> much faster as
+a result!</p>
+<p>But the main purpose of this blog post is to introduce a new Mercurial
+extension I wrote this weekend!</p>
+<p>Gecko developers perform a number of common tasks with Mercurial, so I
+thought it would be handy to package them up in an extension.</p>
+<p>To install the extension:</p>
+<pre><code>hg clone https://hg.mozilla.org/hgcustom/version-control-tools
+</code></pre>
+<p>Then add this extension to your hgrc file (either the global or
+per-repository will suffice):</p>
+<pre><code>[extensions]
+mozext = /path/to/version-control-tools/hgext/mozext
+</code></pre>
+<p>Since I believe tools should be self-documenting, run the following for
+usage info:</p>
+<pre><code>$ hg help mozext
+</code></pre>
+<p>Here are some examples:</p>
+<div class="pygments_murphy"><pre><span class="c"># Clone mozilla-central into the mc directory.</span>
+hg clone central mc
+hg clone mc mc
+
+<span class="c"># Create a unified Mercurial repository containing changesets</span>
+<span class="c"># from all the release repositories.</span>
+hg cloneunified gecko
+
+<span class="c"># Pull changes from the central and inbound repositories.</span>
+hg pull central
+hg pull inbound
+
+<span class="c"># Update the working tree to the tip of inbound.</span>
+hg up inbound/default
+
+<span class="c"># View the tree open/closed status.</span>
+hg treestatus
+
+<span class="c"># Show a list of all known trees and their aliases.</span>
+hg moztrees
+
+<span class="c"># Open TBPL for the push containing a changeset.</span>
+hg tbpl inbound 821e984ef423
+hg tbpl inbound inbound/default
+
+<span class="c"># Push the tip of inbound to mozilla-central</span>
+hg pushtree -r inbound/default central
+</pre></div>
+
+<p>I've only tested this extension with Mercurial 2.6 (which every Mozilla
+developer should be running). I'm not willing to support older versions.
+Upgrade already!</p>
+<p>There are a number of features I'd like to implement:</p>
+<ul>
+<li><strong>hg importtry</strong> - Automatically import changesets for a Try push into
+  the repository.</li>
+<li><strong>hg land</strong> - Automatically land patches on an integration tree (like
+  inbound). Will handle rebasing automatically.</li>
+<li><strong>hg critic</strong> - Perform stlye checking and other analysis on a
+  changeset or group of changesets.</li>
+<li>Ability to integrate build status into changeset info. This will allow
+  things such as <em>pull only the last green changeset</em>. I'd also like a
+  <em>build status</em> field to appear in the log output. Unfortunately, I
+  believe the latency of the build lookup API is prohibitively high to
+  perform the kind of tight integration I'd like.</li>
+<li>Move <em>mozautomation</em> Python package into a standalone package or
+  integrate already existing code (did I reinvent the wheel?).</li>
+<li>Log fetching. Specify a changeset and fetch build/test logs.</li>
+<li>Possibly move code into mozilla-central.</li>
+<li>Possibly add mach commands for some of this functionality.</li>
+</ul>
+<p>There's no bug component for this extension (yet). If you find any
+issues or wish to add a feature, just email a patch to me at gps@mozilla.com.</p>
+<p>Please let me know if you find this useful or if you have any questions.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="analysis-of-firefox's-build-automation"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/07/16/analysis-of-firefox's-build-automation" rel="bookmark" title="Permanent Link to Analysis of Firefox's Build Automation">Analysis of Firefox's Build Automation</a></h2>
   <small>July 16, 2013 at 06:15 PM | categories: 
@@ -1030,171 +1125,6 @@ Linux.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/19/using-docker-to-build-firefox#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="build-system-status-update-2013-05-14"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/05/13/build-system-status-update-2013-05-14" rel="bookmark" title="Permanent Link to Build System Status Update 2013-05-14">Build System Status Update 2013-05-14</a></h2>
-  <small>May 13, 2013 at 07:35 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2013/05/13/build-system-status-update-2013-05-14#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I'd like to make an attempt at delivering regular status updates on the
-Gecko/Firefox build system and related topics. Here we go with the
-first instance. I'm sure I missed awesomeness. Ping me and I'll add it
-to the next update.</p>
-<h2>MozillaBuild Windows build environment updated</h2>
-<p>Kyle Huey
-<a href="https://groups.google.com/d/msg/mozilla.dev.platform/XRecAHF-H28/aSbrdKJLUNoJ">released version 1.7</a>
-of our Windows build environment. It contains a newer version of Python
-and a modern version of Mercurial among other features.</p>
-<p><strong>I highly recommend every Windows developer update ASAP.</strong> Please note
-that you will likely encounter Python errors unless you clobber your
-build.</p>
-<h2>New submodule and peers</h2>
-<p>I used my power as module owner to create a submodule of the build
-config module whose scope is the (largely mechanical) transition of
-content from Makefile.in to moz.build files. I granted Joey Armstrong
-and Mike Shal peer status for this module. I would like to eventually
-see both elevated to build peers of the main build module.</p>
-<h2>moz.build transition</h2>
-<p>The following progress has been made:</p>
-<ul>
-<li>Mike Shal has converted variables related to defining XPIDL files in
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=818246">bug 818246</a>.</li>
-<li>Mike Shal converted MODULE in
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844654">bug 844654</a>.</li>
-<li>Mike Shal converted EXPORTS in
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=846634">bug 846634</a>.</li>
-<li>Joey Armstrong converted xpcshell test manifests in
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844655">bug 844655</a>.</li>
-<li>Brian O'Keefe converted PROGRAM in
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=862986">bug 862986</a>.</li>
-<li>Mike Shal is about to land conversion of CPPSRCS in
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=864774">bug 864774</a>.</li>
-</ul>
-<h2>Non-recursive XPIDL generation</h2>
-<p>In <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=850380">bug 850380</a>
-I'm trying to land non-recursive building of XPIDL files. As part of
-this I'm trying to combine the generation of .xpt and .h for each input
-.idl file into a single process call because profiling revealed that
-parsing the IDL consumes most of the CPU time. This shaves a few dozen
-seconds off of build times.</p>
-<p>I have encounterd multiple pymake bugs when developing this patch, which
-is the primary reason it hasn't landed yet.</p>
-<h2>WebIDL refactoring</h2>
-<p>I was looking at my build logs and noticed WebIDL generation was taking
-longer than I thought it should. I filed
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=861587">bug 861587</a> to
-investigate making it faster. While my initial profiling turned out to
-be wrong, Boris Zbarsky looked into things and discovered that the
-serialization and deserialization of the parser output was extremely
-slow. He is currently trying to land a refactor of how WebIDL bindings
-are handled. The early results look <strong>very</strong> promising.</p>
-<p>I think the bug is a good example of the challenges we face improving
-the build system, as Boris can surely attest.</p>
-<h2>Test directory reorganization</h2>
-<p>Joel Maher is injecting sanity into the naming scheme of test
-directories in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=852065">bug 852065</a>.</p>
-<h2>Manifests for mochitests</h2>
-<p>Jeff Hammel, Joel Maher, Ted Mielczarek, and I are working out using
-manifests for mochitests (like xpcshell tests) in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=852416">bug 852416</a>.</p>
-<h2>Mach core is now a standalone package</h2>
-<p>I extracted the mach core to a
-<a href="https://github.com/indygreg/mach">standalone repository</a> and
-<a href="https://pypi.python.org/pypi/mach/">added it to PyPI</a>.</p>
-<p>Mach now <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=856392">categorizes</a>
-commands in its help output.</p>
-<h2>Requiring Python 2.7.3</h2>
-<p>Now that the Windows build environment ships with Python 2.7.4, I've
-filed <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=870420">bug 870420</a>
-to require Python 2.7.3+ to build the tree. We already require
-Python 2.7.0+. I want to bump the point release because there are
-<a href="http://hg.python.org/cpython/file/d46c1973d3c4/Misc/NEWS">many</a> small
-bug fixes in 2.7.3, especially around Python 3 compatibility.</p>
-<p>This is currently blocked on RelEng rolling out 2.7.3 to all the
-builders.</p>
-<h2>Eliminating master xpcshell manifest</h2>
-<p>Now that xpcshell test manifests are defined in moz.build files, we
-theoretically don't need the master manifest. Joshua Cranmer is working
-on removing them in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=869635">bug 869635</a>.</p>
-<h2>Enabling GTests and dual linking libxul</h2>
-<p>Benoit Gerard and Mike Hommey are working in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=844288">bug 844288</a> to
-dual link libxul so GTests can eventually be enabled and executed as
-part of our automation.</p>
-<p>This will regress build times since we need to link libxul twice. But,
-giving C++ developers the ability to write unit tests with a real
-testing framework is worth it, in my opinion.</p>
-<h2>ICU landing</h2>
-<p>ICU was briefly enabled in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=853301">bug 853301</a> but
-then backed out because it broke cross-compiling. It should be on track
-for enabling in Firefox 24.</p>
-<h2>Resource monitoring in mozbase</h2>
-<p>I <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=802420">gave mozbase</a>
-a class to record system resource usage. I plan to eventually hook this
-up to the build system so the build system records how long it took to
-perform key events. This will give us better insight into slow and
-inefficient parts of the build and will help us track build system speed
-improvements over time.</p>
-<h2>Sorted lists in moz.build files</h2>
-<p>I'm working on requiring lists in moz.build be sorted. Work is happening
-in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=863069">bug 863069</a>.</p>
-<p>This idea started as a suggestion on the dev-platform list. If anyone
-has more great ideas, don't hold them back!</p>
-<h2>Smartmake added to mach</h2>
-<p>Nicholas Alexander
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=677452">taught mach</a> how
-to build intelligently by importing some of Josh Matthews' smartmake
-tool's functionality into the tree.</p>
-<h2>Source server fixed</h2>
-<p>Kyle Huey and Ted Mielczarek
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=846864">collaborated</a> to
-fix the source server.</p>
-<h2>Auto clobber functionality</h2>
-<p>Auto clobber functionality was added to the tree. After flirting briefly
-with on-by-default, we changed it to opt-in. When you encounter it, it
-will tell you how to enable it.</p>
-<h2>Faster clobbers on automation</h2>
-<p>I was looking at build logs and identified we were inefficiently
-performing clobber.</p>
-<p>Massimo Gervasini and Chris AtLee
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=851270">deployed changes</a>
-to automation to make it more efficient. My measurements showed a
-Windows try build that took 15 fewer minutes to start - a <em>huge</em>
-improvement.</p>
-<h2>Upgrading to Mercurial 2.5.4</h2>
-<p>RelEng is <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=741353">tracking</a>
-the global deployment of Mercurial 2.5.4. hg.mozilla.org is
-currently running 2.0.2 and automation is all over the map. The upgrade
-should make Mercurial operations faster and more robust across the
-board.</p>
-<p>I'm considering adding code to mach or the build system that prompts the
-user when her Mercurial is out of date (since an out of date Mercurial
-can result in a sub-par user experience).</p>
-<h2>Parallelize reftests</h2>
-<p>Nathan Froyd is
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=813742">leading an effort</a>
-to parallelize reftest execution. If he pulls this off, it could shave
-hours off of the total automation load per checkin. Go Nathan!</p>
-<h2>Overhaul of MozillaBuild in the works</h2>
-<p>I am mentoring a pair of interns this summer. I'm still working out the
-final set of goals, but I'm keen to have one of them overhaul the
-MozillaBuild Windows development environment. Cross your fingers.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/13/build-system-status-update-2013-05-14#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../13">« Previous Page</a>
   --  
