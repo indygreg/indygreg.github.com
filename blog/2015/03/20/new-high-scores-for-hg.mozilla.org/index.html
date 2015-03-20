@@ -19,6 +19,7 @@ Released   : 20101114
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     
   <title>Gregory Szorc's Digital Home
+  | New High Scores for hg.mozilla.org
 </title>
 <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
 <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
@@ -49,7 +50,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="new-high-scores-for-hg.mozilla.org"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/03/20/new-high-scores-for-hg.mozilla.org" rel="bookmark" title="Permanent Link to New High Scores for hg.mozilla.org">New High Scores for hg.mozilla.org</a></h2>
@@ -121,76 +122,12 @@ for the current configuration of hg.mozilla.org. Cause and effect.</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/20/new-high-scores-for-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="network-events"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/03/18/network-events" rel="bookmark" title="Permanent Link to Network Events">Network Events</a></h2>
-  <small>March 18, 2015 at 02:25 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/03/18/network-events#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The Firefox source repositories and automation have been closed the past
-few days due to a couple of outages.</p>
-<p>Yesterday, aggregate CPU usage on many of the machines in the hg.mozilla.org
-cluster hit 100%. Previously, whenever hg.mozilla.org was under high load,
-we'd run out of network bandwidth before we ran out of CPU on the machines.
-In other words, Mercurial was generating data faster than the network could
-accept it.</p>
-<p>When this happened, the service started issuing HTTP 503 Service Not
-Available responses. This is the universal server signal for <em>I'm down, go
-away</em>. Unfortunately, not all clients did this.</p>
-<p>Parts of Firefox's release automation retried failing requests
-immediately, or with insufficient jitter in their backoff interval.
-Actively retrying requests against a server that's experiencing load
-issues only makes the problem worse. This effectively prolonged the
-outage.</p>
-<p>Today, we had a similar but different network issue. The load balancer
-fronting hg.mozilla.org can only handle so much bandwidth. Today, we hit
-that limit. The load balancer started throttling connections. Load on
-hg.mozilla.org skyrocketed and request latency increased. From the
-perspective of clients, the service grinded to a halt.</p>
-<p>hg.mozilla.org was partially sharing a load balancer with
-ftp.mozilla.org. That meant if one of the services experienced very high
-load, the other service could effectively be <em>locked out</em> of bandwidth.
-We saw this happening this morning. ftp.mozilla.org load was high (it
-looks like downloads of Firefox Developer Edition are a major
-contributor - these don't go through the CDN for reasons unknown to me)
-and there wasn't enough bandwidth to go around.</p>
-<p>Separately today, hg.mozilla.org again hit 100% CPU. At that time, it
-also set a new record for network throughput: ~3 Gbps. It normally
-consumes between 200 and 500 Mbps, with periodic spikes to 750 Mbps.
-(Yesterday's event saw a spike to around ~2 Gbps.)</p>
-<p>Going back through the hg.mozilla.org server logs, an offender is
-quite obvious. Before March 9, total outbound transfer for the
-<a href="https://hg.mozilla.org/build/tools/">build/tools</a> repo was around
-1 tebibyte per day. Starting on March 9, it increased to 3 tebibytes per
-day! This is quite remarkable, as a clone of this repo is only about
-20 MiB. This means the repo was getting cloned about 150,000 times per
-day! (Note: I think all these numbers may be low by ~20% - stay tuned
-for the final analysis.)</p>
-<p>2 TiB/day is statistically significant because we transfer less than 10
-TiB/day across all of hg.mozilla.org. And, 1 TiB/day is close to 100
-Mbps, assuming requests are evenly spread out (which of course they
-aren't).</p>
-<p>Multiple things went wrong. If only one or two happened, we'd likely be
-fine. Maybe there would have been a short blip. But not the major event
-we've been firefighting the last ~24 hours.</p>
-<p>This post is only a summary of what went wrong. I'm sure there will be a
-post-mortem and that it will contain lots of details for those who want
-to know more.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/18/network-events#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/03/20/new-high-scores-for-hg.mozilla.org";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               

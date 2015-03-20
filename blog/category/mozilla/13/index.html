@@ -51,6 +51,62 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="why-firefox-builds-are-slow"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/10/01/why-firefox-builds-are-slow" rel="bookmark" title="Permanent Link to Why Firefox builds are slow">Why Firefox builds are slow</a></h2>
+  <small>October 01, 2013 at 01:30 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/10/01/why-firefox-builds-are-slow#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Many people ask/complain about Firefox builds being slow. They are slow.
+You have every right to complain.</p>
+<p>Now in the <a href="https://ci.mozilla.org/job/mozilla-central-docs/Build_Documentation/index.html">official build system docs</a>
+is a <a href="https://ci.mozilla.org/job/mozilla-central-docs/Build_Documentation/slow.html">page</a>
+explaining the major reasons why the build system is slow. I encourage
+everyone to read it. If you have any questions, ping me and I'll update
+the docs.</p>
+<p>Not yet documented there are some new insights we've been getting from
+Mike Hommey's <a href="https://groups.google.com/d/msg/mozilla.dev.platform/4dp9WTQ6F60/9ypVOMk55zkJ">terrific work</a>
+to optimize how make traversal works in the current build system.</p>
+<p>As part of that work, Mike established a new <em>compile</em> tier in the build
+system. This tier compiles C/C++ and little else. Before, C/C++
+compiling was interleaved with all the other build steps (install JS
+files, xpt processing, etc), so it was somewhat difficult to isolate the
+impact of compilation against all other build actions.</p>
+<p>Now that we have all compiling happening in one isolated phase, it's pretty
+obvious that compiling accounts for the majority of CPU and wall time in
+the build system (at least with non no-op builds). We suspected this
+before, but we didn't have concrete numbers.</p>
+<p>As I've been pulling and rebuilding inbound since this change landed,
+it's become increasing clear to me the impact of header dependency hell
+on build times. Even simple changesets touching a few .h files are
+resulting in hundreds or even thousands of C/C++ files being recompiled.
+This increases incremental build times from say 1.5 minutes to often
+over 10 minutes.</p>
+<p>With Mike Hommey's work, I feel we finally are on a path to make no-op
+build times reasonable for many developers. However, until the header
+dependency graph is significantly reduced, developers will continue to
+see excessively long build times for incremental builds, especially on
+pulls. (I notice that my daily inbound pulls take about as long as a
+clobber build, which means practically every .cpp file is invalidated
+every day due to .h changes.)</p>
+<p>Fortunately, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=785103">great work</a>
+has been happening to minimize C/C++ header dependency hell recently.
+To everyone working on that, everyone who builds Firefox owes you a
+giant <strong>thank you</strong>. However, there's much more that can be done. While
+you've made terrific progress, please don't slow down any time soon.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/01/why-firefox-builds-are-slow#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="important-ubuntu-bootstrap-update"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/09/12/important-ubuntu-bootstrap-update" rel="bookmark" title="Permanent Link to Important Ubuntu bootstrap update">Important Ubuntu bootstrap update</a></h2>
   <small>September 12, 2013 at 09:35 AM | categories: 
@@ -240,64 +296,6 @@ contributors and for taking the time to review this work.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="track-pushes-and-train-riding-with-mercurial"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial" rel="bookmark" title="Permanent Link to Track pushes and train riding with Mercurial">Track pushes and train riding with Mercurial</a></h2>
-  <small>July 25, 2013 at 01:10 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>My <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension for Firefox development</a>
-now has an initial implementation of pushlog aggregation and searching.</p>
-<p>You first start by synchronizing the pushlog data on Mozilla's servers
-with the local client:</p>
-<pre><code>hg pushlogsync
-</code></pre>
-<p>This takes a while the first time you run it because it has to download
-all the data. On subsequent runs, it only downloads new data, so it
-should be much faster.</p>
-<p>Then, you can search for the push history of a changeset:</p>
-<div class="pygments_murphy"><pre>$ hg changesetpushes -a b968708558b9
-133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
-
-Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
-http://krijnhoetmer.nl/irc-logs/css/20130205#l-1590
-http://lists.w3.org/Archives/Public/www-style/2013Feb/0392.html
-
-Note that this patch depends on signed integer overflow behavior in C++,
-which I believe is portable despite being unspecified.
-Tree      Date                Username              Build Info
-inbound   2013-02-21T18:12:57 dbaron@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=85b91048c1cd
-central   2013-02-22T09:43:12 ryanvm@gmail.com      https://tbpl.mozilla.org/?tree=Mozilla-Central&amp;rev=3a7d4085787e
-build     2013-02-22T14:31:42 gszorc@mozilla.com    https://tbpl.mozilla.org/?tree=Build-System&amp;rev=3a7d4085787e
-fx-team   2013-02-25T01:04:44 ttaubert@mozilla.com  https://tbpl.mozilla.org/?tree=Fx-Team&amp;rev=31466fd86eb7
-graphics  2013-02-25T20:02:57 mwoodrow@mozilla.com  https://tbpl.mozilla.org/?tree=Graphics&amp;rev=dcf53b7140cd
-ash       2013-02-26T13:50:41 armenzg@mozilla.com   https://tbpl.mozilla.org/?tree=Ash&amp;rev=201b64ad48d8
-services  2013-02-28T09:42:45 Ms2ger@gmail.com      https://tbpl.mozilla.org/?tree=Services-Central&amp;rev=31466fd86eb7
-aurora    2013-04-01T13:50:56 bbajaj@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Aurora&amp;rev=60a3f369ccf0
-beta      2013-05-13T09:59:38 lsblakk@mozilla.com   https://tbpl.mozilla.org/?tree=Mozilla-Beta&amp;rev=60a3f369ccf0
-release   2013-06-17T15:53:19 akeybl@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Release&amp;rev=c54e3363712e
-</pre></div>
-
-<p>(The <em>-a</em> argument prints all trees instead of just the release trees).</p>
-<p>I'd like to integrate bug tracking into the mix to facilitate
-answering questions like <em>when did bug 123456 ride the trains</em>.</p>
-<p>I'd also like to integrate release versions and build IDs into the mix.
-For example, when I look up a changeset, I want to know the first build
-on the Nightly, Aurora, Beta, and Release channels that change was
-included in.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/12">« Previous Page</a>
   --  

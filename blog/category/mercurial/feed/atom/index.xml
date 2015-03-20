@@ -7,12 +7,81 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-03-18T21:26:00Z</updated>
+  <updated>2015-03-20T03:22:38Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[New High Scores for hg.mozilla.org]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/03/20/new-high-scores-for-hg.mozilla.org" />
+    <id>http://gregoryszorc.com/blog/2015/03/20/new-high-scores-for-hg.mozilla.org</id>
+    <updated>2015-03-20T20:20:00Z</updated>
+    <published>2015-03-20T20:20:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[New High Scores for hg.mozilla.org]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/03/20/new-high-scores-for-hg.mozilla.org"><![CDATA[<p>It's been a <a href="/blog/2015/03/18/network-events/">rough week</a>.</p>
+<p>The very short summary of events this week is that
+Firefox's release automation has been performing a
+denial of service attack against
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a>.</p>
+<p>On the face of it, this is nothing new. The Firefox release automation
+is by far the top consumer of hg.mozilla.org data, requesting several
+terabytes per day via several million HTTP requests from thousands of
+machines in multiple data centers. The very nature of their existence
+makes them a significant denial of service threat.</p>
+<p>Lots of things went wrong this week. While a post mortem will shed
+light on them, many fall under the umbrella of <em>Firefox release
+automation was making more requests than it should have and was doing
+so in a way that increased the chances of a prolonged service outage.</em>
+This resulted in the hg.mozilla.org servers working harder than they
+ever have. As a result, we have some new <em>high scores</em> to share.</p>
+<ul>
+<li>
+<p>On UTC day March 19, hg.mozilla.org transferred 7.4 TiB of data.
+  This is a significant increase from the ~4 TiB we expect on a typical
+  weekday. (Even more significant when you consider that most load is
+  generated during peak hours.)</p>
+</li>
+<li>
+<p>During the 1300 UTC hour of March 17, the cluster received 1,363,628
+  HTTP requests. No HTTP 503 Service Not Available errors were
+  encountered in that window! 300,000 to 400,000 requests per hour is
+  typical.</p>
+</li>
+<li>
+<p>During the 0800 UTC hour of March 19, the cluster transferred 776 GiB
+  of repository data. That comes out to at least 1.725 Gbps on average
+  (I didn't calculate TCP and other overhead). Anything greater than 250
+  GiB per hour is not very common. No HTTP 503 errors were served from
+  the origin servers during this hour!</p>
+</li>
+</ul>
+<p>We encountered many periods where hg.mozilla.org was operating more than
+twice its normal and expected operating capacity and it was able to
+handle the load just fine. As a server operator, I'm proud of this.
+The servers were provisioned beyond what is normally needed of them and
+it took a truly exceptional event (or two) to bring the service down.
+This is generally a good way to do hosted services (you rarely want to be
+barely provisioned because you fall over at the slighest change and you
+don't want to be grossly over-provisioned because you are wasting money
+on idle resources).</p>
+<p>Unfortunately, the hg.mozilla.org service did fall over. Multiple times,
+in fact. There is room to improve. As proud as I am that the service
+operated well beyond its expected limits, I can't help but feel ashamed
+that it did eventual cave in under even extreme load and that people are
+probably making mis-informed general assumptions like <em>Mercurial can't
+scale</em>. The simple fact of the matter is that clients cumulatively
+generated an exceptional amount of traffic to hg.mozilla.org this week.
+All servers have capacity limits. And this week we encountered the limit
+for the current configuration of hg.mozilla.org. Cause and effect.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -1448,34 +1517,5 @@ the weeks of people time invested into improving the state of testing
 was well spent and will pay enormous dividends going forward. Looking
 back, the mountain of technical debt now looks like a mole hill. I feel
 good knowing that I played a part in making this change.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Mozilla Mercurial Statistics]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2014/09/30/mozilla-mercurial-statistics" />
-    <id>http://gregoryszorc.com/blog/2014/09/30/mozilla-mercurial-statistics</id>
-    <updated>2014-09-30T13:17:00Z</updated>
-    <published>2014-09-30T13:17:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Mozilla Mercurial Statistics]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2014/09/30/mozilla-mercurial-statistics"><![CDATA[<p>I recently gained SSH access to Mozilla's Mercurial servers. This allows
-me to run some custom queries directly against the data. I was
-interested in some high-level numbers and thought I'd share the results.</p>
-<p>hg.mozilla.org hosts a total of 3,445 repositories. Of these, there are
-1,223 distinct root commits (i.e. distinct graphs). Altogether, there
-are 32,123,211 commits. Of those, there are 865,594 distinct commits (not
-double counting commits that appear in multiple repositories).</p>
-<p>We have a high ratio of total commits to distinct commits (about 37:1).
-This means we have high duplication of data on disk. This basically
-means a lot of repos are clones/forks of existing ones. No big surprise
-there.</p>
-<p>What is surprising to me is the low number of total distinct commits. I
-was expecting the number to run into the millions. (Firefox itself
-accounts for ~240,000 commits.) Perhaps a lot of the data is sitting in
-Git, Bitbucket, and GitHub. Sounds like a good data mining expedition...</p>]]></content>
   </entry>
 </feed>
