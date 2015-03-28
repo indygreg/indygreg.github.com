@@ -51,6 +51,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="commit-part-numbers-and-mozreview"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/27/commit-part-numbers-and-mozreview" rel="bookmark" title="Permanent Link to Commit Part Numbers and MozReview">Commit Part Numbers and MozReview</a></h2>
+  <small>January 27, 2015 at 08:17 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>It is common for commit messages in Firefox to contains strings like
+<em>Part 1</em>, <em>Part 2</em>, etc. See
+<a href="https://hg.mozilla.org/projects/build-system/pushloghtml?changeset=5cb8bcab09cc">this push</a>
+for <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">bug 784841</a>
+for an extreme multi-part example.</p>
+<p>When code review is conducted in Bugzilla, these identifiers are
+necessary because Bugzilla orders attachments/patches in the order they
+were updated or their patch title (I'm not actually sure!). If part
+numbers were omitted, it could be very confusing trying to figure out
+which order patches should be applied in.</p>
+<p>However, when code review is conducted in
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>,
+<strong>there is no need for explicit part numbers to convey ordering</strong> because
+the ordering of commits is implicitly defined by the repository history
+that you pushed to MozReview!</p>
+<p>I argue that if you are using MozReview, you should stop writing <em>Part
+N</em> in your commit messages, as it provides little to no benefit.</p>
+<p>I, for one, welcome this new world order: I've previously wasted a lot
+of time rewriting commit messages to reflect new part ordering after
+doing history rewriting. With MozReview, that overhead is gone and I
+barely pay a penalty for rewriting history, something that often
+produces a more reviewable series of commits and makes reviewing
+and landing a complex patch series significantly easier.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="automatic-python-static-analysis-on-mozreview"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/24/automatic-python-static-analysis-on-mozreview" rel="bookmark" title="Permanent Link to Automatic Python Static Analysis on MozReview">Automatic Python Static Analysis on MozReview</a></h2>
   <small>January 24, 2015 at 11:30 PM | categories: 
@@ -499,56 +541,6 @@ enjoy some curated Mercurial documentation!</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/15/modern-mercurial-documentation-for-mozillians#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="major-bzexport-updates"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/01/13/major-bzexport-updates" rel="bookmark" title="Permanent Link to Major bzexport Updates">Major bzexport Updates</a></h2>
-  <small>January 13, 2015 at 03:55 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The <em>bzexport</em> Mercurial extension - an extension that enables you to
-easily create new Bugzilla bugs and upload patches to Bugzilla for
-review - just received some
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1033394">major updates</a>.</p>
-<p>First, we now have automated test coverage of bzexport! This is built on
-top of the version control test harness I
-<a href="/blog/2014/10/14/robustly-testing-version-control-at-mozilla/">previously blogged about</a>.
-As part of the tests, we start Docker containers that run the same code
-that's running on <a href="https://bugzilla.mozilla.org/">bugzilla.mozilla.org</a>,
-so interactions with Bugzilla are properly tested. This is much, much
-better than mocking HTTP requests and responses because if Bugzilla
-changes, our tests will detect it. Yay continuous integration.</p>
-<p>Second, bzexport now uses Bugzilla' REST API instead of the legacy bzAPI
-endpoint for all but 1 HTTP request. This should make BMO maintainers
-very happy.</p>
-<p>Third and finally, bzexport now uses shared code for obtaining Bugzilla
-credentials. The behavior is
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/auth.html">documented</a>,
-of course. Behavior is <strong>not backwards compatible</strong>. If you were using some
-old configuration values, you will now see warnings when running bzexport.
-These warnings are actionable, so I shouldn't need to describe them
-here.</p>
-<p>Please obtain the new code by pulling the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository. Or, if you have a Firefox clone, run <em>mach mercurial-setup</em>.</p>
-<p>If you find any regressions, file a bug in the
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20bzexport">Developers Services :: Mercurial: bzexport</a>
-component and have it depend on
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1033394">bug 1033394</a>.</p>
-<p>Thanks go out to Steve Fink, Ed Morley, and Ted Mielczarek for looking
-at the code.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/1">« Previous Page</a>
   --  
