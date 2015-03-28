@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-03-28T18:46:40Z</updated>
+  <updated>2015-03-28T19:41:10Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -54,7 +54,7 @@ per platform/project -&gt; 3 Git repos. Initially no code sharing, so
 no problem. Over time, code sharing between all repos. Lots of code
 copying and confusion as to what is where and who owns what.</p>
 <p>Facebook is weeks away from completing their migration to
-consolidate big three repos to a monorepo.</p>
+consolidate big three repos to a Mercurial monorepo.</p>
 <p>Reasons:</p>
 <ol>
 <li>Easier code sharing.</li>
