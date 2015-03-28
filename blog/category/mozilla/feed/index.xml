@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sat, 28 Mar 2015 19:41:10 GMT</pubDate>
+    <pubDate>Sat, 28 Mar 2015 21:37:50 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -49,8 +49,9 @@ pushed to Subversion under the hood.</p>
 per platform/project -&gt; 3 Git repos. Initially no code sharing, so
 no problem. Over time, code sharing between all repos. Lots of code
 copying and confusion as to what is where and who owns what.</p>
-<p>Facebook is weeks away from completing their migration to
-consolidate big three repos to a Mercurial monorepo.</p>
+<p>Facebook is mere weeks away from completing their migration to
+consolidate the big three repos to a Mercurial monorepo. (See also
+<a href="/blog/2014/09/09/on-monolithic-repositories/">my post about monorepos</a>.)</p>
 <p>Reasons:</p>
 <ol>
 <li>Easier code sharing.</li>
@@ -136,10 +137,11 @@ review time.</p>
 <p>"It is not OK at Facebook to land a diff without using Landcastle."
 (Read: developers don't push directly to the master repo.)</p>
 <p>Once Landcastle lands something, it runs tests again. If an issue
-is found, a (Phabricator) task is filed. Task can be "push blocking."
+is found, a task is filed. Task can be "push blocking."
 Code won't ship to users until the "push blocking" issue resolved.
-(I guess they don't do backouts? I guess they rely on catching all
-serious issues before a backout would be necessary?)</p>
+(Tweets confirm they do backouts "fairly aggressively." A valid
+resolution to a push blocking task is to backout. But fixing forward
+is fine as well.)</p>
 <p>After a while, branch cut occurs. Some cherry picks onto release
 branches.</p>
 <p>In addition to diff-based testing, they do continuous testing runs.
@@ -166,7 +168,9 @@ efficiency is the key thing that your infrastructure teams should be
 striving for. This is why at Facebook we have some of our top
 engineers working on developer infrastructure."</strong> (Preach it.)</p>
 <p>Excellent talk. <strong>Mozillians doing infra work or who are in charge
-of head count for infra work should watch this video.</strong></p>]]></content:encoded>
+of head count for infra work should watch this video.</strong></p>
+<p><em>Update 2015-03-28 21:35 UTC - Clarified some bits in response to
+new info Tweeted at me. Added link to my monorepos blog post.</em></p>]]></content:encoded>
     </item>
     <item>
       <title>New High Scores for hg.mozilla.org</title>
