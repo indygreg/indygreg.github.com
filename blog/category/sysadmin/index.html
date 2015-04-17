@@ -51,6 +51,117 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="my-current-thoughts-on-system-administration"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/04/17/my-current-thoughts-on-system-administration" rel="bookmark" title="Permanent Link to My Current Thoughts on System Administration">My Current Thoughts on System Administration</a></h2>
+  <small>April 17, 2015 at 03:35 PM | categories: 
+
+<a href='/blog/category/sysadmin'>sysadmin</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/04/17/my-current-thoughts-on-system-administration#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I attended PyCon last week. It's a great conference. You should attend.
+While I should write up a detailed trip report, I wanted to quickly
+share one of my takeaways.</p>
+<p><a href="http://www.ansible.com/home">Ansible</a> was talked about a lot at PyCon.
+Sitting through a few presentations and talking with others helped me
+articulate why I've been drawn to Ansible (over say Puppet, Chef, Salt,
+etc) lately.</p>
+<p>First, Ansible doesn't require a central server. Administration is done
+remotely Ansible establishes a SSH connection to a remote machine and
+does stuff. Having Ruby, Python, support libraries, etc installed on
+production systems just for system administration never really jived
+with me. I love Ansible's default hands off approach. (Yes, you can use
+a central server for Ansible, but that's not the default behavior. While
+tools like Puppet could be used without a central server, it felt like
+they were optimized for central server use and thus local mode felt
+awkward.)</p>
+<p>Related to central servers, I never liked how that model consists of
+clients periodically polling for and applying updates. I like the idea
+of immutable server images and periodic updates work against this goal.
+The central model also has a major bazooka pointed at you: at any time, you
+are only one mistake away from completely hosing every machine doing
+continuous polling. e.g. if you accidentally update firewall configs and
+lock out central server and SSH connectivity, every machine will pick up
+these changes during periodic polling and by the time anyone realizes
+what's happened, your machines are all effectively bricked. (Yes, I've
+seen this happen.) I like having humans control exactly when my systems
+apply changes, thank you. I concede periodic updates and central control
+have some benefits.</p>
+<p>Choosing not to use a central server by default means that hosts are
+modeled as a set of applied Ansible playbooks, not necessarily as a host
+with a set of Ansible playbooks attached. Although, Ansible does support
+both models. I can easily apply a playbook to a host in a one-off
+manner. This means I can have playbooks represent common, one-off tasks
+and I can easily run these tasks without having to muck around with the
+host to playbook configuration. More on this later.</p>
+<p>I love the simplicity of Ansible's configuration. It is just YAML files.
+Not some Ruby-inspired DSL that takes hours to learn. With Ansible, I'm
+learning what modules are available and how they work, not complicated
+syntax. Yes, there is complexity in Ansible's configuration. But at
+least I'm not trying to figure out the file syntax as part of learning
+it.</p>
+<p>Along that vein, I appreciate the readability of Ansible playbooks.
+They are simple, linear lists of tasks. Conceptually, I love the promise
+of full dependency graphs and concurrent execution. But I've spent hours
+debugging race conditions and cyclic dependencies in Puppet that I'm left
+unconvinced the complexity and power is worth it. I do wish Ansible
+could run faster by running things concurrently. But I think they made
+the right decision by following KISS.</p>
+<p>I enjoy how Ansible playbooks are effectively high-level scripts. If I
+have a shell script or block of code, I can usually port it to Ansible
+pretty easily. One pass to do the conversion 1:1. Another pass to
+Ansibilize it. Simple.</p>
+<p>I love how Ansible playbooks can be checked in to source control and
+live next to the code and applications they manage. I frequently see
+people maintain separate source control repositories for configuration
+management from the code it is managing. This always bothered me. When I
+write a service, I want the code for deploying and managing that service
+to live next to it in version control. That way, I get the configuration
+management and the code versioned in the same timeline. If I check out a
+release from 2 years ago, I should still be able to use its exact
+configuration management code. This becomes difficult to impossible when
+your organization is maintaining configuration management code in a
+separate repository where a central server is required to do
+deployments (see Puppet).</p>
+<p>Before PyCon, I was having an internal monolog about adopting the policy
+that all changes to remote servers be implemented with Ansible
+playbooks. I'm pleased to report that a fellow contributor to the
+Mercurial project has adopted this workflow himself and he only has
+great things to say! So, starting today, I'm going to try to enforce
+that every change I make to a remote server is performed via Ansible and
+that the Ansible playbooks are checked into version control. The Ansible
+playbooks will become implicit documentation of every process involved
+with maintaining a server.</p>
+<p>I've already applied this principle to deploying MozReview. Before,
+there was some internal Mozilla wiki documenting commands to execute in
+a terminal to deploy MozReview. I have replaced that documentation with
+a one-liner that invokes Ansible. And, the Ansible files are now
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/1e85a23c4175/ansible">in a public repository</a>.</p>
+<p>If you poke around that repository, you'll see that I have Ansible
+playbooks referencing Docker. I have Ansible provisioning Docker images
+used by the test and development environment. That same Ansible code
+is used to configure our production systems (or is at least in the
+process of being used in that way). Having dev, test, and prod using the
+same configuration management has been a pipe dream of mine and I
+finally achieved it! I attempted this before with Puppet but was unable
+to make it work just right. The flexibility that Ansible's design
+decisions have enabled has made this finally possible.</p>
+<p>Ansible is my go to system management tool right now. And I still feel
+like I have a lot to learn about its hidden powers.</p>
+<p>If you are still using Puppet, Chef, or other tools invented in previous
+generations, I urge you to check out Ansible. I think you'll be
+pleasantly surprised.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/04/17/my-current-thoughts-on-system-administration#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="deterministic-and-minimal-docker-images"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/10/13/deterministic-and-minimal-docker-images" rel="bookmark" title="Permanent Link to Deterministic and Minimal Docker Images">Deterministic and Minimal Docker Images</a></h2>
   <small>October 13, 2014 at 04:50 PM | categories: 

@@ -51,6 +51,62 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="branch-cleanup-in-firefox-repositories"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/28/branch-cleanup-in-firefox-repositories" rel="bookmark" title="Permanent Link to Branch Cleanup in Firefox Repositories">Branch Cleanup in Firefox Repositories</a></h2>
+  <small>January 28, 2015 at 08:35 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mozilla has historically done some funky things with the Firefox
+Mercurial repositories. One of the things we've done is create
+a bunch of named branches to track the Firefox release process.
+These are branch names like <em>GECKO20b12_2011022218_RELBRANCH</em>.</p>
+<p>Over in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=927219">bug 927219</a>,
+we started the process of cleaning up some cruft left over from
+many of these old branches.</p>
+<p>For starters, the old named branches in the Firefox repositories
+are being actively closed. When you <em>hg commit --close-branch</em>,
+Mercurial creates a special commit that says <em>this branch is closed</em>.
+Branches that are closed are automatically hidden from the output
+of <em>hg branches</em> and <em>hg heads</em>. As a result, the output of these
+commands is now much more usable.</p>
+<p>Closed branches still constitute <em>heads</em> on the DAG. And several heads
+lead to degraded performance in some situations (notably push and pull
+times - the same thing happens in Git). I'd like to eventually merge
+these old heads so that repositories only have 1 or a small number of
+DAG heads. However, extra care must be taken before that step. Stay
+tuned.</p>
+<p>Anyway, for the average person reading, you probably won't be impacted
+by these changes at all. The greatest impact will be from the person who
+lands the first change on top of any repository whose last commit
+was a branch close. If you commit on top of the <em>tip</em> commit,
+you'll be committing on top of a previously closed branch! You'll
+instead want to <em>hg up default</em> after you pull to ensure you are on
+the proper DAG head! And even then, if you have local commits, you may
+not be based on top of the appropriate commit! A simple run of
+<em>hg log --graph</em> should help you decipther the state of the world.
+(Please note that the usability problems around discovering the
+appropriate head to land on are a result of our poor branching strategy
+for the Firefox repositories. We probably should have named branches
+tracking the active Gecko releases. But that ship sailed years ago
+and fixing that is pretty far down the priority list. Wallpapering
+over things with the
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/firefoxtree.html">firefoxtree extensions</a>
+is my recommended solution until matters are fixed.)</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="commit-part-numbers-and-mozreview"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/27/commit-part-numbers-and-mozreview" rel="bookmark" title="Permanent Link to Commit Part Numbers and MozReview">Commit Part Numbers and MozReview</a></h2>
   <small>January 27, 2015 at 08:17 PM | categories: 
@@ -501,46 +557,6 @@ I encourage you to wait for that post to be published. Stay tuned.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="modern-mercurial-documentation-for-mozillians"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/01/15/modern-mercurial-documentation-for-mozillians" rel="bookmark" title="Permanent Link to Modern Mercurial Documentation for Mozillians">Modern Mercurial Documentation for Mozillians</a></h2>
-  <small>January 15, 2015 at 02:45 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/01/15/modern-mercurial-documentation-for-mozillians#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mozilla's Mercurial documentation has historically been pretty bad. The
-documentation on MDN (which I refuse to link to) is horribly disjointed
-and contains a lot of outdated recommendations. I've made attempts to
-burn some of it to the ground, but it is just too overwhelming.</p>
-<p>I've been casually creating my own Mercurial documentation tailored for
-Mozillians. It's called
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/index.html">Mercurial for Mozillians</a>.</p>
-<p>It started as a way to document extensions inside the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-repository. But, it has since evolved to cover other topics, like how to
-install Mercurial, how to develop using bookmarks, and how to interact
-with a unified Firefox repository. The documentation is nowhere near
-complete. But it already has some very useful content beyond what MDN
-offers.</p>
-<p>I'm not crazy about the idea of having generic Mercurial documentation
-on a Mozilla domain (this should be part of the official Mercurial
-documentation). Nor am I crazy about moving content off MDN. I'm sure
-content will move to its appropriate location later. Until then,
-enjoy some curated Mercurial documentation!</p>
-<p>If you would like to contribute to Mercurial for Mozillians,
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/contributing.html">read the docs</a>.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/15/modern-mercurial-documentation-for-mozillians#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../1">« Previous Page</a>
   --  

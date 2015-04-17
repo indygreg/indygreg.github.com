@@ -51,6 +51,69 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="a-crazy-day"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/12/04/a-crazy-day" rel="bookmark" title="Permanent Link to A Crazy Day">A Crazy Day</a></h2>
+  <small>December 04, 2014 at 11:34 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/12/04/a-crazy-day#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Today was one crazy day.</p>
+<p>The build peers all sat down with Release Engineering and Axel Hecht
+to talk l10n packaging. <a href="http://glandium.org/">Mike Hommey</a> has a
+Q1 goal to fix l10n packaging. There is buy-in from Release
+Engineering on enabling him in his quest to slay dragons. This
+will make builds faster and will pay off a massive mountain of
+technical debt that plagues multiple groups at Mozilla.</p>
+<p>The Firefox build system contributors sat down with a bunch of
+Rust people and we talked about what it would take to integrate
+Rust into the Firefox build system and the path towards shipping
+a Rust component in Firefox. It sounds like that is going to
+happen in 2015 (although we're not yet sure what component will
+be written in Rust). I consider it an achievement that the gathering
+of both groups didn't result in infinite rabbit holing about
+system architectures, toolchains, and the build people telling
+<em>horror stories</em> to wide-eyed Rust people about the crazy things
+we have to do to build and ship Firefox. Believe me, the
+temptation was there.</p>
+<p>People interested in the build system all sat down and reflected on
+the state of the build system and where we want to go. We agreed
+to create a build mode optimized for non-Gecko developers
+that downloads pre-built binaries - avoiding ~10 minutes of
+C/C++ compile time for builds. Mark my words, this will be one
+of those changes that once deployed will cause people to say
+"I can't believe we went so long without this."</p>
+<p>I joined Mark Côté and others to talk about priorities for
+MozReview. We'll be making major improvements to the UX and
+integrating static analysis into reviews. Push a patch for
+review and have machines do some of the work that humans are
+currently doing! We're tentatively planning a get-together in
+Toronto in January to sprint towards awesomeness.</p>
+<p>I ended the day by giving a long and rambling presentation about
+version control, with emphasis on Mercurial. I can't help but
+feel that I talked way too much. There's just so much knowledge
+to cover. A few people told me afterwards they learned a lot. I'd
+appreciate feedback if you attended. Anyway, I got a few nods
+from people as I was saying some somewhat contentious things.
+It's always good to have validation that I'm not on an island
+when I say crazy things.</p>
+<p>I hope to spend Friday chasing down loose ends from the week.
+This includes talking to some security gurus about another crazy
+idea of mine to integrate PGP into the code review and code
+landing workflow for Firefox. I'll share more details once
+I get a professional opinion on the security front.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/04/a-crazy-day#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="the-mozlandia-tree-outage-and-code-review"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review" rel="bookmark" title="Permanent Link to The Mozlandia Tree Outage and Code Review">The Mozlandia Tree Outage and Code Review</a></h2>
   <small>December 04, 2014 at 08:40 AM | categories: 
@@ -391,393 +454,6 @@ patch. Instructions to do that are in the documentation.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/10/30/soft-launch-of-mozreview#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="implications-of-using-bugzilla-for-firefox-patch-development"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development" rel="bookmark" title="Permanent Link to Implications of Using Bugzilla for Firefox Patch Development">Implications of Using Bugzilla for Firefox Patch Development</a></h2>
-  <small>October 27, 2014 at 03:27 PM | categories: 
-
-<a href='/blog/category/review-board'>Review Board</a>, <a href='/blog/category/bugzilla'>Bugzilla</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
- | <a href="http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mozilla is very close to rolling out a new
-<a href="http://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">code review tool based on Review Board</a>.
-When I became involved in the project, I viewed it as an opportunity to
-start from a clean slate and design the ideal code development workflow
-for the average Firefox developer. When the design of the code review
-experience was discussed, I would push for decisions that were
-compatible with my utopian end state.</p>
-<p>As part of formulating the ideal workflows and design of the new tool,
-I needed to investigate why we do things the way we do, whether they are
-optimal, and whether they are necessary. As part of that, I spent a lot
-of time thinking about Bugzilla's role in shaping the code that goes into
-Firefox. This post is a summary of my findings.</p>
-<p>The primary goal of this post is to dissect the practices that Bugzilla
-influences and to prepare the reader for the potential to reassemble the
-pieces - to change the workflows - in the future, primarily around
-Mozilla's new code review tool. By showing that Bugzilla has influenced
-the popularization of what I consider non-optimal practices, it is my
-hope that readers start to question the existing processes and open up
-their mind to change.</p>
-<p>Since the impetus for this post in the near deployment of Mozilla's new
-code review tool, many of my points will focus on code review.</p>
-<p>Before I go into my findings, I'd like to explicitly state that while
-many of the things I'm about to say may come across as negativity
-towards Bugzilla, my intentions are not to put down Bugzilla or the
-people who maintain it. Yes, there are limitations in Bugzilla. But I
-don't think it is correct to point fingers and blame Bugzilla or its
-maintainers for these limitations. I think we got where we are following
-years of very gradual shifts. I don't think you can blame Bugzilla for
-the circumstances that led us here. Furthermore, Bugzilla maintainers
-are quick to admit the faults and limitations of Bugzilla. And, they are
-adamant about and instrumental in rolling out the new code review tool,
-which shifts code review <em>out</em> of Bugzilla. Again, my intent is not to
-put down Bugzilla. So please don't direct ire that way yourself.</p>
-<p>So, let's drill down into some of the implications of using Bugzilla.</p>
-<h2>Difficult to Separate Contexts</h2>
-<p>The stream of changes on a bug in Bugzilla (including review comments)
-is a flat, linear list of plain text comments. This works great when the
-activity of a bug follows a nice, linear, singular topic flow. However,
-real bug activity does not happen this way. All but the most trivial bugs
-usually involve multiple points of discussion. You typically have
-discussion about what the bug is. When a patch comes along, reviewer
-feedback comes in both high-level and low-level forms. Each
-item in each group is its own logical discussion thread. When patches
-land, you typically have points of discussion tracking the state of this
-patch. Has it been tested, does it need uplift, etc.</p>
-<p>Bugzilla has things like keywords, flags, comment tags, and the
-whiteboard to enable some isolation of these various contexts. However,
-you still have a flat, linear list of plain text comments that contain
-the meat of the activity. It can be extremely difficult to follow these
-many interleaved logical threads.</p>
-<p>In the context of code review, lumping all review comments into the same
-linear list adds overhead and undermines the process of landing the
-highest-quality patch possible.</p>
-<p>Review feedback consists of both high-level and low-level comments.
-High-level would be things like architecture discussions. Low-level
-would be comments on the code itself. When these two classes of comments
-are lumped together in the same text field, I believe it is easy to
-lose track of the high-level comments and focus on the low-level. After
-all, you may have a short paragraph of high-level feedback right next to
-a mountain of low-level comments. Your eyes and brain tend to gravitate
-towards the larger set of more concrete low-level comments because you
-sub-consciously want to fix your problems and that large mass of text
-represents more problems, easier problems to solve than the shorter and
-often more abstract high-level summary. You want instant gratification
-and the pile of low-level comments is just too tempting to pass up. We
-have to train ourselves to temporarily ignore the low-level comments and
-focus on the high-level feedback. This is very difficult for some people.
-It is not an ideal disposition.
-<a href="http://benjamin.smedbergs.us/blog/2014-10-22/how-i-do-code-reviews-at-mozilla/">Benjamin Smedberg's recent post on code
-review</a>
-indirectly talks about some of this by describing his rational
-approach of tackling high-level first.</p>
-<p>As review iterations occur, the bug devolves into a mix of comments
-related to high and low-level comments. It thus becomes harder and
-harder to track the current high-level state of the feedback, as they
-must be picked out from the mountain of low-level comments. If you've
-ever inherited someone else's half-finished bug, you know what I'm
-talking about.</p>
-<p>I believe that Bugzilla's threadless and contextless comment flow
-disposes us towards focusing on low-level details instead of the
-high-level. I believe that important high-level discussions aren't
-occurring at the rate they need and that technical debt increases as a
-result.</p>
-<h2>Difficulty Tracking Individual Items of Feedback</h2>
-<p>Code review feedback consists of multiple items of feedback. Each one is
-related to the review at hand. But oftentimes each item can be
-considered independent from others, relevant only to a single line or
-section of code. Style feedback is one such example.</p>
-<p>I find it helps to model code review as a tree. You start with one thing
-you want to do. That's the root node. You split that thing into multiple
-commits.  That's a new layer on your tree. Finally, each comment on those
-commits and the comments on those comments represent new layers to the tree.
-Code review thus consists of many related, but independent branches, all
-flowing back to the same central concept or goal. There is a one to many
-relationship at nearly every level of the tree.</p>
-<p>Again, Bugzilla lumps all these individual items of feedback into a
-linear series of flat text blobs. When you are commenting on code, you
-do get some code context printed out. But everything is plain text.</p>
-<p>The result of this is that tracking the progress on individual items of
-feedback - individual branches in our conceptual tree - is difficult. Code
-authors must pore through text comments and manually keep an inventory
-of their progress towards addressing the comments. Some people copy the
-review comment into another text box or text editor and delete items once
-they've fixed them locally! And, when it comes time to review the new
-patch version, reviewers must go through the same exercise in order to
-verify that all their original points of feedback have been adequately
-addressed! You've now redundantly duplicated the feedback tracking
-mechanism among at least two people. That's wasteful in of itself.</p>
-<p>Another consequence of this unstructured feedback tracking mechanism is
-that points of feedback tend to get lost. On complex reviews, you may be
-sorting through dozens of individual points of feedback. It is extremely
-easy to lose track of something. This could have disastrous
-consequences, such as the accidental creation of a 0day bug in Firefox.
-OK, that's a worst case scenario. But I know from experience that review
-comments can and do get lost. This results in new bugs being filed,
-author and reviewer double checking to see if other comments were not
-acted upon, and possibly severe bugs with user impacting behavior. In
-other words, this unstructured tracking of review feedback tends to lessen
-code quality and is thus a contributor to technical debt.</p>
-<h2>Fewer, Larger Patches</h2>
-<p>Bugzilla's user interface encourages the writing of fewer, larger
-patches. (The opposite would be many, smaller patches - sometimes
-referred to as <em>micro commits</em>.)</p>
-<p>This result is achieved by a user interface that handles multiple
-patches so poorly that it effectively discourages that approach, driving
-people to create larger patches.</p>
-<p>The stream of changes on a bug (including review comments) is
-a flat, linear list of plain text comments. This works great when
-the activity of a bug follows a nice, linear flow. However, reviewing
-multiple patches doesn't work in a linear model. If you attach multiple
-patches to a bug, the review comments and their replies for all the
-patches will be interleaved in the same linear comment list. This
-flies in the face of the reality that each patch/review is logically
-its own thread that deserves to be followed on its own. The end result
-is that it is extremely difficult to track what's going on in each
-patch's review. Again, we have different contexts - different branches
-of a tree - all living in the same flat list.</p>
-<p>Because conducting review on separate patches is so painful, people are
-effectively left with two choices: 1) write a single, monolithic patch
-2) create a new bug. Both options suck.</p>
-<p>Larger, monolithic patches are harder and slower to review. Larger
-patches require much more cognitive load to review, as the reviewer
-needs to capture the entire context in order to make a review
-determination. This takes more time. The increased surface area of the
-patch also increases the liklihood that the reviewer will find something
-wrong and will require a re-review. The added complexity of a larger
-patch also means the chances of a bug creeping in are higher, leading
-to more bugs being filed and more reviews later. The more review cycles
-the patch goes through, the greater the chances it will suffer from bit
-rot and will need updating before it lands, possibly incurring yet more
-rounds of review. And, since we measure progress in terms of code
-landing, the delay to get a large patch through many rounds of review
-makes us feel lethargic and demotivates us. <strong>Large patches have
-intrinsic properties that lead to compounding problems and increased
-development cost.</strong></p>
-<p>As bad as large patches are, they are roughly in the same badness range
-as the alternative: creating more bugs.</p>
-<p>When you create a new bug to hold the context for the review of an
-individual commit, you are doing a lot of things, very few of them
-helpful. First, you must create a new bug. There's overhead to do
-that. You need to type in a summary, set up the bug dependencies,
-CC the proper people, update the commit message in your patch, upload
-your patch/attachment to the new bug, mark the attachment on the old
-bug obsolete, etc. This is arguably tolerable, especially with tools
-that can automate the steps (although I don't believe there is a
-single tool that does all of what I mentioned automatically). But the
-badness of multiple bugs doesn't stop there.</p>
-<p><strong>Creating multiple bugs fragments the knowledge and history of your
-change and diminishes the purpose of a bug.</strong> You got in the situation
-of creating multiple bugs because you were working on a <em>single logical
-change</em>. It just so happened that you needed/wanted multiple
-commits/patches/reviews to represent that singular change. That initial
-change was likely tracked by a single bug. And now, because of
-Bugzilla's poor user interface around mutliple patch reviews, you now
-find yourself creating yet another bug. Now you have two bug
-numbers - two identifiers that look identical, only
-varying by their numeric value - referring to the same logical thing.
-We've started with a single bug number referring to your logical
-change and created what are effectively sub-issues, but allocated them
-in the same namespace as <em>normal bugs</em>. We've diminished the importance
-of the average bug. We've introduced confusion as to where one should go
-to learn about this single, logical change. <em>Should I go to bug X or bug
-Y?</em> Sure, you can likely go to one and ultimately find what you were
-looking for. But that takes more effort.</p>
-<p><strong>Creating separate bugs for separate reviews also makes refactoring
-harder.</strong> If you are going the micro commit route, chances are you do
-a lot of history rewriting. Commits are combined. Commits are split.
-Commits are reordered. And if those commits are all mapping to
-individual bugs, you potentially find yourself in a huge mess. Combining
-commits might mean resolving bugs as duplicates of each other. Splitting
-commits means creating yet another bug. And let's not forget about
-managing bug dependencies. Do you set up your dependencies so you have a
-linear, waterfall dependency corresponding to commit order? That
-logically makes sense, but it is hard to keep in sync. Or, do you
-just make all the <em>review bugs</em> depend on a single parent bug? If you do
-that, how do you communicate the order of the patches to the reviewer?
-Manually? That's yet more overhead. History rewriting - an operation
-that modern version control tools like Git and Mercurial have enabled
-to be a lightweight operation and users love because it doesn't
-constrain them to pre-defined workflows - thus become much more costly.
-The cost may even be so high that some people forego rewriting completely,
-trading their effort for some poor reviewer who has to inherit a series of
-patches that isn't organized as logically as it could be. Like larger
-patches, this increases cognitive load required to perform reviews
-and increases development costs.</p>
-<p>As you can see, reviewing multiple, smaller patches with Bugzilla often
-leads to a horrible user experience. So, we find ourselves writing
-larger, monolithic patches and living with their numerous
-deficiencies. At least with monolithic patches we have a predictable
-outcome for how interaction with Bugzilla will play out!</p>
-<p><strong>I have little doubt that large patches (whose existence is influenced
-by the UI of Bugzilla) slows down the development velocity of Firefox.</strong></p>
-<h2>Commit Message Formatting</h2>
-<p>The heavy involvement of Bugzilla in our code development
-lifecycle has influenced how we write commit messages. Let's start with
-the obvious example. Here is our standard commit message format for
-Firefox:</p>
-<p>Bug 1234 - Fix some feature foo; r=gps</p>
-<p>The bug is right there at the front of the commit message. That
-prominent placement is effectively saying <strong>the bug number is the most
-important detail about this commit - everything else is ancillary</strong>.</p>
-<p>Now, I'm sure some of you are saying, <em>but Greg, the short description
-of the change is obviously more important than the bug number</em>. You are
-right. But we've allowed ourselves to make the bug and the content
-therein more important than the commit.</p>
-<p>Supporting my theory is the commit message content following the
-first/summary line. That data is almost always - wait for it -
-<strong>nothing: we generally don't write commit messages that contain more
-than a single summary line</strong>. My repository forensics show that that
-less than 20% of commit messages to Firefox in 2014 contain multiple
-lines (this excludes merge and backout commits). (We are doing better
-than 2013 - the rate was less than 15% then).</p>
-<p>Our commit messages are basically saying, <em>here's a highly-abbreviated
-summary of the change and a pointer (a bug number) to where you can
-find out more</em>. And of course loading the bug typically reveals a mass of
-interleaved comments on various topics, hardly the high-level summary
-you were hoping was captured in the commit message.</p>
-<p>Before I go on, in case you are on the fence as to the benefit of
-detailed commit messages, please read Phabricator's recommendations on
-<a href="https://secure.phabricator.com/book/phabflavor/article/recommendations_on_revision_control/">revision control</a>
-and <a href="https://secure.phabricator.com/book/phabflavor/article/writing_reviewable_code/">writing reviewable code</a>.
-I think both write-ups are terrific and are excellent templates that
-apply to nearly everyone, especially a project as large and complex as
-Firefox.</p>
-<p>Anyway, there are many reasons why we don't capture a detailed, multi-line
-commit message. For starters, you aren't immediately rewarded for doing
-it: writing a good commit message doesn't really improve much in the short
-term (unless someone <em>yells</em> at you for not doing it). This is a generic
-problem applicable to all organizations and tools. This is a problem that
-culture must ultimately rectify. But our tools shouldn't reinforce the
-disposition towards laziness: they should reward best practices.</p>
-<p>I don't believe Bugzilla and our interactions with it do an adequate job
-rewarding good commit message writing. Chances are your mechanism for posting
-reviews to Bugzilla or posting the publishing of a commit to Bugzilla
-(pasting the URL in the simple case) brings up a text box for you to type
-<em>review notes</em>, a patch description, or extra context for the landing. These
-<em>should</em> be going in the commit message, as they are the type of high-level
-context and summarizations of choices or actions that people crave when
-discerning the history of a repository. But because that text box is there,
-taunting you with its presence, we write content there instead of in the
-commit message. Even where tools like bzexport exist to upload patches
-to Bugzilla, potentially nipping this practice in the bug, it still engages
-in frustrating behavior like reposting the same long commit message on
-every patch upload, producing unwanted bug spam. Even a tool that is
-pretty sensibly designed has an implementation detail that undermines a
-good practice.</p>
-<h2>Machine Processing of Patches is Difficult</h2>
-<p>I have a challenge for you: identify all patches currently under
-consideration for incorporation in the Firefox source tree, run static
-analysis on them, and tell me if they meet our code style policies.</p>
-<p>This should be a solved problem and deployed system at Mozilla. It
-isn't. Part of the problem is because we're using Bugzilla for
-conducting review and doing patch management. That may sound
-counter-intuitive at first: Bugzilla is a centralized service - surely we
-can poll it to discover patches and then do stuff with those patches.
-We can. In theory. Things break down very quickly if you try this.</p>
-<p>We are uploading patch files to Bugzilla. Patch files are
-representations of commits that live outside a repository. In order to
-get the full context - the result of the patch file - you need all the
-content leading up to that patch file - the repository data. When a
-naked patch file is uploaded to Bugzilla, you don't always have this
-context.</p>
-<p>For starters, you don't know with certainly which repository
-the patch belongs to because that isn't part of the standard patch
-format produced by Mercurial or Git. There are patches for various
-repositories floating around in Bugzilla. So now you need a way to
-identify which repository a patch belongs to. It is a solvable problem
-(aggregate data for all repositories and match patches based on file
-paths, referenced commits, etc), albeit one Mozilla has not yet solved
-(but should).</p>
-<p>Assuming you can identify the repository a patch belongs to, you need to
-know the parent commit so you can apply this patch. Some patches list
-their parent commits. Others do not. Even those that do may lie about
-it. Patches in MQ don't update their parent field when they are <em>pushed</em>,
-only after they are <em>refreshed</em>. You could be testing and uploading a
-patch with a different parent commit than what's listed in the patch
-file! Even if you do identify the parent commit, this commit could
-belong to another patch under consideration that's also on Bugzilla! So
-now you need to assemble a directed graph with all the patches known
-from Bugzilla applied. Hopefully they all fit in nicely.</p>
-<p>Of course, some patches don't have any metadata at all: they are just
-naked diffs or are malformed commits produced by tools that e.g. attempt
-to convert Git commits to Mercurial commits (Git users: you should be
-using hg-git to produce proper Mercurial commits for Firefox patches).</p>
-<p>Because Bugzilla is talking in terms of patch files, we often lose
-much of the context needed to build nice tools, preventing numerous
-potential workflow optimizations through automation. There are many
-things machines could be doing for us (such as looking for coding style
-violations). Instead, humans are doing this work and costing Mozilla a
-lot of time and lost developer productivity in the process. (A human
-costs ~$100/hr. A machine on EC2 is pennies per hour and should do the
-job with lower latency. In other words, you can operate over 300
-machines 24 hours a day for what you may an engineer to work an 8 hour
-shift.)</p>
-<h2>Conclusion</h2>
-<p>I have outlined a few of the side-effects of using Bugzilla as part of
-our day-to-day development, review, and landing of changes to Firefox.</p>
-<p>There are several takeways.</p>
-<p>First, one cannot argue the fact that Firefox development is bug(zilla)
-centric. Nearly every important milestone in the lifecycle of a patch
-involves Bugzilla in some way. This has its benefits and drawbacks. This
-article has identified many of the drawbacks. But before you start
-crying to expunge Bugzilla from the loop completely, consider the
-benefits, such as a place anyone can go to to add metadata or comments
-on something. That's huge. There is a larger discussion to be had here.
-But I don't want to be inviting it quite yet.</p>
-<p>A common thread between many of the points above is Bugzilla's
-unstructured and generic handling of code and metadata attached to it
-(patches, review comments, and landing information). Patches are
-attachments, which can be anything under the sun. Review comments are
-plain text comments with simple author, date, and tag metadata. Landings
-are also communicated by plain text review comments (at least
-initially - keywords and flags are used in some scenarios).</p>
-<p>By being a generic tool, Bugzilla throws away a lot of the rich metadata
-that we produce. That data is still technically there in many scenarios.
-But it becomes extremely difficult if not practically impossible for
-both humans and machines to access efficiently. We lose important
-context and feedback by <em>normalizing all this data to Bugzilla</em>. This
-data loss creates overhead and technical debt. It slows Mozilla down.</p>
-<p>Fortunately, the solutions to these problems and shortcomings are
-conceptually simple (and generally applicable): preserve rich context. In
-the context of patch distribution, push commits to a repository and tell
-someone to pull those commits. In the context of code review, create
-sub-reviews for different commits and allow tracking and easy-to-follow
-(likely threaded) discussions on found issues. Design workflow to be code
-first, not tool or bug first. Optimize workflows to minimize people time.
-Lean heavily on machines to do grunt work. Integrate issue tracking and
-code review, but not too tightly (loosely coupled, highly cohesive). Let
-different tools specialize in the handling of different forms of data:
-let code review handle code review. Let Bugzilla handle issue tracking.
-Let a landing tool handle tracking the state of landings. Use middleware
-to make them appear as one logical service if they aren't designed to be
-one from the start (such as is Mozilla's case with Bugzilla).</p>
-<p>Another solution that's generally applicable is to refine and optimize
-the whole process to land a finished commit. Your product is based on
-software. So anything that adds overhead or loss of quality in the
-process of developing that software is fundamentally a product problem
-and should be treated as such. Any time and brain cycles lost to
-development friction or bugs that arise from things like inadequate
-code reviews tools degrade the quality of your product and take away
-from the user experience. This should be plain to see. Attaching a
-cost to this to convince the business-minded folks that it is worth
-addressing is a harder matter. I find management with empathy and shared
-understanding of what amazing tools can do helps a lot.</p>
-<p>If I had to sum up the solution in one sentence, it would be: <em>invest in
-tools and developer happiness.</em></p>
-<p>I hope to soon publish a post on how Mozilla's new code review tool
-addresses many of the workflow deficiencies present today. Stay tuned.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../4">« Previous Page</a>
   --  
