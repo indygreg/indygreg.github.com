@@ -51,6 +51,538 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="analysis-of-firefox's-build-automation"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/07/16/analysis-of-firefox's-build-automation" rel="bookmark" title="Permanent Link to Analysis of Firefox's Build Automation">Analysis of Firefox's Build Automation</a></h2>
+  <small>July 16, 2013 at 06:15 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/07/16/analysis-of-firefox's-build-automation#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mozilla operates thousands of machines whose sole role is to build
+Firefox (and related applications), run tests, perform static analysis,
+etc. This is collectively referred to as the <em>Firefox/Mozilla build
+automation</em> or just <em>automation</em>. The output of all this automation
+can be seen at <a href="https://tbpl.mozilla.org/">tbpl.mozilla.org</a>.</p>
+<p>In this post, I'll give an overview of how all this automation works
+followed by a critical analysis identifying what I like and what I
+feel should be improved.</p>
+<h2>How Firefox automation works</h2>
+<p>Let's take a journey through what happens when you push a new revision
+of <a href="https://hg.mozilla.org/mozilla-central/">mozilla-central</a> (the main
+Firefox repository) to Mozilla's canonical Mercurial server. (For
+Mozilla people, this journey is roughly the same regardless of which
+automation-enabled project branch you push to.) While Firefox's
+automation infrastructure kicks off builds on
+<a href="https://tbpl.mozilla.org/">several platforms and operating systems</a>,
+for simplicity reasons, I'm going to limit low-level technical details
+to our 64-bit Linux builds.</p>
+<p>Before I begin, a disclaimer: I'm not a subject expert in much of
+what I'm about to say. There are people who spend a magnitude more time
+than myself touching the systems I'm about to describe. If I get
+something wrong, please contact me and I'll update this post.</p>
+<p>Let's begin.</p>
+<h3>Buildbot</h3>
+<p>The heart of Firefox's build automation is a piece of software called
+<a href="http://buildbot.net/">Buildbot</a>. Buildbot is essentially a glorified
+job scheduling system. I find the
+<a href="http://buildbot.net/#/basics">buildbot basics</a> covers, well, the basics
+pretty well. What you need to know is that Mozilla maintains a
+<a href="https://hg.mozilla.org/build/buildbot/">buildbot repository</a> that
+appears to contain the buildbot core plus basic customization for
+Mozilla.</p>
+<p>There are buildbot <em>masters</em> and <em>slaves</em>. <em>masters</em> do all
+the coordination and scheduling; <em>slaves</em> do all the real work (such as
+compiling Firefox). Mozilla operates a handful of masters and a few
+thousand slaves.</p>
+<p>When you push code to a project branch (like <em>mozilla-central</em>), a
+buildbot master sees the push then figures out what needs to happen. For
+<em>mozilla-central</em>, the push gets translated to a request to build on
+several different platforms. These requests then go to a scheduler
+(possibly getting collapsed into a single request). These requests then
+get turned into jobs that run on slaves.</p>
+<p>This logic mostly lives in the
+<a href="https://hg.mozilla.org/build/buildbot-configs/">buildbot-configs repository</a>.
+Of particular interest is the
+<a href="https://hg.mozilla.org/build/buildbot-configs/file/e8b27b8b7216/mozilla/config.py">config.py</a>
+file, which pretty much defines how buildbot is configured at Mozilla -
+at a high-level anyway.</p>
+<p>When a scheduled job executes, the high-level job request is converted into
+low-level actions (or <em>steps</em> in buildbot parlance) that get executed on
+slaves. For example, a request to build might clone the source
+repository, run client.mk, package the results, etc. This logic lives
+in the
+<a href="https://hg.mozilla.org/build/buildbotcustom/">buildbotcustom repository</a>.
+It's worth highlighting the
+<a href="https://hg.mozilla.org/build/buildbotcustom/file/bdcca6f7b6c2/process/factory.py">factory.py</a> file. This file contains the beef of the logic
+for converting high-level jobs into actions on slaves. Start at the
+<a href="https://hg.mozilla.org/build/buildbotcustom/file/bdcca6f7b6c2/process/factory.py#l379">MozillaBuildFactory class</a>
+class to see exactly what goes into performing a build. Then move on to
+<a href="https://hg.mozilla.org/build/buildbotcustom/file/bdcca6f7b6c2/process/factory.py#l1338">addDoBuildSteps()</a>,
+which contains the command for invoking the actual build system. As you
+can see, there's a lot that goes into building besides just invoking the
+build system (like most developers do)!</p>
+<p>For many automation jobs, there is an additional component that comes
+into play: <a href="https://hg.mozilla.org/build/mozharness/">mozharness</a>.
+<em>mozharness</em> is relatively new to the Firefox build automation
+landscape so you may not be familiar with it. A goal of <em>mozharness</em> is
+to largely migrate the low-level logic from <em>buildbotcustom</em> - the logic
+that converts a high-level job request into low-level buildbot <em>steps</em>
+(typically command invocations) - into a separate, standalone entity
+that doesn't depend on buildbot. A goal is to enable developers to run
+mozharness locally and run automation jobs just like the official
+automation infrastructure does. If you have time, I encourage you to
+read the
+<a href="https://developer.mozilla.org/en-US/docs/Mozharness_FAQ">mozharness FAQ</a>
+to learn more. My understanding is <em>mozharness</em> will eventually power
+<strong>all</strong> of the jobs currently defined in <em>buildbotcustom</em>, so I
+recommend getting acquainted with <em>mozharness</em>.</p>
+<p>In the <em>mozharness</em> world, automation jobs are defined as <em>scripts</em>.
+Here's the
+<a href="https://hg.mozilla.org/build/mozharness/file/84187194b050/scripts/marionette.py">marionette script</a>.
+You just execute a script (with ideally as few arguments as possible)
+and <em>mozharness</em> does the rest. In buildbot, instead of having a job
+with say 12 steps and this logic for configuring the steps live in
+buildbot, buildbot just says <em>run the marionette mozharness script</em>.
+Since very little business logic now lives in buildbot, this essentially
+reduces buildbot's role to just job scheduling.</p>
+<p>And that is essentially how the automation determines what to run. Now
+let's talk about the machines automation runs on.</p>
+<h3>Machine provisioning</h3>
+<p>Earlier, I said Mozilla operates thousands of buildbot slaves. Let's
+talk about how those slaves come into existence.</p>
+<p>A slave is just a fancy name for a machine, either physical or virtual.
+These machines are owned or operated by Mozilla. Mozilla either buys
+a physical machine or rents one from a <em>cloud provider</em>, like Amazon
+EC2.</p>
+<p>For hopefully obvious reasons, it is important for the configuration of
+these machines to be consistent. Let's talk about how that is done. Keep
+in mind I'm talking about Linux machines. OS X and Windows machines go
+through a different procedure.</p>
+<p>When a new machine is acquired, it needs an operating system. There is a
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/setup/centos6-kickstart.cfg.erb">kickstart config file</a>
+that installs CentOS 6.2. At the end of the base OS flash/install, it
+configures Puppet to talk to a central Puppet master. This Puppet
+infrastructure is called
+<a href="https://wiki.mozilla.org/ReleaseEngineering/PuppetAgain">PuppetAgain</a>
+and its files are stored in the
+<a href="https://hg.mozilla.org/build/puppet/">puppet repository</a>.</p>
+<p>Puppet is let loose on the fresh OS install and eventually the machine
+is configured so it is homogenous with other similar machines in the
+automation infrastructure. Presumably, Puppet continually polls the
+central Puppet master and applies the latest configuration.</p>
+<p>Part of the <em>puppetization</em> of this machine involves installing the
+buildbot client. The client eventually registers with the buildbot
+master and waits for jobs to process.</p>
+<p>So, we've described how machines are provisioned as buildbot slaves and
+how buildbot jobs are converted to actions/steps/commands to be
+performed on slaves. Let's examine a job in more detail.</p>
+<h3>Running a build job</h3>
+<p>Before I talk about the details of a build job, it's worth mentioning
+that nearly everything I described up until this point is largely hidden
+from view from most Firefox developers. As far as I know, things like
+Puppet logs are hidden from public view. And there shouldn't be anything
+terribly wrong with that: the Puppet configs are public, after all.
+Unless you are affiliated with Release Engineering or the Automation and
+Tools Team (A*Team) or hack on a component that warrants its own piece
+of automation, you probably aren't too concerned with how all of this
+works.</p>
+<p>Anyway, it's finally time to start talking about something almost every
+Firefox developer has done: build Firefox from source.</p>
+<p>As I mentioned above, code in <em>buildbotcustom</em> (to be replaced by
+<em>mozharness</em> someday) is responsible for turning a Firefox build job
+into a series of actions/steps/commands to run on a slave. And, lucky
+for us, the activity of a slave is captured and saved to text log files!
+If you've ever used <a href="https://tbpl.mozilla.org/">TBPL</a>, you've almost
+certainly clicked a link to view one of these logs.</p>
+<p>In this section, I'll describe the steps performed in
+<a href="https://ftp.mozilla.org/pub/mozilla.org/firefox/tinderbox-builds/mozilla-central-linux64/1371941584/mozilla-central-linux64-bm62-build1-build35.txt.gz">this log</a>
+from a recent <em>mozilla-central</em> build on a 64-bit Linux machine.
+I will be paying particular attention to steps that affect the
+build environment (for reasons that will be revealed in my critique
+below).</p>
+<p>If you load our log of interest next to
+<a href="https://hg.mozilla.org/build/buildbotcustom/file/bdcca6f7b6c2/process/factory.py#l764">factory.py</a>
+from <em>buildbotcustom</em>, you can start to see how they are related.
+You may notice <em>self.addStep()</em> calls in <em>factory.py</em> correspond to
+<em>========= Started</em> ... <em>========= Finished</em> sections in the log.
+That's no accident: every <em>addStep()</em> call produces a section like
+that in the log.</p>
+<p>Now let's look at some of those steps in detail.</p>
+<p>The job/log contains a number of <em>set property</em> steps. Search for
+<em>set props</em> and you'll find them in the log. These steps define named
+properties in a hash map buildbot uses to represent the current
+configuration/state. Think of these properties as a way for buildbot to
+communicate metadata between masters and slaves.</p>
+<p>One of the first interesting steps we see is the cloning of the
+<a href="https://hg.mozilla.org/build/tools">tools repository</a>. Search for
+<em>Started clone build tools</em> and you'll find it. This repository contains
+a lot of support tools and scripts used by all parts of automation.
+There's lots of useful tools in there!</p>
+<p>Skipping over the steps that check whether to clobber the builder or
+purge old content from disk, the next build steps relevant to our
+interests involve the population of a <em>mock</em> environment.
+Search for <em>Started mock-tgt mozilla-centos6-x86_64</em> to find it in the
+logs.</p>
+<p><a href="https://fedoraproject.org/wiki/Projects/Mock">Mock</a> is a piece of
+software that manages <a href="https://en.wikipedia.org/wiki/Chroot">chroots</a>.
+It was written by the Fedora project for creating isolated build
+environments for software packages. For reasons unknown to me,
+Mozilla runs a forked version of mock called
+<a href="https://github.com/jhford/mock_mozilla">mock_mozilla</a>.</p>
+<p>The build job creates a fresh mock environment on every build. (This is
+clearly indicated by the <em>INFO: chroot
+(/builds/mock_mozilla/mozilla-centos6-x86_64) unlocked and deleted</em>
+line in the log.) Later on, builds are performed inside this mock
+environment. This means that every build job is mostly isolated from
+both the underlying operating system and all build jobs that came
+before.</p>
+<p>You can see the creation of the new mock environment by looking for the
+<em>mock_mozilla -r mozilla-centos6-x86_64 --init</em> command in the log. This
+is using the <em>mozilla-centos6-x86_64</em> configuration file to create the new
+environment. This file is managed by Puppet, so you can
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/mockbuild/files/mozilla-centos6-x86_64.cfg">see it</a>
+in the <em>puppet</em> repository. The
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/mockbuild/files/mozilla-centos6-x86_64.cfg#l11">setup command</a>
+on line 11 is the most important line in this file: it defines what
+commands to run to initialize the new mock environment.</p>
+<p>Populating the mock environment takes a number of buildbot steps. After
+copying a bunch of files into the mock/chroot, the mock environment is
+further initialized by installing a number of packages. Search for
+<em>Started mock-install</em> in the log. Yum is being used to install a number
+of packages required to build Firefox. This package list appears to
+come from
+<a href="https://hg.mozilla.org/build/buildbot-configs/file/e8b27b8b7216/mozilla/config.py#l208">config.py</a>
+in the <em>buildbot-configs</em> repository. These packages are downloaded from
+a Yum repository hosted by Mozilla. Altogether, 249 new packages
+consuming 821 MB are installed during this step!</p>
+<p>After the <em>mock</em> environment is created, the <em>mozharness</em> repository is
+removed, re-cloned, and updated to the <em>production</em> branch. After that,
+we pull changes from <em>mozilla-central</em> and update the local checkout to
+the revision we've been told to build.</p>
+<p>If you search for <em>Started got mozconfig</em>, you'll find where the
+<em>mozconfig</em> file (the build system configuration file) is acquired.</p>
+<p>After that, the
+<a href="https://wiki.mozilla.org/ReleaseEngineering/Applications/Tooltool">tooltool</a>
+configuration is consulted. Tooltool is essentially a content-addressable
+file store: files are stored and retrieved by the hash value of their
+content. A manifest file inside <em>mozilla-central</em> defines the set of
+files to fetch from tooltool at build time. At this step of the build,
+that file is consulted and listed files are downloaded. While the Linux
+manifest is currently empty, the
+<a href="https://hg.mozilla.org/mozilla-central/file/e7e9726025da/browser/config/tooltool-manifests/macosx64/releng.manifest">OS X tooltool manifest</a>
+defines the digest of the Clang archive to use to build the tree.</p>
+<p>Since tooltool files are addressed by content (not merely by name), this
+means that the same file will be fetched no matter when the build runs.
+In other words, behavior is constant as the contents of the tooltool
+repository itself change (or at least it should be).</p>
+<p>After <em>tooltool</em> contents sync, we finally arrive at the actual build
+step. Search for <em>Started compile</em> in the log. The important detail here
+is that <em>mock_mozilla</em> is used to build firefox with <em>client.mk</em> inside
+the fresh mock/chroot environment.</p>
+<p>After building, we move on to other tasks, such as creating a
+distributable package, running tests, etc. I'm just going to glance over
+them because there's a lot going on and it would take a long time to
+explain it all! I encourage you to look at the steps in the log and
+learn.</p>
+<p>While these steps are going on, the buildbot master is notified that the
+build and packaging aspect of the job has completed (sometime before
+<em>make check</em> is executed). Upon receiving this success notification, the
+buildbot master scheduled derived jobs, notably all the test suites
+(reftests, mochitests, xpcshell tests, etc). This scheduling occurs
+before <em>make check</em> has completed so overall turnaround time is reduced
+as much as possible.</p>
+<p>Finally, at the end of the log, the slave/machine is rebooted. At this
+point, the job has finished. TBPL colors the <em>B</em> next to the job green
+to signal successul completion. The slave waits for its next job from
+the buildbot master.</p>
+<p>And that is how Firefox is built! I could go into details for all of the
+derived test jobs, but I won't, as that would take a lot of effort! I
+leave that as an exercise for the reader.</p>
+<h2>Analysis</h2>
+<p>The Firefox build automation is complex and composed of many pieces.
+It's a testament to a lot of people's hard work that it works as well as
+it does!</p>
+<p>From my experience at a previous job managing large numbers of servers
+in a production datacenter, I commend Release Engineering for deploying
+Puppet to help ensure the machines performing Firefox's build automation
+are in a consistent state. I also like how <em>mock</em> is used to mostly
+isolate build jobs from one another. These are both very important to
+ensure Firefox is built consistently over time.</p>
+<p>The on-going migration of automation logic from <em>buildbotcustom</em> to
+<em>mozharness</em> is a fantastic project and I hope it is completed soon.
+I hold hope that one day we can integrate <em>mozharness</em> into the local
+development workflow (likely transparently through tools like <em>mach</em>)
+and local developers can invoke actions using the same code path as the
+official automation infrastructure.</p>
+<h2>Areas for improvement</h2>
+<p>The Firefox build automation largely works well. And I don't mean to
+take away from that. However, there are a number of areas where
+things could be improved. In this section, I'll talk about some of them.</p>
+<p>Before I get into details, let me share an experience I had about a year
+ago.</p>
+<h3>A tale of modifying the xpcshell test harness</h3>
+<p>In April 2012, I was writing a lot of JavaScript testing code and was
+frustrated at how difficult it was to share test helper code between
+tests. I filed
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=748490">bug 748490</a>
+to request a new feature in the JavaScript test harnesses: the ability
+to create testing-only JavaScript modules that weren't shipped as part
+of Firefox. This would encourage code reuse among tests and make writing
+tests easier. I thought it would be a relatively simple feature to
+implement!</p>
+<p>And, it was. At first. The initial implementation landed two weeks after
+I filed the bug (it didn't require too much effort, but I was busy with
+others tasks). It landed without incident. Although, nothing was using
+it and there was no test coverage. However, my local development started
+relying on it and things were working just fine.</p>
+<p>When I <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755196">attempted</a>
+to actually land a test that made use of this new feature, it failed
+because the new directory for these shared modules
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339">wasn't being archived</a>.
+Simple enough to fix, right? Wrong. Start reading
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c4">bug 755339 from comment #4</a>.
+It is a trail of agony. I had to uplift my change to all
+the major branches. Then, once that was done, <em>buildbotcustom</em> could
+be updated. Uplifts were performed on May 24. <em>buildbotcustom</em> was
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c15">pushed out to production</a>
+a week later on May 31. It immediately
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c16">broke the world</a>.
+At the time, philor says it was the worst tree bustage he'd ever seen.
+Literally every tree was red. Achievement unlocked. A workaround
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c17">was quickly devised</a>
+on May 31 (after the <em>buildbotcustom</em> change was backed out to restore
+working automation) and landed. Again, it had to be uplifted to all the
+trees. This patch conflicted when applied on older trees and I
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=755339#c23">accidentally committed a typo</a>
+and broke beta, release, and esr in the process. I got an earful for
+breaking these trees and lost a lot of <em>street cred</em> with the sheriffs
+(who are charged with keeping law and order in the land of the source
+trees). The <em>buildbotcustom</em> change
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=757460#c21">finally landed</a>
+on June 7 and stuck.</p>
+<p>Finally, my initial idea of adding testing-only JavaScript modules had been
+implemented and was available for all to use. It only required uplifting
+a patch to all project branches, having Release Engineering reconfigure
+<em>buildbotcustom</em>, and breaking all the trees in the process. This
+experience was truly WTFOMGBBQ. And, the agony above was from adding a
+seemingly innocuous feature to a single test harness. Can you imagine
+what it's like to add a new test harness to automation?!</p>
+<h3>In-tree automation configs different from Release Engineering's</h3>
+<p>The above example demonstrates many shortcomings in the current
+automation infrastructure. The first one I will talk about is that the
+in-tree automation configs (how to perform a specific automation job,
+such as run an individual test harness) are almost completely different
+from what Release Engineering runs on the official infrastructure!</p>
+<p>A year ago, <em>mozilla-central</em> had
+<a href="https://hg.mozilla.org/mozilla-central/file/e24391ffbe7e/testing/testsuite-targets.mk">testsuite-targets.mk</a> -
+a make file defining targets like <em>xpcshell-tests</em> and
+<em>mochitest-plain</em> that allowed developers to run these test suites
+locally. Release Engineering had <em>buildbotcustom</em>, which didn't use
+<em>testsuite-targets.mk</em> at all. While invoking most test harnesses is
+simply a matter of formulating arguments for a Python script, that logic
+was duplicated between <em>testsuite-targets</em> and <em>buildbotcustom</em>.</p>
+<p>Today, <em>Release Engineering</em> has been porting job invocation code to
+<em>mozharness</em>. And, I have been encouraging people to locally run tests
+with <em>mach</em>. Initially, mach commands executed make. However, commands
+are now bypassing make and calling into the Python test harnesses
+natively. This allows more advanced behavior since mach has more control
+and insight into the underlying test harness. The downside is mach is
+now reinventing logic.</p>
+<p>So, we now have 3 or 4 separate implementations for performing many of
+our automation jobs. Medium term, you figure Release Engineering
+consolidates all the <em>buildbotcustom</em> logic into <em>mozharness</em>,
+eliminating 1. I also think it is inevitable that <em>testsuite-targets</em> is
+refactored to invoke mach commands or is just removed altogether. But
+that still leaves us with 2 independent implementations!</p>
+<p><strong>I believe we should work towards consolidating the logic for job
+invocation to inside mozilla-central.</strong> The commands developers run
+locally should be as similar as possible to what runs on official
+automation infrastructure. Any differences introduce potential for
+different results. Differences also increase the burden to roll out
+changes. I would argue that an in-tree change should be all that is
+necessary to change the behavior of official automation infrastructure.</p>
+<p>How this is accomplished, I'm not entirely certain. In my ideal world,
+I think <em>mozharness</em> would live in tree. Although, I understand that may
+not be practical because much of what <em>mozharness</em> does involves
+downloading just-built packages, uploading results to a server, etc. I
+think a middle ground that accomplishes most of what we seek is for the
+Release Engineering configs (<em>mozharness</em>) to contain as little logic as
+possible for actual job invocation and let something in-tree do the
+rest. For example, the <em>mozharness</em> job for the xpcshell test harness
+would simply be <em>execute the run-xpcshell-tests script from the tests
+archive.</em> <em>mozilla-central</em> could then have full domain over what
+exactly is done. If <em>mozilla-central</em> changes, everyone picks up those
+changes immediately.</p>
+<h3>Local run-time environments different from official ones</h3>
+<p>Similar in vein to the previous section is that there are discrepancies
+between local run-time environments and official ones. By run-time
+environment, I mean the state of the operating system (installed
+packages, configuration settings, etc). This plays an important role in
+determining how an automation job executes. An obvious example is the
+compiler toolchain. GCC 4.5 is obviously going to have different
+behavior from GCC 4.7.</p>
+<p>While Release Engineering has taken steps to ensure consistency in the
+configuration of the machines powering the official automation
+infrastructure, local machine configurations are effectively living in
+the wild west. Developers are effectively unable to recreate the
+official automation environment. This lowers the liklihood that a local
+build will have the same outcome when performed on official automation
+infrastructure.</p>
+<p>While supporting diverse run-time environments will result in greater
+compatibility and is thus a good thing, I think it is important that
+local developers have the ability to recreate the official run-time
+environment as closely as possible. This will raise confidence that
+local results can be trusted and should cut down on development
+cost by reducing the number of Try pushes and reducing development
+cycles.</p>
+<p>Recreating the official run-time environment varies in difficulty
+depending on the operating system. For Linux, it should actually be
+pretty easy! For the build environment, Mozilla simply needs to package
+the <em>mock</em> environment used to build or at least could publish a script
+used to create said environment. In
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=886226">bug 886226</a>, I
+made an initial stab at this by creating a Vagrantfile that will
+kinda/sorta recreate the official 64-bit Linux build environment. I even
+published an archive of the <em>mock</em> environment (which can be imported
+into <em>Docker</em>). As pointed out on the bug, my work isn't perfect. But
+it's a start. And it's better than what developers have today to
+reproduce the official environments.</p>
+<p>If we decide publishing archives of chroot environments is the way to
+go, I believe we could extend the Linux solution to OS X as well. OS X
+has chroot. It also has a sandboxing facility (<em>man sandbox</em>). There are
+also tools like <a href="http://freecode.com/projects/jailkit">jailkit</a>. Also,
+using chroot environments will also likely make our automation faster
+since using archives will almost surely be faster than recreating the
+environment on every job run.
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=851294">Bug 851294</a> has
+been filed to track this.</p>
+<p>What about Windows? Well, I don't know. We sort of have an environment
+with <a href="https://ftp.mozilla.org/pub/mozilla.org/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe">MozillaBuild</a>.
+But, it's not isolated from the rest of the operating system like chroot
+environments are. Modulo Windows, two out of three tier one platforms
+isn't too bad!</p>
+<p>Now, even if the software environment is similar, hardware differences
+can also affect results. Unfortunately, there's little that can be done
+on this front aside from having everybody use the same hardware models.
+That's not going to happen. So let's pretend we don't have that problem.</p>
+<h3>Configurations change over time</h3>
+<p>I recently wrote a
+<a href="/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration/">post on the importance of time on machine configurations</a>.
+The gist is that configurations always pulling from version control tip
+or relying on external resource often vary with time and aren't truly
+idempotent. This makes it difficult to reproduce specific configurations
+at future points in time.</p>
+<p>Unfortunately, Mozilla's build automation is highly susceptible to
+configuration variance over time. There are many examples.</p>
+<p>The buildbot configuration is periodically pushed to the
+infrastructure. A job will inherit the config that is currently
+deployed. If you make a backwards incompatible change to the buildbot
+configs and push an old revision of mozilla-central, things will blow
+up.</p>
+<p>There are two time-dependent aspects of Puppet bootstrapping. First, the
+Puppet configs (like buildbot configs) are periodically pushed to a
+central master server. Whichever version is deployed at a given time is
+the version picked up by the automation job. Second, we don't do a good
+job of pinning versions inside the Puppet config. Here are the
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/packages/manifests/mercurial.pp">Mercurial</a>,
+<a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/packages/manifests/mock.pp">mock</a>,
+and <a href="https://hg.mozilla.org/build/puppet/file/6f7b4a33af2c/modules/packages/manifests/mozilla/py27_mercurial.pp">Python</a>
+manifests using the <em>latest</em> package version. This means if a new
+version of a package is added to
+<a href="http://puppetagain.pub.build.mozilla.org/data/repos/yum/">Mozilla's Yum repositories</a>
+that new package version will be deployed on the next Puppet sync.
+This is definitely not time independent. Fortunately, the base operating
+system configuration for Linux isn't terribly important because of the
+<em>mock</em> environment. But, it still varies.</p>
+<p>Like the base operating system, the mock environment is full of
+dependence on time. First, the config file itself is managed by Puppet
+and thus susceptible to its time-dependent behavior. Second, the
+packages installed in the mock environment aren't version pinned.
+This means that whatever packages deployed in
+<a href="http://puppetagain.pub.build.mozilla.org/data/repos/yum/">Mozilla's Yum repositories</a>
+will be used. So, every time the Yum package repository is updated, we
+potentially switch the configuration of our build environment. On the
+surface, this terrifies me. Maybe we have a strict update policy in
+place to prevent excessive package updates. The
+<a href="http://puppetagain.pub.build.mozilla.org/data/repos/yum/mirrors/centos/6/latest/os/x86_64/">modified times</a>
+of packages on the server seems to indicate that. Even if we didn't
+update the package repository, it still seems a bit fragile: I'd much
+prefer to pin package versions everywhere than rely on the content of
+a Yum server.</p>
+<p>The default branch of the <a href="https://hg.mozilla.org/build/tools">tools repository</a>
+is always checked out at build time. As new revisions are added to this
+repository, builds will pick them up immediately. If you make a
+backwards incompatible change to the tools repository, old revisions may
+no longer build.</p>
+<p>The production branch of the
+<a href="https://hg.mozilla.org/build/mozharness/">mozharness repository</a> is
+always used during jobs. Again, if <em>mozharness</em> changes, every future
+job sees these changes.</p>
+<p>The takeaway here is that many of the tightly-related
+systems/repositories aren't linked in any way. The automation
+configuration simply pulls the tip of each. We run into problems when we
+wish to make backwards incompatible changes. If you make one, you first
+have to update all repositories to be compatible. This is a huge pain
+(see my experience above). Furthermore, it makes it impossible to have
+successful automation runs from old revisions of those repositories!</p>
+<p>The solution to this mess is to pin versions and configs everywhere.
+The repositories being put through automation (namely <em>mozilla-central</em>)
+should contain revisions of the configs to use. It should say <em>I want to
+use revision X of mozharness, revision Y of the build machine
+configuration, etc.</em> This will enable much more consistent automation
+output over time. It cuts down on surprises (<em>did behavior change on July
+14 because of a change to mozilla-central or to a new automation config
+being rolled out to the server?</em>). It allows people to build very old
+packages. This means Mozilla wouldn't need to store terabytes of old
+builds around (we could just trigger the build again and get the same
+output).</p>
+<p>I recognize that deterministic automation configuration is likely not
+completely achievable. But, that doesn't mean we shouldn't work towards
+it. Having something better than today enables so many more useful
+scenarios and flexibility in our automation. Let me explain.</p>
+<p>Say you want to add or remove a test harness. Or, maybe you want to add
+a required argument or remove an obsolute argument from a test harness.
+The procedure from doing this today is far from trivial. It's not enough
+to simply land your change in mozilla-central and be done with it. Instead,
+you need to land support in <em>buildbotcustom</em> or <em>mozharness</em>, prepare to
+land in mozilla-central, then coordinate with Release Engineering to have your
+changes landed around the time of a server deployment. And since changes
+likely affect multiple trees, you're likely also landing things in
+inbound, fx-team, services-central, possibly aurora, beta, and release,
+etc. If you aren't landing in aurora, beta, release, esr, b2g, etc, you
+need to remember to have your change merged into these server configurations
+when those trees inherit your code (although Release Engineering is
+typically pretty good about tracking this and doing it for you).</p>
+<p>Contrast this with simply making a backwards incompatible change by
+checking in support in <em>mozharness</em> then making the change in
+<em>mozilla-central</em> along with a revision bump of the <em>mozharness</em>
+revision to use. When that changeset is pushed to the infrastructure, a
+compatible version of <em>mozharness</em> is used. When that change gets merged
+into other trees, the appropriate <em>mozharness</em> revision is used. No
+extra work needed. Utopia. You just made A*Team and Release Engineering
+much more productive by eliminating a lot of overhead.</p>
+<h2>Conclusion</h2>
+<p>The Mozilla automation infrastructure is a complex beast. There are many
+moving parts and separate systems. Any newcomer to Mozilla should simply
+stand in awe that so many systems seemlessly work so well together.</p>
+<p>There are improvements that can be made, sure (especially in the area of
+deterministic behavior over time). But, I think with the <em>mozharness</em>
+work and the <em>Puppetization</em> of the server infrastructure that Mozilla
+is on the right course. I look forward to a future where the source code
+in <em>mozilla-central</em> and the automation infrastructure are more tightly
+integrated. We're trending there. Give it time.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/16/analysis-of-firefox's-build-automation#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="quantifying-mozilla's-automation-efficiency"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/07/14/quantifying-mozilla's-automation-efficiency" rel="bookmark" title="Permanent Link to Quantifying Mozilla's Automation Efficiency">Quantifying Mozilla's Automation Efficiency</a></h2>
   <small>July 14, 2013 at 11:15 PM | categories: 
@@ -663,299 +1195,6 @@ MozillaBuild Windows development environment. Cross your fingers.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/13/build-system-status-update-2013-05-14#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mozilla-build-system-brain-dump"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/05/13/mozilla-build-system-brain-dump" rel="bookmark" title="Permanent Link to Mozilla Build System Brain Dump">Mozilla Build System Brain Dump</a></h2>
-  <small>May 13, 2013 at 05:25 PM | categories: 
-
-<a href='/blog/category/build-system'>build system</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/mach'>mach</a>
- | <a href="http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I hold a lot of context in my head when it comes to the future of
-Mozilla's build system and the interaction with it. I wanted to
-perform a brain dump of sorts so people have an idea of where I'm
-coming from when I inevitably propose radical changes.</p>
-<h2>The sad state of build system interaction and the history of mach</h2>
-<p>I believe that Mozilla's build system has had a poor developer
-experience for as long as there has been a Mozilla build system.
-Getting started with Firefox development was a rite of passage. It
-required following (often out-of-date) directions on MDN. It
-required finding pages through MDN search or asking other people
-for info over IRC. It was the kind of process that turned away
-potential contributors because it was just too damn hard.</p>
-<p>mach - while born out of my initial efforts to radically change
-the build system proper - morphed into a generic command
-dispatching framework by the time it landed in mozilla-central.
-It has one overarching purpose: provide a single gateway point for
-performing common developer tasks (such as building the tree and
-running tests). The concept was nothing new - individual developers
-had long coded up scripts and tools to streamline workflows. Some
-even published these for others to use. What set mach apart was a
-unified interface for these <em>commands</em> (the mach script in the
-top directory of a checkout) and that these productivity gains
-were <strong>in the tree</strong> and thus easily discoverable and usable by
-<em>everybody</em> without significant effort (just run <em>mach help</em>).</p>
-<p>While mach doesn't yet satisfy everyone's needs, it's slowly
-growing new features and making developers' lives easier with
-every one. All of this is happening despite that there
-is not a single person tasked with working on mach full time.
-Until a few months ago, mach was largely my work. Recently, Matt
-Brubeck has been contributing a flurry of enhancements - thanks
-Matt! Ehsan Akhgari and Nicholas Alexander have contributed a
-few commands as well! There are also a few people with a single
-command to their name. This is fulfilling my original vision of
-facilitating developers to scratch their own itches by
-contributing mach commands.</p>
-<p>I've noticed more people referencing mach in IRC channels. And,
-more people get angry when a mach command breaks or changes
-behavior. So, I consider the mach experiment a success. Is it
-perfect, no. If it's not good enough for you, please file a bug
-and/or code up a patch. If nothing else, please tell me: I love to
-know about everyone's subtle requirements so I can keep them in
-mind when refactoring the build system and hacking on mach.</p>
-<h2>The object directory is a black box</h2>
-<p>One of the ideas I'm trying to advance is that the object directory
-should be considered a black box for the majority of developers. In
-my ideal world, developers don't need to look inside the object
-directory. Instead, they interact with it through condoned and
-supported tools (like mach).</p>
-<p>I say this for a few reasons. First, as the build config module owner
-I would like the ability to massively refactor the <em>internals</em> of
-the object directory without disrupting workflows. If people are
-interacting directly with the object directory, I get significant
-push back if things change. This inevitably holds back much-needed
-improvements and triggers resentment towards me, build peers, and
-the build system. Not a good situation. Whereas if people are
-indirectly interacting with the object directory, we simply need to
-maintain a consistent interface (like mach) and nobody should care
-if things change.</p>
-<p>Second, I believe that the methods used when directly interacting
-with the object directory are often sub-par compared with going
-through a more intelligent tool and that productivity suffers as a
-result. For example, when you type <em>make</em> in inside the object
-directory you need to know to pass <em>-j8</em>, use make vs pymake,
-and that you also need to build <em>toolkit/library</em>, etc.
-Also, by invoking make directly, you bypass other handy features,
-such as automatic compiler warning aggregation (which only happens
-if you invoke the build system through mach). If you go through a
-tool like <em>mach</em>, you <em>should</em> automatically get the most ideal
-experience possible.</p>
-<p>In order for this vision to be realized, we need massive
-improvements to tools like mach to cover the missing workflows that
-still require direct object directory interaction. We also need people
-to start using mach. I think increased mach usage comes after mach
-has established itself as obviously superior to the alternatives
-(I already believe it offers this for tasks like running tests).</p>
-<h2>I don't want to force mach upon people but...</h2>
-<p>Nobody likes when they are forced to change a process that has been
-familiar for years. Developers especially. I get it. That's why
-I've always attempted to position mach as an alternative to
-existing workflows. If you don't like mach, you can always fall
-back to the previous workflow. Or, you can improve mach (patches
-more than welcome!). Having gone down the
-please-use-this-tool-it's-better road before at other
-organizations, I strongly believe that the best method to incur
-adoption of a new tool is to gradually sway people through
-obvious superiority and praise (as opposed to a mandate to switch).
-I've been trying this approach with mach.</p>
-<p>Lately, more and more people have been saying things like
-<em>we should have the build infrastructure build through mach
-instead of client.mk</em> and <em>why do we need testsuite-targets.mk when
-we have mach commands.</em> While I personally feel that client.mk
-and testsuite-targets.mk are antiquated as a developer-facing
-interface compared to mach, I'm reluctant to eliminate them because
-I don't like forcing change on others. That being said, there are
-compelling reasons to eliminate or at least refactor how they work.</p>
-<p>Let's take <em>testsuite-targets.mk</em> as an example. This is the make
-file that provides the targets to run tests (like <em>make xpcshell-test</em>
-and <em>make mochitest-browser-chrome</em>). What's interesting about this
-file is that it's only used in local builds: our automation
-infrastructure does not use <em>testsuite-targets.mk</em>! Instead,
-<em>mozharness</em> and the old buildbot configs manually build up the
-command used to invoke the test harnesses. Initially, the mach
-commands for running tests simply invoked make targets defined
-in <em>testsuite-targets.mk</em>. Lately, we've been converting the mach
-commands to invoke the Python test runners directly. I'd argue that
-the logic for <em>invoke the test runner</em> only needs to live in one
-place in the tree. Furthermore as a build module peer, I have little
-desire to support multiple implementations. Especially considering
-how fragile they can be.</p>
-<p>I think we're trending towards an outcome where mach (or the code
-behind mach commands) transitions into the authoratitive invocation
-method and <em>legacy</em> interfaces like <em>client.mk</em> and
-<em>testsuite-targets.mk</em> are reimplemented to either call mach
-commands or the same routine that powers them. Hopefully this
-will be completely transparent to developers.</p>
-<h2>The future of mozconfigs and environment configuration</h2>
-<p><em>mozconfig</em> files are shell scripts used to define variables consumed
-by the build system. They are the only officially supported mechanism
-for configuring how the build system works.</p>
-<p>I'd argue mozconfig files are a mediocre solution at best. First,
-there's the issue of mozconfig statements that don't actually do
-anything. I've seen no-op mozconfig content cargo culted into the
-in-tree mozconfigs (used for the builder configurations)! Oops.
-Second, doing things in mozconfig files is just awkward. Defining
-the object directory requires <em>mk_add_options MOZ_OBJDIR=some-path</em>.
-What's <em>mk_add_options</em>? If <em>some-path</em> is relative, what is it
-relative <em>to</em>? While certainly addressable, the documentation on
-how mozconfig files work is not terrific and fails to explain many
-pitfalls. Even with proper documentation, there's still the issue
-of the file format allowing no-op variable assignments to persist.</p>
-<p>I'm very tempted to reinvent build configuration as something not
-mozconfigs. What exactly, I don't know. mach has support for ini-like
-configuration files. We could certainly have mach and the build
-system pull configs from the same file.</p>
-<p>I'm not sure what's going to happen here. But deprecating mozconfig
-files as they are today is part of many of the options.</p>
-<h2>Handling multiple mozconfig files</h2>
-<p>A lot of developers only have a single mozconfig file (per source tree
-at least). For these developers, life is easy. You simply install
-your mozconfig in one of the default locations and it's automagically
-used when you use mach or client.mk. Easy peasy.</p>
-<p>I'm not sure what the relative numbers are, but many developers
-maintain multiple mozconfig files per source tree. e.g. they'll
-have one mozconfig to build desktop Firefox and another one for
-Android. They may have debug variations of each.</p>
-<p>Some developers even have a single mozconfig file but leverage the
-fact that mozconfig files are shell scripts and have their
-mozconfig dynamically do things depending on the current working
-directory, value of an environment variable, etc.</p>
-<p>I've also seen wrapper scripts that glorify setting environment
-variables, changing directory, etc and invoke a command.</p>
-<p>I've been thinking a lot about providing a common and well-supported
-solution for switching between active build configurations.
-<a href="https://developer.mozilla.org/en-US/docs/Developer_Guide/mach#Adding_mach_to_your_shell%27s_search_path">Installing mach on $PATH</a>
-goes a long way to facilitate this. If you are in an object
-directory, the mozconfig used when that object directory was
-created is automatically applied. Simple enough. However, I want
-people to start treating object directories as black boxes. So, I'd
-rather not see people have their shell inside the object directory.</p>
-<p>Whenever I think about solutions, I keep arriving at a
-virtualenv-like solution. Developers would potentially need to
-<em>activate</em> a Mozilla build environment (similar to how Windows
-developers need to launch MozillaBuild). Inside this environment,
-the shell prompt would contain the name of the current build
-configuration. Users could switch between configurations using
-<em>mach switch</em> or some other magic command on the $PATH.</p>
-<p>Truth be told, I'm skeptical if people would find this useful. I'm
-not sure it's that much better than exporting the MOZCONFIG
-environment variable to define the active config. This one requires
-more thought.</p>
-<h2>The integration between the build environment and Python</h2>
-<p>We use Python extensively in the build system and for common
-developer tasks. mach is written in Python. moz.build processing
-is implemented in Python. Most of the test harnesses are written in
-Python.</p>
-<p>Doing practically anything in the tree requires a Python
-interpreter that knows about all the Python code in the tree and
-how to load it.</p>
-<p>Currently, we have two very similar Python environments. One is
-a virtualenv created while running configure at the beginning of
-a build. The other is essentially a cheap knock-off that mach
-creates when it is launched.</p>
-<p>At some point I'd like to consolidate these Python environments.
-From any Python process we should have a way to automatically
-bootstrap/activate into a well-defined Python environment. This
-certainly sounds like establishing a unified Python virtualenv
-used by both the build system and mach.</p>
-<p>Unfortunately, things aren't straightforward. The virtualenv today
-is constructed in the object directory. How do we determine the
-current object directory? By loading the mozconfig file. How do we
-do that? Well, if you are mach, we use Python. And, how does mach
-know where to find the code to load the mozconfig file? You can
-see the dilemma here.</p>
-<p>A related issue is that of portable build environments. Currently, a
-lot of our automation recreates the build system's virtualenv from
-its own configuration (not that from the source tree). This has
-and will continue to bite us. We'd <em>really</em> like to package up the
-virtualenv (or at least its config) with tests so there is no
-potential for discrepancy.</p>
-<p>The inner workings of how we integrate with Python should be
-invisible to most developers. But, I figured I'd capture it
-here because it's an annoying problem. And, it's also related
-to an <em>activated</em> build environment. What if we required all
-developers to <em>activate</em> their shell with a Mozilla build
-environment (like we do on Windows)? Not only would this solve
-Python issues, but it would also facilitate simpler config
-switching (outlined above). Hmmm...</p>
-<h2>Direct interaction with the build system considered harmful</h2>
-<p>Ever since there was a build system developers have been typing
-<em>make</em> (or <em>make.py</em>) to build the tree. One of the goals of the
-transition to <em>moz.build</em> files is to facilitate building the tree
-with Tup. <em>make</em> will do nothing when you're not using Makefiles!
-Another goal of the <em>moz.build</em> transition is to start
-derecursifying the make build system such that we build things in
-parallel. It's likely we'll produce monolithic make files and then
-process <em>all</em> targets for a related class <em>IDLs</em>, <em>C++ compilation</em>,
-etc in one invocation of <em>make</em>. So, uh, what happens during a partial
-tree build? If a .cpp file from <em>/dom/src/storage</em> is being handled by
-a monolithic make file invoked by the Makefile at the top of the
-tree, how does a partial tree build pick that up? Does it build just
-that target or every target in the monolithic/non-recursive make file?</p>
-<p>Unless the build peers go out of our way to install redundant targets
-in leaf Makefiles, directly invoking <em>make</em> from a subdirectory of
-the tree won't do what it's done for years.</p>
-<p>As I said above, I'm sympathetic to forced changes in procedure, so
-it's likely we'll provide backwards-compatibile behavior. But, I'd
-prefer to not do it. I'd first prefer partial-tree builds are not
-necessary and a full tree build finishes quickly. But, we're not going
-to get there for a bit. As an alternative, I'll take people building
-through <em>mach build</em>. That way, we have an easily extensible interface
-on which to build partial tree logic. We saw this recently when
-dumbmake/smartmake landed. And, going through <em>mach</em> also reinforces my
-ideal that the object directory is a black box.</p>
-<h2>Semi-persistent state</h2>
-<p>Currently, most state as it pertains to a checkout or build is in the
-object directory. This is fine for artifacts from the build system.
-However, there is a whole class of state that arguably shouldn't be in
-the object directory. Specifically, it shouldn't be clobbered when you
-rebuild. This includes logs from previous builds, the warnings database,
-previously failing tests, etc. The list is only going to grow over time.</p>
-<p>I'd like to establish a location for semi-persistant state related to
-the tree and builds. Perhaps we change the clobber logic to ignore a
-specific directory. Perhaps we start storing things in the user's home
-directory. Perhaps we could establish a second <em>object directory</em> named
-the <em>state directory</em>? How would this interact with <em>build environments</em>?</p>
-<p>This will probably sit on the backburner until there is a compelling use
-case for it.</p>
-<h2>The battle against C++</h2>
-<p>Compiling C++ consumes the bulk of our build time. Anything we can do to
-speed up C++ compilation will work wonders for our build times.</p>
-<p>I'm optimistic things like precompiled headers and compiling multiple
-.cpp files with a single process invocation will drastically decrease
-build times. However, no matter how much work we put in to make C++
-compilation faster, we still have a giant issue: dependency hell.</p>
-<p>As <a href="/presentations/2012-11-29-firefox-build-system/#34">shown</a> in my
-build system presentation a few months back, we have dozens of header
-files included by hundreds if not thousands of C++ files. If you change
-one file: you invalidate build dependencies and trigger a rebuild. This
-is why whenever files like mozilla-config.h change you are essentially
-confronted with a full rebuild. ccache may help if you are lucky. But, I
-fear that as long as headers proliferate the way they do, there is
-little the build system by itself can do.</p>
-<p>My attitude towards this is to wait and see what we can get out of
-precompiled headers and the like. Maybe that makes it good enough. If
-not, I'll likely be making a lot of noise at Platform meetings
-requesting that C++ gurus brainstorm on a solution for reducing
-header proliferation.</p>
-<h2>Conclusion</h2>
-<p>Belive it or not, these are only some of the topics floating around in
-my head! But I've probably managed to bore everyone enough so I'll
-call it a day.</p>
-<p>I'm always interested in opinions and ideas, especially if they are
-different from mine. I encourage you to leave a comment if you have
-something to say.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/13/mozilla-build-system-brain-dump#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/14">« Previous Page</a>
   --  

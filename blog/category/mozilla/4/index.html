@@ -51,6 +51,198 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="firefox-contribution-process-debt"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/09/firefox-contribution-process-debt" rel="bookmark" title="Permanent Link to Firefox Contribution Process Debt">Firefox Contribution Process Debt</a></h2>
+  <small>January 09, 2015 at 04:45 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/09/firefox-contribution-process-debt#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>As I was
+<a href="/blog/2014/12/30/firefox-source-documentation-versus-mdn/">playing around with source-derived documentation</a>,
+I grasped the reality that any attempt to move documentation out of
+MDN's wiki and into something derived from source code (despite the
+argued technical and quality advantages) would likely be met with fierce
+opposition because the change process for Firefox is much more involved
+than <em>edit a wiki</em>.</p>
+<p>This observation casts light on something important: <strong>the very act of
+contributing <em>any</em> change to Firefox is too damn hard.</strong></p>
+<p>I've always believed this statement to be true. I even like to think I'm
+one of the few people that has consistently tried to do something about
+it (inventing mach, overhauling the build system, bootstrap scripting,
+MozReview, etc). But I, like many of the seasoned Firefox developers,
+often lose sight of this grim reality. (I think it's fair to say that
+new contributors often complain about the development experience and
+as we grow accustomed to it, the complaint volume and intensity wanes).</p>
+<p><strong>But when you have the simplicity of editing a wiki page on MDN juxtaposed
+against the Firefox change contribution process of today, the inefficiency
+of the Firefox process is clearly seen.</strong></p>
+<p>The amount of knowledge required to change Firefox is obscenely absurd. Sure,
+some complex components will always be difficult to change. But I'm talking
+about <em>any</em> component: the base set of knowledge required to contribute
+<em>any</em> change to Firefox is vast. This is <strong>before</strong> we get into any
+domain-specific knowledge inside Firefox. <strong>I have always believed and
+will continue to believe that this is a grave institutional issue for
+Mozilla.</strong> It should go without saying that I believe this is an issue worth
+addressing. After all, <strong>any piece of knowledge required for
+contribution is essentially an obstacle to completion. Elimination of
+required knowledge lowers the barrier to contribution.</strong> This, in turn,
+allows increased contribution via more and faster change. This advances
+the quality and relevance of Firefox, which enables Mozilla to advance
+its <a href="https://www.mozilla.org/mission/">Mission</a>.</p>
+<p>Seasoned contributors have probably internalized most of the knowledge
+required to contribute to Firefox. Here is a <strong>partial</strong> list to remind
+everyone of the sheer scope of it:</p>
+<p><a name="list-of-process-debt"></a></p>
+<ul>
+  <li>Before you do anything
+  <ul>
+   <li>Am I able to contribute?</li>
+   <li>Do I meet the minimum requirements (hardware, internet access, etc)?</li>
+   <li>Do I need any accounts?</li>
+  </ul></li>
+  </li>
+  <li>Source control
+  <ul>
+    <li>What is source control?</li>
+    <li>How do I install Mercurial/Git?</li>
+    <li>How do I use Mercurial/Git?</li>
+    <li>Where can I get the Firefox source code?</li>
+    <li>How do I *optimally* acquire the Firefox source code?</li>
+    <li>Are there any recommended configuration settings or extensions?</li>
+  </ul></li>
+  <li>Building Firefox
+  <ul>
+   <li>Do I even need to build Firefox?</li>
+   <li>How do I build Firefox?</li>
+   <li>What prerequisites need to be installed?</li>
+   <li>How do I install prerequisites?</li>
+   <li>How do I configure the Firefox build to be appropriate for my needs?</li>
+   <li>What are mozconfigs?</li>
+   <li>How do I get Firefox to build faster?</li>
+   <li>What do I do after a build?</li>
+  </ul></li>
+  <li>Changing code
+  <ul>
+   <li>Is there IDE support?</li>
+   <li>Where can I find macros and aliases to make things easier?</li>
+  </ul></li>
+  <li>Testing
+  <ul>
+    <li>How do I run tests?
+  <li>Which tests are relevant for a given change?</li>
+  <li>What are all these different test types?</li>
+  <li>How do I debug tests?</li>
+  </ul></li>
+  <li>Try and Automation
+  <ul>
+   <li>What is Try?</li>
+   <li>How do I get an account?</li>
+   <li>What is vouching and different levels of access?</li>
+   <li>What is SSH?</li>
+   <li>How do I configure SSH?</li>
+   <li>When will my tests run?</li>
+   <li>What is Tree Herder?</li>
+   <li>What do all these letters and numbers mean?</li>
+   <li>What are all these colors?</li>
+   <li>What's an *intermittent failure*?</li>
+   <li>How do I know if something is an *intermittent failure*?</li>
+   <li>What amount of *intermittent failure* is acceptable?</li>
+   <li>What do these logs mean?</li>
+   <li>What's buildbot?</li>
+   <li>What's mozharness?</li>
+  </ul></li>
+  <li>Sending patch to Mozilla
+  <ul>
+   <li>Do I need to sign a CLA?</li>
+   <li>Where do I send patches?</li>
+   <li>Do I need to get an account on Bugzilla?</li>
+   <li>Do I need to file a bug?</li>
+   <li>What component should I file a bug in?</li>
+   <li>What format should patches be sent in?</li>
+   <li>How should I format commit messages?</li>
+   <li>How do I upload patches to Bugzilla?</li>
+   <li>How does code review work?
+   <ul>
+    <li>What's the modules system?</li>
+    <li>What modules does my change map to?</li>
+    <li>Who are the possible reviewers?</li>
+    <li>How do I ask someone for review?</li>
+    <li>When can I expect review?</li>
+    <li>What does r+ vs r- vs f+ vs f- vs cancelling review all mean?</li>
+    <li>How do I submit changes to my initial patch?</li>
+    <li>What do I do after review?</li>
+   </ul></li>
+  </ul></li>
+  <li>Landing patches
+  <ul>
+   <li>What repository should a patch land on?</li>
+   <li>How do you rebase?</li>
+   <li>What's a tree closure?</li>
+   <li>What do I do after pushing?</li>
+   <li>How do I know the result of the landing?</li>
+  </ul></li>
+</ul>
+
+<p>Holy #$%@, that's a lot of knowledge. Not only is this list incomplete,
+it's also not encompassing a lot of the domain-specific knowledge around
+the content being changed.</p>
+<p>Every item on this list represents a point where a potential contributor
+could throw up their arms out of despair and walk away, giving their
+time and talents to another project. Every item on this list that takes
+10 minutes instead of 5 could be the tipping point. For common actions,
+things that take 5 seconds instead of 1 could be the difference maker.
+<strong>This list thus represents reasons that people do not contribute to
+Firefox or contribute ineffectively (in the case of common contributors,
+like paid Mozilla staff).</strong></p>
+<p>I view items on this list as <strong>process debt</strong>. <em>Process debt</em> is a term
+I'm coining (perhaps someone has beat me to it - I'm writing this on a
+plane without Internet access) that is a sibling of <em>technical debt</em>.
+<em>Process debt</em> is overhead and inefficiency associated with <em>processes</em>.
+The border between <em>process debt</em> and <em>technical debt</em> in computers is
+the code itself (although that border may sometimes not be very
+well-defined, as code and process are oftentimes similar, such as most
+interactions with version control or code review tools).</p>
+<p>When I see this list of <em>process debt</em>, I'm inspired by the opportunity
+to streamline the processes and bask in the efficiency gains. But I am
+also simultaneously overwhelmed by the vast scope of things that need
+improved. When I think about the amount of energy that will need to be
+exerted to fight the <em>OMG change</em> crowd, the list becomes <em>depressing</em>.
+But discussing institutional resistance to change, the <em>stop energy</em>
+associated with it, and Mozilla's historical record of failing to invest
+in fixing process (and technical) debt is for another post.</p>
+<p>When looking at the above list, I can think of the following general
+ways to make it more approachable:</p>
+<ol>
+<li>Remove an item completely. If it isn't on the list, there is nothing
+   to know and no overhead. The best way to solve a problem is to make
+   it not exist.</li>
+<li>Automate an item and makes its existence largely transparent. If an
+   item is invisible, does it exist in the mind of a contributor? (This
+   is also known as solving the problem by adding a layer of
+   indirection.)</li>
+<li>Change an item so that it is identical to another, more familiar
+   process. If you use a well-defined process, there is no new knowledge
+   that must be learned and the cost of on-boarding someone already
+   familiar with that knowledge is practically zero.</li>
+</ol>
+<p>When you start staring at this list of Firefox contribution process debt,
+you start thinking about priorities, groupings, and strategies. You look
+around at what others are doing to see if you can borrow good ideas.</p>
+<p>I've done a lot of thinking on the subject and have some ideas and
+recommendations. Stay tuned for some additional posts on the topic.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/09/firefox-contribution-process-debt#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="style-changes-on-hg.mozilla.org"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/09/style-changes-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to Style Changes on hg.mozilla.org">Style Changes on hg.mozilla.org</a></h2>
   <small>January 09, 2015 at 03:25 PM | categories: 
@@ -481,50 +673,6 @@ manually rebase when you lose the push race).</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mach-sub-commands"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/18/mach-sub-commands" rel="bookmark" title="Permanent Link to mach sub-commands">mach sub-commands</a></h2>
-  <small>December 18, 2014 at 09:45 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/18/mach-sub-commands#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p><a href="https://pypi.python.org/pypi/mach/">mach</a> - the generic command line
-dispatching tool that powers the <strong>mach</strong> command to aid Firefox
-development - now has support for sub-commands.</p>
-<p>You can now create simple and intuitive user interfaces involving
-sub-actions. e.g.</p>
-<pre><code>mach device sync
-mach device run
-mach device delete
-</code></pre>
-<p>Before, to do something like this would require a universal argument
-parser or separate mach commands. Both constitute a poor user
-experience (confusing array of available arguments or proliferation of
-top-level commands). Both result in <em>mach help</em> being difficult to
-comprehend. And that's not good for usability and approachability.</p>
-<p>Nothing in Firefox currently uses this feature. Although there is an
-in-progress patch in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1108293">bug 1108293</a>
-for providing a mach command to analyze C/C++ build dependencies.
-It is my hope that others write useful commands and functionality
-on top of this feature.</p>
-<p>The documentation for mach has also been rewritten. It is now
-<a href="https://ci.mozilla.org/job/mozilla-central-docs/Tree_Documentation/python/mach/index.html">exposed</a>
-as part of the in-tree Sphinx documentation.</p>
-<p>Everyone should thank <a href="https://mozillians.org/en-US/u/ahal/">Andrew Halberstadt</a>
-for promptly reviewing the changes!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/18/mach-sub-commands#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/3">« Previous Page</a>
   --  

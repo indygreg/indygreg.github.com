@@ -51,6 +51,65 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-hooks-move-and-testing-mercurial"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial" rel="bookmark" title="Permanent Link to Mercurial hooks move and testing Mercurial">Mercurial hooks move and testing Mercurial</a></h2>
+  <small>August 18, 2014 at 03:10 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mozilla has a number of source repositories under
+<a href="https://hg.mozilla.org/hgcustom/">https://hg.mozilla.org/hgcustom/</a>
+that cumulatively define how version control works at Mozilla.</p>
+<p>Back in February, I
+<a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools/">launched an effort</a>
+to establish a unified Mercurial repository for all this code. That
+repository is <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+and it has slowly grown.</p>
+<p>The <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1052201">latest addition</a>
+to this repository is the import of the <em>hghooks</em> repository. This
+now-defunct repository contained all the server-side Mercurial hooks
+that Mozilla has deployed on <em>hg.mozilla.org</em>.</p>
+<p>Soon after that repository was imported into version-control-tools, we
+started executing the hooks tests as part of the existing test suite in
+version-control-tools. This means we get
+<a href="https://ci.mozilla.org/job/version-control-tools/">continuous integration</a>,
+<a href="https://ci.mozilla.org/job/version-control-tools/coveragepy/?">code coverage</a>,
+and the ability to run tests against multiple versions of Mercurial
+(2.5.4 through 3.1) in one go.</p>
+<p><strong>This is new for Mozilla and is a big deal.</strong> For the first time, we
+have a somewhat robust testing environment for Mercurial that is testing
+things we run in production.</p>
+<p>But we still have a long way to go. The ultimate goal is to get everything
+rolled into the version-control-tools repository and to write tests for
+everything people rely on. We also want the test environment to look as
+much like our production environment as possible. Once that's in place,
+most of the fear and uncertainty around upgrading or changing the server
+goes away. This will allow Mozilla to move faster and issues like our
+recent server problems can be diagnosed more quickly (Mercurial has
+added better logging in newer versions).</p>
+<p>If you want to contribute to this effort, <strong>please write tests for
+behavior you rely on.</strong> We're now relying on Mercurial's test harness
+and <a href="http://mercurial.selenic.com/wiki/WritingTests">test types</a>
+rather than low-level unit tests. This means our tests are now running
+a Mercurial server and running actual Mercurial commands. The tests thus
+explicitly verify that client-seen behavior is exactly as you intend.
+For an example, see the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/abc1c5bdca9b/hghooks/tests/test-prevent-webidl.t">WebIDL hook test</a>.</p>
+<p>So what are you waiting for? Find some gaps in code coverage and write
+some tests today!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="please-run-mach-mercurial-setup"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/07/25/please-run-mach-mercurial-setup" rel="bookmark" title="Permanent Link to Please run mach mercurial-setup">Please run mach mercurial-setup</a></h2>
   <small>July 25, 2014 at 10:00 AM | categories: 
@@ -375,85 +434,6 @@ loads of cash on fire.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="track-firefox-repositories-with-local-only-mercurial-tags"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags" rel="bookmark" title="Permanent Link to Track Firefox Repositories with Local-Only Mercurial Tags">Track Firefox Repositories with Local-Only Mercurial Tags</a></h2>
-  <small>June 30, 2014 at 10:25 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>After reading my recent
-<a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
-a number of people asked me about my development workflow. While I
-still owe a full answer to that question, one of the cornerstores
-is a unified Mercurial repository. Instead of having separate clones
-for mozilla-central, mozilla-inbound, aurora, beta, etc, I have a
-single clone with the changesets from all the repositories.</p>
-<p>I feel having a unified repository has made me more productive. I no
-longer have to waste time shuffling changesets between local clones.
-This introduced all kinds of extra cognitive load and manual
-processes that slowed me down. I highly encourage others to adopt
-unified repositories.</p>
-<p>Because the various Firefox repositories don't have unique branches
-or bookmarks tracking the various heads, aggregating multiple
-repositories introduces a client-side problem of identifying
-which head is which. If you merely do a <em>hg pull</em>, you'll get a
-bunch of anonymous heads.</p>
-<p>To solve this problem, you'll need to employ minor client-side
-magic. Previously, I <a href="/2013/07/22/mercurial-extension-for-gecko-development/">recommended</a>
-my heavyweight <em>mozext</em> extension.</p>
-<p>Today, I'm proud to announce a new, lighter extension:
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">firefoxtree</a>.
-When pulling from a known Firefox repository, this extension will add
-a local-only Mercurial tag for that repository. For example,
-when pulling mozilla-central, the <em>central</em> tag will be created.</p>
-<p>Local-only tags are a Mercurial feature only available to
-extensions. A local-only tag is effectively an overlay of tags
-that don't get transferred as part of push and pull operations.
-They behave like normal tags: you can <em>hg up</em> to them and reference
-them elsewhere changeset identifiers are used. They are also read
-only: if you update to a tag and then commit, the tag will not
-move forward (contrast with branches or bookmarks).</p>
-<h2>Example Usage</h2>
-<p>Clone <em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and add
-the following to your <em>.hg/hgrc</em>:</p>
-<pre><code>[extensions]
-firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
-</code></pre>
-<p>To use, simply pull from a Firefox repo:</p>
-<div class="pygments_murphy"><pre><span class="nv">$ </span>hg pull https://hg.mozilla.org/mozilla-central
-
-<span class="nv">$ </span>hg up central
-
-<span class="c"># Do your development work.</span>
-
-<span class="c"># Time to land.</span>
-<span class="nv">$ </span>hg pull https://hg.mozilla.org/integration/mozilla-inbound
-<span class="nv">$ </span>hg rebase -d inbound
-<span class="nv">$ </span>hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
-<span class="nv">$ </span>hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
-</pre></div>
-
-<p>Please note that <em>hg push</em> tries to push all local changes on all
-heads to a remote by default. When operating a unified repo, you'll
-need to use the <em>-r</em> argument to <em>hg push</em> and <em>hg out</em> to limit
-what changesets are considered. I most frequently use <em>-r .</em> to limit
-changes to the current checked out changeset.</p>
-<p>Also note that this extension conflicts with my <em>mozext</em> extension.
-I hope to update <em>mozext</em> to make it behave in the same manner. (It
-was easier to write a new extension than to update mozext.)</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/3">« Previous Page</a>
   --  
