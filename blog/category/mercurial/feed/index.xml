@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 30 Apr 2015 19:33:16 GMT</pubDate>
+    <pubDate>Thu, 30 Apr 2015 19:37:10 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -68,6 +68,11 @@ for more details.</p>
 <p>This requires an updated <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
 repository, which you can get by running <em>mach mercurial-setup</em> from a
 Firefox repository.</p>
+<p>For those that are curious, the <em>autoreview</em> repo/server advertises a list
+of repository URLs and their root commit SHA-1. The client automatically
+sends the push to a URL sharing the same root commit. The
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/0b02cd388590">code</a>
+is quite simple.</p>
 <p>While this is only implemented for MozReview, I could envision us doing
 something similar for other centralized repository-centric services, such
 as <em>Try</em> and <em>Autoland</em>. Stay tuned.</p>]]></content:encoded>
