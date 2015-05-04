@@ -51,6 +51,97 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="updates-to-firefoxtree-mercurial-extension"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension" rel="bookmark" title="Permanent Link to Updates to firefoxtree Mercurial extension">Updates to firefoxtree Mercurial extension</a></h2>
+  <small>July 16, 2014 at 07:55 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>My <a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
+has been generating a lot of interest for bookmark-based workflows at
+Mozilla. To make adoption easier, I
+<a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags/">quickly authored</a>
+an <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">extension</a>
+to add <em>remote refs</em> of Firefox repositories to Mercurial.</p>
+<p>There was still a bit of confusion and gripes about workflows that I
+thought it would be best to update the extension to make things more
+pleasant.</p>
+<h2>Automatic tree names</h2>
+<p>People wanted an ability to easy pull/aggregate the various Firefox
+trees without additional configuration to an hgrc file.</p>
+<p>With <em>firefoxtree</em>, you can now <em>hg pull central</em> or <em>hg pull inbound</em>
+or <em>hg pull aurora</em> and it just works.</p>
+<p>Pushing with aliases doesn't yet work. It is slightly harder to do in
+the Mercurial API. I have a solution, but I'm validating some code paths
+to ensure it is safe. This feature will likely appear soon.</p>
+<h2>fxheads commands</h2>
+<p>Once people adopted unified repositories with heads from multiple
+repositories, they asked how they could quickly identify the heads of
+the pulled Firefox repositories.</p>
+<p><em>firefoxtree</em> now provides a <em>hg fxheads</em> command that prints a
+concise output of the commits constituting the heads of the Firefox
+repos. e.g.</p>
+<div class="pygments_murphy"><pre><span class="nv">$ </span>hg fxheads
+224969:0ec0b9ac39f0 aurora <span class="o">(</span>sort of<span class="o">)</span> bug <span class="m">898554</span> - raise expected hazard count <span class="k">for</span> b2g to <span class="m">4</span> <span class="k">until</span> they are fixed, <span class="nv">a</span><span class="o">=</span>bustage+hazbuild-only
+224290:6befadcaa685 beta Tagging /src/mdauto/build/mozilla-beta 1772e55568e4 with FIREFOX_RELEASE_31_BASE <span class="nv">a</span><span class="o">=</span>release CLOSED TREE
+224848:8e8f3ba64655 central Merge inbound to m-c <span class="nv">a</span><span class="o">=</span>merge
+225035:ec7f2245280c fx-team fx-team/default Merge m-c to fx-team
+224877:63c52b7ddc28 inbound Bug <span class="m">1039197</span> - Always build js engine with zlib. <span class="nv">r</span><span class="o">=</span>luke
+225044:1560f67f4f93 release release/default tip Automated checkin: version bump <span class="k">for</span> firefox 31.0 release. DONTBUILD CLOSED TREE <span class="nv">a</span><span class="o">=</span>release
+</pre></div>
+
+<p>Please note that the output is based upon local-only knowledge: you'll
+need to pull to ensure data is current.</p>
+<h2>Reject pushing multiple heads</h2>
+<p>People were complaining that bookmark-based workflows resulted in
+Mercurial trying to push multiple heads to a remote. This complaint
+stems from the fact that Mercurial's default push behavior is to find
+all commits missing from the remote and push them. This behavior is
+extremely frustrating for Firefox development because the Firefox repos
+only have a single head and pushing multiple heads will only result in
+a server hook rejecting the push (after wasting a lot of time
+transferring that commit data).</p>
+<p><em>firefoxtree</em> now will refuse to push multiple heads to a known Firefox
+repo before any commit data is sent. In other words, we fail fast so
+your time is saved.</p>
+<p><em>firefoxtree</em> also changes the default behavior of <em>hg push</em> when
+pushing to a Firefox repo. If no <em>-r</em> argument is specified, <em>hg push</em>
+to a Firefox repo will automatically remap to <em>hg push -r .</em>. In other
+words, we attempt to push the working copy's commit by default. This
+change establishes sensible default and likely working behavior when
+typing just <em>hg push</em>.</p>
+<p>I am a bit on the fence about changing the default behavior of <em>hg
+push</em>. On one hand, it makes total sense. On the other, silently
+changing the default behavior of a built-in command is a little
+dangerous. I can easily see this backfiring when people interact with
+non-Firefox repos. I encourage people to get in the habit of typing
+<em>hg push -r <rev></em> because that's what you should be doing.</p>
+<h2>Installing firefoxtree</h2>
+<p>Within the next 48 hours, <em>mach mercurial-setup</em> should prompt to
+install <em>firefoxtree</em>. Until then, clone
+<em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and ensure your
+<em>~/.hgrc</em> file has the following:</p>
+<pre><code>[extensions]
+firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
+</code></pre>
+<p>You likely already have a copy of version-control-tools
+in <em>~/.mozbuild/version-control-tools</em>.</p>
+<p>It is completely safe to install <em>firefoxtree</em> globally: the extension
+will only modify behavior of repositories that are clones of Firefox
+repositories.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="update-bugzilla-automatically-on-push"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/06/30/update-bugzilla-automatically-on-push" rel="bookmark" title="Permanent Link to Update Bugzilla Automatically on Push">Update Bugzilla Automatically on Push</a></h2>
   <small>June 30, 2014 at 11:15 PM | categories: 
@@ -990,65 +1081,6 @@ control system knows how to solve.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="new-repository-for-mozilla-version-control-tools"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools" rel="bookmark" title="Permanent Link to New Repository for Mozilla Version Control Tools">New Repository for Mozilla Version Control Tools</a></h2>
-  <small>February 05, 2014 at 07:15 PM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Version control systems can be highly useful tools.</p>
-<p>At Mozilla, we've made numerous improvements and customizations to our
-version control tools. We have <a href="https://hg.mozilla.org/hgcustom/hghooks/">custom hooks</a>
-that run on the server. We have a <a href="https://hg.mozilla.org/hgcustom/hg_templates/">custom skin</a>
-for Mercurial's web interface. Mozillians have written a handful of
-Mercurial extensions to aid with common developer tasks, such as
-<a href="https://bitbucket.org/sfink/trychooser">pushing to try</a>,
-<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">interacting with Bugzilla</a>,
-<a href="https://bitbucket.org/sfink/mqext">making mq more useful</a>, and more.</p>
-<p>These have all come into existence in an organic manner, one after the
-other. Individuals have seen an itch and scratched it. Good for them.
-Good for Mozilla.</p>
-<p>Unfortunately, the collection of amassed tools has become quite large.
-They have become difficult to discover and keep up to date. The
-consistency in quality and style between the tools varies. Each tool has
-separate processes for updating and changing.</p>
-<p>I contacted the maintainers of the popular version control tools at
-Mozilla with a simple proposal: let's maintain all our tools under one
-repo. This would allow us to increase cohesion, share code, maintain a
-high quality bar, share best practices, etc. There were no major
-objections, so we now have a <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">unified repository</a>
-containing our version control tools!</p>
-<p>Currently, we only have a few Mercurial extensions in there. A goal is
-to accumulate as much of the existing Mercurial infrastructure into
-that repository as possible. Client code. Server code. All of the code.
-I want developers to be able to install the same hooks on their clients
-as what's running on the server: why should your local repo let you
-commit something that the server will reject? I want developers to be
-able to reasonably reproduce Mozilla's canonical version control server
-configuration locally. That way, you can test things locally with a high
-confidence that your changes will work the same way on production. This
-allows deployments to move faster and with less friction.</p>
-<p>The immediate emphasis will be on moving extensions into this repo and
-deprecating the old homes on user repositories. Over time, we'll move
-into consolidating server code and getting hg.mozilla.org and
-git.mozilla.org to use this repository. But that's a lower priority: the
-most important goal right now is to make it easier and friendlier for
-people to run productivity-enhancing tools.</p>
-<p>So, if you see your Mercurial extensions alerting you that they've been
-moved to a new repository, now you know what's going on.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/4">« Previous Page</a>
   --  

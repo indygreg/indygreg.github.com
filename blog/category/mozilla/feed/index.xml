@@ -10,10 +10,39 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 04 May 2015 19:40:56 GMT</pubDate>
+    <pubDate>Mon, 04 May 2015 20:42:13 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Reporting Mercurial Issues</title>
+      <link>http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues</link>
+      <pubDate>Mon, 04 May 2015 13:45:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues</guid>
+      <description>Reporting Mercurial Issues</description>
+      <content:encoded><![CDATA[<p>I semi-frequently stumble upon conversations in hallways and
+on irc.mozilla.org about issues people are having with Mercurial.
+These conversations periodically involve a legitimate bug with
+Mercurial. Unfortunately, these conversations frequently end
+without an actionable result. Unless someone files a bug, pings me,
+etc, the complaints disappear into ether. That's not good for
+anyone and only results in bugs living longer than they should.</p>
+<p>There are posters around Mozilla offices that say
+<em>if you see something, file something.</em> This advice does not just
+apply to Mozilla projects!</p>
+<p><strong>If you encounter an issue in Mercurial, please take the time
+to report it somewhere meaningful.</strong> The
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/issues.html">Reporting Issues with Mercurial</a>
+page from the
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/index.html">Mercurial for Mozillians</a>
+guide tells you how to do this.</p>
+<p>It is OK to complain about something. But if you don't inform
+someone empowered to do something about it, you are part of the
+problem without being part of the solution. Please make the
+incremental effort to be part of the solution.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Mercurial 3.4 Released</title>
       <link>http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released</link>
@@ -688,43 +717,6 @@ doing history rewriting. With MozReview, that overhead is gone and I
 barely pay a penalty for rewriting history, something that often
 produces a more reviewable series of commits and makes reviewing
 and landing a complex patch series significantly easier.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Automatic Python Static Analysis on MozReview</title>
-      <link>http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview</link>
-      <pubDate>Sat, 24 Jan 2015 23:30:00 PST</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[code review]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview</guid>
-      <description>Automatic Python Static Analysis on MozReview</description>
-      <content:encoded><![CDATA[<p>A bunch of us were in Toronto last week hacking on MozReview.</p>
-<p>One of the cool things we did was deploy a bot for performing Python
-static analysis. If you submit some .py files to MozReview, the bot
-should leave a review. If it finds violations (it uses
-<a href="https://flake8.readthedocs.org/">flake8</a> internally), it will open
-an issue for each violation. It also leaves a comment that should
-hopefully give enough detail on how to fix the problem.</p>
-<p>While we haven't done much in the way of performance optimizations,
-the bot typically submits results less than 10 seconds after the review
-is posted! So, a human should never be reviewing Python that the bot
-hasn't seen. This means you can stop thinking about style nits and start
-thinking about what the code does.</p>
-<p>This bot should be considered an alpha feature. The code for the bot
-isn't even checked in yet. We're running the bot against production
-to get a feel for how it behaves. If things don't go well, we'll turn
-it off until the problems are fixed.</p>
-<p>We'd like to eventually deploy C++, JavaScript, etc bots. Python won out
-because it was the easiest to integrate (it has sane and efficient
-tooling that is compatible with Mozilla's code bases - most existing
-JavaScript tools won't work with Gecko-flavored JavaScript, sadly).</p>
-<p>I'd also like to eventually make it easier to locally run the same
-static analysis we run in MozReview. Addressing problems locally before
-pushing is a no-brainer since it avoids needless context switching from
-other people and is thus better for productivity. This will come in
-time.</p>
-<p>Report issues in #mozreview or in the Developer Services :: MozReview
-Bugzilla component.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

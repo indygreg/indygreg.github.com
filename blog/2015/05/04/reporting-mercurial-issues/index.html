@@ -19,6 +19,7 @@ Released   : 20101114
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     
   <title>Gregory Szorc's Digital Home
+  | Reporting Mercurial Issues
 </title>
 <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
 <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
@@ -49,7 +50,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="reporting-mercurial-issues"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/04/reporting-mercurial-issues" rel="bookmark" title="Permanent Link to Reporting Mercurial Issues">Reporting Mercurial Issues</a></h2>
@@ -86,73 +87,12 @@ incremental effort to be part of the solution.</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-3.4-released"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/04/mercurial-3.4-released" rel="bookmark" title="Permanent Link to Mercurial 3.4 Released">Mercurial 3.4 Released</a></h2>
-  <small>May 04, 2015 at 12:40 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial 3.4 was released on May 1 (following Mercurial's time-based
-schedule of releasing a new version every 3 months).</p>
-<p>3.4 is a significant release for a few reasons.</p>
-<p>First, the next version of the wire protocol (<em>bundle2</em>) has been
-marked as non-experimental on servers. This version of the protocol
-paves over a number of deficiencies in the classic protocol. I won't
-go into low-level details. But I will say that the protocol enables
-some rich end-user experiences, such as having the server hand out URLs
-for pre-generated bundles (e.g. offload clones to S3), atomic push
-operations, and advanced workflows, such as having the server rebase
-automatically on push. Of course, you'll need a server running 3.4
-to realize the benefits of the new protocol. hg.mozilla.org won't be
-updated until at least June 1.</p>
-<p>Second, Mercurial 3.4 contains improvements to the tags cache to make
-performance concerns a thing of the past. Due to the structure of the
-Firefox repositories, the previous implementation of the tags cache
-could result in pauses of dozens of seconds during certain workflows.
-The problem should go away with Mercurial 3.4. <strong>Please note that on
-first use of Mercurial 3.4, your repository may perform a one-time
-upgrade of the tags cache. This will spin a full CPU core and will
-take up to a few minutes to complete on Firefox repos. Let it run to
-completion and performance should not be an issue again.</strong> I wrote the
-patches to change the tags cache (with lots of help from Pierre-Yves
-David, a Mercurial core contributor). So if you find anything wrong,
-I'm the one to complain to.</p>
-<p>Third, the HTTP interface to Mercurial (hgweb) now has JSON output
-for nearly every endpoint. The implementation isn't yet complete,
-but it is better than nothing. But, it should be good enough for
-services to start consuming it. Again, this won't be available on
-hg.mozilla.org until the server is upgraded on June 1 at the earliest.
-This is a feature I added to core Mercurial. If you have feature
-requests, send them my way.</p>
-<p>Fourth, a number of performance regressions introduced in Mercurial
-3.3 were addressed. These performance issues frequently manifested
-during <em>hg blame</em> operations. Many Mozillians noticed them on
-hg.mozilla.org when looking at blame through the web interface.</p>
-<p>For a more comprehensive list of changes, see
-<a href="https://groups.google.com/d/msg/mozilla.dev.version-control/z4aWvBoAGYw/d0hUGKJU_psJ">my post about the 3.4 RC</a>
-and the
-<a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_3.4_.282015-05-01.29">official release notes</a>.</p>
-<p>3.4 was a significant release. There are compelling reasons to upgrade.
-That being said, there were a lot of changes in 3.4. If you want to wait
-until 3.4.1 is released (scheduled for June 1) so you don't run into
-any regressions, nobody can fault you for that.</p>
-<p>If you want to upgrade, I recommend reading the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mercurial for Mozillians Installation Page</a>.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               
