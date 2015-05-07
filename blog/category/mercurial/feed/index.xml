@@ -10,10 +10,34 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 04 May 2015 20:42:13 GMT</pubDate>
+    <pubDate>Thu, 07 May 2015 23:08:14 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Dropping Explicit Support for Mercurial 3.0</title>
+      <link>http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</link>
+      <pubDate>Thu, 07 May 2015 16:05:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</guid>
+      <description>Dropping Explicit Support for Mercurial 3.0</description>
+      <content:encoded><![CDATA[<p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
+for all the Mercurial code in the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository. File issues in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
+<p>Code may still work against Mercurial 3.0. But it isn't supported and
+could break hard at any time.</p>
+<p>Supporting multiple versions of <em>any</em> software carries
+with it some cost. The people writing tooling around Mercurial are busy.
+It is a waste of our time to bend over backwards to support old versions
+of software that <strong>all</strong> users should have upgraded from months ago.
+Still using older Mercurial versions means you aren't getting the best
+performance and may encounter bugs that have since been fixed.</p>
+<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
+for info on how to upgrade to the latest/greatest Mercurial version.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Reporting Mercurial Issues</title>
       <link>http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues</link>
@@ -532,70 +556,6 @@ these should make pushes faster on <em>any</em> server. They will also enable
 workflow enhancements, such as Facebook's experimental extension to
 perform rebases as part of push (eliminating push races and having to
 manually rebase when you lose the push race).</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Test Drive the New Headless Try Repository</title>
-      <link>http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository</link>
-      <pubDate>Thu, 20 Nov 2014 14:45:00 PST</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository</guid>
-      <description>Test Drive the New Headless Try Repository</description>
-      <content:encoded><![CDATA[<p>Mercurial and Git both experience scaling pains as the number of heads
-in a repository approaches infinity. Operations like push and pull
-slow to a crawl and everyone gets frustrated.</p>
-<p>This is the problem Mozilla's Try repository has been dealing with
-for years. We know the solution doesn't scale. But we've been content
-kicking the can by resetting the repository (blowing away data)
-to make the symptoms temporarily go away.</p>
-<p>One of my official goals is to ship a scalable Try solution by the end
-of 2014.</p>
-<p>Today, I believe I finally have enough code cobbled together to
-produce a working concept. <strong>And I could use your help testing it.</strong></p>
-<p>I would like people to push their Try, code review, and other
-miscellaneous heads to a special repository. To do this:</p>
-<pre><code>$ hg push -r . -f ssh://hg@hg.gregoryszorc.com/gecko-headless
-</code></pre>
-<p>That is:</p>
-<ul>
-<li>Consider the changeset belonging to the working copy</li>
-<li>Allow the creation of new heads</li>
-<li>Send it to the <em>gecko-headless</em> repo on hg.gregoryszorc.com using
-  SSH</li>
-</ul>
-<p>Here's what happening.</p>
-<p>I have deployed a special repository to my personal server that I
-believe will behave very similarly to the final solution.</p>
-<p>When you push to this repository, instead of your changesets being
-applied directly to the repository, it siphons them off to a Mercurial
-bundle. It then saves this bundle somewhere along with some metadata
-describing what is inside.</p>
-<p>When you run <em>hg pull -r <node></em> on that repository and ask for a
-changeset that exists in the bundle, the server does some magic
-and returns data from the bundle file.</p>
-<p>Things this repository doesn't do:</p>
-<ul>
-<li><strong>This repository will not actually send changesets to Try for you.</strong></li>
-<li>You cannot <code>hg pull</code> or <code>hg clone</code> the repository and get all of the
-  commits from bundles. This isn't a goal. It will likely never be
-  supported.</li>
-<li>We do not yet record a pushlog entry for pushes to the repository.</li>
-<li>The hgweb HTML interface does not <strong>yet</strong> handle commits that only
-  exist in bundles. People want this to work. It will eventually work.</li>
-<li>Pulling from the repository over HTTP with a vanilla Mercurial install
-  may not preserve phase data.</li>
-</ul>
-<p>The purpose of this experiment is to expose the repository to some
-actual traffic patterns so I can see what's going on and get a feel
-for real-world performance, variability, bugs, etc. I plan to do all
-of this in the testing environment. But I'd like some real-world
-use on the actual Firefox repository to give me peace of mind.</p>
-<p>Please report any issues directly to me. Leave a comment here. Ping
-me on IRC. Send me an email. etc.</p>
-<p><strong>Update 2014-11-21: People discovered a bug with pushed changesets
-accidentally being advanced to the public phase, despite the repository
-being non-publishing. I have fixed the issue. But you must now push to
-the repository over SSH, not HTTP.</strong></p>]]></content:encoded>
     </item>
   </channel>
 </rss>

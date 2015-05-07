@@ -10,10 +10,34 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 04 May 2015 20:42:13 GMT</pubDate>
+    <pubDate>Thu, 07 May 2015 23:08:14 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Dropping Explicit Support for Mercurial 3.0</title>
+      <link>http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</link>
+      <pubDate>Thu, 07 May 2015 16:05:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</guid>
+      <description>Dropping Explicit Support for Mercurial 3.0</description>
+      <content:encoded><![CDATA[<p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
+for all the Mercurial code in the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository. File issues in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
+<p>Code may still work against Mercurial 3.0. But it isn't supported and
+could break hard at any time.</p>
+<p>Supporting multiple versions of <em>any</em> software carries
+with it some cost. The people writing tooling around Mercurial are busy.
+It is a waste of our time to bend over backwards to support old versions
+of software that <strong>all</strong> users should have upgraded from months ago.
+Still using older Mercurial versions means you aren't getting the best
+performance and may encounter bugs that have since been fixed.</p>
+<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
+for info on how to upgrade to the latest/greatest Mercurial version.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Reporting Mercurial Issues</title>
       <link>http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues</link>
@@ -685,38 +709,6 @@ and fixing that is pretty far down the priority list. Wallpapering
 over things with the
 <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/firefoxtree.html">firefoxtree extensions</a>
 is my recommended solution until matters are fixed.)</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Commit Part Numbers and MozReview</title>
-      <link>http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview</link>
-      <pubDate>Tue, 27 Jan 2015 20:17:00 PST</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[code review]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview</guid>
-      <description>Commit Part Numbers and MozReview</description>
-      <content:encoded><![CDATA[<p>It is common for commit messages in Firefox to contains strings like
-<em>Part 1</em>, <em>Part 2</em>, etc. See
-<a href="https://hg.mozilla.org/projects/build-system/pushloghtml?changeset=5cb8bcab09cc">this push</a>
-for <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">bug 784841</a>
-for an extreme multi-part example.</p>
-<p>When code review is conducted in Bugzilla, these identifiers are
-necessary because Bugzilla orders attachments/patches in the order they
-were updated or their patch title (I'm not actually sure!). If part
-numbers were omitted, it could be very confusing trying to figure out
-which order patches should be applied in.</p>
-<p>However, when code review is conducted in
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>,
-<strong>there is no need for explicit part numbers to convey ordering</strong> because
-the ordering of commits is implicitly defined by the repository history
-that you pushed to MozReview!</p>
-<p>I argue that if you are using MozReview, you should stop writing <em>Part
-N</em> in your commit messages, as it provides little to no benefit.</p>
-<p>I, for one, welcome this new world order: I've previously wasted a lot
-of time rewriting commit messages to reflect new part ordering after
-doing history rewriting. With MozReview, that overhead is gone and I
-barely pay a penalty for rewriting history, something that often
-produces a more reviewable series of commits and makes reviewing
-and landing a complex patch series significantly easier.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
