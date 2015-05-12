@@ -51,6 +51,152 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="on-monolithic-repositories"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/09/09/on-monolithic-repositories" rel="bookmark" title="Permanent Link to On Monolithic Repositories">On Monolithic Repositories</a></h2>
+  <small>September 09, 2014 at 10:00 AM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/09/09/on-monolithic-repositories#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>When companies or organizations deploy version control, they have to
+make many choices. One of them is how many repositories to create.
+Your choices are essentially a) a single, monolithic repository that
+holds everything b) many separate, smaller repositories that hold
+all the individual parts c) something in between.</p>
+<p>The prevailing convention today (especially in the open source
+realm) is to create many separate and loosely coupled repositories,
+each repository mapping to a specific product or service. That does
+seem reasonable: if you were organizing files on your filesystem,
+you would group them by functionality or role (photos, music,
+documents, etc). And, version control tools are functionally
+filesystems. So it makes sense to draw repository boundaries at
+directory/role levels.</p>
+<p>Further reinforcing the separate repository convention is the
+scaling behavior of our version control tools. Git, the popular
+tool in open source these days, doesn't scale well to very large
+repositories due to - among other things - not having narrow clones
+(fetching a subset of files). It scales well enough to the
+overwhelming majority of projects. But if you are a large
+organization generating lots of data (read: gigabytes of data over
+hundreds of thousands of files and commits) for version control,
+Git is unsuitable in its current form. Other tools (like Mercurial)
+don't currently fare that much better (although Mercurial has plans
+to tackle these scaling vectors).</p>
+<p>Despite popular convention and even limitations in tools, companies
+like Google and Facebook opt to run large, monolithic repositories.
+Google runs Perforce.
+<a href="https://code.facebook.com/posts/218678814984400/scaling-mercurial-at-facebook/">Facebook is on Mercurial</a>,
+or at least is in the process of migrating to Mercurial.</p>
+<p>Why do these companies run monolithic repositories?
+In <a href="http://www.perforce.com/sites/default/files/still-all-one-server-perforce-scale-google-wp.pdf">Google's words</a>:</p>
+<p><em>We have a single large depot with almost all of Google's projects
+on it. This aids agile development and is much loved by our users,
+since it allows almost anyone to easily view almost any code, allows
+projects to share code, and allows engineers to move freely from
+project to project. Documentation and data is stored on the server
+as well as code.</em></p>
+<p>So, monolithic repositories are all about moving fast and getting things
+done more efficiently. In other words, <strong>monolithic repositories
+increase developer productivity.</strong></p>
+<p>Furthermore, monolithic repositories are also more compatible with
+the ebb and flow of large organizations and large software projects.
+Components, features, products, and teams come and go, merge and split.
+The only constant is change. And if you are maintaining separate
+repositories that attempt to map to this ever-changing organizational
+topology, you are going to have a bad time. Either you'll be
+constantly copying, moving, merging, splitting, etc data and repositories.
+Or your repositories will be organized in a very non-logical and
+non-intuitive manner. That translates to overhead and lost productivity.
+I think that monolithic repositories handle the realities of large
+organizations much better. Big change or reorganization you want
+to reflect? You can make a single, atomic, history-preserving commit
+to move things around. I think that's much more manageable, especially
+when you consider the difficulty and annoyance of history-preserving
+changes across repositories.</p>
+<p>Naysayers will decry monolithic repositories on principled and practical
+grounds.</p>
+<p>The principled camp will say that separate repositories
+constitute a loosely coupled (dare I say service oriented) architecture
+that maps better to how software is consumed, assembled, and deployed
+and that erecting barriers in the form of separate repositories
+deliberately enforces this architecture. I agree. However, you can
+still maintain a loosely coupled architecture with monolithic
+repositories. The Subversion model of checking out a single tree
+<em>from a larger repository</em> proves this. Furthermore, I would say
+architecture decisions should be enforced by people (via code review,
+etc), not via version control repository topology. I believe this
+principled argument against monolithic repositories to be rather weak.</p>
+<p>The principled camp living in the open source realm may also decry
+monolithic repositories as an affront to the spirit of open source.
+They would say that a monolithic repository creates unfairly strong
+ties to the organization that operates it and creates barriers to
+forking, etc. This may be true. But monolithic repositories don't
+intrinsically infringe on the
+<a href="https://www.gnu.org/philosophy/free-sw.html">basic software freedoms</a>,
+organizations do. Therefore, I find this principled argument rather
+weak.</p>
+<p>The practical camp will say that monolithic repositories just don't
+scale or aren't suitable for general audiences. These concerns are
+real.</p>
+<p><em>Fully</em> distributed version control systems (every commit on every
+machine) definitely don't scale past certain limits. Depending on your
+repository and user base, your scaling limits include disk space
+(repository data terabytes in size), bandwidth (repository data terabytes
+in size), filesystem (repository hundreds of thousands or millions of
+files), CPU and memory (operations on large repositories take too
+many system resources), and many heads/branches (tools like Git and
+Mercurial don't scale well to tens of thousands of heads/branches).
+These limitations with fully distributed version
+control are why distributed version control tools like Git and
+Mercurial support a partially-distributed mode that behaves more like
+your classical server-client model, like those employed by Subversion,
+Perforce, etc. Git supports shallow clone and sparse checkout.
+Mercurial supports shallow clone (via remotefilelog) and has planned
+support for narrow clone and sparse checkout in the next release or
+two. Of course, you can avoid the scaling limitations of distributed
+version control by employing a non-distributed tool, such as Subversion.
+Many companies continue to reach this conclusion today. However,
+users adapted to the distributed workflow would likely be
+up in arms (they would probably use tools like hg-subversion or git-svn
+to maintain their workflows). So, while scaling of version control
+can be a real concern, there are solutions and workarounds. However,
+they do involve falling back to a partially-distributed model.</p>
+<p>Another concern with monolithic repositories is user access control. You
+inevitably have code or data that is more sensitive and want to limit
+who can change or even access it. Separate repositories seem to
+facilitate a simpler model: per-repository access control. With
+monolithic repositories, you have to worry about per-directory/subtree
+permissions, an increased risk of data leaking, etc. This concern is
+more real with distributed version control, as distributed data and
+access control aren't naturally compatible. But these issues can be
+resolved. And if the tooling supports it, there is only a semantic
+difference between managing access control between repositories versus
+components of a single repository.</p>
+<p>When it comes to repository hosting conversions, I agree with Google
+and Facebook: <strong>I prefer monolithic repositories</strong>. When I am interacting
+with version control, I just want to get stuff done. I don't want to
+waste time dealing with multiple commands to manage multiple
+repositories. I don't want to waste time or expend cognitive load
+dealing with submodule, subrepository, or big files management. I
+don't want to waste time trying to find and reuse code, data, or
+documentation. I want everything at my fingertips, where it can be
+easily discovered, inspected, and used. Monolithic repositories
+facilitate these workflows more than separate repositories and make
+me more productive as a result.</p>
+<p>Now, if only all the tools and processes we use and love would work
+with monolithic repositories...</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/09/on-monolithic-repositories#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="reproducing-mozilla's-mercurial-server"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/09/05/reproducing-mozilla's-mercurial-server" rel="bookmark" title="Permanent Link to Reproducing Mozilla's Mercurial Server">Reproducing Mozilla's Mercurial Server</a></h2>
   <small>September 05, 2014 at 02:50 PM | categories: 
@@ -297,34 +443,6 @@ some tests today!</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="please-run-mach-mercurial-setup"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/07/25/please-run-mach-mercurial-setup" rel="bookmark" title="Permanent Link to Please run mach mercurial-setup">Please run mach mercurial-setup</a></h2>
-  <small>July 25, 2014 at 10:00 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/07/25/please-run-mach-mercurial-setup#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Hey there, Firefox developer! Do you use Mercurial? Please take the time
-right now to run <strong>mach mercurial-setup</strong> from your Firefox clone.</p>
-<p>It's been updated to ensure you are running a modern Mercurial version.
-More awesomely, it has support for a couple of new extensions to make
-you more productive. I think you'll like what you see.</p>
-<p><strong>mach mercurial-setup</strong> doesn't change your <em>hgrc</em> without
-confirmation. So it is safe to run to see what's available. You should
-consider running it periodically, say once a week or so. I wouldn't
-be surprised if we add a notification to mach to remind you to do this.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/25/please-run-mach-mercurial-setup#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../7">« Previous Page</a>
   --  

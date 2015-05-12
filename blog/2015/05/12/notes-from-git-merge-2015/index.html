@@ -19,6 +19,7 @@ Released   : 20101114
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     
   <title>Gregory Szorc's Digital Home
+  | Notes from Git Merge 2015
 </title>
 <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
 <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
@@ -49,7 +50,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="notes-from-git-merge-2015"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/12/notes-from-git-merge-2015" rel="bookmark" title="Permanent Link to Notes from Git Merge 2015">Notes from Git Merge 2015</a></h2>
@@ -239,220 +240,12 @@ don't want to maintain forever. Prefer to send upstream.</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/12/notes-from-git-merge-2015#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="dropping-explicit-support-for-mercurial-3.0"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0" rel="bookmark" title="Permanent Link to Dropping Explicit Support for Mercurial 3.0">Dropping Explicit Support for Mercurial 3.0</a></h2>
-  <small>May 07, 2015 at 04:05 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
-for all the Mercurial code in the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository. File issues in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
-<p>Code may still work against Mercurial 3.0. But it isn't supported and
-could break hard at any time.</p>
-<p>Supporting multiple versions of <em>any</em> software carries
-with it some cost. The people writing tooling around Mercurial are busy.
-It is a waste of our time to bend over backwards to support old versions
-of software that <strong>all</strong> users should have upgraded from months ago.
-Still using older Mercurial versions means you aren't getting the best
-performance and may encounter bugs that have since been fixed.</p>
-<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
-for info on how to upgrade to the latest/greatest Mercurial version.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="reporting-mercurial-issues"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/04/reporting-mercurial-issues" rel="bookmark" title="Permanent Link to Reporting Mercurial Issues">Reporting Mercurial Issues</a></h2>
-  <small>May 04, 2015 at 01:45 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I semi-frequently stumble upon conversations in hallways and
-on irc.mozilla.org about issues people are having with Mercurial.
-These conversations periodically involve a legitimate bug with
-Mercurial. Unfortunately, these conversations frequently end
-without an actionable result. Unless someone files a bug, pings me,
-etc, the complaints disappear into ether. That's not good for
-anyone and only results in bugs living longer than they should.</p>
-<p>There are posters around Mozilla offices that say
-<em>if you see something, file something.</em> This advice does not just
-apply to Mozilla projects!</p>
-<p><strong>If you encounter an issue in Mercurial, please take the time
-to report it somewhere meaningful.</strong> The
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/issues.html">Reporting Issues with Mercurial</a>
-page from the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/index.html">Mercurial for Mozillians</a>
-guide tells you how to do this.</p>
-<p>It is OK to complain about something. But if you don't inform
-someone empowered to do something about it, you are part of the
-problem without being part of the solution. Please make the
-incremental effort to be part of the solution.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-3.4-released"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/04/mercurial-3.4-released" rel="bookmark" title="Permanent Link to Mercurial 3.4 Released">Mercurial 3.4 Released</a></h2>
-  <small>May 04, 2015 at 12:40 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial 3.4 was released on May 1 (following Mercurial's time-based
-schedule of releasing a new version every 3 months).</p>
-<p>3.4 is a significant release for a few reasons.</p>
-<p>First, the next version of the wire protocol (<em>bundle2</em>) has been
-marked as non-experimental on servers. This version of the protocol
-paves over a number of deficiencies in the classic protocol. I won't
-go into low-level details. But I will say that the protocol enables
-some rich end-user experiences, such as having the server hand out URLs
-for pre-generated bundles (e.g. offload clones to S3), atomic push
-operations, and advanced workflows, such as having the server rebase
-automatically on push. Of course, you'll need a server running 3.4
-to realize the benefits of the new protocol. hg.mozilla.org won't be
-updated until at least June 1.</p>
-<p>Second, Mercurial 3.4 contains improvements to the tags cache to make
-performance concerns a thing of the past. Due to the structure of the
-Firefox repositories, the previous implementation of the tags cache
-could result in pauses of dozens of seconds during certain workflows.
-The problem should go away with Mercurial 3.4. <strong>Please note that on
-first use of Mercurial 3.4, your repository may perform a one-time
-upgrade of the tags cache. This will spin a full CPU core and will
-take up to a few minutes to complete on Firefox repos. Let it run to
-completion and performance should not be an issue again.</strong> I wrote the
-patches to change the tags cache (with lots of help from Pierre-Yves
-David, a Mercurial core contributor). So if you find anything wrong,
-I'm the one to complain to.</p>
-<p>Third, the HTTP interface to Mercurial (hgweb) now has JSON output
-for nearly every endpoint. The implementation isn't yet complete,
-but it is better than nothing. But, it should be good enough for
-services to start consuming it. Again, this won't be available on
-hg.mozilla.org until the server is upgraded on June 1 at the earliest.
-This is a feature I added to core Mercurial. If you have feature
-requests, send them my way.</p>
-<p>Fourth, a number of performance regressions introduced in Mercurial
-3.3 were addressed. These performance issues frequently manifested
-during <em>hg blame</em> operations. Many Mozillians noticed them on
-hg.mozilla.org when looking at blame through the web interface.</p>
-<p>For a more comprehensive list of changes, see
-<a href="https://groups.google.com/d/msg/mozilla.dev.version-control/z4aWvBoAGYw/d0hUGKJU_psJ">my post about the 3.4 RC</a>
-and the
-<a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_3.4_.282015-05-01.29">official release notes</a>.</p>
-<p>3.4 was a significant release. There are compelling reasons to upgrade.
-That being said, there were a lot of changes in 3.4. If you want to wait
-until 3.4.1 is released (scheduled for June 1) so you don't run into
-any regressions, nobody can fault you for that.</p>
-<p>If you want to upgrade, I recommend reading the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mercurial for Mozillians Installation Page</a>.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="automatically-redirecting-mercurial-pushes"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/04/30/automatically-redirecting-mercurial-pushes" rel="bookmark" title="Permanent Link to Automatically Redirecting Mercurial Pushes">Automatically Redirecting Mercurial Pushes</a></h2>
-  <small>April 30, 2015 at 12:30 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Managing URLs in distributed version control tools can be a pain,
-especially if multiple repositories are involved. For example,
-with Mozilla's repository-based code review workflow (you push to a
-special review repository to initiate code review - this is conceptually
-similar to GitHub pull requests), there exist
-<a href="https://reviewboard-hg.mozilla.org/">separate code review repositories</a>
-for each logical repository. Figuring out how repositories map to each
-other and setting up remote paths for each new clone can be a pain and
-time sink.</p>
-<p>As of today, we can now do something better.</p>
-<p>If you push to <em>ssh://reviewboard-hg.mozilla.org/autoreview</em>,
-Mercurial will automatically figure out the appropriate review
-repository and redirect your push automatically. In other words, if we
-have <a href="https://reviewboard.mozilla.org/">MozReview</a> set up to review
-whatever repository you are working on,
-your push and review request will automatically go through. No need to
-figure out what the appropriate review repo is or configure
-repository URLs!</p>
-<p>Here's what it looks like:</p>
-<div class="pygments_murphy"><pre>$ hg push review
-pushing to ssh://reviewboard-hg.mozilla.org/autoreview
-searching for appropriate review repository
-redirecting push to ssh://reviewboard-hg.mozilla.org/version-control-tools/
-searching for changes
-remote: adding changesets
-remote: adding manifests
-remote: adding file changes
-remote: added 1 changesets with 1 changes to 1 files
-remote: Trying to insert into pushlog.
-remote: Inserted into the pushlog db successfully.
-submitting 1 changesets for review
-
-changeset:  11043:b65b087a81be
-summary:    mozreview: create per-commit identifiers (bug 1160266)
-review:     https://reviewboard.mozilla.org/r/7953 (draft)
-
-review id:  bz://1160266/gps
-review url: https://reviewboard.mozilla.org/r/7951 (draft)
-(visit review url to publish this review request so others can see it)
-</pre></div>
-
-<p>Read the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install.html#review-repositories">full instructions</a>
-for more details.</p>
-<p>This requires an updated <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-repository, which you can get by running <em>mach mercurial-setup</em> from a
-Firefox repository.</p>
-<p>For those that are curious, the <em>autoreview</em> repo/server advertises a list
-of repository URLs and their root commit SHA-1. The client automatically
-sends the push to a URL sharing the same root commit. The
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/0b02cd388590">code</a>
-is quite simple.</p>
-<p>While this is only implemented for MozReview, I could envision us doing
-something similar for other centralized repository-centric services, such
-as <em>Try</em> and <em>Autoland</em>. Stay tuned.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
- <a href="/blog/category/mercurial/2">Next Page »</a>
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/05/12/notes-from-git-merge-2015";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               
