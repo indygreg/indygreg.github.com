@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 12 May 2015 22:36:55 GMT</pubDate>
+    <pubDate>Tue, 12 May 2015 22:44:00 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -60,7 +60,7 @@ refactorings, etc.</p>
 combined with non-resumable clone results in badness. Delta resolution
 can take a while. Checkout of hundreds of thousands of files can be
 slow, especially on Windows.</p>
-<p>"At tool developers... it's hard to tell people don't check in large
+<p>"As tool developers... it's hard to tell people don't check in large
 binaries, do things this way, ... when all they are trying to do is
 get their job done." (I couldn't agree more: tools should ideally not
 impose sub-optimal workflows.)</p>
@@ -68,8 +68,9 @@ impose sub-optimal workflows.)</p>
 meant don't use multiple VCSs if you can just make one scale.)</p>
 <p>Shallow clone beneficial. But some commands don't work. log not very
 useful.</p>
-<p>Narrow clones mentioned. Apparently talked about elsewhere. Non-trivial
-problem for Git. "We have no idea when this is going to happen."</p>
+<p>Narrow clones mentioned. Apparently talked about elsewhere at Git Merge
+not captured on video. Non-trivial problem for Git. "We have no idea
+when this is going to happen."</p>
 <p>Split repos until narrow clone is available. Google wrote repo to manage
 multiple repos. They view repo and multiple repos as stop-gap until
 narrow clone is implemented.</p>
@@ -101,13 +102,14 @@ Performance problems with high throughput repositories.</p>
 <p>Master-mirror replication can help. Problems with replication lag.
 Consistency is hard.</p>
 <p>Google uses a distributed Git store using Bigtable and GFS built on
-dGit. Git-aware load balancer. Completely separate pool of garbage
+JGit. Git-aware load balancer. Completely separate pool of garbage
 collection workers. They do replication to multiple datacenters before
 pushes. 6 datacenters across world. Some of their stuff is open source.
 A lot isn't.</p>
 <p>Humans have difficulty managing hundreds of repositories. "How do you as
 a human know what you need to modify?" Monorepos have this problem too.
-Inherent with lots of content.</p>
+Inherent with lots of content. (Seemed to imply it is worse with
+multiple repos than with a monorepo.)</p>
 <p>Porting changes between forks is hard. e.g. cherry picking between
 internal and external Android repos.</p>
 <p>ACLs are a mess.</p>
