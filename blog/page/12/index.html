@@ -51,6 +51,41 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mach-now-lives-in-mozilla-central"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/09/mach-now-lives-in-mozilla-central" rel="bookmark" title="Permanent Link to mach now lives in mozilla-central">mach now lives in mozilla-central</a></h2>
+  <small>January 09, 2014 at 10:55 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/mach'>mach</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p><a href="https://pypi.python.org/pypi/mach/">mach</a> -- the generic command
+line interface framework that is behind the <em>mach</em> tool used to
+build Firefox -- now has its canonical home in
+<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mach/">mozilla-central</a>,
+the canonical repository for Firefox. The
+<a href="https://github.com/indygreg/mach">previous home</a> has been updated to
+reflect the change.</p>
+<p>mach will continue to be released on
+<a href="https://pypi.python.org/pypi/mach/">PyPI</a> and installable via <strong>pip
+install mach</strong>.</p>
+<p>I made the change because keeping multiple repositories in sync
+wasn't something I wanted to spend time doing. Furthermore,
+Mozillians have been contributing a steady stream of improvements to
+the mach core recently and it makes sense to leverage Mozilla's
+familiar infrastructure for patch contribution.</p>
+<p>This decision may be revisited in the future. Time will tell.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/09/mach-now-lives-in-mozilla-central#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="why-do-projects-support-old-python-releases"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/08/why-do-projects-support-old-python-releases" rel="bookmark" title="Permanent Link to Why do Projects Support old Python Releases">Why do Projects Support old Python Releases</a></h2>
   <small>January 08, 2014 at 05:00 PM | categories: 
@@ -294,36 +329,6 @@ low risk/low convenience and GitHub's vibrant developer community.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/13/importance-of-hosting-your-version-control-server#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-2.8-released"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/11/08/mercurial-2.8-released" rel="bookmark" title="Permanent Link to Mercurial 2.8 released">Mercurial 2.8 released</a></h2>
-  <small>November 08, 2013 at 02:30 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p><a href="http://mercurial.selenic.com/">Mercurial</a> 2.8 has been released.</p>
-<p>The <a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_2.8_.282013-11-1.29">changes</a>
-aren't as sexy as previous releases. But there are a handful of bug
-fixes that seem useful to pull in. People may also find the new <em>shelve</em>
-extension useful.</p>
-<p>I encourage Mozillians to keep their Mercurial up to date. I once went
-around the San Francisco office and stood behind people as they
-upgraded to a modern Mercurial. For the next few weeks I was hearing a
-lot of "OMG Mercurial is so much better now." Don't handicap yourself by
-running an older, buggy Mercurial.</p>
-<p>If you don't yet feel comfortable running 2.8, 2.7 should be safe.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../11">« Previous Page</a>
   --  

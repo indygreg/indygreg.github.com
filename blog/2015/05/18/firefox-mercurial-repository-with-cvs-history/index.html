@@ -1,0 +1,183 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Firefox Mercurial Repository with CVS History
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="firefox-mercurial-repository-with-cvs-history"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history" rel="bookmark" title="Permanent Link to Firefox Mercurial Repository with CVS History">Firefox Mercurial Repository with CVS History</a></h2>
+  <small>May 18, 2015 at 08:40 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>When Firefox made the switch from CVS to Mercurial in March 2007, the
+CVS history wasn't imported into Mercurial. There were good reasons for
+this at the time. But it's a decision that continues to have
+side-effects. I am surprised how often I hear of engineers wanting to
+access blame and commit info from commits now more than 9 years old!</p>
+<p>When individuals created a Git mirror of the Firefox repository a few
+years ago, they correctly decided that importing CVS history would be
+a good idea. They also correctly decided to combine the logically same
+but physically separate <em>release</em> and <em>integration</em> repositories into a
+unified Git repository. These are things we can't easily do to the
+canonical Mercurial repository because it would break SHA-1 hashes,
+breaking many systems, and it would require significant changes in
+process, among other reasons.</p>
+<p>While Firefox developers do have access to a single Firefox repository
+with full CVS history (the Git mirror), they still aren't satisfied.</p>
+<p>Running <em>git blame</em> (or <em>hg blame</em> for that matter) can be very
+expensive. For this reason, the blame interface is disabled on many
+web-based source viewers by default. On GitHub, some blame URLs for
+the Firefox repository time out and cause GitHub to display an error
+message. No matter how hard you try, you can't easily get blame results
+(running a local Git HTTP/HTML interface is still difficult compared to
+<em>hg serve</em>).</p>
+<p>Another reason developers aren't satisfied with the Git mirror is that
+Git's querying tools pale in comparison to Mercurial's. I've said it
+before and I'll say it again: Mercurial's revision sets and templates
+are incredibly useful features that enable advanced repository querying
+and reporting. Git's offerings come nowhere close. (I <em>really</em> wish Git
+would steal these awesome features from Mercurial.)</p>
+<p>Anyway, enough people were complaining about the lack of a Mercurial
+Firefox repository with full CVS history that I decided to create one.
+If you point your browsers or Mercurial clients to
+<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full">https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full</a>,
+you'll be able to access it.</p>
+<p>The process used for the conversion was the simplest possible: I used
+hg-git to convert the Git mirror back to Mercurial.</p>
+<p>Unlike the Git mirror, I didn't include all heads in this new
+repository. Instead, there is only mozilla-central's head (the current
+development tip). If I were doing this properly, I'd include all heads,
+like
+<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-aggregate">gecko-aggregate</a>.</p>
+<p>I'm well aware there are oddities in the Git mirror and they now
+exist in this new repository as well. My goal for this conversion was to
+deliver something: it wasn't a goal to deliver the most correct result
+possible.</p>
+<p>At this time, this repository should be considered an unstable science
+experiment. <strong>By no means should you rely on this repository.</strong> But if
+you find it useful, I'd appreciate hearing about it. If enough people
+ask, we could probably make this more official.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
