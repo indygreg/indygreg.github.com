@@ -51,6 +51,184 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-server-hiccup-2014-11-06"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/11/07/mercurial-server-hiccup-2014-11-06" rel="bookmark" title="Permanent Link to Mercurial Server Hiccup 2014-11-06">Mercurial Server Hiccup 2014-11-06</a></h2>
+  <small>November 07, 2014 at 11:00 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/11/07/mercurial-server-hiccup-2014-11-06#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>We had a hiccup on hg.mozilla.org yesterday. It resulted in prolonged
+tree closures for Firefox.
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1094922">Bug 1094922</a>
+tracks the issue.</p>
+<h2>What Happened</h2>
+<p>We noticed that many HTTP requests to hg.mozilla.org were getting 503
+responses. On initial glance, the servers were healthy. CPU was below
+100% utilization, I/O wait was reasonable. And there was little to no
+swapping. Furthermore, the logs showed a healthy stream of requests
+being successfully processed at levels that are typical. In other words,
+it looked like business as usual on the servers.</p>
+<p>Upon deeper investigation, we noticed that the WSGI process pool on the
+servers was fully saturated. There were were 24 slots/processes per server
+allocated to process Mercurial requests and all 24 of them were actively
+processing requests. This created a backlog of requests that had been
+accepted by the HTTP server but were waiting an internal dispatch/proxy
+to WSGI. To the client, this would appear as a request with a long lag
+before response generation.</p>
+<h2>Mitigation</h2>
+<p>This being an emergency (trees were already closed and developers were
+effectively unable to use hg.mozilla.org), we decided to increase the
+size of the WSGI worker pool. After all, we had CPU, I/O, and memory
+capacity to spare and we could identify the root cause later. We first
+bumped worker pool capacity from 24 to 36 and immediately saw a significant
+reduction in the number of pending requests awaiting a WSGI worker. We
+still had spare CPU, I/O, and memory capacity and were still seeing
+requests waiting on a WSGI worker, so we bumped the capacity to 48
+processes. At that time, we stopped seeing worker pool exhaustion and
+all incoming requests were being handed off to a WSGI worker as soon as
+they came in.</p>
+<p>At this time, things were looking pretty healthy from the server end.</p>
+<h2>Impact on Memory and Swapping</h2>
+<p>Increasing the number of WSGI processes had the side-effect of
+increasing the total amount of system memory used by Mercurial
+processes in two ways. First, more processes means more memory. That
+part is obvious. Second, more processes means fewer requests for each
+process per unit of time and thus it takes longer for each process to
+reach its max number of requests being being reaped. (It is a common
+practice in servers to have a single process hand multiple requests.
+This prevents overhead associated with spawning a new process and
+loading possibly expensive context in it.)</p>
+<p>We had our Mercurial WSGI processes configured to serve 100 requests
+before being reaped. With the doubling of WSGI processes from 24 to 48,
+those processes were lingering for 2x as long as before. Since the
+Mercurial processes grow over time (they are aggressive about caching
+repository data), this was slowly exhausting our memory pool.</p>
+<p>It took a few hours, but a few servers started flirting with high swap
+usage. (We don't expect the servers to swap.) This is how we identified
+that memory use wasn't sane.</p>
+<p>We lowered the maximum requests per process from 100 to 50 to match
+the ratio increase in the WSGI worker pool.</p>
+<h2>Mercurial Memory "Leak"</h2>
+<p>When we started looking at the memory usage of WSGI processes in more
+detail, we noticed something strange: RSS of Mercurial processes was
+growing steadily when processes were streaming bundle data. This seemed
+very odd to me. Being a Mercurial developer, I was pretty sure the
+behavior was wrong.</p>
+<p>I <a href="http://bz.selenic.com/show_bug.cgi?id=4443">filed a bug</a> against
+Mercurial.</p>
+<p>I was able to reproduce the issue locally and started running a
+bisection to find the regressing changeset. To my surprise, this issue
+has been around since Mercurial 2.7!</p>
+<p>I looked at the code in question, identified why so much memory was
+being allocated, and submitted patches to
+<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-November/063518.html">stop an unbounded memory growth during clone/pull</a>
+and to
+<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-November/063520.html">further reduce memory use during those operations</a>.
+Both of those patches have been queued to go in the next stable release
+of Mercurial, 3.2.1.</p>
+<p>Mercurial 3.2 is still not as memory efficient during clones as Mercurial
+2.5.4. If I have time, I'd like to formulate more patches. But the
+important fix - not growing memory unbounded during clone/pull - is
+in place.</p>
+<p>Armed with the knowledge that Mercurial is leaky (although not a leak
+in the traditional sense since the memory was eventually
+getting garbage collected), we further reduced the max requests per
+process from 50 to 20. This will cause processes to get reaped sooner
+and will be more aggressive about keeping RSS growth in check.</p>
+<h2>Root Cause</h2>
+<p>We suspect the root cause of the event is a network event.</p>
+<p>Before this outage, we rarely had more than 10 requests being served
+from the WSGI worker pool. In other words, we were often well below 50%
+capacity. But something changed yesterday. More slots were being
+occupied and high-bandwidth operations were taking longer to complete.
+Kendall Libby noted that outbound traffic dropped by ~800 Mbps
+during the event. For reasons that still haven't been identified, the
+network became slower, clones weren't being processed as quickly, and
+clients were occupying WSGI processes for longer amounts of time. This
+eventually exhausted the available process pool, leading to HTTP 503's,
+intermittent service availability, and a tree closure.</p>
+<p>Interestingly, we noticed that in-flight HTTP requests are abnormally
+high again this morning. However, because the servers are now configured
+to handle the extra capacity, we seem to be powering through it without
+any issues.</p>
+<h2>In Hindsight</h2>
+<p>You can make the argument that the servers weren't configured to serve
+as much traffic as possible. After all, we were able to double the
+WSGI process pool without hitting CPU, I/O, and memory limits.</p>
+<p>The servers were conservatively configured. However, the worker pool
+was initially configured at 2x CPU core count. And as a general rule of
+thumb, you don't want your worker pool to be much greater than CPU
+count because that introduces context switching and can give each
+individual process a smaller slice of the CPU to process requests,
+leading to higher latency. Since clone operations often manage to
+peg a single CPU core, there is some justification for keeping the
+ratio of WSGI workers to CPU count low. Furthermore, we rarely came
+close to exhausting the WSGI worker pool before. There was little
+to no justification for increasing capacity to a threshold not normally
+seen.</p>
+<p>But at the same time, even with 4x workers to CPU cores, our CPU
+usage rarely flirts with 100% across all cores, even with the
+majority of workers occupied. Until we actually hit CPU (or I/O)
+limits, running a high multiplier seems like the right thing to do.</p>
+<p>Long term, we expect CPU usage during clone operations to drop
+dramatically. Mike Hommey has contributed a patch to Mercurial that
+allows servers to hand out a URL of a bundle file to fetch during
+clone. So, a server can say <em>I have your data: fetch this static file
+from S3 and then apply this small subset of the data that I'll give
+you.</em> When properly deployed and used at Mozilla, this will effectively
+drop server-side CPU usage for clones to nothing.</p>
+<h2>Where to do Better</h2>
+<p>There was a long delay between the Nagios alerts firing and someone
+with domain-specific knowledge looking at the problem.</p>
+<p>The trees could have reopened earlier. We were pretty confident about
+the state of things at 1000. Trees opened in metered mode at 1246 and
+completely at 1909. Although, the swapping issue wasn't mitigated until
+1615, so you can argue that being conservative on the tree reopening
+was justified. There is a chance that full reopening could have
+triggered excessive swap and another round of chaos for everyone
+involved.</p>
+<p>We need an alert on WSGI pool exhaustion. It took longer than it should
+have to identify this problem. However, now that we've encountered it,
+it should be obvious if/when it happens again.</p>
+<p>Firefox release automation is the largest single consumer of
+hg.mozilla.org. Since they are operating thousands of machines, any
+reduction in interaction or increase in efficiency will result in
+drastic load reductions on the server. Chris AtLee and Jordan Lund
+have been working on
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1050109">bug 1050109</a> to
+reduce clones of the mozharness and build/tools repositories, which
+should go a long way to dropping load on the server.</p>
+<h2>Timeline of Events</h2>
+<p>All times PST.</p>
+<p>November 6</p>
+<ul>
+<li>0705 - First Nagios alerts fire</li>
+<li>0819 - Trees closed</li>
+<li>0915 - WSGI process pool increased from 24 to 36</li>
+<li>0945 - WSGI process pool increased from 36 to 48</li>
+<li>1246 - Trees reopen in metered mode</li>
+<li>1615 - Decrease max requests per process from 100 to 50</li>
+<li>1909 - Trees open completely</li>
+</ul>
+<p>November 7</p>
+<ul>
+<li>0012 - Patches to reduce memory usage submitted to Mercurial</li>
+<li>0800 - Mercurial patches accepted</li>
+<li>0915 - Decrease max requests per process from 50 to 20</li>
+</ul>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/11/07/mercurial-server-hiccup-2014-11-06#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="soft-launch-of-mozreview"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/10/30/soft-launch-of-mozreview" rel="bookmark" title="Permanent Link to Soft Launch of MozReview">Soft Launch of MozReview</a></h2>
   <small>October 30, 2014 at 11:15 AM | categories: 
@@ -1332,225 +1510,6 @@ good knowing that I played a part in making this change.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/10/14/robustly-testing-version-control-at-mozilla#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="deterministic-and-minimal-docker-images"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/10/13/deterministic-and-minimal-docker-images" rel="bookmark" title="Permanent Link to Deterministic and Minimal Docker Images">Deterministic and Minimal Docker Images</a></h2>
-  <small>October 13, 2014 at 04:50 PM | categories: 
-
-<a href='/blog/category/sysadmin'>sysadmin</a>, <a href='/blog/category/docker'>Docker</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p><a href="https://www.docker.com/">Docker</a> is a really nifty tool. It
-vastly lowers the barrier to distributing and executing applications. It
-forces people to think about building server side code as a collection
-of discrete applications and services. When it was released, I instantly
-realized its potential, including for uses it wasn't primary intended
-for, such as applications in automated build and test environments.</p>
-<p>Over the months, Docker's feature set has grown and many of its
-shortcomings have been addressed. It's more usable than ever. Most of my
-early complaints and concerns have been addressed or are actively being
-addressed.</p>
-<p>But one supposedly solved part of Docker still bothers me: image
-creation.</p>
-<p>One of the properties that gets people excited about Docker is the
-ability to ship execution environments around as data. Simply produce an
-image once, transfer it to a central server, pull it down from anywhere,
-and execute. That's pretty damn elegant. I dare say Docker has solved
-the image <em>distribution</em> problem. (Ignore for a minute that the
-implementation detail of how images map to filesystems still has a few
-quirks to work out. But they'll solve that.)</p>
-<p>The ease at which Docker manages images is brilliant. I, like many, was
-overcome with joy and marvelled at how amazing it was. But as I started
-producing more and more images, my initial excitement turned to
-frustration.</p>
-<p>The thing that bothers me most about images is that the de facto and
-recommended method for producing images is neither deterministic nor
-results in minimal images. I strongly believe that the current
-recommended and applied approach is far from optimal and has too many
-drawbacks. Let me explain.</p>
-<p>If you look at the Dockerfiles from the official
-<a href="https://github.com/docker-library">Docker library</a>
-(examples: <a href="https://github.com/docker-library/node/blob/51b1dd1984e287189106884c453ca506737eed78/0.11/Dockerfile">Node</a>,
-<a href="https://github.com/docker-library/mysql/blob/master/5.7/Dockerfile">MySQL</a>),
-you notice something in common: they tend to use <em>apt-get update</em> as one
-of their first steps. For those not familiar with Apt, that command will
-synchronize the package repository indexes with a remote server. In
-other words, depending on when you run the command, different versions
-of packages will be pulled down and the result of image creation will
-differ. The same thing happens when you clone a Git repository. Depending
-on when you run the command - when you create the image - you may get
-different output. If you create an image from scratch today, it could have
-a different version of say Python than it did the day before. This can be
-a big deal, especially if you are trying to use Docker to accurately
-reproduce environments.</p>
-<p>This non-determinism of building Docker images really bothers me. It
-seems to run counter to Docker's goal of facilitating reliable
-environments for running applications. Sure, one person can
-produce an image once, upload it to a Docker Registry server, and have
-others pull it. But there are applications where independent production
-of the same base image is important.</p>
-<p>One area is the security arena. There are many people who are
-justifiably paranoid about running binaries produced by others and
-pre-built Docker images set off all kinds of alarms. So, these people
-would rather build an image from source, from a Dockerfile, than pull
-binaries. Except then they build the image from a Dockerfile and the
-application doesn't run because of an incompatibility with a new
-version of some random package whose version wasn't pinned. Of course,
-you probably lost numerous hours tracing down this obscure reason. How
-frustrating! Determinism and verifiability as part of Docker image
-creation help solve this problem.</p>
-<p>Deterministic image building is also important for disaster recovery.
-What happens if your Docker Registry and all hosts with copies of its
-images go down? If you go to build the images from scratch again, what
-guarantee do you have that things will behave the same? Without
-determinism, you are taking a risk that things will be different and
-your images won't work as intended. That's scary. (Yes, Docker is no
-different here from existing tools that attempt to solve this problem.)</p>
-<p>What if your open source product relies on a proprietary component that
-can't be legally distributed? So much for Docker image distribution. The
-best you can do is provide a base image and instructions for completing
-the process. But if that doesn't work deterministically, your users now
-have varying Docker images, again undermining Docker's goal of
-increasing consistency.</p>
-<p>My other main concern about Docker images is that they tend to be large,
-both in size and in scope. Many Docker images use a full Linux install
-as their base. A lot of people start with a base e.g. Ubuntu or Debian
-install, <em>apt-get install</em> the required packages, do some extra
-configuration, and call it a day. Simple and straightforward, yes. But
-this practice makes me more than a bit uneasy.</p>
-<p>One of the themes surrounding Docker is minimalism. Containers are
-lighter than VMs; just ship your containers around; deploy dozens or
-hundreds of containers simultaneously; compose your applications of
-many, smaller containers instead of larger, monolithic ones. I get it
-and am totally on board. So why are Docker images built on top of the
-bloaty excess of a full operating system (modulo the kernel)? Do I
-really need a package manager in my Docker image? Do I need a compiler
-or header files so I can e.g. build binary Python extensions? No, I
-don't, thank you.</p>
-<p>As a security-minded person, I want my Docker images to consist of only
-the files they need, especially binary files. By leaving out
-non-critical elements from your image and your run-time environment,
-you are reducing the surface area to attack. If your application
-doesn't need a shell, don't include a shell and don't leave yourself
-potentially vulnerable to
-<a href="https://en.wikipedia.org/wiki/Shellshock_%28software_bug%29">shellshock</a>.
-I want the attacker who inevitably breaks out of my application into the
-outer container to get nothing, not something that looks like an operating
-system and has access to tools like curl and wget that could potentially
-be used to craft a more advanced attack (which might even be able to
-exploit a kernel vulnerability to break out of the container). Of
-course, you can and should pursue additional security protections in
-addition to attack surface reduction to secure your execution
-environment. Defense in depth. But that doesn't give Docker images a
-free pass on being bloated.</p>
-<p>Another reason I want smaller containers is... because they are smaller.
-People tend to have relatively slow upload bandwidth. Pushing Docker
-images that can be hundreds of megabytes clogs my tubes. However, I'll
-gladly push 10, 20, or even 50 megabytes of only the necessary data.
-When you factor in that Docker image creation isn't deterministic, you
-also realize that different people are producing different versions of
-images from the same Dockerfiles and that you have to spend extra
-bandwidth transferring the different versions around. This bites me all
-the time when I'm creating new images and am experimenting with the
-creation steps. I tend to bypass the fake caching mechanism (fake
-because the output isn't deterministic) and this really results in data
-explosion.</p>
-<p>I understand why Docker images are neither deterministic nor minimal:
-making them so is a hard problem. I think Docker was right to prioritize
-solving distribution (it opens up many new possibilities). But I really
-wish some effort could be put into making images deterministic (and thus
-verifiable) and more minimal. I think it would make Docker an even more
-appealing platform, especially for the security conscious. (As an aside,
-I would absolutely love if we could ship a
-<a href="https://brendaneich.com/2014/01/trust-but-verify/">verifiable Firefox</a>
-build, for example.)</p>
-<p>These are hard problems. But they are solvable. Here's how I would do
-it.</p>
-<p>First, let's tackle deterministic image creation. Despite computers and
-software being ideally deterministic, building software tends not to be,
-so deterministic image creation is a hard problem. Even
-tools like Puppet and Chef which claim to solve aspects of this problem
-don't do a very good job with determinism. Read my post on
-<a href="/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration/">The Importance of Time on Machine Provisioning</a>
-for more on the topic. But there are solutions. <a href="http://nixos.org/">NixOS</a>
-and the <a href="http://nixos.org/nix/">Nix</a> package manager have the potential
-to be used as the basis of a deterministic image building platform.
-The <a href="http://nixos.org/nix/about.html">high-level overview of Nix</a> is
-that the inputs and contents of a package determine the package ID. If
-you know how Git or Mercurial get their commit SHA-1's, it's pretty much
-the same concept. In theory, two people on different machines start with
-the same environment and bootstrap the exact same packages, all from
-source. <a href="https://gitian.org/">Gitian</a> is a similar solution. Although I
-prefer Nix's content-based approach and how it goes about managing
-packages and environments. Nix feels so right as a base for
-deterministically building software. Anyway, yes, fully verifiable
-build environments are turtles all the way down (I recommend reading
-<a href="https://blog.torproject.org/blog/deterministic-builds-part-two-technical-details">Tor's overview of the problem and their approach</a>.
-However, Nix's approach addresses many of the turtles and silences most
-of the critics. I would absolutely love if more and more Docker images
-were the result of a deterministic build process like Nix. Perhaps you
-could define the full set of packages (with versions) that would be
-used. Let's call this the package manifest. You would then PGP sign and
-distribute your manifest. You could then have Nix step through all the
-dependencies, compiling everything from source. If PGP verification
-fails, compilation output changes, or extra files are needed, the build
-aborts or issues a warning. I have a feeling the security-minded
-community would go crazy over this. I know I would.</p>
-<p>OK, so now you can use Nix to produce packages (and thus images)
-(more) deterministically. How do you make them minimal? Well, instead of
-just packaging the entire environment, I'd employ tools like
-<a href="http://www.floc.net/makejail/">makejail</a>. The purpose of makejail is to
-create minimal chroot <em>jail</em> environments. These are very similar to
-Docker/LXC containers. In fact, you can often take a tarball of a chroot
-directory tree and convert it into a Docker container! With makejail,
-you define a configuration file saying among other things what binaries
-to run inside the jail. makejail will trace file I/O of that binary and
-copy over accessed files. The result is an execution environment that
-(hopefully) contains only what you need. Then, create an archive of that
-environment and pipe it into <em>docker build</em> to create a minimal Docker
-image.</p>
-<p>In summary, Nix provides you with a reliable and verifiable build
-environment. Tools like makejail pair down the produced packages into
-something minimal, which you then turn into your Docker image. Regular
-people can still pull binary images, but they are much smaller and more
-in tune with Docker's principles of minimalism. The paranoid among us can
-produce the same bits from source (after verifying the inputs look
-credible and waiting through a few hours of compiling). Or, perhaps
-the individual files in the image could be signed and thus verified via
-trust somehow? The company deploying Docker can have peace of mind
-that disaster scenarios resulting in Docker image loss should not
-result in total loss of the image (just rebuild it exactly as it was
-before).</p>
-<p>You'll note that my proposed solution does not involve Dockerfiles as
-they exist today. I just don't think Dockerfile's design of stackable
-layers of commands is the right model, at least for people who care
-about determinism and minimalism. You really want a recipe that
-knows how to create a set of relevant files and some metadata like what
-ports to expose, what command to run on container start, etc and turn
-that into your Docker image. I suppose you could accomplish this all
-inside Dockerfiles. But that's a pretty radical departure from how
-Dockerfiles work today. I'm not sure the two solutions are compatible.
-Something to think about.</p>
-<p>I'm pretty sure of what it would take to add deterministic and verifiable
-building of minimal and more secure Docker images. And, if someone
-solved this problem, it could be applicable outside of Docker (again,
-Docker images are essentially chroot environments plus metadata).
-As I was putting the finishing touches on this article, I discovered
-<a href="http://zef.me/6049/nix-docker/">nix-docker</a>. It looks very promising!
-I hope the Docker community latches on to these ideas and makes
-deterministic, verifiable, and minimal images the default, not the
-exception.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/10/13/deterministic-and-minimal-docker-images#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/6">« Previous Page</a>
   --  

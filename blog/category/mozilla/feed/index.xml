@@ -10,10 +10,118 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 18 May 2015 15:48:56 GMT</pubDate>
+    <pubDate>Fri, 29 May 2015 18:26:36 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Faster Cloning from hg.mozilla.org With Server Provided Bundles</title>
+      <link>http://gregoryszorc.com/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles</link>
+      <pubDate>Fri, 29 May 2015 11:30:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles</guid>
+      <description>Faster Cloning from hg.mozilla.org With Server Provided Bundles</description>
+      <content:encoded><![CDATA[<p>When you type <em>hg clone</em>, the Mercurial server will create a <em>bundle</em>
+from repository content at the time of the request and stream it to
+the client. (Git works essentially the same way.)</p>
+<p>This approach usually <em>just works</em>. But there are some downsides,
+particularly with large repositories.</p>
+<p>Creating bundles for large repositories is not cheap. For
+mozilla-central, Firefox's main repository, it takes ~280s of CPU time
+on my 2014 MacBook Pro to generate a bundle. Every time a client runs a
+<em>hg clone https://hg.mozilla.org/mozilla-central</em>, a server somewhere
+is spinning a CPU core generating ~1.1 GB of data. What's more, if
+another clone arrives at the same time, another process will perform
+the exact same work! When we talk about multiple minutes of CPU time
+per request, this extra work starts to add up.</p>
+<p>Another problem with large repositories is interrupted downloads. If
+you suffer a connectivity blip during your <em>clone</em> command, you'll
+have to start from scratch. This potentially means re-transferring
+hundreds of megabytes from the server. It also means the server has
+to generate a new bundle, consuming even more CPU time. This is not
+good for the user or the server.</p>
+<p>There have been multiple outages of hg.mozilla.org as a result of
+the service being flooded with clone requests to large repositories.
+Dozens of clients (most of them in Firefox or Firefox OS
+release automation) have cloned the same repository around the same
+time and overwhelmed network bandwidth in the data center or CPU
+cores on the Mercurial servers.</p>
+<p>A common solution to this problem is to not use the <em>clone</em> command
+to receive initial repository data from the server. Instead, a
+static <em>bundle</em> file will be generated and made available to clients.
+Clients will call <em>hg init</em> to create an empty repository then will
+perform an <em>hg unbundle</em> to apply the contents of a pre-generated
+bundle file. They will then run <em>hg pull</em> to fetch new data that
+was created after the bundle was generated. (It's worth noting that
+Git's <em>clone --reference</em> option is similar.)</p>
+<p>This is a good technical solution. Firefox and Firefox OS release
+automation have effectively implemented this. However, it is a lot of
+work: you have to build your own bundle generation and hosting
+infrastructure and you have to remember that every <em>hg clone</em> should
+probably be using bundles instead. It is extra complexity and complexity
+that must be undertaken by every client. If a client forgets, the
+consequences can be disastrous (clone flooding leading to service
+outage). Client-side opt-in is prone to lapses and doesn't scale.</p>
+<p><strong>As of today, we've deployed a more scalable, server-based solution to
+hg.mozilla.org.</strong></p>
+<p>hg.mozilla.org is now itself generating bundles for a handful of
+repositories, including mozilla-central, inbound, fx-team, and
+mozharness. These bundles are being uploaded to Amazon S3. And
+<strong>those bundles are being advertised by the server over Mercurial's
+wire protocol</strong>.</p>
+<p>When you install the <em>bundleclone</em> Mercurial extension, <em>hg clone</em> is
+taught to look for bundles being advertised on the server. If a bundle
+is available, the bundle is downloaded, applied, and then the client
+does the equivalent of an <em>hg pull</em> to fetch all new data since when the
+bundle was generated. If a bundle exists, it is used transparently: no
+client side cooperation is needed beyond installing the <em>bundleclone</em>
+extension. If a bundle doesn't exist, it simply falls back to
+Mercurial's default behavior. <strong>This effectively shifts responsibility
+for doing efficient clones from clients to server operators, which
+means server operators don't need cooperation from clients to enact
+important service changes.</strong> Before, if clients weren't using bundles,
+we'd have to wait for clients to update their code. Now, we can see
+a repository is being cloned heavily and start generating bundles for
+it without having to wait for the client to deploy new code.</p>
+<p>Furthermore, we've built primitive <em>content negotiation</em> into the
+process. The server doesn't simply advertise one bundle file: it
+advertises several bundle files. We offer gzip, bzip2, and <em>stream</em>
+bundles. gzip is what Mercurial uses by default. It works OK. bzip2
+bundles are smaller, but they take longer to process. <em>stream</em> bundles
+are essentially tar archives of the <em>.hg/store</em> directory and are larger
+than gzip bundles, but insanely fast because there is very little CPU
+required to apply them. In addition, we advertise URLs for multiple S3
+regions, currently us-west-2 (Oregon) and us-east-1 (Virigina). This
+enables clients to prefer the bundle most appropriate for them.</p>
+<p>A benefit of serving bundles from S3 is that Firefox and Firefox OS
+release automation (the biggest consumers of hg.mozilla.org) live in
+Amazon EC2. They are able to fetch from S3 over a gigabit network.
+And, since we're transferring data within the same AWS region, there
+are no data transfer costs. Previously, we were transferring ~1.1 GB
+from a Mozilla data center to EC2 for each clone. This took up bandwidth
+in Mozilla's network and cost Mozilla money to send data thousands of
+miles away. And, we never came close to saturing a gigabit network (we
+do with stream bundles). Wins everywhere!</p>
+<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">full instructions</a>
+detail how to use <em>bundleclone</em>. <strong>I recommend everyone at Mozilla
+install the extension</strong> because there should be no downside to doing it.</p>
+<p>Once <em>bundleclone</em> is deployed to Firefox and Firefox OS release
+automation, we should hopefully never again see those machines bring
+down hg.mozilla.org due to a flood of clone requests. We should also
+see a drastic reduction in load to hg.mozilla.org. I'm optimistic
+bandwidth will decrease by over 50%!</p>
+<p>It's worth noting that the functionality from the <em>bundleclone</em> extension
+is coming to vanilla Mercurial. The functionality (which was initially
+added by Mozilla's Mike Hommey) is part of Mercurial's <em>bundle2</em> protocol,
+which is available, but isn't enabled by default yet. <em>bundleclone</em> is thus
+a temporary solution to bring us server stability and client
+improvements until modern Mercurial versions are deployed everywhere
+in a few months time.</p>
+<p>Finally, I would like to credit Augie Fackler for the
+<a href="http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/54872/focus=54872">original idea</a>
+for server-assisted bundle-based clones.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Firefox Mercurial Repository with CVS History</title>
       <link>http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history</link>
@@ -750,63 +858,6 @@ scale</em>. The simple fact of the matter is that clients cumulatively
 generated an exceptional amount of traffic to hg.mozilla.org this week.
 All servers have capacity limits. And this week we encountered the limit
 for the current configuration of hg.mozilla.org. Cause and effect.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Network Events</title>
-      <link>http://gregoryszorc.com/blog/2015/03/18/network-events</link>
-      <pubDate>Wed, 18 Mar 2015 14:25:00 PDT</pubDate>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/03/18/network-events</guid>
-      <description>Network Events</description>
-      <content:encoded><![CDATA[<p>The Firefox source repositories and automation have been closed the past
-few days due to a couple of outages.</p>
-<p>Yesterday, aggregate CPU usage on many of the machines in the hg.mozilla.org
-cluster hit 100%. Previously, whenever hg.mozilla.org was under high load,
-we'd run out of network bandwidth before we ran out of CPU on the machines.
-In other words, Mercurial was generating data faster than the network could
-accept it.</p>
-<p>When this happened, the service started issuing HTTP 503 Service Not
-Available responses. This is the universal server signal for <em>I'm down, go
-away</em>. Unfortunately, not all clients did this.</p>
-<p>Parts of Firefox's release automation retried failing requests
-immediately, or with insufficient jitter in their backoff interval.
-Actively retrying requests against a server that's experiencing load
-issues only makes the problem worse. This effectively prolonged the
-outage.</p>
-<p>Today, we had a similar but different network issue. The load balancer
-fronting hg.mozilla.org can only handle so much bandwidth. Today, we hit
-that limit. The load balancer started throttling connections. Load on
-hg.mozilla.org skyrocketed and request latency increased. From the
-perspective of clients, the service grinded to a halt.</p>
-<p>hg.mozilla.org was partially sharing a load balancer with
-ftp.mozilla.org. That meant if one of the services experienced very high
-load, the other service could effectively be <em>locked out</em> of bandwidth.
-We saw this happening this morning. ftp.mozilla.org load was high (it
-looks like downloads of Firefox Developer Edition are a major
-contributor - these don't go through the CDN for reasons unknown to me)
-and there wasn't enough bandwidth to go around.</p>
-<p>Separately today, hg.mozilla.org again hit 100% CPU. At that time, it
-also set a new record for network throughput: ~3 Gbps. It normally
-consumes between 200 and 500 Mbps, with periodic spikes to 750 Mbps.
-(Yesterday's event saw a spike to around ~2 Gbps.)</p>
-<p>Going back through the hg.mozilla.org server logs, an offender is
-quite obvious. Before March 9, total outbound transfer for the
-<a href="https://hg.mozilla.org/build/tools/">build/tools</a> repo was around
-1 tebibyte per day. Starting on March 9, it increased to 3 tebibytes per
-day! This is quite remarkable, as a clone of this repo is only about
-20 MiB. This means the repo was getting cloned about 150,000 times per
-day! (Note: I think all these numbers may be low by ~20% - stay tuned
-for the final analysis.)</p>
-<p>2 TiB/day is statistically significant because we transfer less than 10
-TiB/day across all of hg.mozilla.org. And, 1 TiB/day is close to 100
-Mbps, assuming requests are evenly spread out (which of course they
-aren't).</p>
-<p>Multiple things went wrong. If only one or two happened, we'd likely be
-fine. Maybe there would have been a short blip. But not the major event
-we've been firefighting the last ~24 hours.</p>
-<p>This post is only a summary of what went wrong. I'm sure there will be a
-post-mortem and that it will contain lots of details for those who want
-to know more.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
