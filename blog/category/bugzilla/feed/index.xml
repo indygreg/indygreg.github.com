@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 29 May 2015 18:33:21 GMT</pubDate>
+    <pubDate>Fri, 29 May 2015 23:25:11 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -18,6 +18,7 @@
       <title>Bugzilla and the Future of Firefox Development</title>
       <link>http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development</link>
       <pubDate>Fri, 16 Jan 2015 10:50:00 PST</pubDate>
+      <category><![CDATA[MozReview]]></category>
       <category><![CDATA[Bugzilla]]></category>
       <category><![CDATA[Mozilla]]></category>
       <category><![CDATA[code review]]></category>
@@ -248,7 +249,7 @@ I encourage you to wait for that post to be published. Stay tuned.</p>]]></conte
       <title>Implications of Using Bugzilla for Firefox Patch Development</title>
       <link>http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development</link>
       <pubDate>Mon, 27 Oct 2014 15:27:00 PDT</pubDate>
-      <category><![CDATA[Review Board]]></category>
+      <category><![CDATA[MozReview]]></category>
       <category><![CDATA[Bugzilla]]></category>
       <category><![CDATA[Mozilla]]></category>
       <category><![CDATA[code review]]></category>

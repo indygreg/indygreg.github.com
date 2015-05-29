@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-05-29T18:33:21Z</updated>
+  <updated>2015-05-29T23:25:11Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -23,6 +23,7 @@
     <id>http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development</id>
     <updated>2015-01-16T10:50:00Z</updated>
     <published>2015-01-16T10:50:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="MozReview" />
     <category scheme="http://gregoryszorc.com/blog" term="Bugzilla" />
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
     <category scheme="http://gregoryszorc.com/blog" term="code review" />
@@ -258,7 +259,7 @@ I encourage you to wait for that post to be published. Stay tuned.</p>]]></conte
     <id>http://gregoryszorc.com/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development</id>
     <updated>2014-10-27T15:27:00Z</updated>
     <published>2014-10-27T15:27:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Review Board" />
+    <category scheme="http://gregoryszorc.com/blog" term="MozReview" />
     <category scheme="http://gregoryszorc.com/blog" term="Bugzilla" />
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
     <category scheme="http://gregoryszorc.com/blog" term="code review" />
