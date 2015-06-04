@@ -51,6 +51,175 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="notes-from-facebook's-developer-infrastructure-at-scale-f8-talk"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/03/28/notes-from-facebook's-developer-infrastructure-at-scale-f8-talk" rel="bookmark" title="Permanent Link to Notes from Facebook's Developer Infrastructure at Scale F8 Talk">Notes from Facebook's Developer Infrastructure at Scale F8 Talk</a></h2>
+  <small>March 28, 2015 at 11:45 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/03/28/notes-from-facebook's-developer-infrastructure-at-scale-f8-talk#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Any time Facebook talks about technical matters I tend to listen.
+They have a track record of demonstrating engineering leadership
+in several spaces. And, unlike many companies that just talk, Facebook
+often gives others access to those ideas via source code and healthy
+open source projects. It's rare to see a company operating on the
+frontier of the computing field provide so much insight into their
+inner workings. You can gain so much by riding their cotails and
+following their lead instead of clinging to and cargo culting from
+the past.</p>
+<p>The Facebook F8 developer conference was this past week. All the
+talks are <a href="https://developers.facebooklive.com/">now available online</a>.
+<strong>I encourage you to glimpse through the list of talks and watch
+whatever is relevant to you.</strong> There's really a little bit for
+everyone.</p>
+<p>Of particular interest to me is the
+<a href="https://developers.facebooklive.com/videos/561/big-code-developer-infrastructure-at-facebook-s-scale">Big Code: Developer Infrastructure at Facebook's Scale</a>
+talk. This is highly relevant to my job role as Developer Productivity
+Engineer at Mozilla.</p>
+<p>My notes for this talk follow.</p>
+<p><strong>"We don't want humans waiting on computers. We want computers waiting
+on humans."</strong> (This is the common theme of the talk.)</p>
+<p>In 2005, Facebook was on Subversion. In 2007 moved to Git. Deployed
+a bridge so people worked in Git and had distributed workflow but
+pushed to Subversion under the hood.</p>
+<p>New platforms over time. Server code, iOS, Android. One Git repo
+per platform/project -&gt; 3 Git repos. Initially no code sharing, so
+no problem. Over time, code sharing between all repos. Lots of code
+copying and confusion as to what is where and who owns what.</p>
+<p>Facebook is mere weeks away from completing their migration to
+consolidate the big three repos to a Mercurial monorepo. (See also
+<a href="/blog/2014/09/09/on-monolithic-repositories/">my post about monorepos</a>.)</p>
+<p>Reasons:</p>
+<ol>
+<li>Easier code sharing.</li>
+<li>Easier large-scale changes. Rewrite the universe at once.</li>
+<li>Unified set of tooling.</li>
+</ol>
+<p>Facebook employees run &gt;1M source control commands per day. &gt;100k
+commits per week. VCS tool needs to be fast to prevent distractions
+and context switching, which slow people down.</p>
+<p>Facebook implemented sparse checkout and shallow history in Mercurial.
+Necessary to scale distributed version control to large repos.</p>
+<p><strong>Quote from Google: "We're excited about the work Facebook is doing with
+Mercurial and glad to be collaborating with Facebook on Mercurial
+development."</strong> (Well, I guess the cat is finally out of the bag:
+Google is working on Mercurial. This was kind of an open secret for
+months. But I guess now it is official.)</p>
+<p>Push-pull-rebase bottleneck: if you rebase and push and someone beats
+you to it, you have to pull, rebase, and try again. This gets worse
+as commit rate increases and people do needless legwork. <strong>Facebook
+has moved to server-side rebasing on push</strong> to mostly eliminate this
+pain point. (This is part of a still-experimental feature in Mercurial,
+which should hopefully lose its experimental flag soon.)</p>
+<p>Starting 13:00 in we have a speaker change and move away from version
+control.</p>
+<p>IDEs don't scale to Facebook scale. <strong>"Developing in Xcode at Facebook
+is an exercise in frustration."</strong> On average 3.5 minutes to open
+Facebook for iOS in Xcode. 5 minutes on average to index. Pegs CPU
+and makes not very responsive. 50 Xcode crashes per day across all
+Facebook iOS developers.</p>
+<p><strong>Facebook measures everything about tools. Mercurial operation times.
+Xcode times. Build times. Data tells them what tools and workflows
+need to be worked on.</strong></p>
+<p>Facebook believes IDEs are worth the pain because they make people
+more productive.</p>
+<p>Facebook wants to support all editors and IDEs since people want to
+use whatever is most comfortable.</p>
+<p>React Native changed things. Supported developing on multiple
+platforms, which no single IDE supports. People launched several
+editors and tools to do React Native development. People needed 4
+windows to do development. That experience was "not acceptable."
+So they built their own IDE. Set of plugins on top of ATOM. Not
+a fork. They like hackable and web-y nature of ATOM.</p>
+<p>The demo showing iOS development looks very nice! Doing Objective-C,
+JavaScript, simulator integration, and version control in one window!</p>
+<p>It can connect to remote servers and transparently save and
+deploy changes. It can also get real-time compilation errors and hints
+from the remote server! (Demo was with Hack. Not sure if others langs
+supported. Having beefy central servers for e.g. Gecko development
+would be a fun experiment.)</p>
+<p>Starting at 32:00 presentation shifts to continuous integration.</p>
+<p>Number one goal of CI at Facebook is developer efficiency. <strong>We
+don't want developers waiting on computers to build and test diffs.</strong></p>
+<p>3 goals for CI:</p>
+<ol>
+<li>High-signal feedback. Don't want developers chasing failures that
+   aren't their fault. Wastes time.</li>
+<li>Must provide rapid feedback. Developers don't want to wait.</li>
+<li>Provide frequent feedback. Developers should know as soon as
+   possible after they did something. (I think this refers to local
+   feedback.)</li>
+</ol>
+<p>Sandcastle is their CI system.</p>
+<p>Diff lifecycle discussion.</p>
+<p>Basic tests and lint run locally. (My understanding from talking
+with Facebookers is "local" often means on a Facebook server, not
+local laptop. Machines at developers fingertips are often dumb
+terminals.)</p>
+<p>They appear to use code coverage to determine what tests to run.
+"We're not going to run a test unless your diff might actually have
+broken it."</p>
+<p>They run flaky tests less often.</p>
+<p>They run slow tests less often.</p>
+<p><strong>Goal is to get feedback to developers in under 10 minutes.</strong></p>
+<p><strong>If they run fewer tests and get back to developers quicker,
+things are less likely to break than if they run more tests but
+take longer to give feedback.</strong></p>
+<p>They also want feedback quickly so reviewers can see results at
+review time.</p>
+<p>They use Web Driver heavily. Love cross-platform nature of Web Driver.</p>
+<p>In addition to test results, performance and size metrics are reported.</p>
+<p>They have a "Ship It" button on the diff.</p>
+<p>Landcastle handles landing diff.</p>
+<p>"It is not OK at Facebook to land a diff without using Landcastle."
+(Read: developers don't push directly to the master repo.)</p>
+<p>Once Landcastle lands something, it runs tests again. If an issue
+is found, a task is filed. Task can be "push blocking."
+Code won't ship to users until the "push blocking" issue resolved.
+(Tweets confirm they do backouts "fairly aggressively." A valid
+resolution to a push blocking task is to backout. But fixing forward
+is fine as well.)</p>
+<p>After a while, branch cut occurs. Some cherry picks onto release
+branches.</p>
+<p>In addition to diff-based testing, they do continuous testing runs.
+Much more comprehensive. No time restrictions. Continuous runs on
+master and release candidate branches. Auto bisect to pin down
+regressions.</p>
+<p>Sandcastle processes &gt;1000 test results per second. 5 years of machine
+work per day. Thousands of machines in 5 data centers.</p>
+<p>They started with buildbot. Single master. Hit scaling limits of
+single thread single master. Master could not push work to workers
+fast enough. Sandcastle has distributed queue. Workers just pull
+jobs from distributed queue.</p>
+<p>"High-signal feedback is critical." "Flaky failures erode developer
+confidence." "We need developers to trust Sandcastle."</p>
+<p>Extremely careful separating infra failures from other failures.
+Developers don't see infra failures. Infra failures only reported
+to Sandcastle team.</p>
+<p>Bots look for flaky tests. Stress test individual tests. Run tests
+in parallel with themselves. Goal: developers don't see flaky tests.</p>
+<p>There is a "not my fault" button that developers can use to report
+bad signals.</p>
+<p><strong>"Whatever the scale of your engineering organization, developer
+efficiency is the key thing that your infrastructure teams should be
+striving for. This is why at Facebook we have some of our top
+engineers working on developer infrastructure."</strong> (Preach it.)</p>
+<p>Excellent talk. <strong>Mozillians doing infra work or who are in charge
+of head count for infra work should watch this video.</strong></p>
+<p><em>Update 2015-03-28 21:35 UTC - Clarified some bits in response to
+new info Tweeted at me. Added link to my monorepos blog post.</em></p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/28/notes-from-facebook's-developer-infrastructure-at-scale-f8-talk#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="new-high-scores-for-hg.mozilla.org"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/03/19/new-high-scores-for-hg.mozilla.org" rel="bookmark" title="Permanent Link to New High Scores for hg.mozilla.org">New High Scores for hg.mozilla.org</a></h2>
   <small>March 19, 2015 at 08:20 PM | categories: 
@@ -356,48 +525,6 @@ is my recommended solution until matters are fixed.)</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="commit-part-numbers-and-mozreview"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/01/27/commit-part-numbers-and-mozreview" rel="bookmark" title="Permanent Link to Commit Part Numbers and MozReview">Commit Part Numbers and MozReview</a></h2>
-  <small>January 27, 2015 at 08:17 PM | categories: 
-
-<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
- | <a href="http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>It is common for commit messages in Firefox to contains strings like
-<em>Part 1</em>, <em>Part 2</em>, etc. See
-<a href="https://hg.mozilla.org/projects/build-system/pushloghtml?changeset=5cb8bcab09cc">this push</a>
-for <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">bug 784841</a>
-for an extreme multi-part example.</p>
-<p>When code review is conducted in Bugzilla, these identifiers are
-necessary because Bugzilla orders attachments/patches in the order they
-were updated or their patch title (I'm not actually sure!). If part
-numbers were omitted, it could be very confusing trying to figure out
-which order patches should be applied in.</p>
-<p>However, when code review is conducted in
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>,
-<strong>there is no need for explicit part numbers to convey ordering</strong> because
-the ordering of commits is implicitly defined by the repository history
-that you pushed to MozReview!</p>
-<p>I argue that if you are using MozReview, you should stop writing <em>Part
-N</em> in your commit messages, as it provides little to no benefit.</p>
-<p>I, for one, welcome this new world order: I've previously wasted a lot
-of time rewriting commit messages to reflect new part ordering after
-doing history rewriting. With MozReview, that overhead is gone and I
-barely pay a penalty for rewriting history, something that often
-produces a more reviewable series of commits and makes reviewing
-and landing a complex patch series significantly easier.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">« Previous Page</a>
   --  

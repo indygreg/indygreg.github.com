@@ -7,12 +7,59 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-05-29T23:30:48Z</updated>
+  <updated>2015-06-04T20:55:43Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Changeset Metadata on hg.mozilla.org]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org" />
+    <id>http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org</id>
+    <updated>2015-06-04T13:55:00Z</updated>
+    <published>2015-06-04T13:55:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Changeset Metadata on hg.mozilla.org]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org"><![CDATA[<p>Just a few minutes ago, I deployed some updates to
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a> to display more
+metadata on changeset pages. See
+<a href="https://hg.mozilla.org/mozilla-central/rev/4b69a62d1905">4b69a62d1905</a>,
+<a href="https://hg.mozilla.org/mozilla-central/rev/dc4023d54436">dc4023d54436</a>,
+and <a href="https://hg.mozilla.org/mozilla-central/rev/b617a57d6bf1">b617a57d6bf1</a>
+for examples of what's shown.</p>
+<p>We currently display:</p>
+<ul>
+<li>More detailed pushlog info. (Before you had to load another page to
+  see things like the date of the push.)</li>
+<li>The list of reviewers, each being a link that searches for other
+  changesets they've reviewed.</li>
+<li>A concise list of bugs referenced in the commit message.</li>
+<li>Links to changesets that were backed out by this changeset.</li>
+<li>On changesets that were backed out, we <em>may</em> also display a message
+  that the changeset was backed out.</li>
+<li>For Firefox repos, we also display the application <em>milestone</em>. This
+  is the Gecko/app version recorded in the <em>config/milestone.txt</em> file
+  in that changeset. The value can be used to quickly answer the
+  question <em>What versions of Firefox have this changeset.</em></li>
+</ul>
+<p>If you notice any issues or have requests for new features, please
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>.</p>
+<p>This work is built on top of a feature I added to Mercurial 3.4 to make
+it easier to inject extra data into Mercurial's web templates. We just
+deployed Mercurial 3.4.1 to hg.mozilla.org yesterday. It's worth noting
+that this deployment happened in the middle of the day with no
+user-perceived downtime. This is a far cry from where we were a year
+ago, when any server change required a maintenance window. We've
+invested a lot of work into a test suite for this service so we can
+continuously deploy without fear of breaking things. Moving fast feels
+so good.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -689,40 +736,5 @@ and fixing that is pretty far down the priority list. Wallpapering
 over things with the
 <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/firefoxtree.html">firefoxtree extensions</a>
 is my recommended solution until matters are fixed.)</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Modern Mercurial Documentation for Mozillians]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/01/15/modern-mercurial-documentation-for-mozillians" />
-    <id>http://gregoryszorc.com/blog/2015/01/15/modern-mercurial-documentation-for-mozillians</id>
-    <updated>2015-01-15T14:45:00Z</updated>
-    <published>2015-01-15T14:45:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Modern Mercurial Documentation for Mozillians]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/01/15/modern-mercurial-documentation-for-mozillians"><![CDATA[<p>Mozilla's Mercurial documentation has historically been pretty bad. The
-documentation on MDN (which I refuse to link to) is horribly disjointed
-and contains a lot of outdated recommendations. I've made attempts to
-burn some of it to the ground, but it is just too overwhelming.</p>
-<p>I've been casually creating my own Mercurial documentation tailored for
-Mozillians. It's called
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/index.html">Mercurial for Mozillians</a>.</p>
-<p>It started as a way to document extensions inside the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-repository. But, it has since evolved to cover other topics, like how to
-install Mercurial, how to develop using bookmarks, and how to interact
-with a unified Firefox repository. The documentation is nowhere near
-complete. But it already has some very useful content beyond what MDN
-offers.</p>
-<p>I'm not crazy about the idea of having generic Mercurial documentation
-on a Mozilla domain (this should be part of the official Mercurial
-documentation). Nor am I crazy about moving content off MDN. I'm sure
-content will move to its appropriate location later. Until then,
-enjoy some curated Mercurial documentation!</p>
-<p>If you would like to contribute to Mercurial for Mozillians,
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/contributing.html">read the docs</a>.</p>]]></content>
   </entry>
 </feed>
