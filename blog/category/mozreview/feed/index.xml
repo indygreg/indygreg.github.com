@@ -10,10 +10,34 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 04 Jun 2015 20:55:43 GMT</pubDate>
+    <pubDate>Tue, 07 Jul 2015 21:51:00 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Publish When Pushing to MozReview</title>
+      <link>http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview</link>
+      <pubDate>Tue, 07 Jul 2015 14:55:00 PDT</pubDate>
+      <category><![CDATA[MozReview]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview</guid>
+      <description>Publish When Pushing to MozReview</description>
+      <content:encoded><![CDATA[<p>A lot of people contributed some really great feedback about MozReview
+at Whistler. One of the most frequent requests was for the ability to
+publish submitted review requests without having to open a browser.
+I'm pleased to report that as of yesterday, this feature is implemented!
+If reviewers have been assigned to all your review requests, Mercurial
+will now prompt you to publish the review requests during <em>hg push</em>.
+It should <em>just work</em>.</p>
+<p>As part of this change, we also introduced more advanced feature
+negotiation into the handshake between client and server. This means
+we now have a mechanism for detecting out-of-date client installations.
+This will enable us to more aggressively drop backwards compatibility
+(making server-side development easier) while simultaneously ensuring
+that more people are running modern and hopefully better versions of the
+client code. This should translate to moving faster and a better
+experience for everyone.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Important Changes to MozReview</title>
       <link>http://gregoryszorc.com/blog/2015/05/29/important-changes-to-mozreview</link>

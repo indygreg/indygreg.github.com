@@ -51,6 +51,40 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="publish-when-pushing-to-mozreview"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/07/07/publish-when-pushing-to-mozreview" rel="bookmark" title="Permanent Link to Publish When Pushing to MozReview">Publish When Pushing to MozReview</a></h2>
+  <small>July 07, 2015 at 02:55 PM | categories: 
+
+<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A lot of people contributed some really great feedback about MozReview
+at Whistler. One of the most frequent requests was for the ability to
+publish submitted review requests without having to open a browser.
+I'm pleased to report that as of yesterday, this feature is implemented!
+If reviewers have been assigned to all your review requests, Mercurial
+will now prompt you to publish the review requests during <em>hg push</em>.
+It should <em>just work</em>.</p>
+<p>As part of this change, we also introduced more advanced feature
+negotiation into the handshake between client and server. This means
+we now have a mechanism for detecting out-of-date client installations.
+This will enable us to more aggressively drop backwards compatibility
+(making server-side development easier) while simultaneously ensuring
+that more people are running modern and hopefully better versions of the
+client code. This should translate to moving faster and a better
+experience for everyone.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="important-changes-to-mozreview"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/29/important-changes-to-mozreview" rel="bookmark" title="Permanent Link to Important Changes to MozReview">Important Changes to MozReview</a></h2>
   <small>May 29, 2015 at 04:20 PM | categories: 
@@ -485,70 +519,6 @@ I encourage you to wait for that post to be published. Stay tuned.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="the-mozlandia-tree-outage-and-code-review"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review" rel="bookmark" title="Permanent Link to The Mozlandia Tree Outage and Code Review">The Mozlandia Tree Outage and Code Review</a></h2>
-  <small>December 04, 2014 at 08:40 AM | categories: 
-
-<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>You may have noticed the Firefox trees
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1107156">were closed</a>
-for the better part of yesterday.</p>
-<p>Long story short, a file containing URLs for Firefox installers was
-updated to reference https://ftp.mozilla.org/ from
-http://download-installer.cdn.mozilla.net/. The original, latter
-host is a CDN. The former is not. When thousands of clients started
-hitting ftp.mozilla.org, it overwhelmed the servers and network,
-causing timeouts and other badness.</p>
-<p>The change in question was accidental. It went through code review.
-From a code change standpoint, procedures were followed.</p>
-<p>It is tempting to point fingers at the people involved. However, I
-want us to consider placing blame elsewhere: on the code review
-tool.</p>
-<p>The diff being reviewed was to change the Firefox version number
-from 32.0 to 32.0.3. If you were asked to review this
-patch, I'm guessing your eyes would have glanced over everything in the
-URL except the version number part. I'm pretty sure mine would have.</p>
-<p>Let's take a look at what the reviewer saw in Bugzilla/Splinter (click
-to see full size):</p>
-<p><a href="/images/intraline-splinter.png">
-<img src="/images/intraline-splinter.png" width="600" />
-</a></p>
-<p>And here is what the reviewer would have seen had the review been
-conducted in MozReview:</p>
-<p><a href="/images/intraline-reviewboard.png">
-<img src="/images/intraline-reviewboard.png" width="600">
-</a></p>
-<p>Which tool makes the change of hostname more obvious? Bugzilla/Splinter
-or MozReview?</p>
-<p><strong>MozReview's support for intraline diffs more clearly draws attention to
-the hostname change. I posit that had this patch been reviewed with
-MozReview, the chances are greater we wouldn't have had a network
-outage yesterday.</strong></p>
-<p>And it isn't just intraline diffs that make Splinter/Bugzilla a
-sub-optimal code review tool. I recently blogged about the
-<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">numerous ways that using Bugzilla for code revie results in harder
-reviews and buggier
-code</a>.
-Every day we continue using Bugzilla/Splinter instead of investing in
-better code review tools is a day severe bugs like this can and will
-slip through the cracks.</p>
-<p>If there is any silver lining to this outage, I hope it is that we need
-to double down on our investment in developer tools, particularly code
-review.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozreview/2">Next Page »</a>
 
