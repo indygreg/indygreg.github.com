@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-07-08T18:38:21Z</updated>
+  <updated>2015-07-08T18:47:44Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -29,7 +29,7 @@
     <content type="html" xml:base="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3"><![CDATA[<p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
 bundle files</a>.
 But deploying the feature on the servers was only the tip of the
-iceburg.</p>
+iceberg.</p>
 <p>At the end of last week, Firefox release automation rolled out the
 <em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
 clones are bootstrapped from Amazon S3 automatically once this extension
