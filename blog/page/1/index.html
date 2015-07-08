@@ -51,6 +51,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="cloning-from-s3"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/07/08/cloning-from-s3" rel="bookmark" title="Permanent Link to Cloning From S3">Cloning From S3</a></h2>
+  <small>July 08, 2015 at 11:40 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
+bundle files</a>.
+But deploying the feature on the servers was only the tip of the
+iceburg.</p>
+<p>At the end of last week, Firefox release automation rolled out the
+<em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
+clones are bootstrapped from Amazon S3 automatically once this extension
+is installed.</p>
+<p>In just a few days of deployment, we've already seen a drastic shift in
+traffic. On UTC day 2015-07-07, S3 served 1,563,014,396,236 bytes of
+repository data! The hg.mozilla.org servers themselves served a total of
+1,976,057,201,583 bytes.</p>
+<p>But we're not done. The <em>bundleclone</em> extension
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181597">isn't yet deployed on Windows</a>. Nor is it always used on TaskCluster. In addition, there are
+still some high-use repositories that don't have bundles being
+generated. Yesterday, I crunched the data and
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181373">enabled bundles on more repositories</a>. It's too early to have conclusive data, but this should
+move an additional several hundred gigabytes of traffic to S3.</p>
+<p>At Whistler, I said that reducing traffic on hg.mozilla.org by 90% is
+within the realm of possibility. Between a partial rollout of S3
+clone offload that is already serving 44% of traffic and a
+<a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
+I'd say we're well on track.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="publish-when-pushing-to-mozreview"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/07/07/publish-when-pushing-to-mozreview" rel="bookmark" title="Permanent Link to Publish When Pushing to MozReview">Publish When Pushing to MozReview</a></h2>
   <small>July 07, 2015 at 02:55 PM | categories: 
@@ -362,73 +404,6 @@ for server-assisted bundle-based clones.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="firefox-mercurial-repository-with-cvs-history"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history" rel="bookmark" title="Permanent Link to Firefox Mercurial Repository with CVS History">Firefox Mercurial Repository with CVS History</a></h2>
-  <small>May 18, 2015 at 08:40 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>When Firefox made the switch from CVS to Mercurial in March 2007, the
-CVS history wasn't imported into Mercurial. There were good reasons for
-this at the time. But it's a decision that continues to have
-side-effects. I am surprised how often I hear of engineers wanting to
-access blame and commit info from commits now more than 9 years old!</p>
-<p>When individuals created a Git mirror of the Firefox repository a few
-years ago, they correctly decided that importing CVS history would be
-a good idea. They also correctly decided to combine the logically same
-but physically separate <em>release</em> and <em>integration</em> repositories into a
-unified Git repository. These are things we can't easily do to the
-canonical Mercurial repository because it would break SHA-1 hashes,
-breaking many systems, and it would require significant changes in
-process, among other reasons.</p>
-<p>While Firefox developers do have access to a single Firefox repository
-with full CVS history (the Git mirror), they still aren't satisfied.</p>
-<p>Running <em>git blame</em> (or <em>hg blame</em> for that matter) can be very
-expensive. For this reason, the blame interface is disabled on many
-web-based source viewers by default. On GitHub, some blame URLs for
-the Firefox repository time out and cause GitHub to display an error
-message. No matter how hard you try, you can't easily get blame results
-(running a local Git HTTP/HTML interface is still difficult compared to
-<em>hg serve</em>).</p>
-<p>Another reason developers aren't satisfied with the Git mirror is that
-Git's querying tools pale in comparison to Mercurial's. I've said it
-before and I'll say it again: Mercurial's revision sets and templates
-are incredibly useful features that enable advanced repository querying
-and reporting. Git's offerings come nowhere close. (I <em>really</em> wish Git
-would steal these awesome features from Mercurial.)</p>
-<p>Anyway, enough people were complaining about the lack of a Mercurial
-Firefox repository with full CVS history that I decided to create one.
-If you point your browsers or Mercurial clients to
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full">https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full</a>,
-you'll be able to access it.</p>
-<p>The process used for the conversion was the simplest possible: I used
-hg-git to convert the Git mirror back to Mercurial.</p>
-<p>Unlike the Git mirror, I didn't include all heads in this new
-repository. Instead, there is only mozilla-central's head (the current
-development tip). If I were doing this properly, I'd include all heads,
-like
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-aggregate">gecko-aggregate</a>.</p>
-<p>I'm well aware there are oddities in the Git mirror and they now
-exist in this new repository as well. My goal for this conversion was to
-deliver something: it wasn't a goal to deliver the most correct result
-possible.</p>
-<p>At this time, this repository should be considered an unstable science
-experiment. <strong>By no means should you rely on this repository.</strong> But if
-you find it useful, I'd appreciate hearing about it. If enough people
-ask, we could probably make this more official.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 

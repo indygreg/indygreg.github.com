@@ -7,12 +7,49 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-07-07T21:51:00Z</updated>
+  <updated>2015-07-08T18:38:21Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Cloning From S3]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3" />
+    <id>http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3</id>
+    <updated>2015-07-08T11:40:00Z</updated>
+    <published>2015-07-08T11:40:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Cloning From S3]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3"><![CDATA[<p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
+bundle files</a>.
+But deploying the feature on the servers was only the tip of the
+iceburg.</p>
+<p>At the end of last week, Firefox release automation rolled out the
+<em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
+clones are bootstrapped from Amazon S3 automatically once this extension
+is installed.</p>
+<p>In just a few days of deployment, we've already seen a drastic shift in
+traffic. On UTC day 2015-07-07, S3 served 1,563,014,396,236 bytes of
+repository data! The hg.mozilla.org servers themselves served a total of
+1,976,057,201,583 bytes.</p>
+<p>But we're not done. The <em>bundleclone</em> extension
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181597">isn't yet deployed on Windows</a>. Nor is it always used on TaskCluster. In addition, there are
+still some high-use repositories that don't have bundles being
+generated. Yesterday, I crunched the data and
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181373">enabled bundles on more repositories</a>. It's too early to have conclusive data, but this should
+move an additional several hundred gigabytes of traffic to S3.</p>
+<p>At Whistler, I said that reducing traffic on hg.mozilla.org by 90% is
+within the realm of possibility. Between a partial rollout of S3
+clone offload that is already serving 44% of traffic and a
+<a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
+I'd say we're well on track.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -682,73 +719,5 @@ until 3.4.1 is released (scheduled for June 1) so you don't run into
 any regressions, nobody can fault you for that.</p>
 <p>If you want to upgrade, I recommend reading the
 <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mercurial for Mozillians Installation Page</a>.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Automatically Redirecting Mercurial Pushes]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes" />
-    <id>http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes</id>
-    <updated>2015-04-30T12:30:00Z</updated>
-    <published>2015-04-30T12:30:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Automatically Redirecting Mercurial Pushes]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes"><![CDATA[<p>Managing URLs in distributed version control tools can be a pain,
-especially if multiple repositories are involved. For example,
-with Mozilla's repository-based code review workflow (you push to a
-special review repository to initiate code review - this is conceptually
-similar to GitHub pull requests), there exist
-<a href="https://reviewboard-hg.mozilla.org/">separate code review repositories</a>
-for each logical repository. Figuring out how repositories map to each
-other and setting up remote paths for each new clone can be a pain and
-time sink.</p>
-<p>As of today, we can now do something better.</p>
-<p>If you push to <em>ssh://reviewboard-hg.mozilla.org/autoreview</em>,
-Mercurial will automatically figure out the appropriate review
-repository and redirect your push automatically. In other words, if we
-have <a href="https://reviewboard.mozilla.org/">MozReview</a> set up to review
-whatever repository you are working on,
-your push and review request will automatically go through. No need to
-figure out what the appropriate review repo is or configure
-repository URLs!</p>
-<p>Here's what it looks like:</p>
-<div class="pygments_murphy"><pre>$ hg push review
-pushing to ssh://reviewboard-hg.mozilla.org/autoreview
-searching for appropriate review repository
-redirecting push to ssh://reviewboard-hg.mozilla.org/version-control-tools/
-searching for changes
-remote: adding changesets
-remote: adding manifests
-remote: adding file changes
-remote: added 1 changesets with 1 changes to 1 files
-remote: Trying to insert into pushlog.
-remote: Inserted into the pushlog db successfully.
-submitting 1 changesets for review
-
-changeset:  11043:b65b087a81be
-summary:    mozreview: create per-commit identifiers (bug 1160266)
-review:     https://reviewboard.mozilla.org/r/7953 (draft)
-
-review id:  bz://1160266/gps
-review url: https://reviewboard.mozilla.org/r/7951 (draft)
-(visit review url to publish this review request so others can see it)
-</pre></div>
-
-<p>Read the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install.html#review-repositories">full instructions</a>
-for more details.</p>
-<p>This requires an updated <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-repository, which you can get by running <em>mach mercurial-setup</em> from a
-Firefox repository.</p>
-<p>For those that are curious, the <em>autoreview</em> repo/server advertises a list
-of repository URLs and their root commit SHA-1. The client automatically
-sends the push to a URL sharing the same root commit. The
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/0b02cd388590">code</a>
-is quite simple.</p>
-<p>While this is only implemented for MozReview, I could envision us doing
-something similar for other centralized repository-centric services, such
-as <em>Try</em> and <em>Autoland</em>. Stay tuned.</p>]]></content>
   </entry>
 </feed>

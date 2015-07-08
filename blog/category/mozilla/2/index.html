@@ -51,6 +51,73 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="firefox-mercurial-repository-with-cvs-history"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history" rel="bookmark" title="Permanent Link to Firefox Mercurial Repository with CVS History">Firefox Mercurial Repository with CVS History</a></h2>
+  <small>May 18, 2015 at 08:40 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>When Firefox made the switch from CVS to Mercurial in March 2007, the
+CVS history wasn't imported into Mercurial. There were good reasons for
+this at the time. But it's a decision that continues to have
+side-effects. I am surprised how often I hear of engineers wanting to
+access blame and commit info from commits now more than 9 years old!</p>
+<p>When individuals created a Git mirror of the Firefox repository a few
+years ago, they correctly decided that importing CVS history would be
+a good idea. They also correctly decided to combine the logically same
+but physically separate <em>release</em> and <em>integration</em> repositories into a
+unified Git repository. These are things we can't easily do to the
+canonical Mercurial repository because it would break SHA-1 hashes,
+breaking many systems, and it would require significant changes in
+process, among other reasons.</p>
+<p>While Firefox developers do have access to a single Firefox repository
+with full CVS history (the Git mirror), they still aren't satisfied.</p>
+<p>Running <em>git blame</em> (or <em>hg blame</em> for that matter) can be very
+expensive. For this reason, the blame interface is disabled on many
+web-based source viewers by default. On GitHub, some blame URLs for
+the Firefox repository time out and cause GitHub to display an error
+message. No matter how hard you try, you can't easily get blame results
+(running a local Git HTTP/HTML interface is still difficult compared to
+<em>hg serve</em>).</p>
+<p>Another reason developers aren't satisfied with the Git mirror is that
+Git's querying tools pale in comparison to Mercurial's. I've said it
+before and I'll say it again: Mercurial's revision sets and templates
+are incredibly useful features that enable advanced repository querying
+and reporting. Git's offerings come nowhere close. (I <em>really</em> wish Git
+would steal these awesome features from Mercurial.)</p>
+<p>Anyway, enough people were complaining about the lack of a Mercurial
+Firefox repository with full CVS history that I decided to create one.
+If you point your browsers or Mercurial clients to
+<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full">https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full</a>,
+you'll be able to access it.</p>
+<p>The process used for the conversion was the simplest possible: I used
+hg-git to convert the Git mirror back to Mercurial.</p>
+<p>Unlike the Git mirror, I didn't include all heads in this new
+repository. Instead, there is only mozilla-central's head (the current
+development tip). If I were doing this properly, I'd include all heads,
+like
+<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-aggregate">gecko-aggregate</a>.</p>
+<p>I'm well aware there are oddities in the Git mirror and they now
+exist in this new repository as well. My goal for this conversion was to
+deliver something: it wasn't a goal to deliver the most correct result
+possible.</p>
+<p>At this time, this repository should be considered an unstable science
+experiment. <strong>By no means should you rely on this repository.</strong> But if
+you find it useful, I'd appreciate hearing about it. If enough people
+ask, we could probably make this more official.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="notes-from-git-merge-2015"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/12/notes-from-git-merge-2015" rel="bookmark" title="Permanent Link to Notes from Git Merge 2015">Notes from Git Merge 2015</a></h2>
   <small>May 12, 2015 at 03:40 PM | categories: 
@@ -380,79 +447,6 @@ any regressions, nobody can fault you for that.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="automatically-redirecting-mercurial-pushes"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/04/30/automatically-redirecting-mercurial-pushes" rel="bookmark" title="Permanent Link to Automatically Redirecting Mercurial Pushes">Automatically Redirecting Mercurial Pushes</a></h2>
-  <small>April 30, 2015 at 12:30 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Managing URLs in distributed version control tools can be a pain,
-especially if multiple repositories are involved. For example,
-with Mozilla's repository-based code review workflow (you push to a
-special review repository to initiate code review - this is conceptually
-similar to GitHub pull requests), there exist
-<a href="https://reviewboard-hg.mozilla.org/">separate code review repositories</a>
-for each logical repository. Figuring out how repositories map to each
-other and setting up remote paths for each new clone can be a pain and
-time sink.</p>
-<p>As of today, we can now do something better.</p>
-<p>If you push to <em>ssh://reviewboard-hg.mozilla.org/autoreview</em>,
-Mercurial will automatically figure out the appropriate review
-repository and redirect your push automatically. In other words, if we
-have <a href="https://reviewboard.mozilla.org/">MozReview</a> set up to review
-whatever repository you are working on,
-your push and review request will automatically go through. No need to
-figure out what the appropriate review repo is or configure
-repository URLs!</p>
-<p>Here's what it looks like:</p>
-<div class="pygments_murphy"><pre>$ hg push review
-pushing to ssh://reviewboard-hg.mozilla.org/autoreview
-searching for appropriate review repository
-redirecting push to ssh://reviewboard-hg.mozilla.org/version-control-tools/
-searching for changes
-remote: adding changesets
-remote: adding manifests
-remote: adding file changes
-remote: added 1 changesets with 1 changes to 1 files
-remote: Trying to insert into pushlog.
-remote: Inserted into the pushlog db successfully.
-submitting 1 changesets for review
-
-changeset:  11043:b65b087a81be
-summary:    mozreview: create per-commit identifiers (bug 1160266)
-review:     https://reviewboard.mozilla.org/r/7953 (draft)
-
-review id:  bz://1160266/gps
-review url: https://reviewboard.mozilla.org/r/7951 (draft)
-(visit review url to publish this review request so others can see it)
-</pre></div>
-
-<p>Read the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install.html#review-repositories">full instructions</a>
-for more details.</p>
-<p>This requires an updated <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-repository, which you can get by running <em>mach mercurial-setup</em> from a
-Firefox repository.</p>
-<p>For those that are curious, the <em>autoreview</em> repo/server advertises a list
-of repository URLs and their root commit SHA-1. The client automatically
-sends the push to a URL sharing the same root commit. The
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/0b02cd388590">code</a>
-is quite simple.</p>
-<p>While this is only implemented for MozReview, I could envision us doing
-something similar for other centralized repository-centric services, such
-as <em>Try</em> and <em>Autoland</em>. Stay tuned.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/1">« Previous Page</a>
   --  

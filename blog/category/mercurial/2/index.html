@@ -51,6 +51,40 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="dropping-explicit-support-for-mercurial-3.0"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0" rel="bookmark" title="Permanent Link to Dropping Explicit Support for Mercurial 3.0">Dropping Explicit Support for Mercurial 3.0</a></h2>
+  <small>May 07, 2015 at 04:05 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
+for all the Mercurial code in the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository. File issues in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
+<p>Code may still work against Mercurial 3.0. But it isn't supported and
+could break hard at any time.</p>
+<p>Supporting multiple versions of <em>any</em> software carries
+with it some cost. The people writing tooling around Mercurial are busy.
+It is a waste of our time to bend over backwards to support old versions
+of software that <strong>all</strong> users should have upgraded from months ago.
+Still using older Mercurial versions means you aren't getting the best
+performance and may encounter bugs that have since been fixed.</p>
+<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
+for info on how to upgrade to the latest/greatest Mercurial version.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="reporting-mercurial-issues"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/04/reporting-mercurial-issues" rel="bookmark" title="Permanent Link to Reporting Mercurial Issues">Reporting Mercurial Issues</a></h2>
   <small>May 04, 2015 at 01:45 PM | categories: 
@@ -300,62 +334,6 @@ for the current configuration of hg.mozilla.org. Cause and effect.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="branch-cleanup-in-firefox-repositories"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/01/28/branch-cleanup-in-firefox-repositories" rel="bookmark" title="Permanent Link to Branch Cleanup in Firefox Repositories">Branch Cleanup in Firefox Repositories</a></h2>
-  <small>January 28, 2015 at 08:35 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mozilla has historically done some funky things with the Firefox
-Mercurial repositories. One of the things we've done is create
-a bunch of named branches to track the Firefox release process.
-These are branch names like <em>GECKO20b12_2011022218_RELBRANCH</em>.</p>
-<p>Over in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=927219">bug 927219</a>,
-we started the process of cleaning up some cruft left over from
-many of these old branches.</p>
-<p>For starters, the old named branches in the Firefox repositories
-are being actively closed. When you <em>hg commit --close-branch</em>,
-Mercurial creates a special commit that says <em>this branch is closed</em>.
-Branches that are closed are automatically hidden from the output
-of <em>hg branches</em> and <em>hg heads</em>. As a result, the output of these
-commands is now much more usable.</p>
-<p>Closed branches still constitute <em>heads</em> on the DAG. And several heads
-lead to degraded performance in some situations (notably push and pull
-times - the same thing happens in Git). I'd like to eventually merge
-these old heads so that repositories only have 1 or a small number of
-DAG heads. However, extra care must be taken before that step. Stay
-tuned.</p>
-<p>Anyway, for the average person reading, you probably won't be impacted
-by these changes at all. The greatest impact will be from the person who
-lands the first change on top of any repository whose last commit
-was a branch close. If you commit on top of the <em>tip</em> commit,
-you'll be committing on top of a previously closed branch! You'll
-instead want to <em>hg up default</em> after you pull to ensure you are on
-the proper DAG head! And even then, if you have local commits, you may
-not be based on top of the appropriate commit! A simple run of
-<em>hg log --graph</em> should help you decipther the state of the world.
-(Please note that the usability problems around discovering the
-appropriate head to land on are a result of our poor branching strategy
-for the Firefox repositories. We probably should have named branches
-tracking the active Gecko releases. But that ship sailed years ago
-and fixing that is pretty far down the priority list. Wallpapering
-over things with the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/firefoxtree.html">firefoxtree extensions</a>
-is my recommended solution until matters are fixed.)</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/1">« Previous Page</a>
   --  

@@ -10,10 +10,42 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 07 Jul 2015 21:51:00 GMT</pubDate>
+    <pubDate>Wed, 08 Jul 2015 18:38:21 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Cloning From S3</title>
+      <link>http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3</link>
+      <pubDate>Wed, 08 Jul 2015 11:40:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3</guid>
+      <description>Cloning From S3</description>
+      <content:encoded><![CDATA[<p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
+bundle files</a>.
+But deploying the feature on the servers was only the tip of the
+iceburg.</p>
+<p>At the end of last week, Firefox release automation rolled out the
+<em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
+clones are bootstrapped from Amazon S3 automatically once this extension
+is installed.</p>
+<p>In just a few days of deployment, we've already seen a drastic shift in
+traffic. On UTC day 2015-07-07, S3 served 1,563,014,396,236 bytes of
+repository data! The hg.mozilla.org servers themselves served a total of
+1,976,057,201,583 bytes.</p>
+<p>But we're not done. The <em>bundleclone</em> extension
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181597">isn't yet deployed on Windows</a>. Nor is it always used on TaskCluster. In addition, there are
+still some high-use repositories that don't have bundles being
+generated. Yesterday, I crunched the data and
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181373">enabled bundles on more repositories</a>. It's too early to have conclusive data, but this should
+move an additional several hundred gigabytes of traffic to S3.</p>
+<p>At Whistler, I said that reducing traffic on hg.mozilla.org by 90% is
+within the realm of possibility. Between a partial rollout of S3
+clone offload that is already serving 44% of traffic and a
+<a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
+I'd say we're well on track.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Changeset Metadata on hg.mozilla.org</title>
       <link>http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org</link>
@@ -641,52 +673,6 @@ scale</em>. The simple fact of the matter is that clients cumulatively
 generated an exceptional amount of traffic to hg.mozilla.org this week.
 All servers have capacity limits. And this week we encountered the limit
 for the current configuration of hg.mozilla.org. Cause and effect.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Branch Cleanup in Firefox Repositories</title>
-      <link>http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories</link>
-      <pubDate>Wed, 28 Jan 2015 20:35:00 PST</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/01/28/branch-cleanup-in-firefox-repositories</guid>
-      <description>Branch Cleanup in Firefox Repositories</description>
-      <content:encoded><![CDATA[<p>Mozilla has historically done some funky things with the Firefox
-Mercurial repositories. One of the things we've done is create
-a bunch of named branches to track the Firefox release process.
-These are branch names like <em>GECKO20b12_2011022218_RELBRANCH</em>.</p>
-<p>Over in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=927219">bug 927219</a>,
-we started the process of cleaning up some cruft left over from
-many of these old branches.</p>
-<p>For starters, the old named branches in the Firefox repositories
-are being actively closed. When you <em>hg commit --close-branch</em>,
-Mercurial creates a special commit that says <em>this branch is closed</em>.
-Branches that are closed are automatically hidden from the output
-of <em>hg branches</em> and <em>hg heads</em>. As a result, the output of these
-commands is now much more usable.</p>
-<p>Closed branches still constitute <em>heads</em> on the DAG. And several heads
-lead to degraded performance in some situations (notably push and pull
-times - the same thing happens in Git). I'd like to eventually merge
-these old heads so that repositories only have 1 or a small number of
-DAG heads. However, extra care must be taken before that step. Stay
-tuned.</p>
-<p>Anyway, for the average person reading, you probably won't be impacted
-by these changes at all. The greatest impact will be from the person who
-lands the first change on top of any repository whose last commit
-was a branch close. If you commit on top of the <em>tip</em> commit,
-you'll be committing on top of a previously closed branch! You'll
-instead want to <em>hg up default</em> after you pull to ensure you are on
-the proper DAG head! And even then, if you have local commits, you may
-not be based on top of the appropriate commit! A simple run of
-<em>hg log --graph</em> should help you decipther the state of the world.
-(Please note that the usability problems around discovering the
-appropriate head to land on are a result of our poor branching strategy
-for the Firefox repositories. We probably should have named branches
-tracking the active Gecko releases. But that ship sailed years ago
-and fixing that is pretty far down the priority list. Wallpapering
-over things with the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/firefoxtree.html">firefoxtree extensions</a>
-is my recommended solution until matters are fixed.)</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
