@@ -19,6 +19,7 @@ Released   : 20101114
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     
   <title>Gregory Szorc's Digital Home
+  | MozReview Statistics July 2015
 </title>
 <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
 <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
@@ -49,7 +50,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="mozreview-statistics-july-2015"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/07/16/mozreview-statistics-july-2015" rel="bookmark" title="Permanent Link to MozReview Statistics July 2015">MozReview Statistics July 2015</a></h2>
@@ -98,84 +99,12 @@ the year.</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="cloning-from-s3"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/07/08/cloning-from-s3" rel="bookmark" title="Permanent Link to Cloning From S3">Cloning From S3</a></h2>
-  <small>July 08, 2015 at 11:40 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
-bundle files</a>.
-But deploying the feature on the servers was only the tip of the
-iceberg.</p>
-<p>At the end of last week, Firefox release automation rolled out the
-<em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
-clones are bootstrapped from Amazon S3 automatically once this extension
-is installed.</p>
-<p>In just a few days of deployment, we've already seen a drastic shift in
-traffic. On UTC day 2015-07-07, S3 served 1,563,014,396,236 bytes of
-repository data! The hg.mozilla.org servers themselves served a total of
-1,976,057,201,583 bytes.</p>
-<p>But we're not done. The <em>bundleclone</em> extension
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181597">isn't yet deployed on Windows</a>. Nor is it always used on TaskCluster. In addition, there are
-still some high-use repositories that don't have bundles being
-generated. Yesterday, I crunched the data and
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181373">enabled bundles on more repositories</a>. It's too early to have conclusive data, but this should
-move an additional several hundred gigabytes of traffic to S3.</p>
-<p>At Whistler, I said that reducing traffic on hg.mozilla.org by 90% is
-within the realm of possibility. Between a partial rollout of S3
-clone offload that is already serving 44% of traffic and a
-<a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
-I'd say we're well on track.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="publish-when-pushing-to-mozreview"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/07/07/publish-when-pushing-to-mozreview" rel="bookmark" title="Permanent Link to Publish When Pushing to MozReview">Publish When Pushing to MozReview</a></h2>
-  <small>July 07, 2015 at 02:55 PM | categories: 
-
-<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>A lot of people contributed some really great feedback about MozReview
-at Whistler. One of the most frequent requests was for the ability to
-publish submitted review requests without having to open a browser.
-I'm pleased to report that as of yesterday, this feature is implemented!
-If reviewers have been assigned to all your review requests, Mercurial
-will now prompt you to publish the review requests during <em>hg push</em>.
-It should <em>just work</em>.</p>
-<p>As part of this change, we also introduced more advanced feature
-negotiation into the handshake between client and server. This means
-we now have a mechanism for detecting out-of-date client installations.
-This will enable us to more aggressively drop backwards compatibility
-(making server-side development easier) while simultaneously ensuring
-that more people are running modern and hopefully better versions of the
-client code. This should translate to moving faster and a better
-experience for everyone.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               

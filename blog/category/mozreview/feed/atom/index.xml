@@ -7,12 +7,58 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-07-08T18:47:44Z</updated>
+  <updated>2015-07-16T21:04:59Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[MozReview Statistics July 2015]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015" />
+    <id>http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015</id>
+    <updated>2015-07-16T14:00:00Z</updated>
+    <published>2015-07-16T14:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="MozReview" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[MozReview Statistics July 2015]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015"><![CDATA[<p>As of today, ~15.6% of commits landing in Firefox in July have gone
+through <a href="https://reviewboard.mozilla.org/">MozReview</a> or have been produced
+on machines that have used MozReview. This is still a small percentage
+of overall commits. But, signs are that the percentage is going up. Last
+month, about half as many commits exhibited the same signature. It's
+only July 16 and we've already passed the total from June.</p>
+<p>What I find interesting is the differences between commits that have
+gone through MozReview versus the rest. When you look at the diff
+statistics (a quick proxy of change size), we find that MozReview
+commits tend to be smaller. The median <em>adds</em> as reported by diff stat
+(basically lines that were changed) is 12 for MozReview versus 17
+elsewhere. The average is 58 for MozReview versus 100 elsewhere. For
+number of files modified, MozReview averages 2.59 versus elsewhere's
+2.71. (These numbers exclude some specific large commits that appeared to
+be bulk imports of external projects and drove up the non-MozReview
+figures.)</p>
+<p>It's entirely possible the root cause behind the discrepancy is a
+side-effect of the population of MozReview users: perhaps MozReview
+users just write smaller commits. However, I'd like to think it's because
+MozReview makes it easier to manage multiple commits and people are taking
+advantage of that (this is an explicit design goal of MozReview). Whatever
+the root cause, I'm glad diffs are smaller.
+As I've <a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">written about before</a>,
+smaller commits are easier to review and land, thus enabling projects to
+move faster.</p>
+<p>I have a quarterly goal to remove the requirement for a Mozilla LDAP
+account to push to MozReview. That will allow first time contributors to
+use MozReview. This will be a huge win, as we can do much more magic in
+the MozReview world than we can from vanilla Bugzilla (automatic bug
+filing, automatic reviewer assignment, etc). Unofficially, I'd like to
+have more than 50% of Firefox commits go through MozReview by the end of
+the year.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
