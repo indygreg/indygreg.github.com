@@ -7,12 +7,106 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-07-16T21:04:59Z</updated>
+  <updated>2015-07-17T18:41:43Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Prompting to Run mach mercurial-setup]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup" />
+    <id>http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup</id>
+    <updated>2015-07-17T11:35:00Z</updated>
+    <published>2015-07-17T11:35:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Prompting to Run mach mercurial-setup]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup"><![CDATA[<p>Earlier this week, I landed some changes to the Firefox development
+environment that aggressively make <em>mach</em> prompt to run <em>mach
+mercurial-setup</em>. Full details in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1182677">bug 1182677</a>.</p>
+<p>As expected, the change resulted in a fair amount of whining and
+bemoaning among various Firefox developers. I wanted to take some time
+to explain why we moved forward, even though we knew not everyone would
+like the feature.</p>
+<p>My official job title at Mozilla is <em>Developer Productivity Engineer</em>.
+My job is to make you do your job better.</p>
+<p>I've been an employee at Mozilla for four years and in that time I've
+witnessed a surprising lack of understanding around version control
+tools. (I don't think Mozilla is significantly different from most
+other companies here.) I find that a significant number of people
+are practicing sub-optimal version control workflows because they don't
+know any better (common) or because they are unwilling to change from
+learned habits.</p>
+<p>Furthermore, Mercurial is a highly customizable tool. A lot of
+Mozillians have spent a lot of time developing useful extensions to
+Mercurial that enable Mozillians to use Mercurial more effectively and
+to thus become more productive. The latest epic time-saving hack
+is <a href="http://www.ncalexander.net/blog/2015/07/02/build-fennec-frontend-fast-with-mach-artifact/">Nick Alexander's work to make Fennec build 80% faster by
+having deep integration with version control</a>.</p>
+<p><em>mach mercurial-setup</em> is almost
+<a href="/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development/">two years old</a>.
+Yet, when assisting my fellow Mozillians with Mercurial issues, my
+"have you run mach mercurial-setup?" question is still often met with
+blank stares followed by "wait, there's a mach mercurial-setup?!" What's
+even more frustrating is people wrongly believing that Mercurial can't
+do things like rebasing and then spreading misinformation about the
+lackings of Mercurial. (Mercurial has many advanced features disabled
+out of the box so new users don't footgun themselves.)</p>
+<p>Just like Firefox would be irrelevant if it didn't have millions of users,
+your awesome tool is mostly irrelevant if you are its only user. That's
+why when I hear of someone say they created an amazing tool for
+themselves or modified a third party tool without sending the improvements
+upstream, my blood pressure rises a little. It rises because here this
+person did something awesome and they or some limited subset of people
+who happened to be following the person on Twitter or reading their blog
+at that point in time managed to a) know about the tool b) take the
+effort to install it. The uptake rate is insanely low and return on
+investment for that tool is low. It results in duplication of effort.
+I find this painfully frustrating because I want everyone to have easy
+access to the best tools available. This requires that tools are well
+advertised and easy to install and use.</p>
+<p>The primary goal of <em>mach mercurial-setup</em> is to make it super easy for
+anyone to have an optimal Mercurial experience. It was apparent to me that
+despite <em>mach mercurial-setup</em> existing, numerous people didn't know it
+existed or weren't using it. Your awesome tool isn't very awesome unless
+people are using it. And a lot of the awesome tools people have built
+around Mercurial at Mozilla weren't being utilized and lots of
+productivity wins were thus being unrealized. Forcefully pushing <em>mach
+mercurial-setup</em> onto people is thus an attempt to unlock unrealized
+productivity wins and to make people happier about the state of their
+tools.</p>
+<p>I'm not thrilled that mach's prompting to run <em>mach mercurial-setup</em> is
+as disruptive as it is. It's bad user experience. I know better. But,
+(and this is explained somewhat in the bug), other solutions are more
+complicated and have other gotchas. The current, invasive implementation
+was the easiest to implement and has the biggest bang for the buck in
+terms of adoption. We knew people would complain about it. But from
+my perspective, it was do this or do nothing. And nothing hadn't been
+very effective. So we did something.</p>
+<p>There has been lots of feedback about the change this week. Most
+surprising to me is the general sentiment of "I don't want something
+automatically changing my hgrc file." I find this surprising because
+<em>mach mercurial-setup</em> puts the user firmly in control by prompting
+before doing anything, thus respecting user choice and avoiding gotchas
+and unwanted changes. It's clear this property needs to be advertised a
+bit more so people aren't scared to run <em>mach mercurial-setup</em> and don't
+spread fear, uncertainty, and doubt about the tool to others. (I also
+find it somewhat surprising people would think this in the first place:
+I'd like to think we'd implicitly trust most Mozillians to implement
+tools that respect user choice and don't do <em>malicious</em> things.)</p>
+<p>Like all software, things can and will change. The user experience of
+this new feature isn't terrific. We'll iterate on it. If you want to
+help enact change, please
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">file a bug in Core :: mach</a>
+(for now) and we'll go from there.</p>
+<p>Thank you for your patience and your understanding.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -652,75 +746,5 @@ is quite simple.</p>
 <p>While this is only implemented for MozReview, I could envision us doing
 something similar for other centralized repository-centric services, such
 as <em>Try</em> and <em>Autoland</em>. Stay tuned.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[New High Scores for hg.mozilla.org]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org" />
-    <id>http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org</id>
-    <updated>2015-03-20T09:55:00Z</updated>
-    <published>2015-03-19T20:20:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[New High Scores for hg.mozilla.org]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org"><![CDATA[<p>It's been a <a href="/blog/2015/03/18/network-events/">rough week</a>.</p>
-<p>The very short summary of events this week is that both the Firefox
-and Firefox OS release automation has been performing a denial of
-service attack against
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a>.</p>
-<p>On the face of it, this is nothing new. The release automation
-is by far the top consumer of hg.mozilla.org data, requesting several
-terabytes per day via several million HTTP requests from thousands of
-machines in multiple data centers. The very nature of their existence
-makes them a significant denial of service threat.</p>
-<p>Lots of things went wrong this week. While a post mortem will shed
-light on them, many fall under the umbrella of <em>release automation was
-making more requests than it should have and was doing so in a way
-that both increased the chances of an outage occurring and increased
-the chances of a prolonged outage.</em> This resulted in the hg.mozilla.org
-servers working harder than they ever have. As a result, we have some
-new <em>high scores</em> to share.</p>
-<ul>
-<li>
-<p>On UTC day March 19, hg.mozilla.org transferred 7.4 TB of data.
-  This is a significant increase from the ~4 TB we expect on a typical
-  weekday. (Even more significant when you consider that most load is
-  generated during peak hours.)</p>
-</li>
-<li>
-<p>During the 1300 UTC hour of March 17, the cluster received 1,363,628
-  HTTP requests. No HTTP 503 Service Not Available errors were
-  encountered in that window! 300,000 to 400,000 requests per hour is
-  typical.</p>
-</li>
-<li>
-<p>During the 0800 UTC hour of March 19, the cluster transferred 776 GB
-  of repository data. That comes out to at least 1.725 Gbps on average
-  (I didn't calculate TCP and other overhead). Anything greater than 250
-  GB per hour is not very common. No HTTP 503 errors were served from
-  the origin servers during this hour!</p>
-</li>
-</ul>
-<p>We encountered many periods where hg.mozilla.org was operating more than
-twice its normal and expected operating capacity and it was able to
-handle the load just fine. As a server operator, I'm proud of this.
-The servers were provisioned beyond what is normally needed of them and
-it took a truly exceptional event (or two) to bring the service down.
-This is generally a good way to do hosted services (you rarely want to be
-barely provisioned because you fall over at the slighest change and you
-don't want to be grossly over-provisioned because you are wasting money
-on idle resources).</p>
-<p>Unfortunately, the hg.mozilla.org service did fall over. Multiple times,
-in fact. There is room to improve. As proud as I am that the service
-operated well beyond its expected limits, I can't help but feel ashamed
-that it did eventual cave in under even extreme load and that people are
-probably making under-informed general assumptions like <em>Mercurial can't
-scale</em>. The simple fact of the matter is that clients cumulatively
-generated an exceptional amount of traffic to hg.mozilla.org this week.
-All servers have capacity limits. And this week we encountered the limit
-for the current configuration of hg.mozilla.org. Cause and effect.</p>]]></content>
   </entry>
 </feed>

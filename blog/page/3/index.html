@@ -51,6 +51,45 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="reporting-mercurial-issues"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/05/04/reporting-mercurial-issues" rel="bookmark" title="Permanent Link to Reporting Mercurial Issues">Reporting Mercurial Issues</a></h2>
+  <small>May 04, 2015 at 01:45 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I semi-frequently stumble upon conversations in hallways and
+on irc.mozilla.org about issues people are having with Mercurial.
+These conversations periodically involve a legitimate bug with
+Mercurial. Unfortunately, these conversations frequently end
+without an actionable result. Unless someone files a bug, pings me,
+etc, the complaints disappear into ether. That's not good for
+anyone and only results in bugs living longer than they should.</p>
+<p>There are posters around Mozilla offices that say
+<em>if you see something, file something.</em> This advice does not just
+apply to Mozilla projects!</p>
+<p><strong>If you encounter an issue in Mercurial, please take the time
+to report it somewhere meaningful.</strong> The
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/issues.html">Reporting Issues with Mercurial</a>
+page from the
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/index.html">Mercurial for Mozillians</a>
+guide tells you how to do this.</p>
+<p>It is OK to complain about something. But if you don't inform
+someone empowered to do something about it, you are part of the
+problem without being part of the solution. Please make the
+incremental effort to be part of the solution.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mercurial-3.4-released"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/04/mercurial-3.4-released" rel="bookmark" title="Permanent Link to Mercurial 3.4 Released">Mercurial 3.4 Released</a></h2>
   <small>May 04, 2015 at 12:40 PM | categories: 
@@ -466,81 +505,6 @@ new info Tweeted at me. Added link to my monorepos blog post.</em></p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/28/notes-from-facebook's-developer-infrastructure-at-scale-f8-talk#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="new-high-scores-for-hg.mozilla.org"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/03/19/new-high-scores-for-hg.mozilla.org" rel="bookmark" title="Permanent Link to New High Scores for hg.mozilla.org">New High Scores for hg.mozilla.org</a></h2>
-  <small>March 19, 2015 at 08:20 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>It's been a <a href="/blog/2015/03/18/network-events/">rough week</a>.</p>
-<p>The very short summary of events this week is that both the Firefox
-and Firefox OS release automation has been performing a denial of
-service attack against
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a>.</p>
-<p>On the face of it, this is nothing new. The release automation
-is by far the top consumer of hg.mozilla.org data, requesting several
-terabytes per day via several million HTTP requests from thousands of
-machines in multiple data centers. The very nature of their existence
-makes them a significant denial of service threat.</p>
-<p>Lots of things went wrong this week. While a post mortem will shed
-light on them, many fall under the umbrella of <em>release automation was
-making more requests than it should have and was doing so in a way
-that both increased the chances of an outage occurring and increased
-the chances of a prolonged outage.</em> This resulted in the hg.mozilla.org
-servers working harder than they ever have. As a result, we have some
-new <em>high scores</em> to share.</p>
-<ul>
-<li>
-<p>On UTC day March 19, hg.mozilla.org transferred 7.4 TB of data.
-  This is a significant increase from the ~4 TB we expect on a typical
-  weekday. (Even more significant when you consider that most load is
-  generated during peak hours.)</p>
-</li>
-<li>
-<p>During the 1300 UTC hour of March 17, the cluster received 1,363,628
-  HTTP requests. No HTTP 503 Service Not Available errors were
-  encountered in that window! 300,000 to 400,000 requests per hour is
-  typical.</p>
-</li>
-<li>
-<p>During the 0800 UTC hour of March 19, the cluster transferred 776 GB
-  of repository data. That comes out to at least 1.725 Gbps on average
-  (I didn't calculate TCP and other overhead). Anything greater than 250
-  GB per hour is not very common. No HTTP 503 errors were served from
-  the origin servers during this hour!</p>
-</li>
-</ul>
-<p>We encountered many periods where hg.mozilla.org was operating more than
-twice its normal and expected operating capacity and it was able to
-handle the load just fine. As a server operator, I'm proud of this.
-The servers were provisioned beyond what is normally needed of them and
-it took a truly exceptional event (or two) to bring the service down.
-This is generally a good way to do hosted services (you rarely want to be
-barely provisioned because you fall over at the slighest change and you
-don't want to be grossly over-provisioned because you are wasting money
-on idle resources).</p>
-<p>Unfortunately, the hg.mozilla.org service did fall over. Multiple times,
-in fact. There is room to improve. As proud as I am that the service
-operated well beyond its expected limits, I can't help but feel ashamed
-that it did eventual cave in under even extreme load and that people are
-probably making under-informed general assumptions like <em>Mercurial can't
-scale</em>. The simple fact of the matter is that clients cumulatively
-generated an exceptional amount of traffic to hg.mozilla.org this week.
-All servers have capacity limits. And this week we encountered the limit
-for the current configuration of hg.mozilla.org. Cause and effect.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">« Previous Page</a>
   --  

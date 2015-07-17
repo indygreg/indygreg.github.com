@@ -51,6 +51,37 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="new-job-role"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/09/05/new-job-role" rel="bookmark" title="Permanent Link to New Job Role">New Job Role</a></h2>
+  <small>September 05, 2014 at 11:30 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/09/05/new-job-role#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>As of today, I have a new role and title at Mozilla: <em>Developer
+Productivity Engineer</em>. I'll be reporting to Laura Thomson as a
+member of the <em>Developer Services</em> team.</p>
+<p>I have an immediate goal to make our version control work better.
+This includes making Try scale and helping out with the deployment
+of ReviewBoard. After that, I'm not entirely sure. But Autoland
+and Firefox build system improvements have been discussed.</p>
+<p>I'm really excited to be in this new role. If someone were to give me
+a clean slate and tell me to design my own job role, I think I'd
+answer with something very similar to the role I am now in. I am
+passionate about tools and enabling people to become more productive.
+I have little doubt I'll thrive in this new role.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/05/new-job-role#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="submit-feedback-about-mercurial"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/08/19/submit-feedback-about-mercurial" rel="bookmark" title="Permanent Link to Submit Feedback about Mercurial">Submit Feedback about Mercurial</a></h2>
   <small>August 19, 2014 at 06:30 PM | categories: 
@@ -305,97 +336,6 @@ world. Stay tuned.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="updates-to-firefoxtree-mercurial-extension"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension" rel="bookmark" title="Permanent Link to Updates to firefoxtree Mercurial extension">Updates to firefoxtree Mercurial extension</a></h2>
-  <small>July 16, 2014 at 07:55 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>My <a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
-has been generating a lot of interest for bookmark-based workflows at
-Mozilla. To make adoption easier, I
-<a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags/">quickly authored</a>
-an <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">extension</a>
-to add <em>remote refs</em> of Firefox repositories to Mercurial.</p>
-<p>There was still a bit of confusion and gripes about workflows that I
-thought it would be best to update the extension to make things more
-pleasant.</p>
-<h2>Automatic tree names</h2>
-<p>People wanted an ability to easy pull/aggregate the various Firefox
-trees without additional configuration to an hgrc file.</p>
-<p>With <em>firefoxtree</em>, you can now <em>hg pull central</em> or <em>hg pull inbound</em>
-or <em>hg pull aurora</em> and it just works.</p>
-<p>Pushing with aliases doesn't yet work. It is slightly harder to do in
-the Mercurial API. I have a solution, but I'm validating some code paths
-to ensure it is safe. This feature will likely appear soon.</p>
-<h2>fxheads commands</h2>
-<p>Once people adopted unified repositories with heads from multiple
-repositories, they asked how they could quickly identify the heads of
-the pulled Firefox repositories.</p>
-<p><em>firefoxtree</em> now provides a <em>hg fxheads</em> command that prints a
-concise output of the commits constituting the heads of the Firefox
-repos. e.g.</p>
-<div class="pygments_murphy"><pre><span class="nv">$ </span>hg fxheads
-224969:0ec0b9ac39f0 aurora <span class="o">(</span>sort of<span class="o">)</span> bug <span class="m">898554</span> - raise expected hazard count <span class="k">for</span> b2g to <span class="m">4</span> <span class="k">until</span> they are fixed, <span class="nv">a</span><span class="o">=</span>bustage+hazbuild-only
-224290:6befadcaa685 beta Tagging /src/mdauto/build/mozilla-beta 1772e55568e4 with FIREFOX_RELEASE_31_BASE <span class="nv">a</span><span class="o">=</span>release CLOSED TREE
-224848:8e8f3ba64655 central Merge inbound to m-c <span class="nv">a</span><span class="o">=</span>merge
-225035:ec7f2245280c fx-team fx-team/default Merge m-c to fx-team
-224877:63c52b7ddc28 inbound Bug <span class="m">1039197</span> - Always build js engine with zlib. <span class="nv">r</span><span class="o">=</span>luke
-225044:1560f67f4f93 release release/default tip Automated checkin: version bump <span class="k">for</span> firefox 31.0 release. DONTBUILD CLOSED TREE <span class="nv">a</span><span class="o">=</span>release
-</pre></div>
-
-<p>Please note that the output is based upon local-only knowledge: you'll
-need to pull to ensure data is current.</p>
-<h2>Reject pushing multiple heads</h2>
-<p>People were complaining that bookmark-based workflows resulted in
-Mercurial trying to push multiple heads to a remote. This complaint
-stems from the fact that Mercurial's default push behavior is to find
-all commits missing from the remote and push them. This behavior is
-extremely frustrating for Firefox development because the Firefox repos
-only have a single head and pushing multiple heads will only result in
-a server hook rejecting the push (after wasting a lot of time
-transferring that commit data).</p>
-<p><em>firefoxtree</em> now will refuse to push multiple heads to a known Firefox
-repo before any commit data is sent. In other words, we fail fast so
-your time is saved.</p>
-<p><em>firefoxtree</em> also changes the default behavior of <em>hg push</em> when
-pushing to a Firefox repo. If no <em>-r</em> argument is specified, <em>hg push</em>
-to a Firefox repo will automatically remap to <em>hg push -r .</em>. In other
-words, we attempt to push the working copy's commit by default. This
-change establishes sensible default and likely working behavior when
-typing just <em>hg push</em>.</p>
-<p>I am a bit on the fence about changing the default behavior of <em>hg
-push</em>. On one hand, it makes total sense. On the other, silently
-changing the default behavior of a built-in command is a little
-dangerous. I can easily see this backfiring when people interact with
-non-Firefox repos. I encourage people to get in the habit of typing
-<em>hg push -r <rev></em> because that's what you should be doing.</p>
-<h2>Installing firefoxtree</h2>
-<p>Within the next 48 hours, <em>mach mercurial-setup</em> should prompt to
-install <em>firefoxtree</em>. Until then, clone
-<em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and ensure your
-<em>~/.hgrc</em> file has the following:</p>
-<pre><code>[extensions]
-firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
-</code></pre>
-<p>You likely already have a copy of version-control-tools
-in <em>~/.mozbuild/version-control-tools</em>.</p>
-<p>It is completely safe to install <em>firefoxtree</em> globally: the extension
-will only modify behavior of repositories that are clones of Firefox
-repositories.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/9">« Previous Page</a>
   --  
