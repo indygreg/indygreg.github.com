@@ -1,0 +1,199 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | My Contributions to Mercurial 3.5
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="my-contributions-to-mercurial-3.5"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/07/31/my-contributions-to-mercurial-3.5" rel="bookmark" title="Permanent Link to My Contributions to Mercurial 3.5">My Contributions to Mercurial 3.5</a></h2>
+  <small>July 31, 2015 at 10:55 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial 3.5 was released today. I contributed some small
+improvements to this version that I thought I'd share with the world.</p>
+<p>The feature I'm most proud of adding to Mercurial 3.5 is what I'm
+referring to as <em>auto share</em>. The existing <em>hg share</em> extension/command
+enables multiple checkouts of a repository to share the same backing
+repository store. Essentially the <em>.hg/store</em> directory is a symlink
+to shared directory. This feature has existed in Mercurial for years
+and is essentially identical to the <em>git worktree</em> feature just
+recently added in Git 2.5.</p>
+<p>My addition to the <em>share</em> extension is the ability for Mercurial to
+automatically perform an <em>hg clone</em> + <em>hg share</em> in the same operation.
+If the <em>share.pool</em> config option is defined, <em>hg clone</em>
+will automatically clone or pull the repository data somewhere inside
+the directory pointed to by <em>share.pool</em> then create a new working copy
+from that shared location. But here's the magic: <strong>Mercurial can
+automatically deduce that different remotes are the same logical
+repository (by looking at the root changeset) and automatically have
+them share storage</strong>. So if you first <em>hg clone</em> the <em>canonical</em>
+repository then later do a <em>hg clone</em> of a <em>fork</em>, Mercurial will
+pull down the changesets unique to the fork into the previously
+created shared directory and perform a checkout from that. Contrast
+with performing a full clone of the fork. <strong>If you are cloning multiple
+repositories that are logically derived from the same original one,
+this can result in a significant reduction of disk space and network
+usage.</strong> I wrote this feature with automated consumers in mind,
+particularly continuous integration systems. However, there is also
+mode more suitable for humans where repositories are pooled not by their
+root changeset but by their URL. For more info, see <em>hg help -e share</em>.</p>
+<p>For Mercurial 3.4, I contributed changes that refactored how Mercurial's
+tags cache works. This cache was a source of performance problems at
+Mozilla's scale for many years. Since upgrading to Mercurial 3.4,
+Mozilla has not encountered any significant performance problems with
+the cache on either client or server as far as I know.</p>
+<p>Building on this work, Mercurial 3.5 supports transferring tags cache
+entries from server to client when clients clone/pull. Before, clients
+would have to recompute tags cache entries for pulled changesets. On
+repositories that are very large in terms of number of files (over 50,000)
+or heads (hudreds or more), this could take several dozen seconds or
+even minutes. This would manifest as a delay either during or after
+initial clone. In Mercurial 3.5 - assuming both client and server
+support the new <em>bundle2</em> wire protocol - the cache entries are
+transferred from server to client and no extra computation needs to
+occur. The client does pay a very small price for transferring this
+additional data over the wire, but the payout is almost always worth it.
+<strong>For large repositories, this feature means clones are usable sooner.</strong></p>
+<p>A few weeks ago, a coworker told me that connections to a Mercurial
+server were timing out mid clone. We investigated and discovered a
+potential for a long CPU-intensive pause during clones where Mercurial
+would not touch the network. On this person's under-powered EC2
+instance, the pause was so long that the server's inactivity timeout
+was triggered and it dropped the client's TCP connection. I refactored
+Mercurial's cloning code so there is no longer a pause. There should
+be no overall change in clone time, but there is no longer a perceivable
+delay between applying changesets and manifests where the network could
+remain idle. This investigation also revealed some potential follow-up
+work for Mercurial to be a bit smarter about how it interacts with
+networks.</p>
+<p>Finally, I contributed <em>hg help scripting</em> to Mercurial's help database.
+This help topic covers how to use Mercurial from scripting and other
+automated environments. It reflects knowledge I've learned from seeing
+Mercurial used in automation at Mozilla.</p>
+<p>Of course, there are plenty of other changes in Mercurial 3.5. Stay
+tuned for another blog post.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozreview">MozReview</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

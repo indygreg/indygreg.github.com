@@ -51,6 +51,95 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="aggregating-version-control-info-at-mozilla"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/21/aggregating-version-control-info-at-mozilla" rel="bookmark" title="Permanent Link to Aggregating Version Control Info at Mozilla">Aggregating Version Control Info at Mozilla</a></h2>
+  <small>January 21, 2014 at 10:50 AM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/python'>Python</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Over the winter break, I set out on an ambitious project to create
+a service to help developers and others manage the flury
+of patches going into Firefox. While the project is far from complete,
+I'm ready to unleash the first part of the project upon the world.</p>
+<p>If you point your browsers to
+<a href="http://moztree.gregoryszorc.com/">moztree.gregoryszorc.com</a>, you'll
+hopefully see some documentation about what I've built.
+<a href="https://bitbucket.org/indygreg/moz-tree-utopia">Source code</a> is
+available and free, of course. Patches very welcome.</p>
+<p>Essentially, I built a centralized indexing service for version
+control repositories with Mozilla's extra metadata thrown in.
+I tell it what repositories to mirror, and it clones everything,
+fetches data such as the pushlog and Git SHA-1 mappings, and
+stores everything in a central database. It then exposes this
+aggregated data through world-readable web services.</p>
+<p>Currently, I have the service indexing the popular project branches
+for Firefox (central, aurora, beta, release, esr, b2g, inbound, fx-team,
+try, etc). You can view the
+<a href="http://moztree.gregoryszorc.com/api/repos">full list</a> via the web
+service. As a bonus, I'm also serving these repositories via
+<a href="http://hg.gregoryszorc.com/">hg.gregoryszorc.com</a>. My server appears
+to be significantly faster than
+<a href="https://hg.mozilla.org">hg.mozilla.org</a>. If you want to use it for
+your daily needs, go for it. I make no SLA guarantees, however.</p>
+<p>I'm also using this service as an opportunity to experiment with
+alternate forms of Mercurial hosting. I have mirrors of mozilla-central
+and the try repository with generaldelta and lz4 compression enabled.
+I may blog about what those are eventually. The teaser is that they can
+make Mercurial perform a lot faster under some conditions. I'm also
+using ZFS under the hood to manage repositories. Each repository is a
+ZFS filesystem. This means I can create repository copies on the server
+(user repositories anyone?) at a nearly free cost. Contrast this to the
+traditional method of full clones, which take lots of time, memory, CPU,
+and storage.</p>
+<p>Anyway, some things you can do with the existing web service:</p>
+<ul>
+<li>Obtain metadata about Mercurial changesets.
+  <a href="http://moztree.gregoryszorc.com/api/changeset/940b2974f35b">Example</a>.</li>
+<li>Look up metadata about Git commits.
+  <a href="http://moztree.gregoryszorc.com/api/git-sha1/40438af67c321">Example</a>.</li>
+<li>Obtain a <a href="http://moztree.gregoryszorc.com/api/spore">SPORE descriptor</a>
+  describing the web service endpoints. This allows you to auto-generate
+  clients from descriptors. Yay!</li>
+</ul>
+<p>Obviously, that's not a lot. But adding new endpoints is relatively
+straightforward. See the <a href="https://bitbucket.org/indygreg/moz-tree-utopia/src/tip/repodata/web/app.py">source</a>.
+It's literally as easy as defining a URL mapping and writing a
+database query.</p>
+<p>The performance is also not the best. I just haven't put in the effort
+to tune things yet. All of the querying hits the database, not
+Mercurial. So, making things faster should merely be a matter of
+database and hosting optimization. Patches welcome!</p>
+<p>Some ideas that I haven't had time to implement yet:</p>
+<ul>
+<li>Return changests in a specific repository</li>
+<li>Return recently pushed changesets</li>
+<li>Return pushes for a given user</li>
+<li>Return commits for a given author</li>
+<li>Return commits referencing a given bug</li>
+<li>Obtain TBPL URLs for pushes with changeset</li>
+<li>Integrate bugzilla metadata</li>
+</ul>
+<p>Once those are in place, I foresee this service powering a number of
+dashboards. Patches welcome.</p>
+<p>Again, this service is only the tip of what's possible. There's a lot
+that could be built on this service. I have ideas. Others have ideas.</p>
+<p>The project includes a Vagrant file and Puppet
+manifests for provisioning the server. It's a one-liner to get a
+development environment up and running. It should be really easy to
+contribute to this project. Patches welcome.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="things-mozilla-could-do-with-mercurial"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/17/things-mozilla-could-do-with-mercurial" rel="bookmark" title="Permanent Link to Things Mozilla Could Do with Mercurial">Things Mozilla Could Do with Mercurial</a></h2>
   <small>January 17, 2014 at 03:00 PM | categories: 
@@ -478,132 +567,6 @@ that's very doable. The sky is the limit.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="alternate-mercurial-server-for-firefox-development"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/10/17/alternate-mercurial-server-for-firefox-development" rel="bookmark" title="Permanent Link to Alternate Mercurial Server for Firefox Development">Alternate Mercurial Server for Firefox Development</a></h2>
-  <small>October 17, 2013 at 07:30 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/10/17/alternate-mercurial-server-for-firefox-development#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I have <a href="/blog/2013/05/13/the-state-of-mercurial-at-mozilla/">long opined</a>
-about the sad state of Mercurial at Mozilla. The short version is
-Mozilla has failed to use Mercurial optimally, at least for Firefox
-development. It's easy to see why so many Mozillians are quick to
-discredit Mercurial when compared to Git!</p>
-<p>I have a <a href="/blog/category/mercurial/">history</a> attempting to address the
-deficiencies. Up to this point, I've been able to make things better
-through local tooling. But, for my next set of tricks, I reached an
-impasse with the Mercurial server at
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a>. So, I stood up my own
-Mercurial server at
-<a href="http://hg.gregoryszorc.com">hg.gregoryszorc.com/</a>!</p>
-<p>This server is running Mercurial 2.7 and has a few nice features the
-official Mercurial server at hg.mozilla.org does not.</p>
-<h2>The repositories</h2>
-<p><a href="http://hg.gregoryszorc.com/gecko">http://hg.gregoryszorc.com/gecko</a> is
-a read-only unified Mercurial repository containing the commits for the
-major Firefox/Gecko repositories. If you look at its
-<a href="http://hg.gregoryszorc.com/gecko/bookmarks">bookmarks</a>, you'll see
-something special: the heads of all the separate Mercurial repos it is
-aggregating are being stored as bookmarks! (Bookmarks are effectively
-Git branches.) The tip of mozilla-central is at the bookmark
-<strong>central/default</strong>. The tip of Beta is at <strong>beta/default</strong>.
-You get the idea. Once you clone this repo, you can easily switch
-between <em>project branches</em> by running e.g. <strong>hg up central/default</strong>.
-When you pull the repo, you get changesets for all repos by connecting
-to one server, not several (this reduces load on Mozilla's servers and
-is faster for clients).</p>
-<p>This repository shares the same changesets/SHA-1's as the official
-repositories. It just has everything under one roof. You can work out of
-this repository and push to the official repositories. Although, you may
-want to use the <em>pushtree</em> command from my
-<a href="/blog/2013/07/22/mercurial-extension-for-gecko-development/">custom extension</a>
-to make your life easier (<em>hg push</em> with no arguments will attempt to
-push all changesets, which you definitely don't want when pushing to
-e.g. mozilla-central).</p>
-<p><a href="http://hg.gregoryszorc.com/gecko-collab">http://hg.gregoryszorc.com/gecko-collab</a>
-is an offshoot of the <em>gecko</em> repo that you can push to. Changesets from
-the <em>gecko</em> repo are pulled into it automatically.</p>
-<p>What makes the <em>gecko-collab</em> repository special is that it has
-<em>obsolescence</em> enabled. That is the core Mercurial feature enabling
-<a href="http://mercurial.selenic.com/wiki/ChangesetEvolution">changeset evolution</a>.
-More on that feature and why it is amazing in a future blog post. Stay tuned.</p>
-<h2>Cloning</h2>
-<p>If you would like to clone one of these unified repos, please do my
-paltry EC2 server a favor and bootstrap your clone from an existing
-clone. e.g. if you have a copy of mozilla-central sitting around but
-don't want my repo's changesets to <em>pollute</em> it, do the following:</p>
-<div class="pygments_murphy"><pre>hg clone mozilla-central gecko
-<span class="nb">cd </span>gecko
-hg pull http://hg.gregoryszorc.com/gecko
-</pre></div>
-
-<p>Or, if you are OK with your clone accumulating the extra changesets from
-all the project branches, just run:</p>
-<div class="pygments_murphy"><pre>hg pull http://hg.gregoryszorc.com/gecko
-</pre></div>
-
-<p>Don't forget to update the <em>[paths]</em> section in your <em>.hg/hgrc</em> file
-to point to hg.gregoryszorc.com! e.g.</p>
-<div class="pygments_murphy"><pre>[paths]
-gecko = http://hg.gregoryszorc.com/gecko
-collab = http://hg.gregoryszorc.com/gecko-collab
-</pre></div>
-
-<h2>Setting up push support and SSH keys</h2>
-<p>If you would like to push to the
-<a href="http://hg.gregoryszorc.com/gecko-collab">gecko-collab</a> repository,
-you'll need to give me your SSH public key. But don't give me your key -
-give an automated process your key!</p>
-<p>Head on over to
-<a href="http://phabricator.gregoryszorc.com">http://phabricator.gregoryszorc.com/</a>
-and log in (look for the Persona button). Once you've logged in, go to your
-settings by clicking the wrench icon in the top right. Then look for
-<em>SSH Public Keys</em> to add your key(s). If you can't find it, just go to
-<a href="http://phabricator.gregoryszorc.com/settings/panel/ssh/">http://phabricator.gregoryszorc.com/settings/panel/ssh/</a>.</p>
-<p>Once your SSH public key is added, it will take up to a minute for it to
-be added to my system. It's all automatic. You don't need to wait for
-any manual action.</p>
-<p>To connect to my server over SSH, you'll need to log in as the <em>hgssh</em>
-user. e.g. in your <em>hgrc</em> file, add:</p>
-<pre><code>[paths]
-gecko = ssh://hgssh@hg.gregoryszorc.com/gecko
-collab = ssh://hgssh@hg.gregoryszorc.com/gecko-collab
-</code></pre>
-<p>Then, you should be able to pull and push over SSH!</p>
-<h2>Other Notes</h2>
-<p>This server is running on an EC2 instance that isn't as powerful as I'd
-like. Expect some operations to be slower than desired.</p>
-<p>I don't guarantee an SLA for this service. It could go down at any
-moment. However, Mercurial being a distributed version control system,
-there should be little to no data loss assuming people pull frequently.
-I know I have a backup on all my machines now.</p>
-<p>I'm running this server for two main reasons.</p>
-<p>First, I want to demonstrate the utility of a unified Mercurial server
-for Firefox development in hopes we can run one officially. I've been
-running a unified repo locally for a few months and I have little doubt
-I'm more productive because of it. I want others to realize the
-awesomeness.</p>
-<p>Second, I needed a server that supported
-<a href="http://mercurial.selenic.com/wiki/ChangesetEvolution">changeset evolution</a>
-so I could play around with it. I <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=925383">asked</a>
-the powers at be to enable it on hg.mozilla.org and didn't get a
-response that met my timeline. So, I figured setting up my own server
-was easier.</p>
-<p>Please let me know if you have any questions or issues with this server.
-I'd also love to hear whether people like the unified repo approach!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/17/alternate-mercurial-server-for-firefox-development#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/7">« Previous Page</a>
   --  

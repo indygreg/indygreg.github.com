@@ -10,10 +10,82 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 17 Jul 2015 18:41:43 GMT</pubDate>
+    <pubDate>Fri, 31 Jul 2015 17:56:06 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>My Contributions to Mercurial 3.5</title>
+      <link>http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5</link>
+      <pubDate>Fri, 31 Jul 2015 10:55:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5</guid>
+      <description>My Contributions to Mercurial 3.5</description>
+      <content:encoded><![CDATA[<p>Mercurial 3.5 was released today. I contributed some small
+improvements to this version that I thought I'd share with the world.</p>
+<p>The feature I'm most proud of adding to Mercurial 3.5 is what I'm
+referring to as <em>auto share</em>. The existing <em>hg share</em> extension/command
+enables multiple checkouts of a repository to share the same backing
+repository store. Essentially the <em>.hg/store</em> directory is a symlink
+to shared directory. This feature has existed in Mercurial for years
+and is essentially identical to the <em>git worktree</em> feature just
+recently added in Git 2.5.</p>
+<p>My addition to the <em>share</em> extension is the ability for Mercurial to
+automatically perform an <em>hg clone</em> + <em>hg share</em> in the same operation.
+If the <em>share.pool</em> config option is defined, <em>hg clone</em>
+will automatically clone or pull the repository data somewhere inside
+the directory pointed to by <em>share.pool</em> then create a new working copy
+from that shared location. But here's the magic: <strong>Mercurial can
+automatically deduce that different remotes are the same logical
+repository (by looking at the root changeset) and automatically have
+them share storage</strong>. So if you first <em>hg clone</em> the <em>canonical</em>
+repository then later do a <em>hg clone</em> of a <em>fork</em>, Mercurial will
+pull down the changesets unique to the fork into the previously
+created shared directory and perform a checkout from that. Contrast
+with performing a full clone of the fork. <strong>If you are cloning multiple
+repositories that are logically derived from the same original one,
+this can result in a significant reduction of disk space and network
+usage.</strong> I wrote this feature with automated consumers in mind,
+particularly continuous integration systems. However, there is also
+mode more suitable for humans where repositories are pooled not by their
+root changeset but by their URL. For more info, see <em>hg help -e share</em>.</p>
+<p>For Mercurial 3.4, I contributed changes that refactored how Mercurial's
+tags cache works. This cache was a source of performance problems at
+Mozilla's scale for many years. Since upgrading to Mercurial 3.4,
+Mozilla has not encountered any significant performance problems with
+the cache on either client or server as far as I know.</p>
+<p>Building on this work, Mercurial 3.5 supports transferring tags cache
+entries from server to client when clients clone/pull. Before, clients
+would have to recompute tags cache entries for pulled changesets. On
+repositories that are very large in terms of number of files (over 50,000)
+or heads (hudreds or more), this could take several dozen seconds or
+even minutes. This would manifest as a delay either during or after
+initial clone. In Mercurial 3.5 - assuming both client and server
+support the new <em>bundle2</em> wire protocol - the cache entries are
+transferred from server to client and no extra computation needs to
+occur. The client does pay a very small price for transferring this
+additional data over the wire, but the payout is almost always worth it.
+<strong>For large repositories, this feature means clones are usable sooner.</strong></p>
+<p>A few weeks ago, a coworker told me that connections to a Mercurial
+server were timing out mid clone. We investigated and discovered a
+potential for a long CPU-intensive pause during clones where Mercurial
+would not touch the network. On this person's under-powered EC2
+instance, the pause was so long that the server's inactivity timeout
+was triggered and it dropped the client's TCP connection. I refactored
+Mercurial's cloning code so there is no longer a pause. There should
+be no overall change in clone time, but there is no longer a perceivable
+delay between applying changesets and manifests where the network could
+remain idle. This investigation also revealed some potential follow-up
+work for Mercurial to be a bit smarter about how it interacts with
+networks.</p>
+<p>Finally, I contributed <em>hg help scripting</em> to Mercurial's help database.
+This help topic covers how to use Mercurial from scripting and other
+automated environments. It reflects knowledge I've learned from seeing
+Mercurial used in automation at Mozilla.</p>
+<p>Of course, there are plenty of other changes in Mercurial 3.5. Stay
+tuned for another blog post.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Prompting to Run mach mercurial-setup</title>
       <link>http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup</link>
@@ -692,30 +764,6 @@ necessary future scalability. They want a network-aware storage backend.
 Local objects not necessary if the network has them.</p>
 <p>They are running a custom Git distribution/fork on clients. But they
 don't want to maintain forever. Prefer to send upstream.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Dropping Explicit Support for Mercurial 3.0</title>
-      <link>http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</link>
-      <pubDate>Thu, 07 May 2015 16:05:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</guid>
-      <description>Dropping Explicit Support for Mercurial 3.0</description>
-      <content:encoded><![CDATA[<p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
-for all the Mercurial code in the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository. File issues in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
-<p>Code may still work against Mercurial 3.0. But it isn't supported and
-could break hard at any time.</p>
-<p>Supporting multiple versions of <em>any</em> software carries
-with it some cost. The people writing tooling around Mercurial are busy.
-It is a waste of our time to bend over backwards to support old versions
-of software that <strong>all</strong> users should have upgraded from months ago.
-Still using older Mercurial versions means you aren't getting the best
-performance and may encounter bugs that have since been fixed.</p>
-<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
-for info on how to upgrade to the latest/greatest Mercurial version.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

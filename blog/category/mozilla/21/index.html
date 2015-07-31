@@ -51,6 +51,180 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mach-has-landed"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/09/26/mach-has-landed" rel="bookmark" title="Permanent Link to Mach Has Landed">Mach Has Landed</a></h2>
+  <small>September 26, 2012 at 05:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
+ | <a href="http://gregoryszorc.com/blog/2012/09/26/mach-has-landed#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Hacking on Firefox is <em>hard</em>. Compiling the source tree for the first
+time is a daunting experience. If you manage to do that, you still need
+to figure out how to submit patches, write and run tests, etc. There is
+no shortage of points where people can get confused, make mistakes, or
+just give up because the barrier is too high.</p>
+<p>I have strong convictions about making the overall developer experience
+better (developers are users too, after all). The easier you make the
+developer experience, the greater the chances of retaining developers.
+And retaining developers means more contributions: more features and
+fewer bugs. This translates to a better state for the Mozilla Project.
+This makes the world a better place.</p>
+<p>Since practically my first day working at Mozilla, I've been
+experimenting with ways to make contributing to Firefox easier by
+improving the build system or interaction with it.</p>
+<p>With a lot of help, I've finally succeeded in landing something into the
+Firefox source tree that I think will ultimately lead to a much better
+developer experience.</p>
+<p>It's called <strong>mach</strong> (German for <em>do</em>) and if you pull the latest
+version of <a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
+(Firefox's main source code repository), you can run mach today.</p>
+<h2>Running Mach</h2>
+<p>You can run Mach by simply executing it from the root directory in the
+repository:</p>
+<pre><code>$ ./mach
+</code></pre>
+<p>Ideally, I shouldn't have to tell you anything else: mach's output
+should provide you all the instruction you need to use it. If it
+doesn't, that is a bug and it should be fixed.</p>
+<p>Realistically, mach is still in early development and its user
+experience still leaves a lot to be desired.</p>
+<p>Because technical usage docs belong in a medium that is easily
+discoverable and where the community can improve on them (not a
+post on a personal blog), you can find additional usage information in
+the
+<a href="https://developer.mozilla.org/En/Developer_Guide/mach">mach article</a> on
+MDN. The
+<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mach/README.rst">mach README</a>
+holds more technical information for people wanting to poke at the inner
+workings.</p>
+<p>Mach does require Python 2.7. The build system will likely soon require
+Python 2.7 as well. So, if you don't have Python 2.7, you should upgrade
+now before you lose the ability to build the tree. Conveniently, the
+tree now has a
+<a href="http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox">bootstrap script</a>
+which covers the installation of Python. So, Python 2.7 should just be a
+simple command away.</p>
+<h2>Features</h2>
+<p>Why would you use mach? Good question! Compared to the existing
+out-of-the-box experience, mach adds:</p>
+<ul>
+<li>Ability to run xpcshell and mochitest tests from the source directory.
+  This means you can tab-complete test filenames in your shell and it
+  <em>just works</em>.</li>
+<li>Parsing of compiler warnings (currently supports Clang 3.1 and MSVC
+  formats) into a unified warnings database (actually a JSON file).
+  After builds you can run <em>./mach warnings-list</em> or <em>./mach
+  warnings-summary</em> to get a concise list without having to look at
+  build logs.</li>
+<li>A single command-line interface where you can easily discover new
+  functionality. Just run <em>./mach help</em> (try doing that with make!).</li>
+</ul>
+<p>Naysayers will say this is a paltry list. They are correct. I have
+bigger plans. But, you have to start somewhere.</p>
+<h2>Goals and Future Ideas</h2>
+<p>The overall goal of mach is to improve the developer experience of
+developing Firefox and other Gecko applications. It does this by
+providing a convenient, central command in the root directory of
+the repository that acts as both an oracle to discover new commands
+and functionality (<em>./mach help</em>) as well as a proxy to execute them.
+You don't need to worry about environment variables, working directories,
+or finding some random script hidden in the bowells of the source tree.
+You just run a single command and the world is brought to you. No build
+documentation. No outdated wikis. No copying commands into your shell.
+No having to scour random blogs for useful tools. You just clone the
+repository, run a command, see what you can do, and get stuff done. Your
+shell-literate grandmother could do it.</p>
+<p>Mach should be your springboard to in-tree developer tools and increased
+productivity. You shouldn't need anything except a copy of the source
+tree and mach.</p>
+<p>Like Git and Mercurial, mach is powered by the concept of
+sub-commands/actions. So, one simply needs to register a new sub-command
+with the mach driver. This involves writing a Python class. Once you do
+that, people can discover and use that functionality. All batteries are
+included with a copy of mozilla-central.</p>
+<p>As stated above, the current set of commands is rather small. But, the
+sky is the limit. Here are some of my ideas:</p>
+<ul>
+<li>Ability to upload, download, and apply patches from Bugzilla (Burak
+  Yiğit Kaya, Jeff Hammel, Clint Talbert and I have already talked about
+  this -- progress tracked in
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774141">bug 774141</a>).</li>
+<li>Automatically configure Mercurial with optimal settings (ensure user
+  info is set, proper lines of diff context, enable mqext, etc). Tracked
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=794580">bug 794580</a>.</li>
+<li>Submit Try builds. The <a href="https://github.com/pbiggar/trychooser">trychooser</a>
+  Mercurial extension could easily live as a mach subcommand! Tracked in
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774137">bug 774137</a>.</li>
+<li>Identify Bugzilla components and/or reviewers from files touched by
+  patch. It's all in the history of the touched files and the history of
+  the old bugs referenced by those commits!
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774145">Bug 774145</a>.</li>
+<li>Interaction with the <em>self-serve</em> build API. That thing on TBPL to
+  control individual builds - we could make a CLI interface for it.
+  (Steve Fink and/or Jeff Hammel already have
+  <a href="https://hg.mozilla.org/users/josh_joshmatthews.net/self-serve-tools">code</a>
+  for this - it just needs to be integrated).
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774147">Bug 774147</a>.</li>
+</ul>
+<p>If you have an idea for a feature, please
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">file a bug</a>.
+Please note there are many features on file already. However, some
+obvious ones such as integration with missing test suites have yet to be
+filed (at least at the time I wrote this post).</p>
+<p>If you wrote an awesome developer tool and would like others to use it
+(without having to rely on people discovering it by reading a corner of the
+Internet), add it to mach! Use mach as a wedge to get more exposure and
+users. File a bug. I will happily r+ patches that add useful developer
+functionality to the tree.</p>
+<h2>What this Means / Longer Term Future</h2>
+<p>While there is no timetable, mach will eventually replace <em>client.mk</em>.
+client.mk, like mach, is essentially a CLI driver for the build
+system. Having the driver implemented in Python rather than make has many
+compelling advantages. I could probably write a whole post on it, but
+I'll spare the world from my ranting.</p>
+<p>Anyway, this all means that you may want to start re-training your
+muscle memory now. Stop typing <em>make</em> and start typing <em>mach</em>. If you
+need to type <em>make</em> because mach does not provide a feature, this is a
+missing feature from mach.
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">File a bug</a>
+and request a new mach feature!</p>
+<p>I want to condition people to stop typing <em>make</em>, especially in the object
+directory. There are drastic changes to the build system in the works
+(<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">bug 784841</a> is
+the tip of the iceburg). These changes will require the build system to
+be treated as a black box. So, things like invoking make from the object
+directory will eventually break. You'll need to go through an
+intelligent tool to invoke the build system. Mach will be that tool.</p>
+<h2>Thanks</h2>
+<p>I would like to single out the following individuals for helping to land
+mach:</p>
+<ul>
+<li>Jeff Hammel for doing the bulk of the reviewing. He shares my vision
+  for mach and how it will make the overall developer experience much
+  more pleasant and how this will translate to better things for The
+  Project. In my mind, Jeff deserves as much credit for landing mach as
+  I do.</li>
+<li>Mike Hommey and Ms2ger for review help. Mike Hommey helped identify a
+  lot of issues with build system integration. Ms2ger provided lots of
+  general feedback on Python issues and API design.</li>
+<li>Mike Connor (my manager) for allowing me to work on this. It's not
+  related to my job description in any way so he <em>could</em> say I shouldn't
+  be spending time on this. But, he realizes the positive impact this can
+  have and has been supportive of it.</li>
+</ul>
+<p>I hope you find mach useful!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/09/26/mach-has-landed#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="bootstrap-your-system-to-build-firefox"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/09/18/bootstrap-your-system-to-build-firefox" rel="bookmark" title="Permanent Link to Bootstrap Your System to Build Firefox">Bootstrap Your System to Build Firefox</a></h2>
   <small>September 18, 2012 at 05:00 PM | categories: 
@@ -1112,169 +1286,6 @@ backends, so it is a win-win!</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mozilla-build-system-overview"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/07/29/mozilla-build-system-overview" rel="bookmark" title="Permanent Link to Mozilla Build System Overview">Mozilla Build System Overview</a></h2>
-  <small>July 29, 2012 at 01:15 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mozilla's build system is a black box to many. This post attempts to
-shed some light onto how it works.</p>
-<h2>Configuration File</h2>
-<p>The first part of building is creating a configuration file. This
-defines what application to build (Firefox, Firefox OS, Fennec, etc) as
-well as build options, like to create a release or debug build. This
-step isn't technically required, but most people do it.</p>
-<p>Configuration files currently exist as <em>mozconfig</em> files. By default,
-most people create a <em>.mozconfig</em> file in the root directory of
-mozilla-central.</p>
-<h2>Interaction</h2>
-<p>All interaction with the build system is currently gated through the
-<em>client.mk</em> file in the root directory of mozilla-central. Although, I'm
-trying to land an alternate (and eventual replacement) to <em>client.mk</em>
-called <em>mach</em>. You can read about it in previous posts on this blog.</p>
-<p>When you run <em>make -f client.mk</em>, you are invoking the build system and
-telling it to do whatever it needs to do build the tree.</p>
-<h2>Running Configure</h2>
-<p>The first thing <em>client.mk</em> does to a fresh tree is invoke <em>configure</em>.
-<em>configure</em> is a shell script in the root directory of the repository.
-It is generated from the checked-in <em>configure.in</em> file using the GNU
-<em>autoconf</em> utility. I won't go into detail on how autoconf works because
-I don't have a beard.</p>
-<p><em>configure</em> accomplishes some important tasks.</p>
-<p>First, it validates that the build environment is sane. It performs some
-sanity testing on the directory tree then looks at the system and build
-configuration to make sure everything should work.</p>
-<p>It identifies the active compiler, locations of common tools and
-utilities, and ensures everything works as needed. It figures out how to
-convert desired traits into system-specific options. e.g. the exact
-argument to pass to the compiler to enable warnings.</p>
-<p>Once <em>configure</em> determines the environment is sane, it writes out what
-it learned.</p>
-<p>Currently, <em>configure</em> takes what it has learned and invokes the
-<em>allmakefiles.sh</em> script in the root directory. This script prints out
-the set of Makefile's that will be used to build the tree for the
-current configuration. <em>configure</em> takes the output of filenames and
-then procedes to generate those files.</p>
-<p>Generation of Makefile's is rather simple. In the source tree are a
-bunch of <em>.in</em> files, typically <em>Makefile.in</em>. These contain special
-markers. <em>configure</em> takes the set of determined configuration variables
-and performs substitution of the variable markers in the <em>.in</em> files with
-them. The <em>.in</em> files with variables substitutes are written out in the
-object directory. There are also some GYP files in the source tree.
-<em>configure</em> invokes a tool to convert these into Mozilla-style
-Makefile's.</p>
-<p><em>configure</em> also invokes <em>configure</em> for other managed projects
-in mozilla-central, such as the SpiderMonkey source in <em>js/src</em>.</p>
-<p><em>configure</em> finishes by writing out other miscellaneous files in the
-object directory.</p>
-<h2>Running Make</h2>
-<p>The next step of the build is running make. <em>client.mk</em> simply points
-GNU make (or pymake) at the <em>Makefile</em> in the top-level directory of the
-object directory and essentially says <em>evaluate</em>.</p>
-<h3>Build System Tiers</h3>
-<p>The build system is broken up into different tiers. Each tier represents
-a major phase or product in the build system. Most builds have the
-following tiers:</p>
-<ol>
-<li>base - Builds global dependencies</li>
-<li>nspr - Builds NSPR</li>
-<li>js - Builds SpiderMonkey</li>
-<li>platform - Builds the Gecko platform</li>
-<li>app - Builds the configured application (e.g. Firefox, Fennec,
-   Firefox OS)</li>
-</ol>
-<p>Inside each tier are the distinct sub-tiers:</p>
-<ol>
-<li>export</li>
-<li>libs</li>
-<li>tools</li>
-</ol>
-<p>A Makefile generally belongs to 1 main tier. Inside Makefile's or in
-other included .mk files (make files that are not typically called
-directly by make) are statements which define which directories
-belong to which tiers. See
-<a href="https://mxr.mozilla.org/mozilla-central/source/toolkit/toolkit-tiers.mk">toolkit-tiers.mk</a>
-for an example.</p>
-<p>When the top-level Makefile is invoked, it iterates through every tier
-and every sub-tier within it. It starts at the first tier and evaluates
-the <em>export</em> target on every Makefile/directory defined in it. It then
-moves on to the <em>libs</em> target then finally the <em>tools</em> target. When it's
-done with the <em>tools</em> target, it moves on to the next tier and does the
-same iteration.</p>
-<p>For example, we first start by evaluating the <em>export</em> target of the
-<em>base</em> tier. Then we evaluate <em>base</em>'s <em>libs</em> and <em>tools</em> tiers. We then
-move on to <em>nspr</em> and do the same. And, we keep going. In other words,
-the build system makes 3 passes through each tier.</p>
-<p>Tiers are composed of directory members. e.g. <em>dom</em> or <em>layout</em>. When
-make descends into a tier member directory, it looks for specially named
-variables that tell it what sub-directories are also part of this
-directory. The <em>DIRS</em> variable is the most common. But, we also use
-<em>TEST_DIRS</em>, <em>PARALLEL_DIRS</em>, <em>TOOL_DIRS</em>, and a few others. make will
-invoke make for all defined child directories and for the children of
-the children, and so on. This is what we mean by <em>recursive make</em>. make
-essentially recurses into directory trees, evaluating all the
-directories linearly.</p>
-<p>Getting back to the tiers, the sub-tiers <em>export</em>, <em>libs</em>, and <em>tools</em>
-can be thought of as <em>pre-build</em>, <em>build</em>, and <em>post-build</em> events.
-Although, this analogy is far from perfect.</p>
-<p><em>export</em> generally prepares the object directory for more comprehensive
-building. It copies C/C++ header files into a unified object directory,
-generates header files from IDLs files, etc.</p>
-<p><em>libs</em> does most of the work. It compiles C++ code and performs lots of
-other main work, such as Jar manifest creation.</p>
-<p><em>tools</em> does a lot of miscellaneous work. If you have tests enabled,
-this is where tests are typically compiled and/or installed, for
-example.</p>
-<h3>Processing a Makefile</h3>
-<p>For each directory inside a tier, make evaluates the Makefile in that
-directory for the target/sub-tier specified.</p>
-<p>The basic gist of Makefile execution is actually pretty simple.</p>
-<p>Mozilla's Makefiles typically look like:</p>
-<pre><code>DEPTH := .
-topsrcdir := @top_srcdir@
-srcdir := @srcdir@
-VPATH := @srcdir@
-
-include $(DEPTH)/config/autoconf.mk
-
-IDLSRCS := foo.idl bar.idl
-CPPSRCS := hello.cpp world.cpp
-
-include $(topsrcdir)/config/rules.mk
-</code></pre>
-<p>All the magic in Makefile processing happens in <em>rules.mk</em>. This make file
-simply looks for specially named variables (like <em>IDLSRCS</em> or <em>CPPSRCS</em>)
-and magically converts them into targets for make to evaluate.</p>
-<p>In the above sample Makefile, the <em>IDLSRCS</em> variable will result in an
-implicit <em>export</em> target which copies IDLs into the object directory and
-compiles them to .h files. <em>CPPSRCS</em> will result in a <em>libs</em> target that
-results in each .cpp file being compiled into a .o file.</p>
-<p>Of course, there is nothing stopping you from defining targets/rules in
-Makefile's themselves. This practice is actually quite widespread.
-Unfortunately, it is a bad practice, so you shouldn't do it. The
-preferred behavior is to define variables in a Makefile and have
-rules.mk magically provide the make targets/rules to do stuff with them.
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">Bug 769378</a> tracks
-fixing this bad practice.</p>
-<h2>Conclusion</h2>
-<p>So, there you have it: a very brief overview of how Mozilla's build
-system works!</p>
-<p>In my next post, I will shed some light onto how much times goes into
-different parts of the build system.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/20">« Previous Page</a>
   --  
