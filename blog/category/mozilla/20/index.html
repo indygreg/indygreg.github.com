@@ -51,6 +51,69 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="bulk-analysis-of-mozilla's-build-and-test-data"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data" rel="bookmark" title="Permanent Link to Bulk Analysis of Mozilla's Build and Test Data">Bulk Analysis of Mozilla's Build and Test Data</a></h2>
+  <small>April 01, 2013 at 01:12 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
+ | <a href="http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>When you push code changes to Firefox and other similar Mozilla
+projects, a flood of automated jobs is triggered on Mozilla's
+infrastructure. It works like any other continuous integration
+system. First you build, then you run tests, etc. What sets it
+apart from other continuous integration systems is the size:
+Mozilla runs thousands of jobs per week and the combined output
+sums into the tens of gigabytes.</p>
+<p>Most of the data from Mozilla's continuous integration is
+available on public servers, notably ftp.mozilla.org. This includes
+compiled binaries, logs, etc.</p>
+<p>While there are tools that can sift through this mountain of data
+(like <a href="https://tbpl.mozilla.org">TBPL</a>), they don't allow ad-hoc
+queries over the raw data. Furthermore, these tools are very
+function-specific and there are many data views they don't expose.
+This <em>missing</em> data has always bothered me because, well, there
+are cool and useful things I'd like to do with this data.</p>
+<p>This itch has been bothering me for well over a year. The
+persistent burning sensation coupled with rain over the weekend
+caused me to scratch it.</p>
+<p>The <a href="https://github.com/indygreg/mozilla-build-analyzer">product of my weekend labor</a>
+is a system facilitating bulk storage and analysis of Mozilla's
+build data. While it's currently very alpha, it's already showing
+promise for more throrough data analysis.</p>
+<p>Essentially, the tool works by collecting the dumps of all the jobs
+executed on Mozilla's infrastructure. It can optionally supplement
+this with the raw logs from those jobs. Then, it combs through this
+data, extracts useful bits, and stores them. Once the initial
+fetching has completed, you simply need to re-"parse" the data set
+into useful data. And, since all data is stored locally, the
+performance of this is not bound by Internet bandwidth. In practice,
+this means that you can obtain a new metric faster than would have
+been required before. The downside is you will likely be storing
+gigabytes of raw data locally. But, disks are cheap. And, you have
+control over what gets pulled in, so you can limit it to what you
+need.</p>
+<p>Please note the project is very alpha and is only currently serving
+my personal interests. However, I know there is talk about <em>TBPL2</em>
+and what I have built could evolve into the data store for the next
+generation TBPL tool. Also, most of the work so far has centered on
+data import. There is tons of analysis code waiting to be written.</p>
+<p>If you are interested in improving the tool, please file a GitHub
+pull request.</p>
+<p>I hope to soon blog about useful information I've obtained through this
+tool.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/04/01/bulk-analysis-of-mozilla's-build-and-test-data#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="omnipresent-mach"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/03/03/omnipresent-mach" rel="bookmark" title="Permanent Link to Omnipresent mach">Omnipresent mach</a></h2>
   <small>March 03, 2013 at 12:30 PM | categories: 
@@ -671,38 +734,6 @@ output to file a bug. Please attach or link to your mozconfig.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/12/05/changes-to-how-mach-loads-mozconfigs#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="firefox-build-system-presentation"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/11/30/firefox-build-system-presentation" rel="bookmark" title="Permanent Link to Firefox Build System Presentation">Firefox Build System Presentation</a></h2>
-  <small>November 30, 2012 at 02:00 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>In case you missed it, I gave a presentation on the state of Firefox's
-build system yesterday.</p>
-<p>You can <a href="https://air.mozilla.org/the-future-of-the-firefox-build-system/">watch</a>
-it and <a href="http://gregoryszorc.com/presentations/2012-11-29-firefox-build-system/#1">view</a>
-the slides online.</p>
-<p>If you build Firefox from source regularly, you should definitely at
-least skim through the slide deck.</p>
-<p>I'm not an HTML expert, so my apogolies for bad UI on the interactive
-slides. You may need to press <strong>enter</strong> to select items in
-dropdown menus. Also, the interactive slides are a bit resource
-intensive. If the slide deck is really slow, turn off those elements.
-I've also only tested the slides in Firefox 19 and 20. My apologies if
-they don't work everywhere.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/19">« Previous Page</a>
   --  
