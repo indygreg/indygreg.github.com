@@ -51,6 +51,79 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="automatically-redirecting-mercurial-pushes"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/04/30/automatically-redirecting-mercurial-pushes" rel="bookmark" title="Permanent Link to Automatically Redirecting Mercurial Pushes">Automatically Redirecting Mercurial Pushes</a></h2>
+  <small>April 30, 2015 at 12:30 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Managing URLs in distributed version control tools can be a pain,
+especially if multiple repositories are involved. For example,
+with Mozilla's repository-based code review workflow (you push to a
+special review repository to initiate code review - this is conceptually
+similar to GitHub pull requests), there exist
+<a href="https://reviewboard-hg.mozilla.org/">separate code review repositories</a>
+for each logical repository. Figuring out how repositories map to each
+other and setting up remote paths for each new clone can be a pain and
+time sink.</p>
+<p>As of today, we can now do something better.</p>
+<p>If you push to <em>ssh://reviewboard-hg.mozilla.org/autoreview</em>,
+Mercurial will automatically figure out the appropriate review
+repository and redirect your push automatically. In other words, if we
+have <a href="https://reviewboard.mozilla.org/">MozReview</a> set up to review
+whatever repository you are working on,
+your push and review request will automatically go through. No need to
+figure out what the appropriate review repo is or configure
+repository URLs!</p>
+<p>Here's what it looks like:</p>
+<div class="pygments_murphy"><pre>$ hg push review
+pushing to ssh://reviewboard-hg.mozilla.org/autoreview
+searching for appropriate review repository
+redirecting push to ssh://reviewboard-hg.mozilla.org/version-control-tools/
+searching for changes
+remote: adding changesets
+remote: adding manifests
+remote: adding file changes
+remote: added 1 changesets with 1 changes to 1 files
+remote: Trying to insert into pushlog.
+remote: Inserted into the pushlog db successfully.
+submitting 1 changesets for review
+
+changeset:  11043:b65b087a81be
+summary:    mozreview: create per-commit identifiers (bug 1160266)
+review:     https://reviewboard.mozilla.org/r/7953 (draft)
+
+review id:  bz://1160266/gps
+review url: https://reviewboard.mozilla.org/r/7951 (draft)
+(visit review url to publish this review request so others can see it)
+</pre></div>
+
+<p>Read the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install.html#review-repositories">full instructions</a>
+for more details.</p>
+<p>This requires an updated <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+repository, which you can get by running <em>mach mercurial-setup</em> from a
+Firefox repository.</p>
+<p>For those that are curious, the <em>autoreview</em> repo/server advertises a list
+of repository URLs and their root commit SHA-1. The client automatically
+sends the push to a URL sharing the same root commit. The
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/0b02cd388590">code</a>
+is quite simple.</p>
+<p>While this is only implemented for MozReview, I could envision us doing
+something similar for other centralized repository-centric services, such
+as <em>Try</em> and <em>Autoland</em>. Stay tuned.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/04/30/automatically-redirecting-mercurial-pushes#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="my-current-thoughts-on-system-administration"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/04/17/my-current-thoughts-on-system-administration" rel="bookmark" title="Permanent Link to My Current Thoughts on System Administration">My Current Thoughts on System Administration</a></h2>
   <small>April 17, 2015 at 03:35 PM | categories: 
@@ -471,115 +544,6 @@ to know more.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/18/network-events#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="lost-productivity-due-to-non-unified-repositories"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/02/17/lost-productivity-due-to-non-unified-repositories" rel="bookmark" title="Permanent Link to Lost Productivity Due to Non-Unified Repositories">Lost Productivity Due to Non-Unified Repositories</a></h2>
-  <small>February 17, 2015 at 02:50 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/02/17/lost-productivity-due-to-non-unified-repositories#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I'm currently working on
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1132771">annotating moz.build files with metadata</a>
-that defines things like which bug component and code reviewers map to
-which files. It's going to enable a lot of awesomeness.</p>
-<p>As part of this project, I'm implementing a new moz.build processing
-mode. Instead of reading moz.build files by traversing <em>DIRS</em> variables
-from previously-executed moz.build files, we're evaluating moz.build
-files according to filesystem topology. This has uncovered a few
-cases where a moz.build file errors because of assumptions that no
-longer hold. For example, for directories that are only active on
-Windows, the moz.build file might assume that <em>if Windows</em> is always true.</p>
-<p>One such problem was with
-<a href="https://dxr.mozilla.org/mozilla-central/source/gfx/angle/src/libGLESv2/moz.build">gfx/angle/srx/libGLESv2/moz.build</a>.
-This file contained code similar to the following:</p>
-<pre><code>if CONFIG['IS_WINDOWS']:
-    SOURCES += ['foo.cpp']
-...
-SOURCES['foo.cpp'].flags += ['-DBAR']
-</code></pre>
-<p>This always ran without issue because this moz.build was only included
-if building for Windows. This assumption is of course invalid when in
-filesystem traversal mode.</p>
-<p>Anyway, as part of updating this trouble file, I lost maybe an hour
-of productivity. Here's how.</p>
-<p>The top of the trouble moz.build file has a comment:</p>
-<pre><code># Please note this file is autogenerated from generate_mozbuild.py,
-# so do not modify it directly
-</code></pre>
-<p>OK. So, I need to modify <em>generate_mozbuild.py</em>. First thing's first: I
-need to locate it:</p>
-<pre><code>$ hg locate generate_mozbuild.py
-gfx/skia/generate_mozbuild.py
-</code></pre>
-<p>So I load up this file. I see a <em>main()</em>. I run the script in my shell
-and get an error. Weird. I look around <em>gfx/skia</em> and see a README_MOZILLA
-file. I open it. README_MOZILLA contains some instructions. They aren't
-very good. I hop in #gfx on IRC and ask around. They tell me to do a
-Subversion clone of Skia and to check out the commit referenced in
-README_MOZILLA. There is no repo URL in README_MOZILLA. I search Google.
-I find a Git URL. I notice that README_MOZILLA contains a SHA-1 commit,
-not a Subversion integer revision. I figure the Git repo is what was
-meant. I clone the Git repo. I attempt to run the generation script
-referenced by README_MOZILLA. It fails. I ask again in #gfx. They are
-baffled at first. I dig around the source code. I see a reference in
-Skia's upstream code to a path that doesn't exist. I tell the #gfx
-people. They tell me sub-repos are likly involved and to use <em>gclient</em>
-to clone the repo. I search for the proper Skia source code docs and
-type the necessary gclient commands. (Fortunately I've used gclient
-before, so this wasn't completely alien to me.)</p>
-<p>I get the Skia clone in the proper state. I run the generation script
-and all works. But I don't see it writing the trouble moz.build file I
-set out to fix. I set some breakpoints. I run the code again. I'm
-baffled.</p>
-<p>Suddenly it hits me: I've been poking around with <em>gfx/skia</em> which is
-separate from <em>gfx/angle</em>! I look around <em>gfx/angle</em> and see
-a README.mozilla file. I open it. It reveals the existence of the Git
-repo <a href="https://github.com/mozilla/angle">https://github.com/mozilla/angle</a>.
-I open GitHub in my browser. I see a <em>generate_mozbuild.py</em> script.</p>
-<p>I now realize there are multiple files named <em>generate_mozbuild.py</em>.
-Unfortunately, the one I care about - the ANGLE one - is not checked
-into mozilla-central. So, my search for it with <em>hg files</em> did not
-reveal its existence. Between me trying to get the Skia code cloned and
-generating moz.build files, I probably lost an hour of work. All because
-a file with a similar name wasn't checked into mozilla-central!</p>
-<p>I assumed that the single <em>generate_mozbuild.py</em> I found under source
-control was the only file of that name and that it <em>must</em> be the file
-I was interested in.</p>
-<p>Maybe I should have known to look at <em>gfx/angle/README.mozilla</em> first.
-Maybe I should have known that <em>gfx/angle</em> and <em>gfx/skia</em> are completely
-independent.</p>
-<p>But I didn't. My ignorance cost me.</p>
-<p>Had the contents of the separate ANGLE repository been checked into
-mozilla-central, I would have seen the multiple <em>generate_mozbuild.py</em>
-files and I would likely have found the correct one immediately. But
-they weren't and I lost an hour of my time.</p>
-<p>And I'm not done. Now I have to figure out how the separate ANGLE repo
-integrates with mozilla-central. I'll have to figure out how to submit the
-patch I still need to write. The GitHub description of this repo says
-<em>Talk to vlad, jgilbert, or kamidphish for more info</em>. So now I have to
-bother them before I can submit my patch. Maybe I'll just submit a pull
-request and see what happens.</p>
-<p>I'm convinced I wouldn't have encountered this problem if a
-<a href="/blog/2014/09/09/on-monolithic-repositories/">monolithic repository</a>
-were used. I would have found the separate <em>generate_mozbuild.py</em> file
-immediately. And, the change process would likely have been known to me
-since all the code was in a repository I already knew how to submit
-patches from.</p>
-<p>Separate repos are just lots of pain. You can bet I'll link to this post
-when people propose splitting up mozilla-central into multiple
-repositories.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/02/17/lost-productivity-due-to-non-unified-repositories#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/3">« Previous Page</a>
   --  

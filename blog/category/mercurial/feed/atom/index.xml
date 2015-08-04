@@ -7,12 +7,66 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-07-31T20:14:16Z</updated>
+  <updated>2015-08-04T21:31:33Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[hg.mozilla.org Operational Workings Now Open Sourced]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced" />
+    <id>http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced</id>
+    <updated>2015-08-04T14:30:00Z</updated>
+    <published>2015-08-04T14:30:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[hg.mozilla.org Operational Workings Now Open Sourced]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced"><![CDATA[<p>Just a few minutes ago, hg.mozilla.org reached an important milestone:
+deployments are now performed via Ansible from our open source
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository instead of via Puppet from Mozilla's private <em>sysadmins</em>
+repository. This is important for a few reasons.</p>
+<p>First, the code behind the operation of hg.mozilla.org is now open source
+and available for the public to see and change. I strive for my work at
+Mozilla to be open by default. With hg.mozilla.org's private Puppet
+repository, people weren't able to see what was going on under the
+covers. Nor were they empowered to change anything. This may come as a
+shock, but even I don't have commit privileges to the internal Puppet
+repository that was previously powering hg.mozilla.org! I did have read
+access. But any change I wanted to make involved me proxying it through
+one of two people. It was tedious, made me feel uncomfortable for having to
+nag people to do my work, and slowed everyone down. We no longer have this
+problem, thankfully.</p>
+<p>Second, having the Ansible code in version-control-tools enables us to
+use the same operational configuration in production as we do in our
+Docker test environment. I can now spin up a cluster of Docker
+containers that behave very similarly to the production servers (which
+aren't running Docker). This enables us to write end-to-end tests of
+complex systems running across multiple Docker containers and have
+relatively high confidence that our production and testing environments
+behave very similarly. In other words, I can test complex interactions
+between multiple systems all from my local machine - even from a plane!
+For example, we can and do test that SSH connections to a simulated
+production environment running in Docker behave as expected, complete
+with an OpenSSH server speaking to an OpenLDAP server for SSH public
+key lookup. While we still have many tests to write, we had no such
+tests a year ago and every production deployment was a
+cross-your-fingers type moment. Having comprehensive tests gives us
+confidence to move fast and not break things.</p>
+<p>One year ago, hg.mozilla.org's infrastructure was opaque, didn't have
+automated tests, and was deployed to seldomly. There was the often
+correct perception that changing this critical-to-Mozilla service was
+difficult and slow. Today, things couldn't be more different. <strong>The
+hg.mozilla.org infrastructure is open, we have tests, and we can and
+do deploy multiple times per day without forward notice and without
+breaking things.</strong> I love this brave new world of open infrastructure
+and moving fast.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -785,39 +839,5 @@ Still using older Mercurial versions means you aren't getting the best
 performance and may encounter bugs that have since been fixed.</p>
 <p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
 for info on how to upgrade to the latest/greatest Mercurial version.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Reporting Mercurial Issues]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues" />
-    <id>http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues</id>
-    <updated>2015-05-04T13:45:00Z</updated>
-    <published>2015-05-04T13:45:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Reporting Mercurial Issues]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues"><![CDATA[<p>I semi-frequently stumble upon conversations in hallways and
-on irc.mozilla.org about issues people are having with Mercurial.
-These conversations periodically involve a legitimate bug with
-Mercurial. Unfortunately, these conversations frequently end
-without an actionable result. Unless someone files a bug, pings me,
-etc, the complaints disappear into ether. That's not good for
-anyone and only results in bugs living longer than they should.</p>
-<p>There are posters around Mozilla offices that say
-<em>if you see something, file something.</em> This advice does not just
-apply to Mozilla projects!</p>
-<p><strong>If you encounter an issue in Mercurial, please take the time
-to report it somewhere meaningful.</strong> The
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/issues.html">Reporting Issues with Mercurial</a>
-page from the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/index.html">Mercurial for Mozillians</a>
-guide tells you how to do this.</p>
-<p>It is OK to complain about something. But if you don't inform
-someone empowered to do something about it, you are part of the
-problem without being part of the solution. Please make the
-incremental effort to be part of the solution.</p>]]></content>
   </entry>
 </feed>

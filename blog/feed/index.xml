@@ -10,10 +10,59 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 31 Jul 2015 20:14:16 GMT</pubDate>
+    <pubDate>Tue, 04 Aug 2015 21:31:33 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>hg.mozilla.org Operational Workings Now Open Sourced</title>
+      <link>http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced</link>
+      <pubDate>Tue, 04 Aug 2015 14:30:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced</guid>
+      <description>hg.mozilla.org Operational Workings Now Open Sourced</description>
+      <content:encoded><![CDATA[<p>Just a few minutes ago, hg.mozilla.org reached an important milestone:
+deployments are now performed via Ansible from our open source
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository instead of via Puppet from Mozilla's private <em>sysadmins</em>
+repository. This is important for a few reasons.</p>
+<p>First, the code behind the operation of hg.mozilla.org is now open source
+and available for the public to see and change. I strive for my work at
+Mozilla to be open by default. With hg.mozilla.org's private Puppet
+repository, people weren't able to see what was going on under the
+covers. Nor were they empowered to change anything. This may come as a
+shock, but even I don't have commit privileges to the internal Puppet
+repository that was previously powering hg.mozilla.org! I did have read
+access. But any change I wanted to make involved me proxying it through
+one of two people. It was tedious, made me feel uncomfortable for having to
+nag people to do my work, and slowed everyone down. We no longer have this
+problem, thankfully.</p>
+<p>Second, having the Ansible code in version-control-tools enables us to
+use the same operational configuration in production as we do in our
+Docker test environment. I can now spin up a cluster of Docker
+containers that behave very similarly to the production servers (which
+aren't running Docker). This enables us to write end-to-end tests of
+complex systems running across multiple Docker containers and have
+relatively high confidence that our production and testing environments
+behave very similarly. In other words, I can test complex interactions
+between multiple systems all from my local machine - even from a plane!
+For example, we can and do test that SSH connections to a simulated
+production environment running in Docker behave as expected, complete
+with an OpenSSH server speaking to an OpenLDAP server for SSH public
+key lookup. While we still have many tests to write, we had no such
+tests a year ago and every production deployment was a
+cross-your-fingers type moment. Having comprehensive tests gives us
+confidence to move fast and not break things.</p>
+<p>One year ago, hg.mozilla.org's infrastructure was opaque, didn't have
+automated tests, and was deployed to seldomly. There was the often
+correct perception that changing this critical-to-Mozilla service was
+difficult and slow. Today, things couldn't be more different. <strong>The
+hg.mozilla.org infrastructure is open, we have tests, and we can and
+do deploy multiple times per day without forward notice and without
+breaking things.</strong> I love this brave new world of open infrastructure
+and moving fast.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Mercurial 3.5 Released</title>
       <link>http://gregoryszorc.com/blog/2015/07/31/mercurial-3.5-released</link>
@@ -641,63 +690,6 @@ in a few months time.</p>
 <p>Finally, I would like to credit Augie Fackler for the
 <a href="http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/54872/focus=54872">original idea</a>
 for server-assisted bundle-based clones.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Firefox Mercurial Repository with CVS History</title>
-      <link>http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history</link>
-      <pubDate>Mon, 18 May 2015 08:40:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history</guid>
-      <description>Firefox Mercurial Repository with CVS History</description>
-      <content:encoded><![CDATA[<p>When Firefox made the switch from CVS to Mercurial in March 2007, the
-CVS history wasn't imported into Mercurial. There were good reasons for
-this at the time. But it's a decision that continues to have
-side-effects. I am surprised how often I hear of engineers wanting to
-access blame and commit info from commits now more than 9 years old!</p>
-<p>When individuals created a Git mirror of the Firefox repository a few
-years ago, they correctly decided that importing CVS history would be
-a good idea. They also correctly decided to combine the logically same
-but physically separate <em>release</em> and <em>integration</em> repositories into a
-unified Git repository. These are things we can't easily do to the
-canonical Mercurial repository because it would break SHA-1 hashes,
-breaking many systems, and it would require significant changes in
-process, among other reasons.</p>
-<p>While Firefox developers do have access to a single Firefox repository
-with full CVS history (the Git mirror), they still aren't satisfied.</p>
-<p>Running <em>git blame</em> (or <em>hg blame</em> for that matter) can be very
-expensive. For this reason, the blame interface is disabled on many
-web-based source viewers by default. On GitHub, some blame URLs for
-the Firefox repository time out and cause GitHub to display an error
-message. No matter how hard you try, you can't easily get blame results
-(running a local Git HTTP/HTML interface is still difficult compared to
-<em>hg serve</em>).</p>
-<p>Another reason developers aren't satisfied with the Git mirror is that
-Git's querying tools pale in comparison to Mercurial's. I've said it
-before and I'll say it again: Mercurial's revision sets and templates
-are incredibly useful features that enable advanced repository querying
-and reporting. Git's offerings come nowhere close. (I <em>really</em> wish Git
-would steal these awesome features from Mercurial.)</p>
-<p>Anyway, enough people were complaining about the lack of a Mercurial
-Firefox repository with full CVS history that I decided to create one.
-If you point your browsers or Mercurial clients to
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full">https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full</a>,
-you'll be able to access it.</p>
-<p>The process used for the conversion was the simplest possible: I used
-hg-git to convert the Git mirror back to Mercurial.</p>
-<p>Unlike the Git mirror, I didn't include all heads in this new
-repository. Instead, there is only mozilla-central's head (the current
-development tip). If I were doing this properly, I'd include all heads,
-like
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-aggregate">gecko-aggregate</a>.</p>
-<p>I'm well aware there are oddities in the Git mirror and they now
-exist in this new repository as well. My goal for this conversion was to
-deliver something: it wasn't a goal to deliver the most correct result
-possible.</p>
-<p>At this time, this repository should be considered an unstable science
-experiment. <strong>By no means should you rely on this repository.</strong> But if
-you find it useful, I'd appreciate hearing about it. If enough people
-ask, we could probably make this more official.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

@@ -51,6 +51,245 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="bugzilla-and-the-future-of-firefox-development"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development" rel="bookmark" title="Permanent Link to Bugzilla and the Future of Firefox Development">Bugzilla and the Future of Firefox Development</a></h2>
+  <small>January 16, 2015 at 10:50 AM | categories: 
+
+<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/bugzilla'>Bugzilla</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p><a href="https://bugzilla.mozilla.org">Bugzilla</a> has played a major role in the
+Firefox development process for over 15 years. <strong>With upcoming changes
+to how code changes to Firefox are submitted and reviewed, I think it is
+time to revisit the central role of Bugzilla and bugs in the Firefox
+development process.</strong> I know this is a contentious thing to say. Please,
+gather your breath, and calmly read on as I explain why I believe this.</p>
+<p>The current Firefox change process defaults to requiring a Bugzilla bug
+for everything. It is rare (and from my experience frowned upon) when a
+commit to Firefox doesn't reference a bug number. We've essentially made
+Bugzilla and a bug prerequisites for changing anything in the Firefox
+version control repository. For the remainder of this post, I'm going to
+say that we <em>require</em> a bug for any change, even though that statement
+isn't technically accurate. Also, when I say <em>Bugzilla</em>, I mean
+<em>bugzilla.mozilla.org</em>, not the generic project.</p>
+<p>Before I go on, let's boil the Firefox change process down to basics.</p>
+<p>At the heart of any change to the Firefox source repository is a diff.
+The diff (a representation of the differences between a set of files)
+is the smallest piece of data necessary to represent a change to the
+Firefox code. I argue that anything more than the vanilla diff is
+overhead and could contribute to
+<a href="/blog/2015/01/09/firefox-contribution-process-debt/">process debt</a>.
+Now, there is some essential overhead. Version control tools supplement
+diffs with metadata, such as the author, commit message, and date. Mozilla
+has also instituted a near-mandatory code review policy, where changes
+need to be signed off by a set of trusted individuals. I view both of
+these additions to the vanilla diff as essential for Firefox development
+and non-negotiable. Therefore, the bare minimum requirements for changing
+Firefox code are a diff plus metadata (a commit/patch) and (almost
+always) a review/sign-off. That's it. Notably absent from this list is a
+Bugzilla bug. <strong>I argue that a bug is not strictly required to
+change Firefox.</strong> Instead, we've instituted a near-universal policy
+that we should have bugs. We've <strong>chosen</strong> to add overhead and process
+debt - interaction with Bugzilla - to our Firefox change process.</p>
+<p>Now, this choice to require all changes be associated with bugs has its
+merits. Bugs provide excellent anchor points for historical context and
+for additional information after the change has been committed and is
+forever set in stone in the repository (commits are immutable in
+Mercurial and Git and you can't easily attach metadata to the commit
+after the fact). Bugs are great to track relationships between different
+problems or units of work. Bugs can even be used to track progress
+towards a large feature. Bugzilla components also provide a decent
+mechanism to follow related activity. There's also a lot of tooling and
+familiar process standing on top of the Bugzilla <em>platform</em>. There's a
+lot to love here and I don't want diminish the importance of all these
+things.</p>
+<p><strong>When I look to the future, I see a world where the current, central
+role of Bugzilla and bugs as part of the Firefox change process begin to
+wane.</strong> I see a world where the benefits to maintaining our current
+Bugzilla-centric workflow start to erode and the cost of maintaining
+it becomes higher and harder to justify. You actually don't have to look
+too far into the future: that world is already here and I've already
+started to feel the pains of it.</p>
+<p>A few days ago, I blogged about
+<a href="/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github/">GitHub and its code first approach to change</a>.
+That post was spun off from an early draft of this post (as were the
+posts about <a href="/blog/2015/01/09/firefox-contribution-process-debt/">Firefox contribution debt</a>
+and <a href="/blog/2015/01/12/utilizing-github-for-firefox-development/">utilizing GitHub for Firefox development</a>).
+I wanted to introduce the concept of <em>code first</em> because it is
+central to my justification for changing how we do things. In summary,
+<strong>code first capitalizes on the fact that any change to software
+involves code and therefore puts code front and center in the change
+process.</strong> (In hindsight, I probably should have used the term <em>code
+centric</em>, because that's how I want people to think about things.) So
+how does <em>code first</em> relate to Bugzilla and Firefox development?</p>
+<p>Historically, code review has occurred in Bugzilla: upload a patch to
+Bugzilla, ask for review, and someone will look at it. And, since
+practically every change to Firefox requires review, you need a bug in
+Bugzilla to contain that review. Thus, <strong>one way to view a bug is as a
+vehicle for code review</strong>. Not every bug is <em>just</em> a code review, of
+course. But a good number of them are.</p>
+<p>The only constant is change. And <strong>the way Mozilla conducts code review
+for changes to Firefox (and other projects) is changing</strong>. We now have
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>,
+a code review tool that is <em>not Bugzilla</em>. If we start accepting GitHub
+pull requests, we <em>may</em> perform reviews exclusively on GitHub, another
+tool that is <em>not Bugzilla</em>.</p>
+<p>(Before I go on, I want to quickly point out that MozReview is nowhere
+close to its final form. Parts of MozReview are pretty bad right now.
+The maintainers all know this and we have plans to fix it. We'll be in
+Toronto all of next week working on it. If you don't think you'll ever
+use it because parts are bad today, I ask you to withhold judgement for
+a few more months.)</p>
+<p>In case you were wondering, the question on whether Bugzilla should
+always be used for code review for Firefox has been answered and that
+answer is <em>no</em>. People, including maintainers of Bugzilla, realized
+that better-than-Splinter/Bugzilla code review tools exist and that
+continuing to invest time to develop Bugzilla/Splinter into a
+best-in-class code review tool would be better spent <em>integrating</em>
+Bugzilla with an existing tool. This is why we now have a
+<a href="https://www.reviewboard.org/">Review Board</a> based code review tool -
+MozReview - integrated with Bugzilla. If you care about code quality and
+more powerful workflows, you should be rejoicing at this because
+<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">the implementation of code review in Bugzilla does not maximize optimal outcomes</a>.</p>
+<p>The world we're moving to is one where code review occurs outside of
+Bugzilla. This raises an important question: <strong>if Bugzilla was being used
+primarily as a vehicle for code review, what benefit and/or role should
+Bugzilla play when code review is conducted outside of Bugzilla?</strong></p>
+<p><strong>I posit that there are a class of bugs that won't need to exist
+going forward because bugs will provide little to no value.</strong> Put
+another way, I believe that a growing number of commits to the Firefox
+repository won't reference bugs.</p>
+<p>Come with me on a journey to the future.</p>
+<p>MozReview is purposefully being designed in a code and repository
+centric way. To initiate the formal process for considering a change to
+code, you push to a Mercurial (or Git!) repository. This could be
+directly to Mozilla's review repository. If I have my way, this could
+even be kicked off by submitting a pull request on GitHub or Bitbucket.
+No Bugzilla attachment uploading here: our systems talk in terms of
+repositories and commits. Again, this is by design: we don't want
+submitting code to Mozilla to be any harder than <em>hg push</em> or <em>git
+push</em> so as to not introduce <em>process debt</em>. If you have code, you'll be
+able to send it to us.</p>
+<p>In the near future, MozReview will stop cross-posting detailed review
+updates to Bugzilla. Instead, we'll use Review Board's e-mail feature
+to send its flavor of emails. These will have rich HTML content (or
+plain text if you insist) and will provide a better experience
+than Bugzilla ever will. We'll adopt the model of tools like
+Phabricator and GitHub and only post summaries or links of activity,
+not full content, to bugs. You may be familiar with the concept as
+applied to the web: it's called hyperlinking.</p>
+<p>Work is being invested into Autoland. Autoland is an automated landing
+queue that pushes/lands commits semi-automatically once they are ready
+(have review, pass automation, etc). Think of Autoland as a bot that
+does all the labor intensive and menial actions around pushing that
+you do now. I believe Autoland will eventually handle near 100% of
+pushes to the Firefox repository. And, if I have my way, Autoland will
+result in the abolishment of <em>integration branches</em> and merge commits in
+the Firefox repository. Good riddance.</p>
+<p>MozReview and Autoland will be highly integrated. MozReview will be the
+primary user interface for interacting with Autoland. (Some of this
+should be in place by the end of the quarter.)</p>
+<p>In this world, MozReview and its underlying version control repositories
+essentially become a <em>database</em> of all submitted, pending, and discarded
+commits to Firefox. The metaphorical <em>primary keys</em> of this <em>database</em>
+are not bug numbers: they are code/commits. (Code first!) Some of the
+flags stored in this <em>database</em> tell Autoland what it should do. And the
+MozReview user interface (and API) provide a mechanism into controlling
+those flags.</p>
+<p>Landing a change in Firefox will be initiated by a simple action such as
+clicking a checkbox in MozReview. (That could even be the <em>Grant Review</em>
+checkbox.) Commits cleared for landing will be picked up by
+Autoland and eventually automatically pushed to the Firefox repository
+(assuming the build and test automation is happy, of course). Once
+Autoland takes control, humans are just passengers. We won't be bothered
+with menial tasks like updating the commit message to reflect a review
+was performed: this will happen automatically inside MozReview or
+Autoland. (Although, there's a chance we may adopt some PGP-based
+signing to more strongly convey review for some code changes in order to
+facilitate stronger auditing and trust guarantees. Stay tuned.)
+Likewise, if a commit becomes associated with a bug, we can add that
+metadata to the commit before it is landed, no human involvement
+necessary beyond specifying the link in the MozReview web UI (or API).
+Autoland/MozReview will close review requests and/or bugs automatically.
+(Are you excited about performing less work yet?)</p>
+<p>When commits are added to MozReview, <strong>MozReview will read metadata from
+the repository they came from to automatically determine an appropriate
+reviewer</strong>. (We <a href="https://groups.google.com/d/msg/mozilla.dev.platform/iXr70VgapWk/GkTCcKRjNi8J">plan</a>
+to leverage moz.build files for this in the case of Firefox.) This
+should eliminate a lot of <em>process debt</em> around choosing a reviewer.
+<strong>Similar metadata will also be used to determine what Bugzilla component
+a change is related to, static analysis rules to use to critique the
+phsyical structure of the change, and even automation jobs that should
+be executed given the set of files that changed.</strong> The use of this
+metadata will erode significant <em>process debt</em> around the change
+contribution workflow.</p>
+<p>As commits are pushed into MozReview/Autoland, the systems will be
+intelligent about automatically tracking dependencies and facilitating
+complex development workflows that people run into on a daily basis.</p>
+<p>If I create a commit on top of someone else's commit that hasn't been
+checked in yet, MozReview will detect the dependency between
+my changes and the parent ones. This is an advantage of being code
+first: by interfacing with repositories rather than patch files, you
+have an explicit dependency graph embedded in the repository commit DAG
+that can be used to aid machines in their activities.</p>
+<p>It will also be possible to partially land a series of commits. If I get
+review on the first 5 of 10 commits but things stall on commit 6, I can ask
+Autoland to land the already-reviewed commits so they don't get bit
+rotted and so you have partial progress (psychological studies show that
+a partial reward for work results in greater happiness through a sense
+of accomplishment).</p>
+<p>Since initiating actions in MozReview is light weight (just <em>hg push</em>),
+itch scratching is encouraged. I don't know about you, but in the course
+of working on the Firefox code base, I frequently find myself wanting to
+make small, 15-30s changes to fix something really minor. In today's world,
+the overhead for these small changes is often high. I need to upload a
+separate patch to Bugzilla. Sometimes I even need to create a new bug to
+hold that patch. If that patch depends on other work I did, I need to
+set up bug dependencies then worry about landing everything in the right
+order. All of a sudden, the overhead isn't worth it and my positive
+intentions go unacted on. Multiplied by hundreds of developers over
+many years, and you can imagine the effect on software quality. With
+MozReview, the overhead for itch scratching like this is minor. Just
+make a small commit, push, and the system will sort everything out.
+(These small commits are where I think a <em>bugless</em> process really
+shines.)</p>
+<p>This future world revolves around code and commits and operations on
+them. While <em>MozReview</em> has <em>review</em> in its name, it's more than a
+review tool: it's a <em>database</em> and interface to code and its state.</p>
+<p><strong>In this code first world, Bugzilla performs an ancillary role.</strong>
+Bugzilla is still there. Bugs are still there. MozReview review requests
+and commits <em>link</em> to bugs. But it is the code, not bugs, that are king.
+If you want to do anything with code, you interact with the code
+tools. And Bugzilla is not one of them.</p>
+<p>Another way of looking at this is that nearly everything involving code
+or commits becomes excised from Bugzilla. This would relegate Bugzilla
+to, well, an issue/bug tracker. And - ta da - that's something it excels
+at since that's what it was originally designed to do! MozReview will
+provide an adequate platform to discuss code (a platform that Bugzilla
+provides today since it hosts code review). So if <em>not Bugzilla</em>
+tools are handling everything related to code, do you really need a bug
+any more?</p>
+<p>This is the future we're trying to build with MozReview and Autoland.
+And this is why I think bugs and Bugzilla will play a less central role
+in the development process of Firefox in the future.</p>
+<p>Yes, there are many consequences and concerns about making this shift.
+You would be rational to be skeptical and doubt that this is the right
+thing to do. I have another post in the works that attempts to outline
+some common conerns and propose solutions to many of them. Before writing
+a long comment pointing out every way in which this will fail to work,
+I encourage you to wait for that post to be published. Stay tuned.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="modern-mercurial-documentation-for-mozillians"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/15/modern-mercurial-documentation-for-mozillians" rel="bookmark" title="Permanent Link to Modern Mercurial Documentation for Mozillians">Modern Mercurial Documentation for Mozillians</a></h2>
   <small>January 15, 2015 at 02:45 PM | categories: 
@@ -503,198 +742,6 @@ and projects should take note.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="firefox-contribution-process-debt"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/01/09/firefox-contribution-process-debt" rel="bookmark" title="Permanent Link to Firefox Contribution Process Debt">Firefox Contribution Process Debt</a></h2>
-  <small>January 09, 2015 at 04:45 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/01/09/firefox-contribution-process-debt#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>As I was
-<a href="/blog/2014/12/30/firefox-source-documentation-versus-mdn/">playing around with source-derived documentation</a>,
-I grasped the reality that any attempt to move documentation out of
-MDN's wiki and into something derived from source code (despite the
-argued technical and quality advantages) would likely be met with fierce
-opposition because the change process for Firefox is much more involved
-than <em>edit a wiki</em>.</p>
-<p>This observation casts light on something important: <strong>the very act of
-contributing <em>any</em> change to Firefox is too damn hard.</strong></p>
-<p>I've always believed this statement to be true. I even like to think I'm
-one of the few people that has consistently tried to do something about
-it (inventing mach, overhauling the build system, bootstrap scripting,
-MozReview, etc). But I, like many of the seasoned Firefox developers,
-often lose sight of this grim reality. (I think it's fair to say that
-new contributors often complain about the development experience and
-as we grow accustomed to it, the complaint volume and intensity wanes).</p>
-<p><strong>But when you have the simplicity of editing a wiki page on MDN juxtaposed
-against the Firefox change contribution process of today, the inefficiency
-of the Firefox process is clearly seen.</strong></p>
-<p>The amount of knowledge required to change Firefox is obscenely absurd. Sure,
-some complex components will always be difficult to change. But I'm talking
-about <em>any</em> component: the base set of knowledge required to contribute
-<em>any</em> change to Firefox is vast. This is <strong>before</strong> we get into any
-domain-specific knowledge inside Firefox. <strong>I have always believed and
-will continue to believe that this is a grave institutional issue for
-Mozilla.</strong> It should go without saying that I believe this is an issue worth
-addressing. After all, <strong>any piece of knowledge required for
-contribution is essentially an obstacle to completion. Elimination of
-required knowledge lowers the barrier to contribution.</strong> This, in turn,
-allows increased contribution via more and faster change. This advances
-the quality and relevance of Firefox, which enables Mozilla to advance
-its <a href="https://www.mozilla.org/mission/">Mission</a>.</p>
-<p>Seasoned contributors have probably internalized most of the knowledge
-required to contribute to Firefox. Here is a <strong>partial</strong> list to remind
-everyone of the sheer scope of it:</p>
-<p><a name="list-of-process-debt"></a></p>
-<ul>
-  <li>Before you do anything
-  <ul>
-   <li>Am I able to contribute?</li>
-   <li>Do I meet the minimum requirements (hardware, internet access, etc)?</li>
-   <li>Do I need any accounts?</li>
-  </ul></li>
-  </li>
-  <li>Source control
-  <ul>
-    <li>What is source control?</li>
-    <li>How do I install Mercurial/Git?</li>
-    <li>How do I use Mercurial/Git?</li>
-    <li>Where can I get the Firefox source code?</li>
-    <li>How do I *optimally* acquire the Firefox source code?</li>
-    <li>Are there any recommended configuration settings or extensions?</li>
-  </ul></li>
-  <li>Building Firefox
-  <ul>
-   <li>Do I even need to build Firefox?</li>
-   <li>How do I build Firefox?</li>
-   <li>What prerequisites need to be installed?</li>
-   <li>How do I install prerequisites?</li>
-   <li>How do I configure the Firefox build to be appropriate for my needs?</li>
-   <li>What are mozconfigs?</li>
-   <li>How do I get Firefox to build faster?</li>
-   <li>What do I do after a build?</li>
-  </ul></li>
-  <li>Changing code
-  <ul>
-   <li>Is there IDE support?</li>
-   <li>Where can I find macros and aliases to make things easier?</li>
-  </ul></li>
-  <li>Testing
-  <ul>
-    <li>How do I run tests?
-  <li>Which tests are relevant for a given change?</li>
-  <li>What are all these different test types?</li>
-  <li>How do I debug tests?</li>
-  </ul></li>
-  <li>Try and Automation
-  <ul>
-   <li>What is Try?</li>
-   <li>How do I get an account?</li>
-   <li>What is vouching and different levels of access?</li>
-   <li>What is SSH?</li>
-   <li>How do I configure SSH?</li>
-   <li>When will my tests run?</li>
-   <li>What is Tree Herder?</li>
-   <li>What do all these letters and numbers mean?</li>
-   <li>What are all these colors?</li>
-   <li>What's an *intermittent failure*?</li>
-   <li>How do I know if something is an *intermittent failure*?</li>
-   <li>What amount of *intermittent failure* is acceptable?</li>
-   <li>What do these logs mean?</li>
-   <li>What's buildbot?</li>
-   <li>What's mozharness?</li>
-  </ul></li>
-  <li>Sending patch to Mozilla
-  <ul>
-   <li>Do I need to sign a CLA?</li>
-   <li>Where do I send patches?</li>
-   <li>Do I need to get an account on Bugzilla?</li>
-   <li>Do I need to file a bug?</li>
-   <li>What component should I file a bug in?</li>
-   <li>What format should patches be sent in?</li>
-   <li>How should I format commit messages?</li>
-   <li>How do I upload patches to Bugzilla?</li>
-   <li>How does code review work?
-   <ul>
-    <li>What's the modules system?</li>
-    <li>What modules does my change map to?</li>
-    <li>Who are the possible reviewers?</li>
-    <li>How do I ask someone for review?</li>
-    <li>When can I expect review?</li>
-    <li>What does r+ vs r- vs f+ vs f- vs cancelling review all mean?</li>
-    <li>How do I submit changes to my initial patch?</li>
-    <li>What do I do after review?</li>
-   </ul></li>
-  </ul></li>
-  <li>Landing patches
-  <ul>
-   <li>What repository should a patch land on?</li>
-   <li>How do you rebase?</li>
-   <li>What's a tree closure?</li>
-   <li>What do I do after pushing?</li>
-   <li>How do I know the result of the landing?</li>
-  </ul></li>
-</ul>
-
-<p>Holy #$%@, that's a lot of knowledge. Not only is this list incomplete,
-it's also not encompassing a lot of the domain-specific knowledge around
-the content being changed.</p>
-<p>Every item on this list represents a point where a potential contributor
-could throw up their arms out of despair and walk away, giving their
-time and talents to another project. Every item on this list that takes
-10 minutes instead of 5 could be the tipping point. For common actions,
-things that take 5 seconds instead of 1 could be the difference maker.
-<strong>This list thus represents reasons that people do not contribute to
-Firefox or contribute ineffectively (in the case of common contributors,
-like paid Mozilla staff).</strong></p>
-<p>I view items on this list as <strong>process debt</strong>. <em>Process debt</em> is a term
-I'm coining (perhaps someone has beat me to it - I'm writing this on a
-plane without Internet access) that is a sibling of <em>technical debt</em>.
-<em>Process debt</em> is overhead and inefficiency associated with <em>processes</em>.
-The border between <em>process debt</em> and <em>technical debt</em> in computers is
-the code itself (although that border may sometimes not be very
-well-defined, as code and process are oftentimes similar, such as most
-interactions with version control or code review tools).</p>
-<p>When I see this list of <em>process debt</em>, I'm inspired by the opportunity
-to streamline the processes and bask in the efficiency gains. But I am
-also simultaneously overwhelmed by the vast scope of things that need
-improved. When I think about the amount of energy that will need to be
-exerted to fight the <em>OMG change</em> crowd, the list becomes <em>depressing</em>.
-But discussing institutional resistance to change, the <em>stop energy</em>
-associated with it, and Mozilla's historical record of failing to invest
-in fixing process (and technical) debt is for another post.</p>
-<p>When looking at the above list, I can think of the following general
-ways to make it more approachable:</p>
-<ol>
-<li>Remove an item completely. If it isn't on the list, there is nothing
-   to know and no overhead. The best way to solve a problem is to make
-   it not exist.</li>
-<li>Automate an item and makes its existence largely transparent. If an
-   item is invisible, does it exist in the mind of a contributor? (This
-   is also known as solving the problem by adding a layer of
-   indirection.)</li>
-<li>Change an item so that it is identical to another, more familiar
-   process. If you use a well-defined process, there is no new knowledge
-   that must be learned and the cost of on-boarding someone already
-   familiar with that knowledge is practically zero.</li>
-</ol>
-<p>When you start staring at this list of Firefox contribution process debt,
-you start thinking about priorities, groupings, and strategies. You look
-around at what others are doing to see if you can borrow good ideas.</p>
-<p>I've done a lot of thinking on the subject and have some ideas and
-recommendations. Stay tuned for some additional posts on the topic.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/09/firefox-contribution-process-debt#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../5">« Previous Page</a>
   --  
