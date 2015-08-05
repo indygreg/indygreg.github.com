@@ -78,10 +78,11 @@ security side of things. When I started on this project, I didn't think
 I'd be writing
 <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/02e353037996/testing/docker/builder-hgweb-chroot/mozbuild-eval.c">C code for spawning secure processes</a>,
 but here we are. In the not so distant future, I'll likely be adding
-seccomp() or seccomp2() into the mix, which will make the execution
-environment as or more secure than the Firefox content process sandbox,
-depending on how it is implemented. The rabbit holes we find ourselves
-in to implement proper security...</p>
+<a href="http://man7.org/linux/man-pages/man2/seccomp.2.html">seccomp(2)</a>
+into the mix, which will make the execution environment as
+or more secure than the Firefox content process sandbox, depending
+on how it is implemented. The rabbit holes we find ourselves in to
+implement proper security...</p>
 
   </div>
 </div>
