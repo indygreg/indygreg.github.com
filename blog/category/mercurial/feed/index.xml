@@ -10,10 +10,41 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 04 Aug 2015 21:31:33 GMT</pubDate>
+    <pubDate>Wed, 05 Aug 2015 02:51:53 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>moz.build metadata on hg.mozilla.org</title>
+      <link>http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org</link>
+      <pubDate>Tue, 04 Aug 2015 19:55:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org</guid>
+      <description>moz.build metadata on hg.mozilla.org</description>
+      <content:encoded><![CDATA[<p>Sometime last week we enabled a new API on hg.mozilla.org:
+<em>json-mozbuildinfo</em>. This endpoint will return JSON describing
+moz.build-derived metadata about the files that changed in a commit.</p>
+<p><a href="https://hg.mozilla.org/mozilla-central/json-mozbuildinfo/1164ec236273">Example</a>.
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/mozbuildinfo.html">Docs</a>.</p>
+<p>We plan to eventually leverage this API to do cool things like
+have MozReview automatically file bugs in the appropriate component and
+assign appropriate reviewers given the set of changed files in a commit.</p>
+<p>The API is currently only available on mozilla-central. And, we have
+very conservative resource limits in place. So large commits may cause
+it to error out. As such, the API is considered experimental. Also,
+performance is not as optimal as it could be. You have to start
+somewhere.</p>
+<p>I'd like to thank Guillaume Destuynder (kang) for his help with the
+security side of things. When I started on this project, I didn't think
+I'd be writing
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/02e353037996/testing/docker/builder-hgweb-chroot/mozbuild-eval.c">C code for spawning secure processes</a>,
+but here we are. In the not so distant future, I'll likely be adding
+seccomp() or seccomp2() into the mix, which will make the execution
+environment as or more secure than the Firefox content process sandbox,
+depending on how it is implemented. The rabbit holes we find ourselves
+in to implement proper security...</p>]]></content:encoded>
+    </item>
     <item>
       <title>hg.mozilla.org Operational Workings Now Open Sourced</title>
       <link>http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced</link>
@@ -766,30 +797,6 @@ necessary future scalability. They want a network-aware storage backend.
 Local objects not necessary if the network has them.</p>
 <p>They are running a custom Git distribution/fork on clients. But they
 don't want to maintain forever. Prefer to send upstream.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Dropping Explicit Support for Mercurial 3.0</title>
-      <link>http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</link>
-      <pubDate>Thu, 07 May 2015 16:05:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</guid>
-      <description>Dropping Explicit Support for Mercurial 3.0</description>
-      <content:encoded><![CDATA[<p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
-for all the Mercurial code in the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository. File issues in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
-<p>Code may still work against Mercurial 3.0. But it isn't supported and
-could break hard at any time.</p>
-<p>Supporting multiple versions of <em>any</em> software carries
-with it some cost. The people writing tooling around Mercurial are busy.
-It is a waste of our time to bend over backwards to support old versions
-of software that <strong>all</strong> users should have upgraded from months ago.
-Still using older Mercurial versions means you aren't getting the best
-performance and may encounter bugs that have since been fixed.</p>
-<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
-for info on how to upgrade to the latest/greatest Mercurial version.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

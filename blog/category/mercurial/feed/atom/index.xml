@@ -7,12 +7,48 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-08-04T21:31:33Z</updated>
+  <updated>2015-08-05T02:51:53Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[moz.build metadata on hg.mozilla.org]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org" />
+    <id>http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org</id>
+    <updated>2015-08-04T19:55:00Z</updated>
+    <published>2015-08-04T19:55:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[moz.build metadata on hg.mozilla.org]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org"><![CDATA[<p>Sometime last week we enabled a new API on hg.mozilla.org:
+<em>json-mozbuildinfo</em>. This endpoint will return JSON describing
+moz.build-derived metadata about the files that changed in a commit.</p>
+<p><a href="https://hg.mozilla.org/mozilla-central/json-mozbuildinfo/1164ec236273">Example</a>.
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/mozbuildinfo.html">Docs</a>.</p>
+<p>We plan to eventually leverage this API to do cool things like
+have MozReview automatically file bugs in the appropriate component and
+assign appropriate reviewers given the set of changed files in a commit.</p>
+<p>The API is currently only available on mozilla-central. And, we have
+very conservative resource limits in place. So large commits may cause
+it to error out. As such, the API is considered experimental. Also,
+performance is not as optimal as it could be. You have to start
+somewhere.</p>
+<p>I'd like to thank Guillaume Destuynder (kang) for his help with the
+security side of things. When I started on this project, I didn't think
+I'd be writing
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/02e353037996/testing/docker/builder-hgweb-chroot/mozbuild-eval.c">C code for spawning secure processes</a>,
+but here we are. In the not so distant future, I'll likely be adding
+seccomp() or seccomp2() into the mix, which will make the execution
+environment as or more secure than the Firefox content process sandbox,
+depending on how it is implemented. The rabbit holes we find ourselves
+in to implement proper security...</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -810,34 +846,5 @@ necessary future scalability. They want a network-aware storage backend.
 Local objects not necessary if the network has them.</p>
 <p>They are running a custom Git distribution/fork on clients. But they
 don't want to maintain forever. Prefer to send upstream.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Dropping Explicit Support for Mercurial 3.0]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0" />
-    <id>http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0</id>
-    <updated>2015-05-07T16:05:00Z</updated>
-    <published>2015-05-07T16:05:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Dropping Explicit Support for Mercurial 3.0]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0"><![CDATA[<p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
-for all the Mercurial code in the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository. File issues in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
-<p>Code may still work against Mercurial 3.0. But it isn't supported and
-could break hard at any time.</p>
-<p>Supporting multiple versions of <em>any</em> software carries
-with it some cost. The people writing tooling around Mercurial are busy.
-It is a waste of our time to bend over backwards to support old versions
-of software that <strong>all</strong> users should have upgraded from months ago.
-Still using older Mercurial versions means you aren't getting the best
-performance and may encounter bugs that have since been fixed.</p>
-<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
-for info on how to upgrade to the latest/greatest Mercurial version.</p>]]></content>
   </entry>
 </feed>
