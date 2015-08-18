@@ -51,6 +51,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="json-apis-on-hg.mozilla.org"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/08/18/json-apis-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to JSON APIs on hg.mozilla.org">JSON APIs on hg.mozilla.org</a></h2>
+  <small>August 18, 2015 at 04:00 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I added a feature to Mercurial 3.4 that exposes JSON from Mercurial's
+various <a href="https://hg.mozilla.org/mozilla-central/help/hgweb">web APIs</a>.
+Unfortunately, due to the presence of legacy code on hg.mozilla.org
+providing similar functionality, we weren't able to deploy this
+feature to hg.mozilla.org when we deployed Mercurial 3.4 several weeks
+ago.</p>
+<p>I'm pleased to announce that as of today, JSON is now exposed from
+hg.mozilla.org!</p>
+<p>To access JSON output, simply add <strong>json-</strong> to the <em>command</em> name
+in URLs. e.g. instead of
+<a href="https://hg.mozilla.org/mozilla-central/rev/de7aa6b08234">https://hg.mozilla.org/mozilla-central/rev/de7aa6b08234</a>
+use <a href="https://hg.mozilla.org/mozilla-central/json-rev/de7aa6b08234">https://hg.mozilla.org/mozilla-central/json-rev/de7aa6b08234</a>.
+The full list of web commands, URL patterns, and their parameters are
+<a href="https://hg.mozilla.org/mozilla-central/help/hgweb">documented</a> in
+the <em>hgweb</em> help topic.</p>
+<p>Not all web commands support JSON output yet. Not all web commands
+expose all data available to them. If there is data you need but isn't
+exposed, please
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>
+and I'll see what I can do.</p>
+<p>Thanks go to Steven MacLeod for
+<a href="https://reviewboard.mozilla.org/r/15617/">reviewing</a> the rather large
+series it took to make this happen.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="moz.build-metadata-on-hg.mozilla.org"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to moz.build metadata on hg.mozilla.org">moz.build metadata on hg.mozilla.org</a></h2>
   <small>August 04, 2015 at 07:55 PM | categories: 
@@ -360,105 +402,6 @@ tuned for another blog post.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="prompting-to-run-mach-mercurial-setup"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/07/17/prompting-to-run-mach-mercurial-setup" rel="bookmark" title="Permanent Link to Prompting to Run mach mercurial-setup">Prompting to Run mach mercurial-setup</a></h2>
-  <small>July 17, 2015 at 11:35 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Earlier this week, I landed some changes to the Firefox development
-environment that aggressively make <em>mach</em> prompt to run <em>mach
-mercurial-setup</em>. Full details in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1182677">bug 1182677</a>.</p>
-<p>As expected, the change resulted in a fair amount of whining and
-bemoaning among various Firefox developers. I wanted to take some time
-to explain why we moved forward, even though we knew not everyone would
-like the feature.</p>
-<p>My official job title at Mozilla is <em>Developer Productivity Engineer</em>.
-My job is to make you do your job better.</p>
-<p>I've been an employee at Mozilla for four years and in that time I've
-witnessed a surprising lack of understanding around version control
-tools. (I don't think Mozilla is significantly different from most
-other companies here.) I find that a significant number of people
-are practicing sub-optimal version control workflows because they don't
-know any better (common) or because they are unwilling to change from
-learned habits.</p>
-<p>Furthermore, Mercurial is a highly customizable tool. A lot of
-Mozillians have spent a lot of time developing useful extensions to
-Mercurial that enable Mozillians to use Mercurial more effectively and
-to thus become more productive. The latest epic time-saving hack
-is <a href="http://www.ncalexander.net/blog/2015/07/02/build-fennec-frontend-fast-with-mach-artifact/">Nick Alexander's work to make Fennec build 80% faster by
-having deep integration with version control</a>.</p>
-<p><em>mach mercurial-setup</em> is almost
-<a href="/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development/">two years old</a>.
-Yet, when assisting my fellow Mozillians with Mercurial issues, my
-"have you run mach mercurial-setup?" question is still often met with
-blank stares followed by "wait, there's a mach mercurial-setup?!" What's
-even more frustrating is people wrongly believing that Mercurial can't
-do things like rebasing and then spreading misinformation about the
-lackings of Mercurial. (Mercurial has many advanced features disabled
-out of the box so new users don't footgun themselves.)</p>
-<p>Just like Firefox would be irrelevant if it didn't have millions of users,
-your awesome tool is mostly irrelevant if you are its only user. That's
-why when I hear of someone say they created an amazing tool for
-themselves or modified a third party tool without sending the improvements
-upstream, my blood pressure rises a little. It rises because here this
-person did something awesome and they or some limited subset of people
-who happened to be following the person on Twitter or reading their blog
-at that point in time managed to a) know about the tool b) take the
-effort to install it. The uptake rate is insanely low and return on
-investment for that tool is low. It results in duplication of effort.
-I find this painfully frustrating because I want everyone to have easy
-access to the best tools available. This requires that tools are well
-advertised and easy to install and use.</p>
-<p>The primary goal of <em>mach mercurial-setup</em> is to make it super easy for
-anyone to have an optimal Mercurial experience. It was apparent to me that
-despite <em>mach mercurial-setup</em> existing, numerous people didn't know it
-existed or weren't using it. Your awesome tool isn't very awesome unless
-people are using it. And a lot of the awesome tools people have built
-around Mercurial at Mozilla weren't being utilized and lots of
-productivity wins were thus being unrealized. Forcefully pushing <em>mach
-mercurial-setup</em> onto people is thus an attempt to unlock unrealized
-productivity wins and to make people happier about the state of their
-tools.</p>
-<p>I'm not thrilled that mach's prompting to run <em>mach mercurial-setup</em> is
-as disruptive as it is. It's bad user experience. I know better. But,
-(and this is explained somewhat in the bug), other solutions are more
-complicated and have other gotchas. The current, invasive implementation
-was the easiest to implement and has the biggest bang for the buck in
-terms of adoption. We knew people would complain about it. But from
-my perspective, it was do this or do nothing. And nothing hadn't been
-very effective. So we did something.</p>
-<p>There has been lots of feedback about the change this week. Most
-surprising to me is the general sentiment of "I don't want something
-automatically changing my hgrc file." I find this surprising because
-<em>mach mercurial-setup</em> puts the user firmly in control by prompting
-before doing anything, thus respecting user choice and avoiding gotchas
-and unwanted changes. It's clear this property needs to be advertised a
-bit more so people aren't scared to run <em>mach mercurial-setup</em> and don't
-spread fear, uncertainty, and doubt about the tool to others. (I also
-find it somewhat surprising people would think this in the first place:
-I'd like to think we'd implicitly trust most Mozillians to implement
-tools that respect user choice and don't do <em>malicious</em> things.)</p>
-<p>Like all software, things can and will change. The user experience of
-this new feature isn't terrific. We'll iterate on it. If you want to
-help enact change, please
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">file a bug in Core :: mach</a>
-(for now) and we'll go from there.</p>
-<p>Thank you for your patience and your understanding.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 

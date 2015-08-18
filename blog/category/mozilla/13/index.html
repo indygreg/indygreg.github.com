@@ -51,6 +51,94 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="using-mercurial-for-status-reports"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/04/01/using-mercurial-for-status-reports" rel="bookmark" title="Permanent Link to Using Mercurial for Status Reports">Using Mercurial for Status Reports</a></h2>
+  <small>April 01, 2014 at 12:30 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial has a pair of amazing features called
+<a href="http://www.selenic.com/hg/help/revsets">Revisions Sets</a>
+and <a href="http://www.selenic.com/hg/help/templates">Templates</a>. Combined,
+they allow you to query Mercurial like a database and to generate custom
+reports from obtained data.</p>
+<p>As I've <a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata/">demonstrated</a>,
+you can write Mercurial extensions to provide custom revision set
+queries and template functions and keywords. My
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">mozext</a>
+extension aggregates Mozilla's <em>pushlog</em> data into a local SQLite
+database and makes this data available to revision sets and templates.</p>
+<p>My hack of the day is to use revision sets and templates to create a
+weekly status report:</p>
+<div class="pygments_murphy"><pre>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
+--template &#39;* {ifeq(reviewer, &quot;gps&quot;, &quot;Review: &quot;, &quot;Landing: &quot;)}{firstline(desc)}\n&#39;
+</pre></div>
+
+<p>When I run this, I get the output:</p>
+<div class="pygments_murphy"><pre>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
+* Review: Bug 987146 - Represent SQL queries more efficiently. r=gps.
+* Review: Bug 987984 - VirtualenvManager.call_setup() should use self.python_path instead of sys.executable, r=gps
+* Landing: Bug 987398 - Part 1: Run mochitests from manifests with mach; r=ahal
+* Landing: Bug 987398 - Part 2: Handle install-to-subdir in TestResolver; r=ahal
+* Landing: Bug 987414 - Pass multiple test arguments to mach testing commands; r=ahal
+* Review: Bug 988141 - Clean up config/recurse.mk after bug 969164. r=gps
+* Landing: Bug 973992 - Support experiments add-ons; r=Unfocused
+* Review: Bug 927672 - Force pymake to fall back to mozmake when run on build slaves. r=gps
+* Review: Bug 989147 - Use new sccache for Linux and Android builds. r=gps
+* Review: Bug 989147 - Add missing part of the patch from rebase conflict. r=gps
+* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
+* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
+* Landing: Backed out changeset 4834a3833639 and c580afddd1cb (bug 985084 and bug 97500)
+* Landing: Bug 975000 - Disable updating and compatibility checking for Experiments; r=Unfocused
+* Landing: Bug 985084 - Experiment add-ons should be disabled by default; r=Unfocused
+* Landing: Bug 989137 - Part 1: Uninstall unknown experiments; r=Unfocused
+* Landing: Bug 989137 - Part 2: Don&#39;t use a global logger; r=gfritzsche
+* Landing: Bug 989137 - Part 3: Log.jsm API to get a Logger that prefixes messages; r=bsmedberg
+* Landing: Bug 989137 - Part 4: Use a prefixing logger for Experiments logging; r=gfritzsche
+* Landing: Bug 989137 - Part 5: Prefix each log message with the instance of the object; r=gfritzsche
+* Review: Bug 988849 - Add mach target for jit tests; r=gps
+* Landing: Bug 989137 - Part 6: Create experiment XPIs during the build; r=bsmedberg
+* Landing: Bug 989137 - Part 7: Remove unncessary content from test experiments; r=Unfocused
+* Landing: Bug 985084 - Part 2: Properly report userDisabled in the API; r=Unfocused
+</pre></div>
+
+<p>Which I can then copy and paste directly into the
+<a href="http://benjamin.smedbergs.us/weekly-updates.fcgi/">status tool</a> to
+capture all my weekly code contributions! That takes a few seconds to
+run and saves me a few minutes of typing.</p>
+<p>For the curious, let's break that Mercurial command down.</p>
+<ul>
+<li>public() selects all <em>public</em> changesets. These are changesets in the
+  repository that have been pushed to a publishing repository. In other
+  words, patches that landed in Firefox.</li>
+<li>me() is a custom revset from my <em>mozext</em> extension that parses the
+  commit message and selects changesets that I authored or reviewed.</li>
+<li>firstpushdate("-7") is a custom revset from my <em>mozext</em> extension. It
+  selects changesets that were first pushed in the last 7 days (using
+  pushlog data stored in a local SQLite database).</li>
+</ul>
+<p>The template piece should be easy to read. I have a simple branch
+testing whether the changeset is a review or not, then output a label
+followed by the first line of the commit message.</p>
+<p>I have this command saved under the <em>[alias]</em> section of my <em>~/.hgrc</em>
+file so I can just type <em>hg statusreport</em>.</p>
+<p>While there is room to improve the tool (stripping <em>r=</em> lines from
+commit messages for example), I think it's a pretty cool hack and shows
+how Mercurial can grow to solve problems you don't think your version
+control system knows how to solve.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/04/01/using-mercurial-for-status-reports#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="how-promises-and-tasks-are-improving-tests"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/03/30/how-promises-and-tasks-are-improving-tests" rel="bookmark" title="Permanent Link to How Promises and Tasks are Improving Tests">How Promises and Tasks are Improving Tests</a></h2>
   <small>March 30, 2014 at 02:15 PM | categories: 
@@ -612,95 +700,6 @@ what the future could hold.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/27/review-board-at-mozilla#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="aggregating-version-control-info-at-mozilla"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/01/21/aggregating-version-control-info-at-mozilla" rel="bookmark" title="Permanent Link to Aggregating Version Control Info at Mozilla">Aggregating Version Control Info at Mozilla</a></h2>
-  <small>January 21, 2014 at 10:50 AM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/python'>Python</a>
- | <a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Over the winter break, I set out on an ambitious project to create
-a service to help developers and others manage the flury
-of patches going into Firefox. While the project is far from complete,
-I'm ready to unleash the first part of the project upon the world.</p>
-<p>If you point your browsers to
-<a href="http://moztree.gregoryszorc.com/">moztree.gregoryszorc.com</a>, you'll
-hopefully see some documentation about what I've built.
-<a href="https://bitbucket.org/indygreg/moz-tree-utopia">Source code</a> is
-available and free, of course. Patches very welcome.</p>
-<p>Essentially, I built a centralized indexing service for version
-control repositories with Mozilla's extra metadata thrown in.
-I tell it what repositories to mirror, and it clones everything,
-fetches data such as the pushlog and Git SHA-1 mappings, and
-stores everything in a central database. It then exposes this
-aggregated data through world-readable web services.</p>
-<p>Currently, I have the service indexing the popular project branches
-for Firefox (central, aurora, beta, release, esr, b2g, inbound, fx-team,
-try, etc). You can view the
-<a href="http://moztree.gregoryszorc.com/api/repos">full list</a> via the web
-service. As a bonus, I'm also serving these repositories via
-<a href="http://hg.gregoryszorc.com/">hg.gregoryszorc.com</a>. My server appears
-to be significantly faster than
-<a href="https://hg.mozilla.org">hg.mozilla.org</a>. If you want to use it for
-your daily needs, go for it. I make no SLA guarantees, however.</p>
-<p>I'm also using this service as an opportunity to experiment with
-alternate forms of Mercurial hosting. I have mirrors of mozilla-central
-and the try repository with generaldelta and lz4 compression enabled.
-I may blog about what those are eventually. The teaser is that they can
-make Mercurial perform a lot faster under some conditions. I'm also
-using ZFS under the hood to manage repositories. Each repository is a
-ZFS filesystem. This means I can create repository copies on the server
-(user repositories anyone?) at a nearly free cost. Contrast this to the
-traditional method of full clones, which take lots of time, memory, CPU,
-and storage.</p>
-<p>Anyway, some things you can do with the existing web service:</p>
-<ul>
-<li>Obtain metadata about Mercurial changesets.
-  <a href="http://moztree.gregoryszorc.com/api/changeset/940b2974f35b">Example</a>.</li>
-<li>Look up metadata about Git commits.
-  <a href="http://moztree.gregoryszorc.com/api/git-sha1/40438af67c321">Example</a>.</li>
-<li>Obtain a <a href="http://moztree.gregoryszorc.com/api/spore">SPORE descriptor</a>
-  describing the web service endpoints. This allows you to auto-generate
-  clients from descriptors. Yay!</li>
-</ul>
-<p>Obviously, that's not a lot. But adding new endpoints is relatively
-straightforward. See the <a href="https://bitbucket.org/indygreg/moz-tree-utopia/src/tip/repodata/web/app.py">source</a>.
-It's literally as easy as defining a URL mapping and writing a
-database query.</p>
-<p>The performance is also not the best. I just haven't put in the effort
-to tune things yet. All of the querying hits the database, not
-Mercurial. So, making things faster should merely be a matter of
-database and hosting optimization. Patches welcome!</p>
-<p>Some ideas that I haven't had time to implement yet:</p>
-<ul>
-<li>Return changests in a specific repository</li>
-<li>Return recently pushed changesets</li>
-<li>Return pushes for a given user</li>
-<li>Return commits for a given author</li>
-<li>Return commits referencing a given bug</li>
-<li>Obtain TBPL URLs for pushes with changeset</li>
-<li>Integrate bugzilla metadata</li>
-</ul>
-<p>Once those are in place, I foresee this service powering a number of
-dashboards. Patches welcome.</p>
-<p>Again, this service is only the tip of what's possible. There's a lot
-that could be built on this service. I have ideas. Others have ideas.</p>
-<p>The project includes a Vagrant file and Puppet
-manifests for provisioning the server. It's a one-liner to get a
-development environment up and running. It should be really easy to
-contribute to this project. Patches welcome.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/12">« Previous Page</a>
   --  

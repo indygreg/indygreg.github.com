@@ -51,6 +51,81 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="new-high-scores-for-hg.mozilla.org"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/03/19/new-high-scores-for-hg.mozilla.org" rel="bookmark" title="Permanent Link to New High Scores for hg.mozilla.org">New High Scores for hg.mozilla.org</a></h2>
+  <small>March 19, 2015 at 08:20 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>It's been a <a href="/blog/2015/03/18/network-events/">rough week</a>.</p>
+<p>The very short summary of events this week is that both the Firefox
+and Firefox OS release automation has been performing a denial of
+service attack against
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a>.</p>
+<p>On the face of it, this is nothing new. The release automation
+is by far the top consumer of hg.mozilla.org data, requesting several
+terabytes per day via several million HTTP requests from thousands of
+machines in multiple data centers. The very nature of their existence
+makes them a significant denial of service threat.</p>
+<p>Lots of things went wrong this week. While a post mortem will shed
+light on them, many fall under the umbrella of <em>release automation was
+making more requests than it should have and was doing so in a way
+that both increased the chances of an outage occurring and increased
+the chances of a prolonged outage.</em> This resulted in the hg.mozilla.org
+servers working harder than they ever have. As a result, we have some
+new <em>high scores</em> to share.</p>
+<ul>
+<li>
+<p>On UTC day March 19, hg.mozilla.org transferred 7.4 TB of data.
+  This is a significant increase from the ~4 TB we expect on a typical
+  weekday. (Even more significant when you consider that most load is
+  generated during peak hours.)</p>
+</li>
+<li>
+<p>During the 1300 UTC hour of March 17, the cluster received 1,363,628
+  HTTP requests. No HTTP 503 Service Not Available errors were
+  encountered in that window! 300,000 to 400,000 requests per hour is
+  typical.</p>
+</li>
+<li>
+<p>During the 0800 UTC hour of March 19, the cluster transferred 776 GB
+  of repository data. That comes out to at least 1.725 Gbps on average
+  (I didn't calculate TCP and other overhead). Anything greater than 250
+  GB per hour is not very common. No HTTP 503 errors were served from
+  the origin servers during this hour!</p>
+</li>
+</ul>
+<p>We encountered many periods where hg.mozilla.org was operating more than
+twice its normal and expected operating capacity and it was able to
+handle the load just fine. As a server operator, I'm proud of this.
+The servers were provisioned beyond what is normally needed of them and
+it took a truly exceptional event (or two) to bring the service down.
+This is generally a good way to do hosted services (you rarely want to be
+barely provisioned because you fall over at the slighest change and you
+don't want to be grossly over-provisioned because you are wasting money
+on idle resources).</p>
+<p>Unfortunately, the hg.mozilla.org service did fall over. Multiple times,
+in fact. There is room to improve. As proud as I am that the service
+operated well beyond its expected limits, I can't help but feel ashamed
+that it did eventual cave in under even extreme load and that people are
+probably making under-informed general assumptions like <em>Mercurial can't
+scale</em>. The simple fact of the matter is that clients cumulatively
+generated an exceptional amount of traffic to hg.mozilla.org this week.
+All servers have capacity limits. And this week we encountered the limit
+for the current configuration of hg.mozilla.org. Cause and effect.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="network-events"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/03/18/network-events" rel="bookmark" title="Permanent Link to Network Events">Network Events</a></h2>
   <small>March 18, 2015 at 02:25 PM | categories: 
@@ -323,52 +398,6 @@ and landing a complex patch series significantly easier.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/27/commit-part-numbers-and-mozreview#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="automatic-python-static-analysis-on-mozreview"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/01/24/automatic-python-static-analysis-on-mozreview" rel="bookmark" title="Permanent Link to Automatic Python Static Analysis on MozReview">Automatic Python Static Analysis on MozReview</a></h2>
-  <small>January 24, 2015 at 11:30 PM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
- | <a href="http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>A bunch of us were in Toronto last week hacking on MozReview.</p>
-<p>One of the cool things we did was deploy a bot for performing Python
-static analysis. If you submit some .py files to MozReview, the bot
-should leave a review. If it finds violations (it uses
-<a href="https://flake8.readthedocs.org/">flake8</a> internally), it will open
-an issue for each violation. It also leaves a comment that should
-hopefully give enough detail on how to fix the problem.</p>
-<p>While we haven't done much in the way of performance optimizations,
-the bot typically submits results less than 10 seconds after the review
-is posted! So, a human should never be reviewing Python that the bot
-hasn't seen. This means you can stop thinking about style nits and start
-thinking about what the code does.</p>
-<p>This bot should be considered an alpha feature. The code for the bot
-isn't even checked in yet. We're running the bot against production
-to get a feel for how it behaves. If things don't go well, we'll turn
-it off until the problems are fixed.</p>
-<p>We'd like to eventually deploy C++, JavaScript, etc bots. Python won out
-because it was the easiest to integrate (it has sane and efficient
-tooling that is compatible with Mozilla's code bases - most existing
-JavaScript tools won't work with Gecko-flavored JavaScript, sadly).</p>
-<p>I'd also like to eventually make it easier to locally run the same
-static analysis we run in MozReview. Addressing problems locally before
-pushing is a no-brainer since it avoids needless context switching from
-other people and is thus better for productivity. This will come in
-time.</p>
-<p>Report issues in #mozreview or in the Developer Services :: MozReview
-Bugzilla component.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/4">« Previous Page</a>
   --  

@@ -7,12 +7,49 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-08-05T17:03:15Z</updated>
+  <updated>2015-08-18T22:58:47Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[JSON APIs on hg.mozilla.org]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org" />
+    <id>http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org</id>
+    <updated>2015-08-18T16:00:00Z</updated>
+    <published>2015-08-18T16:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[JSON APIs on hg.mozilla.org]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org"><![CDATA[<p>I added a feature to Mercurial 3.4 that exposes JSON from Mercurial's
+various <a href="https://hg.mozilla.org/mozilla-central/help/hgweb">web APIs</a>.
+Unfortunately, due to the presence of legacy code on hg.mozilla.org
+providing similar functionality, we weren't able to deploy this
+feature to hg.mozilla.org when we deployed Mercurial 3.4 several weeks
+ago.</p>
+<p>I'm pleased to announce that as of today, JSON is now exposed from
+hg.mozilla.org!</p>
+<p>To access JSON output, simply add <strong>json-</strong> to the <em>command</em> name
+in URLs. e.g. instead of
+<a href="https://hg.mozilla.org/mozilla-central/rev/de7aa6b08234">https://hg.mozilla.org/mozilla-central/rev/de7aa6b08234</a>
+use <a href="https://hg.mozilla.org/mozilla-central/json-rev/de7aa6b08234">https://hg.mozilla.org/mozilla-central/json-rev/de7aa6b08234</a>.
+The full list of web commands, URL patterns, and their parameters are
+<a href="https://hg.mozilla.org/mozilla-central/help/hgweb">documented</a> in
+the <em>hgweb</em> help topic.</p>
+<p>Not all web commands support JSON output yet. Not all web commands
+expose all data available to them. If there is data you need but isn't
+exposed, please
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>
+and I'll see what I can do.</p>
+<p>Thanks go to Steven MacLeod for
+<a href="https://reviewboard.mozilla.org/r/15617/">reviewing</a> the rather large
+series it took to make this happen.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -557,111 +594,5 @@ ago, when any server change required a maintenance window. We've
 invested a lot of work into a test suite for this service so we can
 continuously deploy without fear of breaking things. Moving fast feels
 so good.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Important Changes to MozReview]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/05/29/important-changes-to-mozreview" />
-    <id>http://gregoryszorc.com/blog/2015/05/29/important-changes-to-mozreview</id>
-    <updated>2015-05-29T16:20:00Z</updated>
-    <published>2015-05-29T16:20:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="MozReview" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <category scheme="http://gregoryszorc.com/blog" term="code review" />
-    <summary type="html"><![CDATA[Important Changes to MozReview]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/05/29/important-changes-to-mozreview"><![CDATA[<p>This was a busy week for MozReview! There are a number of changes people
-need to be aware of.</p>
-<h2>Support for Specifying Reviewers via Commit Messages</h2>
-<p>MozReview will now parse <strong>r?gps</strong> syntax out of commit messages to
-set reviewers for pushed commits.</p>
-<p><a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/review-requests.html#specifying-reviewers-in-commit-messages">Read the docs</a>
-for more information, including why we are preferring <strong>r?</strong> to <strong>r=</strong>.</p>
-<p>Since it landed, a number of workflow concerns have been reported.
-See the bug tree for
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1142251">bug 1142251</a>
-before filing a bug to help avoid duplicates.</p>
-<p>Thank Dan Minor for the feature!</p>
-<h2>Review Attachment/Flag Per Commit</h2>
-<p>Since the beginning of MozReview, there was one Bugzilla attachment /
-review flag per commit series. This has changed to one attachment /
-review flag per commit.</p>
-<p>Before, you needed to grant <em>Ship It</em> on the parent/root review request
-in order to r+ the MozReview review request. Now, you grant <em>Ship It</em>
-on individual commits and these turn into individual r+ on Bugzilla.
-To reinforce that reviewing the parent/root review request doesn't do
-anything meaningful any more, the <em>Ship It</em> button and checkbox have been
-removed from the parent/root review request.</p>
-<p>The new model more closely maps to how code review in Bugzilla has
-worked at Mozilla for ages. And, it is a superior workflow for
-future workflows we're trying to enable.</p>
-<p>We tried to run a one-time migration script to convert existing
-parent/root attachments/review flags to per-commit attachments/flags.
-However, there were issues. We will attempt again sometime next week.
-In the interim, <strong>in-flight review requests may enter an inconsistent
-state if they are updated</strong>. If a new push is performed, the old
-parent/root attachment/review flag may linger and per-commit
-attachments/flags will be created. This could be confusing. The
-workaround is to manually clear the r? flag from the parent/root
-attachment or wait for the migration script to run in a few days.</p>
-<p>Mark Côté put in a lot of hard work to make this change happen.</p>
-<h2>r? Flags Cleared After Review</h2>
-<p>Before, submitting a review without granting <em>Ship It</em> wouldn't do
-anything to the r? flag: the r? flag would linger.</p>
-<p>Now, submitting review without granting <em>Ship It</em> will clear the r?
-flag. We think the new default is better for the majority of users.
-However, we recognize it isn't always wanted. There is a bug open to
-provide a checkbox to keep the r? flag present.</p>
-<h2>Metadata Added to Changesets</h2>
-<p>If you update to the tip of the version-control-tools repository
-(you should do this every week or so to stay fresh - use <em>mach
-mercurial-setup</em> to do this automatically), metadata will automatically
-be added to commits when working with MozReview-enabled repositories.</p>
-<p>Specifically, we insert a hidden, unique, random ID into every changeset.
-This ID can be used to map commits to each other. We don't use this ID
-yet. But we have plans.</p>
-<p>A side-effect of this change is that you can no longer push to MozReview
-if you have uncommitted local changes. If this is annoying, use <em>hg
-shelve</em> and <em>hg unshelve</em> to create and undo temporary commits. If this
-is too annoying, complain by filing a bug and we can look into doing
-this automatically as part of pushing.</p>
-<h2>What's Next?</h2>
-<p>We're actively working on more workflow enhancements to make MozReview
-an even more compelling experience.</p>
-<p>I'm building a web service to query file metadata from moz.build files.
-This will allow MozReview to automatically file bugs in proper
-components based on what files changed. Once code reviewer metadata
-is added to moz.build files, it will enable us to assign reviewers
-automatically as well. The end goal here is to lower the number of steps
-needed to turn changed code into a landing. This will be useful when we
-turn GitHub pull requests into MozReview review requests (random GitHub
-contributors shouldn't need to know who to flag for review, nor should
-they be required to file a bug if they write some code). Oh year, we're
-working on integrating GitHub pull requests.</p>
-<p>Another area of focus is better commit tracking and partially landed
-series. I have preliminary patches for automatically adding review URL
-annotations to commit messages. This will enable people to easily go
-from commit (message) to MozReview, without having to jump through
-Bugzilla. This also enables better commit tracking. If you e.g.
-perform complicated history rewriting, the review URL annotation will
-enable the MozReview server to better map previously-submitted commits
-to existing review requests. Partially landed series will enable
-commits to land as soon as they are reviewed, without having to wait
-on the entire series. It's my strong belief that if a commit is granted
-review, it should land as soon as possible. This helps prevent bit rot
-of ready-to-land commits. Landings also make people feel better because
-you feel like you've accomplished something. Positive feedback loops are
-good.</p>
-<p>Major work is also being done to overhaul the web UI. The commit series
-view (which is currently populated via XHR) will soon be generated on
-the server and served as part of the page. This should make pages load a
-bit faster. And, things should be prettier as well.</p>
-<p>And, of course, work is being invested into Autoland. Support for
-submitting pushes to Try landed a few weeks ago. Having Autoland
-actually land reviewed commits is on the radar.</p>
-<p>Exciting times are ahead. Please continue to provide feedback. If you
-see something, <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hacking-mozreview.html#filing-bugs">say something</a>.</p>]]></content>
   </entry>
 </feed>

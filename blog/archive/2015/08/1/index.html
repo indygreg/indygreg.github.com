@@ -51,6 +51,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="json-apis-on-hg.mozilla.org"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/08/18/json-apis-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to JSON APIs on hg.mozilla.org">JSON APIs on hg.mozilla.org</a></h2>
+  <small>August 18, 2015 at 04:00 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I added a feature to Mercurial 3.4 that exposes JSON from Mercurial's
+various <a href="https://hg.mozilla.org/mozilla-central/help/hgweb">web APIs</a>.
+Unfortunately, due to the presence of legacy code on hg.mozilla.org
+providing similar functionality, we weren't able to deploy this
+feature to hg.mozilla.org when we deployed Mercurial 3.4 several weeks
+ago.</p>
+<p>I'm pleased to announce that as of today, JSON is now exposed from
+hg.mozilla.org!</p>
+<p>To access JSON output, simply add <strong>json-</strong> to the <em>command</em> name
+in URLs. e.g. instead of
+<a href="https://hg.mozilla.org/mozilla-central/rev/de7aa6b08234">https://hg.mozilla.org/mozilla-central/rev/de7aa6b08234</a>
+use <a href="https://hg.mozilla.org/mozilla-central/json-rev/de7aa6b08234">https://hg.mozilla.org/mozilla-central/json-rev/de7aa6b08234</a>.
+The full list of web commands, URL patterns, and their parameters are
+<a href="https://hg.mozilla.org/mozilla-central/help/hgweb">documented</a> in
+the <em>hgweb</em> help topic.</p>
+<p>Not all web commands support JSON output yet. Not all web commands
+expose all data available to them. If there is data you need but isn't
+exposed, please
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>
+and I'll see what I can do.</p>
+<p>Thanks go to Steven MacLeod for
+<a href="https://reviewboard.mozilla.org/r/15617/">reviewing</a> the rather large
+series it took to make this happen.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="moz.build-metadata-on-hg.mozilla.org"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to moz.build metadata on hg.mozilla.org">moz.build metadata on hg.mozilla.org</a></h2>
   <small>August 04, 2015 at 07:55 PM | categories: 

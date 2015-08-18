@@ -51,6 +51,201 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="utilizing-github-for-firefox-development"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/12/utilizing-github-for-firefox-development" rel="bookmark" title="Permanent Link to Utilizing GitHub for Firefox Development">Utilizing GitHub for Firefox Development</a></h2>
+  <small>January 12, 2015 at 11:00 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/12/utilizing-github-for-firefox-development#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Recent posts on my blog have talked about the
+<a href="/blog/2015/01/09/firefox-contribution-process-debt/">difficulty submitting changes to Firefox</a>
+and the <a href="/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github/">rise of GitHub</a>.
+I encourage you to stop reading this post and read them now if you
+haven't already.</p>
+<p>As I was looking at the
+<a href="/blog/2015/01/09/firefox-contribution-process-debt/#list-of-process-debt">list of process debt contributing to Firefox</a>,
+one thought kept creeping into my mind: <strong>how many of these items go
+away if we utilize GitHub?</strong></p>
+<p>As I mentioned in these two posts, GitHub's popularity has essentially
+commoditized many items on this list, especially the parts around source
+control and submitting patches for consideration (just fork and open a
+pull request). It seems that everyone these days is on GitHub and asking
+people to use GitHub to send changes to Firefox would almost certainly
+be well-received by contributors and even Mozilla staff.</p>
+<p>Here's what I think: <strong>Mozilla should utilize GitHub for Firefox
+development.</strong></p>
+<p>The verb in that sentence is important: I purposefully said <em>utilize</em>
+and not something like <em>switch to</em>. <strong>To switch or not to switch to
+GitHub for Firefox development is a false dillemma and a logical
+fallacy.</strong> So is the question about <em>switching to Git</em>. As I explain later,
+there is a spectrum of options available and <em>switching</em> or <em>not
+switching</em> are on the extremes. <em>Utilize</em> doesn't preclude a binary
+<em>switch</em> or <em>don't switch</em> outcome, but it does keep an array of options
+on the table for consideration.</p>
+<p>So, how should Mozilla <em>utilize</em> GitHub for Firefox development?</p>
+<p>I think that insisting people establish Bugzilla accounts and upload
+patches to Bugzilla/bugs is an anitquated practice in desperate need of
+an overhaul. I think that if someone has written code, they should be
+able to essentially throw it over a wall to initiate the change process.
+They should be able to do this in a manner that incurs little to no
+<em>process debt</em>. We, Mozilla, should be able to take only code and
+integrate it into Firefox, assuming a trusted person - a module owner
+or peer - agrees and grants review. <strong>GitHub pull requests would
+facilitate a lesser-involved code contribution mechanism.</strong></p>
+<p>Another benefit of GitHub is that the web interface goes further than
+just code submission: they also have facilities for editing files. It's
+possible to
+<a href="https://help.github.com/articles/editing-files-in-another-user-s-repository/">edit a file in someone else's repository and create a pull request</a>
+direct from the web interface! My
+<a href="/blog/2015/01/09/firefox-contribution-process-debt/">post on process debt</a>
+began by comparing the process of <em>edit a wiki</em> versus the current
+Firefox change process. GitHub's web-based editing essentially reduces
+the gap to cosmetic differences. <strong>GitHub's ease of contributing purely
+via the browser would open the door to more contribution for
+lesser-involved changes</strong> (sometimes referred to as <em>good first bugs</em>).</p>
+<p>To state it explicitly, <strong>I support the use of GitHub pull requests for
+submitting changes to Firefox</strong>.</p>
+<p>Now, there are some concerns and challenges about doing this. These
+include:</p>
+<ul>
+<li>Fragmentation of code review and tracking could be problematic for
+  Mozilla staff and other highly-active individuals.</li>
+<li>GitHub can lose some parts of code review after rebasing and force
+  pushes. <strong>Edit: Comments below indicate this is no longer a problem.
+  Great!</strong></li>
+<li>You can only assign 1 reviewer per pull request.</li>
+<li>GitHub sends an email/notification per review comment. This can be
+  extremely annoying for some mail clients.</li>
+<li>GitHub doesn't have a mechanism for dealing with security bugs.</li>
+<li>Data sovereignty concerns (all data hosted on GitHub and subject to
+  their data retention and access policies). Their API has query limits,
+  which can limit machine use somewhat.</li>
+<li>GitHub's model favors merges over rebases. Merges have a number of
+  downsides, especially for large projects, and we strongly prefer to
+  maintain our mostly-linear Firefox repository history.</li>
+<li>GitHub's model favors appending commits rather than rewriting commits.
+  (This is due to Git badness when you force push.) Mozilla favors a
+  world where the final commit is what's reviewed and landed.</li>
+<li>Git != Mercurial. Firefox is canonically stored in Mercurial. There is
+  some impedence mismatch here. But nothing tools can't overcome.</li>
+<li>The <em>Merge Pull Request</em> button is almost completely useless for
+  Firefox's existing and future workflows. This partially invalidates
+  other niceness the pure GitHub pull request workflow buys you.</li>
+<li>Everything is lumped into a single bucket. We lose component-level
+  subscriptions, making following harder.</li>
+<li>Following the entire Firefox project on GitHub would produce an
+  overwhelming fire hose of data.</li>
+<li>We don't control GitHub and our options for extending it to extract
+  even more process optimization are limited to what their APIs support
+  and what they choose to implement.</li>
+<li>We are at the whim of GitHub should they ever change a feature or API.</li>
+<li>See also <a href="https://github.com/servo/servo/wiki/Github-challenges">Servo's list of challenges</a>.</li>
+</ul>
+<p>Some of these issues can be overcome by tools and automation (which I
+would happily build in my capacity as a Developer Productivity Engineer
+at Mozilla). Others are more fundamental and seemingly would require
+buy-in and/or support from very senior Mozillians.</p>
+<p>If Mozilla were to go forward utilizing GitHub pull requests for
+Firefox, I think it should be done incrementally rather than going
+all-in and attempting the entire GitHub workflow from the start.
+Although, this would mean diverging from GitHub's well-known practices,
+which would <em>increase</em> process debt from the GitHub base level. I don't
+like that. But I think it is a step in the right direction. Partial
+reduction in process debt is better than no reduction.</p>
+<p>What do I mean by <em>incrementally</em> start accepting pull requests? Well,
+<strong>I don't think code review should initially be conducted on GitHub</strong>.
+When you look at the above list of concerns, many of them are around code
+review and interacting with pull requests. I think there's too much
+badness and risk there to make me comfortable about <em>moving</em> things to
+GitHub and giving GitHub exclusive domain over this important data,
+at least initially.</p>
+<p>But if code review isn't conducted on GitHub, what's the value of a pull
+request? <strong>A pull request would be a well-defined and well-understood
+mechanism for importing data into Mozilla's systems</strong>. For example,
+submitting a pull request would automatically result in the creation
+of a review request on
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview</a>
+or even a bug/attachment/review on Bugzilla.
+This would allow people to send code to Mozilla easily while
+simultaneously allowing Mozillians to use familiar tools and processes
+without the aforementioned concerns with GitHub. That appears to be
+win-win.</p>
+<p>Once we have a simple mechanism in place for turning pull requests into
+MozReview's review requests, we can start playing around with the
+syncing of code review activity between Mozilla and GitHub so review
+activity on either system results in cross-posting. There is precedent
+for this today. <a href="http://gerrithub.io/">GerritHub</a> has bi-directional
+syncing of code review activity between GitHub and Gerrit. Facebook also
+does something similar, syncing data between their internal Phabricator
+instance. Mozilla to GitHub sync would not be difficult: we control all
+those systems and I'm pretty confident in our ability to make a GitHub API
+call when a MozReview review request is updated (we already make
+Bugzilla API calls, so we know this works). GitHub to Mozilla is a bit more
+difficult. But, others have done it: I'm confident we can too.</p>
+<p>I see bi-directional syncing of GitHub pull request / code review data
+between GitHub and Mozilla as achievable and relatively free from
+controversy. I think we should experiment with this sometime in 2015,
+probably in Q2, once MozReview is in better condition to <em>host</em> GitHub
+pull requests. Although, supporting Git in MozReview is on my Q1 goals
+list, so maybe I sneak this into Q1. Time will tell.</p>
+<p>At this time, I believe using GitHub for the ingestion of proposed
+Firefox commits into existing Mozilla systems should be the limit of
+Firefox's GitHub presence, at least as far as day-to-day development
+goes. If other groups want to use GitHub more actively and they find a
+way to make that work while placating everyone who cares, power to them.
+But I think moving the pendulum any further toward GitHub - including
+things like making GitHub the exclusive location for code review data,
+utilizing GitHub Issues, and making Git[Hub] the canonical Firefox
+repository - remain difficult and controverial propositions. I believe
+each of these to be medium to high cost and risk with low to medium
+reward. I believe it would be wise to defer these questions until we
+have data about the value of GitHub pull requests for Firefox
+development.</p>
+<p>To summarize, I propose using GitHub pull requests as an alternate,
+supported front end to the code contribution pathway. We would eliminate
+a lot of <em>process debt</em> for non-Mozillians by supporting a known process.
+Mozillians on the review and code submission side of the process
+shouldn't have to worry about change because, well, it shouldn't matter
+if a commit came from GitHub or elsewhere: it will all appear mostly
+the same. I'm not saying that we will never expand our utilization
+of GitHub for Firefox development beyond this scope. But I am saying
+that I don't think it would be prudent to do so today.</p>
+<p>And that's how and why I think Mozilla should utilize GitHub for Firefox
+development.</p>
+<h2>Addendum</h2>
+<p>While I'm here, <strong>it's important to note that GitHub does not and will
+likely never solve many items from our list of Firefox contribution
+process debt</strong>. GitHub is not a build system nor a tool for running
+and analyzing code and tests. We still have many, many deficiencies
+and usability concerns here. We have historically under-invested in
+this area and utilizing GitHub in any capacity won't address these
+other issues. In addition, <strong>Firefox is a magnitude larger and more
+complex than the vast majority of projects on GitHub. We will always
+be burdened with the cost of our success - of coping with and
+maintaining the additional complexity associated with that scale</strong>.
+Firefox is <em>at least</em> the 0.1%. There's a good chance GitHub and/or many
+of the amazing services associated with it (like Travis-CI) won't scale to
+our needs. I'd love to be proved wrong here, but the reality is
+supporting a marginal use case like Firefox likely isn't at the top of
+goals for GitHub and related organizations unless it is in their
+business interest (read: financial interest) to do so. One can hope that
+as these companies try to capture more of the enterprise market via
+offerings such as GitHub Enterprise that they invest in the features
+and scalability that large projects and organizations like Mozilla and
+Firefox need.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/12/utilizing-github-for-firefox-development#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="code-first-and-the-rise-of-the-dvcs-and-github"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github" rel="bookmark" title="Permanent Link to Code First and the Rise of the DVCS and GitHub">Code First and the Rise of the DVCS and GitHub</a></h2>
   <small>January 10, 2015 at 12:35 PM | categories: 
@@ -502,169 +697,6 @@ rollback completed
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="firefox-source-documentation-versus-mdn"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/30/firefox-source-documentation-versus-mdn" rel="bookmark" title="Permanent Link to Firefox Source Documentation Versus MDN">Firefox Source Documentation Versus MDN</a></h2>
-  <small>December 30, 2014 at 12:00 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/30/firefox-source-documentation-versus-mdn#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The Firefox source tree has had in-tree documentation powered by
-<a href="https://gecko.readthedocs.org/en/latest/">Sphinx</a> for a while now.
-However, its canonical home has been a
-<a href="https://ci.mozilla.org/job/mozilla-central-docs/Tree_Documentation/index.html">hard-to-find URL on ci.mozilla.org</a>.
-I finally <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1115278">scratched an itch</a>
-and wrote patches to enable the docs to be built easier. So,
-starting today, the docs are now available on Read the Docs at
-<a href="https://gecko.readthedocs.org/en/latest/">https://gecko.readthedocs.org/en/latest/</a>!</p>
-<p>While I was scratching itches, I decided to play around with another
-documentation-related task: automatic API documentation. I have a
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1115452">limited proof-of-concept for automatically generating XPIDL interface
-documentation</a>.
-Essentially, we use the in-tree XPIDL parser to parse <em>.idl</em> files and
-turn the Python object representation into reStructured Text, which Sphinx
-parses and renders into pretty HTML for us. The concept can be applied to any
-source input, such as WebIDL and JavaScript code. I chose XPIDL because a
-parser is readily available and I know Joshua Cranmer has expressed
-interest in automatic XPIDL documentation generation. (As an aside,
-JavaScript tooling that supports the flavor of JavaScript used
-internally by Firefox is very limited. We need to prioritize removing
-Mozilla extensions to JavaScript if we ever want to start using awesome
-tooling that exists in the wild.)</p>
-<p>As I was implementing this proof-of-concept, I was looking at XPIDL
-interface documentation on MDN to see how things are presented today.
-After perusing MDN for a bit and comparing its content against what I
-was able to derive from the source, something became extremely clear:
-MDN has significantly more content than the canonical source code.
-Obviously the <em>.idl</em> files document the interfaces, their attributes,
-their methods, and all the types and names in between: that's the very
-definition of an IDL. But what was generally missing from the source
-code is comments. <em>What does this method do?</em> <em>What is each argument
-used for?</em> Things like example usage are almost non-existent in the
-source code. MDN, by contrast, typically has no shortage of all these
-things.</p>
-<p>As I was grasping the reality that MDN has a lot of out-of-tree
-supplemental content, I started asking myself <em>what's the point
-in automatic API docs? Is manual document curation on MDN good
-enough?</em> <strong>This question has sort of been tearing me apart.</strong> Let me try
-to explain.</p>
-<p>MDN is an amazing site. You can tell a lot of love has gone into making
-the experience and much of its content excellent. However, the content
-around the technical implementation / internals of Gecko/Firefox generally
-sucks. There are some exceptions to the rule. But I find that things like
-internal API documentation to be lackluster on average. It is rare for
-me to find documentation that is up-to-date and useful. It is common to
-find documentation that is partial and incomplete. It is very common to
-find things like JSMs not documented at all. <strong>I think this is a
-problem.</strong> I argue the lack of good documentation raises the barrier to
-contributing. <strong>Furthermore, writing and maintaining excellent
-low-level documentation is too much effort.</strong></p>
-<p><strong>My current thoughts on API and low-level documentation are that I
-question the value of this documentation existing on MDN.</strong>
-Specifically, I think things like JSM API docs
-(like <a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Sqlite.jsm">Sqlite.jsm</a>)
-and XPIDL interface documentation (like
-<a href="https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XPCOM/Reference/Interface/nsIFile">nsIFile</a>)
-don't belong on MDN - at least not in wiki form. <strong>Instead, I believe
-that documentation like this should live in and be derived from source
-code.</strong> Now, if the MDN site wants to expose this as read-only content
-or if MDN wants to enable the content to be annotated in a wiki-like
-manner (like how MSDN and PHP documentation allow user comments), that's
-perfectly fine by me. Here's why.</p>
-<p>First, if I must write separate-from-source-code API documentation on
-MDN (or any other platform for that matter), I must now perform extra
-work or forgo either the source code or external documentation. In other
-words, if I write in-line documentation in the source code, I must spend
-extra effort to essentially copy large parts of that to MDN. And I must
-continue to spend extra effort to keep updates in sync. If I don't
-want to spend that extra effort (I'm as lazy as you), I have to choose
-between documenting the source code or documenting MDN. If I choose the
-source code, people either have to read the source to read the docs
-(because we don't generate documentation from source today) or someone
-else has to duplicate the docs (overall more work). If I choose to
-document on MDN, then people reading the source code (probably because
-they want to change it) are deprived of additional context useful to
-make that process easier. <strong>This is a lose-lose scenario and it is a
-general waste of expensive people time.</strong></p>
-<p>Second, I prefer having API documentation derived from source code
-because I feel it results in more accurate documentation that has the
-higher liklihood of remaining accurate and in sync with reality. Think
-about it: when was the last time you reviewed changes to a JSM and
-searched MDN for content that needed updated? I'm sure there are some
-pockets of people that do this right. But I've written dozens of
-JavaScript patches for Firefox and I'm pretty sure I've been asked to
-update <em>external</em> documentation less than 5% of the time. Inline source
-documentation, however, is another matter entirely. Because the
-documentation is often proximal to code that changed, I frequently a) go
-ahead and make the documentation changes because everything is right there
-and it's low overhead to change as I adjust the source b) am asked to
-update in-line docs when a reviewer sees I forgot to. Generally
-speaking, things tend to stay in sync and fewer bugs form when
-everything is proximally located. By fragmenting documentation between
-source code and external services like MDN, we increase the liklihood
-that things become out of sync. This results in misleading information
-and increases the barriers to contribution and change. In other words,
-developer inefficiency.</p>
-<p>Third, having API documentation derived from source code opens up
-numerous possibilities to further aid developer productivity and improve
-the usefullness of documentation. For example:</p>
-<ul>
-<li>We can parse <em>@param</em> references out of documentation and issue
-  warnings/errors when documentation doesn't match the AST.</li>
-<li>We can issue warnings when code isn't documented.</li>
-<li>We can include in-line examples and execute and verify these as part
-  of builds/tests.</li>
-<li>We can more easily cross-reference APIs because everything is
-  documented consistently. We can also issue warnings when
-  cross-references no longer work.</li>
-<li>We can derive files so editors and IDEs can display in-line API docs
-  as you type or can complete functions as you type, allowing people to
-  code faster.</li>
-</ul>
-<p>While we don't generally do these things today, they are all within the
-realm of possibility. Sphinx supports doing many of these things. Stop
-reading and run <em>mach build-docs</em> right now and look at the warnings
-from malformed documentation. I don't know about you, but I love when my
-tools tell me when I'm creating a burden for others.</p>
-<p>There really is so much more we could be doing with source-derived
-documentation. And I argue managing it would take less overall work and
-would result in higher quality documentation.</p>
-<p>But the world of source-derived documentation isn't all roses. MDN has a
-very important advantage: it's a wiki. Just log in, edit in a WYSIWYG,
-and save. It's so easy. The moment we move to source-derived
-documentation, we introduce the massive Firefox source repository, the
-Firefox code review process, bugs/Bugzilla, version control overhead
-(although versioning documentation is another plus for source-derived
-documentation), landing changes, extra cost to Mozilla for building and
-running those checkins (even if they contain docs-only changes, sadly),
-and the time and cognitive burden associated with each one. That's a
-lot of extra work compared to clicking a few buttons on MDN! <strong>Moving
-documentation editing out of MDN and into the Firefox patch submission
-world would be a step in the wrong direction in terms of fostering
-contributions.</strong> Should someone really have to go through all that just
-to correct a typo? I have no doubt we'd lose contributors if we switched
-the change contribution process. And considering our lackluster track
-record of writing inline documentation in source, I don't feel great
-about losing <em>any</em> person who contributes documentation, no matter how
-small the contribution.</p>
-<p>And this is my dilemma: the existing source-or-MDN solution is sub-par
-for pretty much everything except ease of contribution on MDN and
-deploying nice tools (like Sphinx) to address the suckitude will result
-in more difficulty contributing. Both alternatives suck.</p>
-<p>I intend to continue this train of thought in a subsequent post. Stay
-tuned.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/30/firefox-source-documentation-versus-mdn#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/6">« Previous Page</a>
   --  
