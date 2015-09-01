@@ -7,12 +7,65 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-08-18T22:58:47Z</updated>
+  <updated>2015-09-01T22:01:50Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Serving Mercurial Clones from a CDN]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn" />
+    <id>http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn</id>
+    <updated>2015-09-01T15:00:00Z</updated>
+    <published>2015-09-01T15:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Serving Mercurial Clones from a CDN]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn"><![CDATA[<p>For the past few months, Mozilla has been
+<a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3/">serving Mercurial clones from Amazon S3</a>.
+We upload snapshots (called <em>bundles</em>) of large and/or high-traffic
+repositories to S3. We have a custom Mercurial extension on the
+client and server that knows how to exchange the URLs for these
+snapshots and to transparently use them to bootstrap a clone. The
+end result is drastically reduced Mercurial server load and faster
+clone times. The benefits are seriously ridiculous when you operate
+version control at scale.</p>
+<p><a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> is a CDN.
+You can easily configure it up to be backed by an S3 bucket. So
+we did.</p>
+<p><a href="https://hg.cdn.mozilla.net/">https://hg.cdn.mozilla.net/</a> is
+Mozilla's CDN for hosting Mercurial data. Currently it's just bundles to
+be used for cloning.</p>
+<p>As of today, if you
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">install the bundleclone Mercurial extension</a>
+and <em>hg clone</em> a repository on
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a> such as
+<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
+(<em>hg clone https://hg.mozilla.org/mozilla-central</em>), the CDN
+URLs will be preferred by default. (Previously we preferred S3 URLs
+that hit servers in Oregon, USA.)</p>
+<p><strong>This should result in clone time reductions for Mozillians not
+close to Oregon, USA</strong>, as the CloudFront CDN has servers all across
+the globe and your Mercurial clone should be bootstrapped from the
+closest and hopefully therefore fastest server to you.</p>
+<p>Unfortunately, you do need the the aforementioned <em>bundleclone</em>
+extension installed for this to work. But, this should only be
+temporary: I've
+<a href="https://mercurial.selenic.com/wiki/StaticBundlePlan">proposed</a>
+integrating this feature into the core of Mercurial so if a client
+talks to a server advertising pre-generated bundles the clone
+offload <em>just works</em>. I already have tentative buy-in from one
+Mercurial maintainer. So hopefully I can land this feature in
+Mercurial 3.6, which will be released November 1. After that,
+I imagine some high-traffic Mercurial servers (such as Bitbucket)
+will be very keen to deploy this so CPU load on their servers
+is drastically reduced.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -632,67 +685,5 @@ in a few months time.</p>
 <p>Finally, I would like to credit Augie Fackler for the
 <a href="http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/54872/focus=54872">original idea</a>
 for server-assisted bundle-based clones.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Firefox Mercurial Repository with CVS History]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history" />
-    <id>http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history</id>
-    <updated>2015-05-18T08:40:00Z</updated>
-    <published>2015-05-18T08:40:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Firefox Mercurial Repository with CVS History]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history"><![CDATA[<p>When Firefox made the switch from CVS to Mercurial in March 2007, the
-CVS history wasn't imported into Mercurial. There were good reasons for
-this at the time. But it's a decision that continues to have
-side-effects. I am surprised how often I hear of engineers wanting to
-access blame and commit info from commits now more than 9 years old!</p>
-<p>When individuals created a Git mirror of the Firefox repository a few
-years ago, they correctly decided that importing CVS history would be
-a good idea. They also correctly decided to combine the logically same
-but physically separate <em>release</em> and <em>integration</em> repositories into a
-unified Git repository. These are things we can't easily do to the
-canonical Mercurial repository because it would break SHA-1 hashes,
-breaking many systems, and it would require significant changes in
-process, among other reasons.</p>
-<p>While Firefox developers do have access to a single Firefox repository
-with full CVS history (the Git mirror), they still aren't satisfied.</p>
-<p>Running <em>git blame</em> (or <em>hg blame</em> for that matter) can be very
-expensive. For this reason, the blame interface is disabled on many
-web-based source viewers by default. On GitHub, some blame URLs for
-the Firefox repository time out and cause GitHub to display an error
-message. No matter how hard you try, you can't easily get blame results
-(running a local Git HTTP/HTML interface is still difficult compared to
-<em>hg serve</em>).</p>
-<p>Another reason developers aren't satisfied with the Git mirror is that
-Git's querying tools pale in comparison to Mercurial's. I've said it
-before and I'll say it again: Mercurial's revision sets and templates
-are incredibly useful features that enable advanced repository querying
-and reporting. Git's offerings come nowhere close. (I <em>really</em> wish Git
-would steal these awesome features from Mercurial.)</p>
-<p>Anyway, enough people were complaining about the lack of a Mercurial
-Firefox repository with full CVS history that I decided to create one.
-If you point your browsers or Mercurial clients to
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full">https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full</a>,
-you'll be able to access it.</p>
-<p>The process used for the conversion was the simplest possible: I used
-hg-git to convert the Git mirror back to Mercurial.</p>
-<p>Unlike the Git mirror, I didn't include all heads in this new
-repository. Instead, there is only mozilla-central's head (the current
-development tip). If I were doing this properly, I'd include all heads,
-like
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-aggregate">gecko-aggregate</a>.</p>
-<p>I'm well aware there are oddities in the Git mirror and they now
-exist in this new repository as well. My goal for this conversion was to
-deliver something: it wasn't a goal to deliver the most correct result
-possible.</p>
-<p>At this time, this repository should be considered an unstable science
-experiment. <strong>By no means should you rely on this repository.</strong> But if
-you find it useful, I'd appreciate hearing about it. If enough people
-ask, we could probably make this more official.</p>]]></content>
   </entry>
 </feed>

@@ -51,6 +51,77 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="on-multiple-patches-in-bugs"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/07/on-multiple-patches-in-bugs" rel="bookmark" title="Permanent Link to On Multiple Patches in Bugs">On Multiple Patches in Bugs</a></h2>
+  <small>January 07, 2014 at 04:40 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>There is a common practice at Mozilla for developing patches with
+multiple parts. Nothing wrong with that. In fact, I think it's a best
+practice:</p>
+<ul>
+<li>Smaller, self-contained patches are much easier to grok and
+  review than larger patches.</li>
+<li>Smaller patches can land as soon as they are reviewed. Larger patches
+  tend to linger and get bit rotted.</li>
+<li>Smaller patches contribute to a culture of being fast and nimble, not
+  slow and lethargic. This helps with developer confidence, community
+  contributions, etc.</li>
+</ul>
+<p>There are some downsides to multiple, smaller patches:</p>
+<ul>
+<li>The bigger picture is harder to understand until all parts of a
+  logical patch series are shared. (This can be alleviated through
+  commit messages or reviewer notes documenting future intentions.
+  And of course reviewers can delay review until they are comfortable.)</li>
+<li>There is more overhead to maintain the patches (rebasing, etc).
+  IMO the solutions provided by Mercurial and Git are sufficient.</li>
+<li>The process overhead for dealing with multiple patches and/or bugs
+  can be non-trivial. (I would like to think good tooling coupled with
+  continuous revisiting of policy decisions is sufficient to counteract
+  this.)</li>
+</ul>
+<p>Anyway, the prevailing practice at Mozilla seems to be that multiple
+patches related to the same logical change are attached to the same
+bug. I would like to challenge the effectiveness of this practice.</p>
+<p>Given:</p>
+<ul>
+<li>An individual commit to Firefox should be standalone and should not
+  rely on future commits to unbust it (i.e. bisects to any commit should
+  be safe).</li>
+<li>Bugzilla has no good mechanism to isolate review comments from
+  multiple attachments on the same bug, making deciphering simultaneous
+  reviews on multiple attachments difficult and frustrating. This leads
+  to review comments inevitably falling through the cracks and the
+  quality of code suffering.</li>
+<li>Reiterating the last point because it's important.</li>
+</ul>
+<p>I therefore argue that attaching multiple reviews to a single Bugzilla
+bug is not a best practice and it should be avoided if possible. If that
+means filing separate bugs for each patch, so be it. That process can
+be automated. Tools like
+<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">bzexport</a>
+already do it. Alternatively (and even better IMO), we ditch
+Bugzilla's code review interface (Splinter) and integrate something like
+<a href="https://reviewboard.allizom.org/">ReviewBoard</a> instead. We limit
+Bugzilla to tracking, high-level discussion, and metadata aggregation.
+Code review happens elsewhere, without all the clutter and chaos that
+Bugzilla brings to the table.</p>
+<p>Thoughts?</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/07/on-multiple-patches-in-bugs#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="python-package-providing-clients-for-mozilla-services"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/06/python-package-providing-clients-for-mozilla-services" rel="bookmark" title="Permanent Link to Python Package Providing Clients for Mozilla Services">Python Package Providing Clients for Mozilla Services</a></h2>
   <small>January 06, 2014 at 10:45 AM | categories: 
@@ -380,405 +451,6 @@ that's very doable. The sky is the limit.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="macbook-pro-firefox-build-times-comparison"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/11/05/macbook-pro-firefox-build-times-comparison" rel="bookmark" title="Permanent Link to MacBook Pro Firefox Build Times Comparison">MacBook Pro Firefox Build Times Comparison</a></h2>
-  <small>November 05, 2013 at 10:00 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2013/11/05/macbook-pro-firefox-build-times-comparison#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Many developers use MacBook Pros for day-to-day Firefox development.
-So, I thought it would be worthwhile to perform a comparison of
-Firefox build times for various models of MacBook Pros.</p>
-<h2>Test setup</h2>
-<p>The numbers in this post are obtained from 3 generations of MacBook
-Pros:</p>
-<ol>
-<li>
-<p>A 2011 Sandy Bridge 4 core x 2.3 GHz with 8 GB RAM and an aftermarket
-   SSD.</p>
-</li>
-<li>
-<p>A 2012 Ivy Bridge retina with 4 core x 2.6 GHz, 16 GB RAM, and a
-   factory SSD (or possibly flash storage).</p>
-</li>
-<li>
-<p>A 2013 Haswell retina with 4 core x 2.6 GHz, 16 GB RAM, and flash
-   storage.</p>
-</li>
-</ol>
-<p>All machines were running OS X 10.9 Mavericks and were using the
-Xcode 5.0.1 toolchain (<em>Xcode 5 clang: Apple LLVM version 5.0
-(clang-500.2.79) (based on LLVM 3.3svn)</em>) to build.</p>
-<p>The power settings prevented machine sleep and machines were plugged
-into A/C power during measuring. I did not use the machines while
-obtaining measurements.</p>
-<p>The 2012 and 2013 machines were very vanilla OS installs. However,
-the 2011 machine was my primary work computer and may have had a
-few background services running and may have been slower due to
-normal wear and tear. The 2012 machine was a loaner machine from
-IT and has an unknown history.</p>
-<p>All data was obtained from mozilla-central revision d4a27d8eda28.</p>
-<p>The mozconfig used contained:</p>
-<p>export MOZ_PSEUDO_DERECURSE=1
-  mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-firefox.noindex</p>
-<p>Please note that the objdir name ends with <em>.noindex</em> to prevent Finder
-from indexing build files.</p>
-<p>I performed all tests multiple times and used the fastest time. I used
-<em>time</em> command for obtaining measurements of wall, user, and system
-time.</p>
-<h2>Results</h2>
-<h3>Configure Times</h3>
-<p>The result of <em>mach configure</em> is as follows:</p>
-<table border="1">
-  <tr>
-    <th>Machine</th>
-    <th>Wall time</th>
-    <th>User time</th>
-    <th>System time</th>
-  </tr>
-  <tr>
-    <td>2011</td>
-    <td>29.748</td>
-    <td>17.921</td>
-    <td>11.644</td>
-  </tr>
-  <tr>
-    <td>2012</td>
-    <td>26.765</td>
-    <td>15.942</td>
-    <td>10.501</td>
-  </tr>
-  <tr>
-    <td>2013</td>
-    <td>21.581</td>
-    <td>12.597</td>
-    <td>8.595</td>
-  </tr>
-</table>
-
-<h3>Clobber build no ccache</h3>
-<p><em>mach build</em> was performed <em>after</em> running <em>mach configure</em>. ccache was
-not enabled.</p>
-<table border="1">
-  <tr>
-    <th>Machine</th>
-    <th>Wall time</th>
-    <th>User time</th>
-    <th>System time</th>
-    <th>Total CPU time</th>
-  </tr>
-  <tr>
-    <td>2011</td>
-    <td>22:29 (1349)</td>
-    <td>145:35 (8735)</td>
-    <td>12:03 (723)</td>
-    <td>157:38 (9458)</td>
-  </tr>
-  <tr>
-    <td>2012</td>
-    <td>15:00 (900)</td>
-    <td>94:18 (5658)</td>
-    <td>8:14 (494)</td>
-    <td>102:32 (6152)</td>
-  </tr>
-  <tr>
-    <td>2013</td>
-    <td>11:13 (673)</td>
-    <td>69:55 (4195)</td>
-    <td>6:04 (364)</td>
-    <td>75:59 (4559)</td>
-  </tr>
-</table>
-
-<h3>Clobber build with empty ccache</h3>
-<p><em>mach build</em> was performed <em>after</em> running <em>mach configure</em>. ccache was
-enabled. The ccache ccache was cleared before running <em>mach configure</em>.</p>
-<table border="1">
-  <tr>
-    <th>Machine</th>
-    <th>Wall time</th>
-    <th>User time</th>
-    <th>System time</th>
-    <th>Total CPU time</th>
-  </tr>
-  <tr>
-    <td>2011</td>
-    <td>25:57 (1557)</td>
-    <td>161:30 (9690)</td>
-    <td>18:21 (1101)</td>
-    <td>179:51 (10791)</td>
-  </tr>
-  <tr>
-    <td>2012</td>
-    <td>16:58 (1018)</td>
-    <td>104:50 (6290)</td>
-    <td>12:32 (752)</td>
-    <td>117:22 (7042)</td>
-  </tr>
-  <tr>
-    <td>2013</td>
-    <td>12:59 (779)</td>
-    <td>79:51 (4791)</td>
-    <td>9:24 (564)</td>
-    <td>89:15 (5355)</td>
-  </tr>
-</table>
-
-<h3>Clobber build with populated ccache</h3>
-<p><em>mach build</em> was performed after running <em>mach configure</em>. ccache was
-enabled and the ccache was populated with the results of a prior build.
-In theory, all compiler invocations should be serviced by ccache
-entries.</p>
-<p>This measure is a very crude way to measure how fast clobber builds
-would be if compiler invocations were nearly instantaneous.</p>
-<table border="1">
-  <tr>
-    <th>Machine</th>
-    <th>Wall time</th>
-    <th>User time</th>
-    <th>System time</th>
-  </tr>
-  <tr>
-    <td>2011</td>
-    <td>3:59 (239)</td>
-    <td>8:04 (484)</td>
-    <td>3:21 (201)(</td>
-  </tr>
-  <tr>
-    <td>2012</td>
-    <td>3:11 (191)</td>
-    <td>6:45 (405)</td>
-    <td>2:53 (173)</td>
-  </tr>
-  <tr>
-    <td>2013</td>
-    <td>2:31 (151)</td>
-    <td>5:22 (322)</td>
-    <td>2:12 (132)</td>
-  </tr>
-</table>
-
-<h3>No-op builds</h3>
-<p><em>mach build</em> was performed on a tree that was already built.</p>
-<table border="1">
-  <tr>
-    <th>Machine</th>
-    <th>Wall time</th>
-    <th>User time</th>
-    <th>System time</th>
-  </tr>
-  <tr>
-    <td>2011</td>
-    <td>1:58 (118)</td>
-    <td>2:25 (145)</td>
-    <td>0:41 (41)</td>
-  </tr>
-  <tr>
-    <td>2012</td>
-    <td>1:42 (102)</td>
-    <td>2:02 (122)</td>
-    <td>0:37 (37)</td>
-  </tr>
-  <tr>
-    <td>2013</td>
-    <td>1:20 (80)</td>
-    <td>1:39 (99)</td>
-    <td>0:28 (28)</td>
-  </tr>
-</table>
-
-<h3>binaries no-op</h3>
-<p><em>mach build binaries</em> was performed on a fully built tree. This results
-in nothing being executed. It's a way to test the overhead of the
-<em>binaries</em> make target.</p>
-<table border="1">
-  <tr>
-    <th>Machine</th>
-    <th>Wall time</th>
-    <th>User time</th>
-    <th>System time</th>
-  </tr>
-  <tr>
-    <td>2011</td>
-    <td>4.21</td>
-    <td>4.38</td>
-    <td>0.92</td>
-  </tr>
-  <tr>
-    <td>2012</td>
-    <td>3.17</td>
-    <td>3.37</td>
-    <td>0.71</td>
-  </tr>
-  <tr>
-    <td>2013</td>
-    <td>2.67</td>
-    <td>2.75</td>
-    <td>0.56</td>
-  </tr>
-</table>
-
-<h3>binaries touch single .cpp</h3>
-<p><em>mach build binaries</em> was performed on a fully built tree after touching
-the file <em>netwerk/dns/nsHostResolver.cpp</em>. ccache was enabled but
-cleared before running this test. This test simulates common C++
-developer workflow of changing C++ and recompiling.</p>
-<table border="1">
-  <tr>
-    <th>Machine</th>
-    <th>Wall time</th>
-    <th>User time</th>
-    <th>System time</th>
-  </tr>
-  <tr>
-    <td>2011</td>
-    <td>12.89</td>
-    <td>13.88</td>
-    <td>1.96</td>
-  </tr>
-  <tr>
-    <td>2012</td>
-    <td>10.82</td>
-    <td>11.63</td>
-    <td>1.78</td>
-  </tr>
-  <tr>
-    <td>2013</td>
-    <td>8.57</td>
-    <td>9.29</td>
-    <td>1.23</td>
-  </tr>
-</table>
-
-<h3>Tier times</h3>
-<p>The times of each build system <em>tier</em> were measured on the 2013 Haswell
-MacBook Pro. These timings were obtained out of curiosity to help
-isolate the impact of different parts of the build. ccache was not
-enabled for these tests.</p>
-<table border="1">
-  <tr>
-    <th>Action</th>
-    <th>Wall time</th>
-    <th>User time</th>
-    <th>System time</th>
-    <th>Total CPU time</th>
-  </tr>
-  <tr>
-    <td>export clobber</td>
-    <td>15.75</td>
-    <td>66.11</td>
-    <td>11.33</td>
-    <td>77.44</td>
-  </tr>
-  <tr>
-    <td>compile clobber</td>
-    <td>9:01 (541)</td>
-    <td>64:58 (3898)</td>
-    <td>5:08 (308)</td>
-    <td>70:06 (4206)</td>
-  </tr>
-  <tr>
-    <td>libs clobber</td>
-    <td>1:34 (94)</td>
-    <td>2:15 (135)</td>
-    <td>0:39 (39)</td>
-    <td>2:54 (174)</td>
-  </tr>
-  <tr>
-    <td>tools clobber</td>
-    <td>9.33</td>
-    <td>13.41</td>
-    <td>2.48</td>
-    <td>15.89</td>
-  </tr>
-  <tr>
-    <td>export no-op</td>
-    <td>3.01</td>
-    <td>9.72</td>
-    <td>3.47</td>
-    <td>13.19</td>
-  </tr>
-  <tr>
-    <td>compile no-op</td>
-    <td>3.18</td>
-    <td>18.02</td>
-    <td>2.64</td>
-    <td>20.66</td>
-  </tr>
-  <tr>
-    <td>libs no-op</td>
-    <td>58.2</td>
-    <td>46.9</td>
-    <td>13.4</td>
-    <td>60.3</td>
-  </tr>
-  <tr>
-    <td>tools no-op</td>
-    <td>8.82</td>
-    <td>12.68</td>
-    <td>1.72</td>
-    <td>14.40</td>
-  </tr>
-</table>
-
-<h2>Observations and conclusions</h2>
-<p>The data speaks for itself: <strong>the 2013 Haswell MacBook Pro is
-significantly faster than its predecessors.</strong> It clocks in at 2x faster
-than the benchmarked 2011 Sandy Bridge model (keep in mind the 300 MHz
-base clock difference) and is ~34% faster than the 2012 Ivy Bridge (at
-similar clock speed). Personally, I was surprised by this. I was
-expecting speed improvements over Ivy Bridge, but not 34%.</p>
-<p>It should go without saying: <strong>if you have the opportunity to upgrade
-to a new, Haswell-based machine: do it.</strong> If possible, purchase
-the upgrade to a 2.6 GHz CPU, as it contains ~13% more MHz than the
-base 2.3 GHz model: this will make a measurable difference in build
-times.</p>
-<p>It's worth noting the increased efficiency of Haswell over its
-predecessors. The total CPU time required to build decreased from ~158
-minutes to ~103 minutes to 76 minutes! That 76 minute number is worth
-highlighting because it means if we get 100% CPU saturation during
-builds, we'll be able to build the tree in under 10 wall time minutes!</p>
-<p>I hadn't performed crude benchmarks of high-level build system actions
-since the <em>MOZ_PSEUDO_DERECURSE</em> work landed and I wanted to use the
-opportunity of this hardware comparison to grab some numbers.</p>
-<p>The overhead of ccache continues to surprise me. On the 2013
-machine, enabling ccache increased the wall time of a clobber build by
-1:46 and added 13:16 of CPU time. This is an increase of 16% and 17%,
-respectively.</p>
-<p>It's worth highlighting just how much time is spent compiling C/C++. In
-our artificial tier measuring results, our clobber build time was ~660
-wall time seconds (11 minutes) and used ~4473s CPU time (74:33). Of
-this, 9:01 wall time and 70:06 CPU time was spent compiling C/C++. This
-represents ~82% wall time and ~94% CPU time! Please note this does not
-include linking. <strong>Anything we can do to decrease the CPU time used by
-the compiler will make the build faster.</strong></p>
-<p>I also found it interesting to note variances in obtained times. Even on
-my brand new 2013 Haswell MacBook Pro where I know there aren't many
-background processes running, wall times could vary significantly. I
-<em>think</em> I isolated it to CPU bursting and heat issues. If I wait a few
-minutes between CPU intensive tests, results are pretty consistent. But
-if I perform CPU intensive tests back-to-back, the run times often vary.
-The only other thing coming into play could be page caching or
-filesystem indexing. I accounted for the latter by disabling Finder
-on the object directory. And, I'd like to think that flash storage is
-fast enough to remove I/O latency from the equation. Who knows. At the
-end of the day, laptops aren't servers and OS X is a consumer OS, so I
-don't expect ultra consistency.</p>
-<p>Finally, I want to restate just how fast Haswell is. If you have the
-opportunity to upgrade, do it.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/05/macbook-pro-firefox-build-times-comparison#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../14">« Previous Page</a>
   --  

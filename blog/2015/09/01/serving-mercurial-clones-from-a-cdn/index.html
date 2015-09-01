@@ -1,0 +1,175 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Serving Mercurial Clones from a CDN
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="serving-mercurial-clones-from-a-cdn"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/09/01/serving-mercurial-clones-from-a-cdn" rel="bookmark" title="Permanent Link to Serving Mercurial Clones from a CDN">Serving Mercurial Clones from a CDN</a></h2>
+  <small>September 01, 2015 at 03:00 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>For the past few months, Mozilla has been
+<a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3/">serving Mercurial clones from Amazon S3</a>.
+We upload snapshots (called <em>bundles</em>) of large and/or high-traffic
+repositories to S3. We have a custom Mercurial extension on the
+client and server that knows how to exchange the URLs for these
+snapshots and to transparently use them to bootstrap a clone. The
+end result is drastically reduced Mercurial server load and faster
+clone times. The benefits are seriously ridiculous when you operate
+version control at scale.</p>
+<p><a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> is a CDN.
+You can easily configure it up to be backed by an S3 bucket. So
+we did.</p>
+<p><a href="https://hg.cdn.mozilla.net/">https://hg.cdn.mozilla.net/</a> is
+Mozilla's CDN for hosting Mercurial data. Currently it's just bundles to
+be used for cloning.</p>
+<p>As of today, if you
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">install the bundleclone Mercurial extension</a>
+and <em>hg clone</em> a repository on
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a> such as
+<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
+(<em>hg clone https://hg.mozilla.org/mozilla-central</em>), the CDN
+URLs will be preferred by default. (Previously we preferred S3 URLs
+that hit servers in Oregon, USA.)</p>
+<p><strong>This should result in clone time reductions for Mozillians not
+close to Oregon, USA</strong>, as the CloudFront CDN has servers all across
+the globe and your Mercurial clone should be bootstrapped from the
+closest and hopefully therefore fastest server to you.</p>
+<p>Unfortunately, you do need the the aforementioned <em>bundleclone</em>
+extension installed for this to work. But, this should only be
+temporary: I've
+<a href="https://mercurial.selenic.com/wiki/StaticBundlePlan">proposed</a>
+integrating this feature into the core of Mercurial so if a client
+talks to a server advertising pre-generated bundles the clone
+offload <em>just works</em>. I already have tentative buy-in from one
+Mercurial maintainer. So hopefully I can land this feature in
+Mercurial 3.6, which will be released November 1. After that,
+I imagine some high-traffic Mercurial servers (such as Bitbucket)
+will be very keen to deploy this so CPU load on their servers
+is drastically reduced.</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozreview">MozReview</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2015 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

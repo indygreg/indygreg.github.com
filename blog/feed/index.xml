@@ -10,10 +10,58 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 18 Aug 2015 22:58:47 GMT</pubDate>
+    <pubDate>Tue, 01 Sep 2015 22:01:50 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Serving Mercurial Clones from a CDN</title>
+      <link>http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn</link>
+      <pubDate>Tue, 01 Sep 2015 15:00:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn</guid>
+      <description>Serving Mercurial Clones from a CDN</description>
+      <content:encoded><![CDATA[<p>For the past few months, Mozilla has been
+<a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3/">serving Mercurial clones from Amazon S3</a>.
+We upload snapshots (called <em>bundles</em>) of large and/or high-traffic
+repositories to S3. We have a custom Mercurial extension on the
+client and server that knows how to exchange the URLs for these
+snapshots and to transparently use them to bootstrap a clone. The
+end result is drastically reduced Mercurial server load and faster
+clone times. The benefits are seriously ridiculous when you operate
+version control at scale.</p>
+<p><a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> is a CDN.
+You can easily configure it up to be backed by an S3 bucket. So
+we did.</p>
+<p><a href="https://hg.cdn.mozilla.net/">https://hg.cdn.mozilla.net/</a> is
+Mozilla's CDN for hosting Mercurial data. Currently it's just bundles to
+be used for cloning.</p>
+<p>As of today, if you
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">install the bundleclone Mercurial extension</a>
+and <em>hg clone</em> a repository on
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a> such as
+<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
+(<em>hg clone https://hg.mozilla.org/mozilla-central</em>), the CDN
+URLs will be preferred by default. (Previously we preferred S3 URLs
+that hit servers in Oregon, USA.)</p>
+<p><strong>This should result in clone time reductions for Mozillians not
+close to Oregon, USA</strong>, as the CloudFront CDN has servers all across
+the globe and your Mercurial clone should be bootstrapped from the
+closest and hopefully therefore fastest server to you.</p>
+<p>Unfortunately, you do need the the aforementioned <em>bundleclone</em>
+extension installed for this to work. But, this should only be
+temporary: I've
+<a href="https://mercurial.selenic.com/wiki/StaticBundlePlan">proposed</a>
+integrating this feature into the core of Mercurial so if a client
+talks to a server advertising pre-generated bundles the clone
+offload <em>just works</em>. I already have tentative buy-in from one
+Mercurial maintainer. So hopefully I can land this feature in
+Mercurial 3.6, which will be released November 1. After that,
+I imagine some high-traffic Mercurial servers (such as Bitbucket)
+will be very keen to deploy this so CPU load on their servers
+is drastically reduced.</p>]]></content:encoded>
+    </item>
     <item>
       <title>JSON APIs on hg.mozilla.org</title>
       <link>http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org</link>
@@ -503,48 +551,6 @@ This will enable us to more aggressively drop backwards compatibility
 that more people are running modern and hopefully better versions of the
 client code. This should translate to moving faster and a better
 experience for everyone.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Changeset Metadata on hg.mozilla.org</title>
-      <link>http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org</link>
-      <pubDate>Thu, 04 Jun 2015 13:55:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org</guid>
-      <description>Changeset Metadata on hg.mozilla.org</description>
-      <content:encoded><![CDATA[<p>Just a few minutes ago, I deployed some updates to
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a> to display more
-metadata on changeset pages. See
-<a href="https://hg.mozilla.org/mozilla-central/rev/4b69a62d1905">4b69a62d1905</a>,
-<a href="https://hg.mozilla.org/mozilla-central/rev/dc4023d54436">dc4023d54436</a>,
-and <a href="https://hg.mozilla.org/mozilla-central/rev/b617a57d6bf1">b617a57d6bf1</a>
-for examples of what's shown.</p>
-<p>We currently display:</p>
-<ul>
-<li>More detailed pushlog info. (Before you had to load another page to
-  see things like the date of the push.)</li>
-<li>The list of reviewers, each being a link that searches for other
-  changesets they've reviewed.</li>
-<li>A concise list of bugs referenced in the commit message.</li>
-<li>Links to changesets that were backed out by this changeset.</li>
-<li>On changesets that were backed out, we <em>may</em> also display a message
-  that the changeset was backed out.</li>
-<li>For Firefox repos, we also display the application <em>milestone</em>. This
-  is the Gecko/app version recorded in the <em>config/milestone.txt</em> file
-  in that changeset. The value can be used to quickly answer the
-  question <em>What versions of Firefox have this changeset.</em></li>
-</ul>
-<p>If you notice any issues or have requests for new features, please
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>.</p>
-<p>This work is built on top of a feature I added to Mercurial 3.4 to make
-it easier to inject extra data into Mercurial's web templates. We just
-deployed Mercurial 3.4.1 to hg.mozilla.org yesterday. It's worth noting
-that this deployment happened in the middle of the day with no
-user-perceived downtime. This is a far cry from where we were a year
-ago, when any server change required a maintenance window. We've
-invested a lot of work into a test suite for this service so we can
-continuously deploy without fear of breaking things. Moving fast feels
-so good.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
