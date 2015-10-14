@@ -10,10 +10,37 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 01 Sep 2015 22:01:50 GMT</pubDate>
+    <pubDate>Wed, 14 Oct 2015 19:31:24 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Lowering the Barrier to Pushing to MozReview</title>
+      <link>http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview</link>
+      <pubDate>Wed, 14 Oct 2015 12:30:00 PDT</pubDate>
+      <category><![CDATA[MozReview]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview</guid>
+      <description>Lowering the Barrier to Pushing to MozReview</description>
+      <content:encoded><![CDATA[<p>Starting today, a Mozilla LDAP account with Mercurial SSH access is no
+longer required to <em>hg push</em> into
+<a href="https://reviewboard.mozilla.org">MozReview</a> to initiate code review
+with Mozilla projects.</p>
+<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install.html">instructions for configuring your client to use MozReview</a>
+have been updated to reflect how you can now push to MozReview over HTTP
+using a Bugzilla API Key for authentication.</p>
+<p>This change effectively enables first-time contributors to use MozReview
+for code review. Before, you had to obtain an LDAP account and configure
+your SSH client, both of which could be time consuming processes and
+therefore discourage people from contributing. (Or you could just use
+Bugzilla/Splinter and not get the benefits of MozReview, which many
+did.)</p>
+<p><strong>I encourage others to update contribution docs to start nudging people
+towards MozReview over Bugzilla/patch-based workflows</strong> (such as
+bzexport).</p>
+<p><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1195856">Bug 1195856</a>
+tracked this feature.</p>]]></content:encoded>
+    </item>
     <item>
       <title>MozReview Statistics July 2015</title>
       <link>http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015</link>

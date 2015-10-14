@@ -51,6 +51,43 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="lowering-the-barrier-to-pushing-to-mozreview"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview" rel="bookmark" title="Permanent Link to Lowering the Barrier to Pushing to MozReview">Lowering the Barrier to Pushing to MozReview</a></h2>
+  <small>October 14, 2015 at 12:30 PM | categories: 
+
+<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Starting today, a Mozilla LDAP account with Mercurial SSH access is no
+longer required to <em>hg push</em> into
+<a href="https://reviewboard.mozilla.org">MozReview</a> to initiate code review
+with Mozilla projects.</p>
+<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install.html">instructions for configuring your client to use MozReview</a>
+have been updated to reflect how you can now push to MozReview over HTTP
+using a Bugzilla API Key for authentication.</p>
+<p>This change effectively enables first-time contributors to use MozReview
+for code review. Before, you had to obtain an LDAP account and configure
+your SSH client, both of which could be time consuming processes and
+therefore discourage people from contributing. (Or you could just use
+Bugzilla/Splinter and not get the benefits of MozReview, which many
+did.)</p>
+<p><strong>I encourage others to update contribution docs to start nudging people
+towards MozReview over Bugzilla/patch-based workflows</strong> (such as
+bzexport).</p>
+<p><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1195856">Bug 1195856</a>
+tracked this feature.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="serving-mercurial-clones-from-a-cdn"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/09/01/serving-mercurial-clones-from-a-cdn" rel="bookmark" title="Permanent Link to Serving Mercurial Clones from a CDN">Serving Mercurial Clones from a CDN</a></h2>
   <small>September 01, 2015 at 03:00 PM | categories: 
@@ -249,135 +286,6 @@ and moving fast.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-3.5-released"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/07/31/mercurial-3.5-released" rel="bookmark" title="Permanent Link to Mercurial 3.5 Released">Mercurial 3.5 Released</a></h2>
-  <small>July 31, 2015 at 01:15 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/07/31/mercurial-3.5-released#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial 3.5 was released today (following Mercurial's time-based
-schedule of releasing a new version every 3 months).</p>
-<p>There were roughly 1000 commits between 3.4 and 3.5, making this a
-busy version. Although, 1000 commits per release has become the new
-norm, as development on Mercurial has accelerated in the past few
-years.</p>
-<p>In my mind, the major highlight of Mercurial 3.5 is that the new
-<em>bundle2</em> wire protocol for transferring data during <em>hg push</em>
-and <em>hg pull</em> is now enabled by default on the client. Previously,
-it was enabled by default only on the server.
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a> is running Mercurial 3.4,
-so clients that upgrade to 3.5 today will be speaking to it using
-the new wire protocol.</p>
-<p>The <em>bundle2</em> wire protocol succeeds the existing protocol
-(which has been in place for years) and corrects many of its
-deficiencies. Before bundle2, pull and push operations were not
-atomic because Mercurial was performing a separate API call for
-each piece of data. It would start by transferring changeset data
-and then have subsequent transfers of metadata like bookmarks
-and phases. As you can imagine, there were race conditions and
-scenarios where pushes could be incomplete (not atomic). bundle2
-transfers all this data in one large chunk, so there are much
-stronger guarantees for data consistency and for atomic operations.</p>
-<p>Another benefit of bundle2 is it is a fully extensible data exchange
-format. Peers can add additional <em>parts</em> to the payload. For
-extensions that wish to transfer additional metadata (like
-Mozilla's <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/pushlog.html">pushlog</a>
-data), they can simply add this directly into the data
-stream without requiring additional requests over the wire protocol.
-This translates to fewer network round trips and faster push and pull
-operations.</p>
-<p>The <em>progress</em> extension has been merged into Mercurial's core and
-is enabled by default. It is now safe to remove the
-<em>extensions.progress</em> config option from your hgrc.</p>
-<p>Mercurial 3.5 also (finally) drops support for Python 2.4 and 2.5.
-Hopefully nobody reading this is still running these ancient and
-unsupported versions of Python. This is a win for Mercurial developers,
-as we were constantly having to work around deficiencies with these old
-Python releases. There were dozens of commits removing hacks and
-workarounds for Python 2.4 and 2.5. Dropping 2.4 and 2.5 also
-means Python 3 porting can begin in earnest. However, this isn't a high
-priority for anyone, so don't hold your breath.</p>
-<p>There were a number of performance improvements in 3.5:</p>
-<ul>
-<li>operations involving obsolescence markers are faster (for users of
-  changeset evolution)</li>
-<li>various revsets were optimized</li>
-<li>parts of phases calculation are now performed in C. The <em>not public()</em>
-  revset should be much faster.</li>
-<li><em>hg status</em> and things walking the filesystem are faster (Mozillians
-  should be using <em>hgwatchman</em> to make <em>hg status</em> insanely fast)</li>
-</ul>
-<p>A <em>ui.allowemptycommit</em> config option was introduced to control whether
-empty commits are allowed. Mozillians manually creating <em>trychooser</em>
-commits may run into problems creating empty commits without this
-option (a better solution is to use <em>mach push-to-try</em>).</p>
-<p>Work is progressing on per-directory manifests. Currently, Mercurial
-stores the mapping of files to content in a giant list called the
-manifest. For repositories with tens or hundreds of thousands of
-files, decoding and reading large manifests is very CPU intensive.
-Work is being done to enable Mercurial to split manifests by directory.
-So instead of a single manifest, there are several. This is a prequisite
-to <em>narrow clone</em>, which is the ability to clone history for a subset
-of files (like how Subversion works). This work will eventually enable
-repositories with millions of files to exist without significant
-performance loss. It will also allow
-<a href="/blog/2014/09/09/on-monolithic-repositories/">monolithic repositories</a>
-to exist without the common critique that they are too unwieldy to
-use because they are so large.</p>
-<p><em>hgignore</em> files now have an <em>include:</em> and <em>subinclude:</em> syntax that
-can be used to include other files containing ignore rules. This
-feature is useful for a number of reasons. First, it makes sense for
-ignore rules to live in the directory hierarchy next to paths they
-impact. Second, for people working with monolithic repositories, it
-means you can <em>export</em> a sub-directory of your monorepo (to e.g. a
-Git repository) and its ignore rules - being defined in local
-directories - can still work. (I'm pretty sure Facebook is using this
-approach to make its syncing of directories/projects from its Mercurial
-monorepo to GitHub easier to manage.)</p>
-<p>Significant work has been done on the template parser. If you have
-written custom templates, you may find that Mercurial 3.5 is more
-strict about parsing certain syntax.</p>
-<p>Revsets with chained <em>or</em> no longer result in stack exhaustion. Before,
-programmatically generated revsets like <em>1 or 2 or 3 or 4 or 5 or 6...</em>
-would likely fail.</p>
-<p>Interactions with servers over SSH should now display server output in
-real time. Before, server output was buffered and only displayed at the
-end of the operation. (You may not see this on hg.mozilla.org until
-the server is upgraded to 3.5, which is planned for early September.)</p>
-<p>There are now static analysis checks in place to ensure that Mercurial
-config options have corresponding documentation in <em>hg help config</em>.
-As a result, a lot of formerly undocumented options are now documented.</p>
-<p>I contributed
-<a href="/blog/2015/07/31/my-contributions-to-mercurial-3.5/">various improvements</a>.
-These include:</p>
-<ul>
-<li>auto sharing repository data during clone</li>
-<li>clone and pull performance improvements</li>
-<li><em>hg help scripting</em></li>
-</ul>
-<p>There were tons of other changes, of course. See the
-<a href="https://mercurial.selenic.com/wiki/WhatsNew#Mercurial_3.5_.282015-07-31.29">official release notes</a>
-and the
-<a href="https://mercurial.selenic.com/wiki/UpgradeNotes#A3.5:_no_more_support_for_Python_2.4_or_2.5">upgrade notes</a>
-for more.</p>
-<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mercurial for Mozillians Installing Mercurial</a>
-article provides a Mozilla tailored yet generally applicable guide for
-installing or upgrading Mercurial to 3.5. As always, conservative
-software users may want to wait until September 1 for the 3.5.1 point
-release to fix any issues or regressions from 3.5.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/31/mercurial-3.5-released#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 

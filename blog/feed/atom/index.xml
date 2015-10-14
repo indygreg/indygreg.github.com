@@ -7,12 +7,44 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-09-01T22:01:50Z</updated>
+  <updated>2015-10-14T19:31:24Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Lowering the Barrier to Pushing to MozReview]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview" />
+    <id>http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview</id>
+    <updated>2015-10-14T12:30:00Z</updated>
+    <published>2015-10-14T12:30:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="MozReview" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Lowering the Barrier to Pushing to MozReview]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview"><![CDATA[<p>Starting today, a Mozilla LDAP account with Mercurial SSH access is no
+longer required to <em>hg push</em> into
+<a href="https://reviewboard.mozilla.org">MozReview</a> to initiate code review
+with Mozilla projects.</p>
+<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install.html">instructions for configuring your client to use MozReview</a>
+have been updated to reflect how you can now push to MozReview over HTTP
+using a Bugzilla API Key for authentication.</p>
+<p>This change effectively enables first-time contributors to use MozReview
+for code review. Before, you had to obtain an LDAP account and configure
+your SSH client, both of which could be time consuming processes and
+therefore discourage people from contributing. (Or you could just use
+Bugzilla/Splinter and not get the benefits of MozReview, which many
+did.)</p>
+<p><strong>I encourage others to update contribution docs to start nudging people
+towards MozReview over Bugzilla/patch-based workflows</strong> (such as
+bzexport).</p>
+<p><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1195856">Bug 1195856</a>
+tracked this feature.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -571,34 +603,5 @@ within the realm of possibility. Between a partial rollout of S3
 clone offload that is already serving 44% of traffic and a
 <a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
 I'd say we're well on track.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Publish When Pushing to MozReview]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview" />
-    <id>http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview</id>
-    <updated>2015-07-07T14:55:00Z</updated>
-    <published>2015-07-07T14:55:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="MozReview" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Publish When Pushing to MozReview]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview"><![CDATA[<p>A lot of people contributed some really great feedback about MozReview
-at Whistler. One of the most frequent requests was for the ability to
-publish submitted review requests without having to open a browser.
-I'm pleased to report that as of yesterday, this feature is implemented!
-If reviewers have been assigned to all your review requests, Mercurial
-will now prompt you to publish the review requests during <em>hg push</em>.
-It should <em>just work</em>.</p>
-<p>As part of this change, we also introduced more advanced feature
-negotiation into the handshake between client and server. This means
-we now have a mechanism for detecting out-of-date client installations.
-This will enable us to more aggressively drop backwards compatibility
-(making server-side development easier) while simultaneously ensuring
-that more people are running modern and hopefully better versions of the
-client code. This should translate to moving faster and a better
-experience for everyone.</p>]]></content>
   </entry>
 </feed>
