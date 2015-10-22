@@ -51,6 +51,135 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-3.5-released"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/07/31/mercurial-3.5-released" rel="bookmark" title="Permanent Link to Mercurial 3.5 Released">Mercurial 3.5 Released</a></h2>
+  <small>July 31, 2015 at 01:15 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/07/31/mercurial-3.5-released#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial 3.5 was released today (following Mercurial's time-based
+schedule of releasing a new version every 3 months).</p>
+<p>There were roughly 1000 commits between 3.4 and 3.5, making this a
+busy version. Although, 1000 commits per release has become the new
+norm, as development on Mercurial has accelerated in the past few
+years.</p>
+<p>In my mind, the major highlight of Mercurial 3.5 is that the new
+<em>bundle2</em> wire protocol for transferring data during <em>hg push</em>
+and <em>hg pull</em> is now enabled by default on the client. Previously,
+it was enabled by default only on the server.
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a> is running Mercurial 3.4,
+so clients that upgrade to 3.5 today will be speaking to it using
+the new wire protocol.</p>
+<p>The <em>bundle2</em> wire protocol succeeds the existing protocol
+(which has been in place for years) and corrects many of its
+deficiencies. Before bundle2, pull and push operations were not
+atomic because Mercurial was performing a separate API call for
+each piece of data. It would start by transferring changeset data
+and then have subsequent transfers of metadata like bookmarks
+and phases. As you can imagine, there were race conditions and
+scenarios where pushes could be incomplete (not atomic). bundle2
+transfers all this data in one large chunk, so there are much
+stronger guarantees for data consistency and for atomic operations.</p>
+<p>Another benefit of bundle2 is it is a fully extensible data exchange
+format. Peers can add additional <em>parts</em> to the payload. For
+extensions that wish to transfer additional metadata (like
+Mozilla's <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/pushlog.html">pushlog</a>
+data), they can simply add this directly into the data
+stream without requiring additional requests over the wire protocol.
+This translates to fewer network round trips and faster push and pull
+operations.</p>
+<p>The <em>progress</em> extension has been merged into Mercurial's core and
+is enabled by default. It is now safe to remove the
+<em>extensions.progress</em> config option from your hgrc.</p>
+<p>Mercurial 3.5 also (finally) drops support for Python 2.4 and 2.5.
+Hopefully nobody reading this is still running these ancient and
+unsupported versions of Python. This is a win for Mercurial developers,
+as we were constantly having to work around deficiencies with these old
+Python releases. There were dozens of commits removing hacks and
+workarounds for Python 2.4 and 2.5. Dropping 2.4 and 2.5 also
+means Python 3 porting can begin in earnest. However, this isn't a high
+priority for anyone, so don't hold your breath.</p>
+<p>There were a number of performance improvements in 3.5:</p>
+<ul>
+<li>operations involving obsolescence markers are faster (for users of
+  changeset evolution)</li>
+<li>various revsets were optimized</li>
+<li>parts of phases calculation are now performed in C. The <em>not public()</em>
+  revset should be much faster.</li>
+<li><em>hg status</em> and things walking the filesystem are faster (Mozillians
+  should be using <em>hgwatchman</em> to make <em>hg status</em> insanely fast)</li>
+</ul>
+<p>A <em>ui.allowemptycommit</em> config option was introduced to control whether
+empty commits are allowed. Mozillians manually creating <em>trychooser</em>
+commits may run into problems creating empty commits without this
+option (a better solution is to use <em>mach push-to-try</em>).</p>
+<p>Work is progressing on per-directory manifests. Currently, Mercurial
+stores the mapping of files to content in a giant list called the
+manifest. For repositories with tens or hundreds of thousands of
+files, decoding and reading large manifests is very CPU intensive.
+Work is being done to enable Mercurial to split manifests by directory.
+So instead of a single manifest, there are several. This is a prequisite
+to <em>narrow clone</em>, which is the ability to clone history for a subset
+of files (like how Subversion works). This work will eventually enable
+repositories with millions of files to exist without significant
+performance loss. It will also allow
+<a href="/blog/2014/09/09/on-monolithic-repositories/">monolithic repositories</a>
+to exist without the common critique that they are too unwieldy to
+use because they are so large.</p>
+<p><em>hgignore</em> files now have an <em>include:</em> and <em>subinclude:</em> syntax that
+can be used to include other files containing ignore rules. This
+feature is useful for a number of reasons. First, it makes sense for
+ignore rules to live in the directory hierarchy next to paths they
+impact. Second, for people working with monolithic repositories, it
+means you can <em>export</em> a sub-directory of your monorepo (to e.g. a
+Git repository) and its ignore rules - being defined in local
+directories - can still work. (I'm pretty sure Facebook is using this
+approach to make its syncing of directories/projects from its Mercurial
+monorepo to GitHub easier to manage.)</p>
+<p>Significant work has been done on the template parser. If you have
+written custom templates, you may find that Mercurial 3.5 is more
+strict about parsing certain syntax.</p>
+<p>Revsets with chained <em>or</em> no longer result in stack exhaustion. Before,
+programmatically generated revsets like <em>1 or 2 or 3 or 4 or 5 or 6...</em>
+would likely fail.</p>
+<p>Interactions with servers over SSH should now display server output in
+real time. Before, server output was buffered and only displayed at the
+end of the operation. (You may not see this on hg.mozilla.org until
+the server is upgraded to 3.5, which is planned for early September.)</p>
+<p>There are now static analysis checks in place to ensure that Mercurial
+config options have corresponding documentation in <em>hg help config</em>.
+As a result, a lot of formerly undocumented options are now documented.</p>
+<p>I contributed
+<a href="/blog/2015/07/31/my-contributions-to-mercurial-3.5/">various improvements</a>.
+These include:</p>
+<ul>
+<li>auto sharing repository data during clone</li>
+<li>clone and pull performance improvements</li>
+<li><em>hg help scripting</em></li>
+</ul>
+<p>There were tons of other changes, of course. See the
+<a href="https://mercurial.selenic.com/wiki/WhatsNew#Mercurial_3.5_.282015-07-31.29">official release notes</a>
+and the
+<a href="https://mercurial.selenic.com/wiki/UpgradeNotes#A3.5:_no_more_support_for_Python_2.4_or_2.5">upgrade notes</a>
+for more.</p>
+<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mercurial for Mozillians Installing Mercurial</a>
+article provides a Mozilla tailored yet generally applicable guide for
+installing or upgrading Mercurial to 3.5. As always, conservative
+software users may want to wait until September 1 for the 3.5.1 point
+release to fix any issues or regressions from 3.5.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/31/mercurial-3.5-released#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="my-contributions-to-mercurial-3.5"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/07/31/my-contributions-to-mercurial-3.5" rel="bookmark" title="Permanent Link to My Contributions to Mercurial 3.5">My Contributions to Mercurial 3.5</a></h2>
   <small>July 31, 2015 at 10:55 AM | categories: 
@@ -323,124 +452,6 @@ so good.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="faster-cloning-from-hg.mozilla.org-with-server-provided-bundles"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles" rel="bookmark" title="Permanent Link to Faster Cloning from hg.mozilla.org With Server Provided Bundles">Faster Cloning from hg.mozilla.org With Server Provided Bundles</a></h2>
-  <small>May 29, 2015 at 11:30 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>When you type <em>hg clone</em>, the Mercurial server will create a <em>bundle</em>
-from repository content at the time of the request and stream it to
-the client. (Git works essentially the same way.)</p>
-<p>This approach usually <em>just works</em>. But there are some downsides,
-particularly with large repositories.</p>
-<p>Creating bundles for large repositories is not cheap. For
-mozilla-central, Firefox's main repository, it takes ~280s of CPU time
-on my 2014 MacBook Pro to generate a bundle. Every time a client runs a
-<em>hg clone https://hg.mozilla.org/mozilla-central</em>, a server somewhere
-is spinning a CPU core generating ~1.1 GB of data. What's more, if
-another clone arrives at the same time, another process will perform
-the exact same work! When we talk about multiple minutes of CPU time
-per request, this extra work starts to add up.</p>
-<p>Another problem with large repositories is interrupted downloads. If
-you suffer a connectivity blip during your <em>clone</em> command, you'll
-have to start from scratch. This potentially means re-transferring
-hundreds of megabytes from the server. It also means the server has
-to generate a new bundle, consuming even more CPU time. This is not
-good for the user or the server.</p>
-<p>There have been multiple outages of hg.mozilla.org as a result of
-the service being flooded with clone requests to large repositories.
-Dozens of clients (most of them in Firefox or Firefox OS
-release automation) have cloned the same repository around the same
-time and overwhelmed network bandwidth in the data center or CPU
-cores on the Mercurial servers.</p>
-<p>A common solution to this problem is to not use the <em>clone</em> command
-to receive initial repository data from the server. Instead, a
-static <em>bundle</em> file will be generated and made available to clients.
-Clients will call <em>hg init</em> to create an empty repository then will
-perform an <em>hg unbundle</em> to apply the contents of a pre-generated
-bundle file. They will then run <em>hg pull</em> to fetch new data that
-was created after the bundle was generated. (It's worth noting that
-Git's <em>clone --reference</em> option is similar.)</p>
-<p>This is a good technical solution. Firefox and Firefox OS release
-automation have effectively implemented this. However, it is a lot of
-work: you have to build your own bundle generation and hosting
-infrastructure and you have to remember that every <em>hg clone</em> should
-probably be using bundles instead. It is extra complexity and complexity
-that must be undertaken by every client. If a client forgets, the
-consequences can be disastrous (clone flooding leading to service
-outage). Client-side opt-in is prone to lapses and doesn't scale.</p>
-<p><strong>As of today, we've deployed a more scalable, server-based solution to
-hg.mozilla.org.</strong></p>
-<p>hg.mozilla.org is now itself generating bundles for a handful of
-repositories, including mozilla-central, inbound, fx-team, and
-mozharness. These bundles are being uploaded to Amazon S3. And
-<strong>those bundles are being advertised by the server over Mercurial's
-wire protocol</strong>.</p>
-<p>When you install the <em>bundleclone</em> Mercurial extension, <em>hg clone</em> is
-taught to look for bundles being advertised on the server. If a bundle
-is available, the bundle is downloaded, applied, and then the client
-does the equivalent of an <em>hg pull</em> to fetch all new data since when the
-bundle was generated. If a bundle exists, it is used transparently: no
-client side cooperation is needed beyond installing the <em>bundleclone</em>
-extension. If a bundle doesn't exist, it simply falls back to
-Mercurial's default behavior. <strong>This effectively shifts responsibility
-for doing efficient clones from clients to server operators, which
-means server operators don't need cooperation from clients to enact
-important service changes.</strong> Before, if clients weren't using bundles,
-we'd have to wait for clients to update their code. Now, we can see
-a repository is being cloned heavily and start generating bundles for
-it without having to wait for the client to deploy new code.</p>
-<p>Furthermore, we've built primitive <em>content negotiation</em> into the
-process. The server doesn't simply advertise one bundle file: it
-advertises several bundle files. We offer gzip, bzip2, and <em>stream</em>
-bundles. gzip is what Mercurial uses by default. It works OK. bzip2
-bundles are smaller, but they take longer to process. <em>stream</em> bundles
-are essentially tar archives of the <em>.hg/store</em> directory and are larger
-than gzip bundles, but insanely fast because there is very little CPU
-required to apply them. In addition, we advertise URLs for multiple S3
-regions, currently us-west-2 (Oregon) and us-east-1 (Virginia). This
-enables clients to prefer the bundle most appropriate for them.</p>
-<p>A benefit of serving bundles from S3 is that Firefox and Firefox OS
-release automation (the biggest consumers of hg.mozilla.org) live in
-Amazon EC2. They are able to fetch from S3 over a gigabit network.
-And, since we're transferring data within the same AWS region, there
-are no data transfer costs. Previously, we were transferring ~1.1 GB
-from a Mozilla data center to EC2 for each clone. This took up bandwidth
-in Mozilla's network and cost Mozilla money to send data thousands of
-miles away. And, we never came close to saturating a gigabit network (we
-do with stream bundles). Wins everywhere!</p>
-<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">full instructions</a>
-detail how to use <em>bundleclone</em>. <strong>I recommend everyone at Mozilla
-install the extension</strong> because there should be no downside to doing it.</p>
-<p>Once <em>bundleclone</em> is deployed to Firefox and Firefox OS release
-automation, we should hopefully never again see those machines bring
-down hg.mozilla.org due to a flood of clone requests. We should also
-see a drastic reduction in load to hg.mozilla.org. I'm optimistic
-bandwidth will decrease by over 50%!</p>
-<p>It's worth noting that the functionality from the <em>bundleclone</em> extension
-is coming to vanilla Mercurial. The functionality (which was initially
-added by Mozilla's Mike Hommey) is part of Mercurial's <em>bundle2</em> protocol,
-which is available, but isn't enabled by default yet. <em>bundleclone</em> is thus
-a temporary solution to bring us server stability and client
-improvements until modern Mercurial versions are deployed everywhere
-in a few months time.</p>
-<p>Finally, I would like to credit Augie Fackler for the
-<a href="http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/54872/focus=54872">original idea</a>
-for server-assisted bundle-based clones.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/1">« Previous Page</a>
   --  

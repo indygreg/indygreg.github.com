@@ -51,6 +51,176 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="code-first-and-the-rise-of-the-dvcs-and-github"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github" rel="bookmark" title="Permanent Link to Code First and the Rise of the DVCS and GitHub">Code First and the Rise of the DVCS and GitHub</a></h2>
+  <small>January 10, 2015 at 12:35 PM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The ascendancy of GitHub has very little to do with its namesake tool,
+Git.</p>
+<p>What GitHub did that was so radical for its time and the strategy that
+GitHub continues to execute so well on today is the approach of
+putting <em>code first</em> and enabling change to be a frictionless process.</p>
+<p>In case you weren't around for the pre-GitHub days or don't remember,
+they were not pleasant. Tools around code management were a far cry
+from where they are today (I still argue the tools are pretty bad, but
+that's for another post). Centralized version control systems were
+prevalent (CVS and Subversion in open source, Perforce, ClearCase,
+Team Foundation Server, and others in the corporate world). Tools for
+looking at and querying code had horrible, ugly interfaces and came out
+of a previous era of web design and browser capabilities. It felt like
+a chore to do anything, including committing code. Yes, the world
+had awesome services like <a href="https://sourceforge.net/">SourceForge</a>,
+but they weren't the same as GitHub is today.</p>
+<p>Before I get to my central thesis, I want to highlight some supporting
+reasons for GitHub's success. There were two developments in the second
+half of the 2000s the contributed to the success of GitHub: the rises
+of the distributed version control system (DVCS) and the modern web.</p>
+<p>While distributed version control systems like Sun WorkShop TeamWare and
+BitKeeper existed earlier, it wasn't until the second half of the 2000s
+that DVCS systems took off. You can argue part of the reason for this
+was open source: my recollection is there wasn't a well-known DVCS
+available as free software before 2005. Speaking of 2005, it was a big
+year for DVCS projects: Git, Mercurial, and Bazaar all had initial
+releases. Suddenly, there were old-but-new ideas on how to do source
+control being exposed to new and willing-to-experiment audiences. DVCS
+were a critical leap from traditional version control because they
+(theoretically) impose less process and workflow limitations on users.
+With traditional version control, you needed to be online to commit,
+meaning you were managing patches, not commits, in your local
+development workflow. There were some forms of branching and merging,
+but they were a far cry from what is available today and were often too
+complex for mere mortals to use. As more and more people were exposed to
+<em>distributed</em> version control, they welcomed its less-restrictive and
+more powerful workflows. They realized that source control tools don't
+have to be so limiting. <em>Distributed</em> version control also promised all
+kinds of revamped workflows that could be harnessed. There were
+potential wins all around.</p>
+<p>Around the same time that open source DVCS systems were emerging, web
+browsers were evolving from an application to render static pages to a
+platform for running web <em>applications</em>. Web sites using JavaScript
+to dynamically manipulate web page content (DHTML as it was known back
+then) were starting to hit their stride. I believe it was GMail that
+turned the most heads as to the full power of the <em>modern web</em>
+experience, with its novel-for-its-time extreme reliance on
+XMLHttpRequest for dynamically changing page content. People were
+realizing that powerful, desktop-like applications could be built for
+the web and could run everywhere.</p>
+<p>GitHub launched in April 2008 standing on the shoulders of both the
+emerging interest in the Git content tracking tool and the capabilities
+of modern browsers.</p>
+<p>I wasn't an early user of GitHub. My recollection is that GitHub was
+mostly a Rubyist's playground back then. I wasn't a Ruby programmer, so
+I had little reason to use GitHub in the early stages. But people did
+start using GitHub. And in the spirit of Ruby (on Rails), GitHub moved
+fast, or at least was projecting the notion that they were. While other
+services built on top of DVCS tools - like Bitbucket - did exist back then,
+GitHub seemed to have momentum associated with it. (Look at the archives
+for <a href="https://github.com/blog">GitHub's</a> and
+<a href="https://blog.bitbucket.org/">Bitbucket's</a> respective blogs. GitHub has
+hundreds of blog entries; Bitbucket numbers in the dozens.) Developers
+everywhere up until this point had all been dealing with sub-optimal tools
+and workflows. Some of us realized it. Others hadn't. Many of those who
+did saw GitHub as a beacon of hope: we have all these new ideas and new
+potentials with distributed version control and here is a service under
+active development trying to figure out how to exploit that. Oh, and
+it's free for open source. Sign me up!</p>
+<p>GitHub did capitalize on a market opportunity. They also capitalized on
+the value of marketing and the perception that they were moving fast and
+providing features that people - especially in open source - wanted.
+This captured the early adopters market. But I think what really set
+GitHub apart and led to the success they are enjoying today is their
+<em>code first</em> approach and their desire to make contribution easy, and
+even fun and sociable.</p>
+<p>As developers, our job is to solve problems. We often do that by writing
+and changing code. And this often involves working as part of a team, or
+collaborating. To collaborate, we need tools. You eventually need some
+processes. And as I
+<a href="/blog/2015/01/09/firefox-contribution-process-debt/">recently blogged</a>,
+this can lead to <em>process debt</em> and inefficiencies associated with them.</p>
+<p>Before GitHub, the <em>process debt</em> for contributing to other projects was
+high. You often had to subscribe to mailing lists in order to submit
+patches as emails. Or, you had to create an account on someone's bug
+tracker or code review tool before you could send patches. Then you had
+to figure out how to use these tools and any organization or
+project-specific extensions and workflows attached to them. It was quite
+involved and a lot could go wrong. Many projects and organizations (like
+Mozilla) still practice this traditional methology. Furthermore (and as
+I've
+<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">written before</a>),
+these traditional, single patch/commit-based tools often aren't
+effective at ensuring the desired output of high quality software.</p>
+<p>Before GitHub solved <em>process debt</em> via commoditization of knowledge via
+market dominance, they took another approach: emphasizing <em>code first</em>
+development.</p>
+<p>GitHub is all about the <strong>code</strong>. You load a project page and you see
+<strong>code</strong>. You may think a README with basic project information would be
+the first thing on a <em>project</em> page. But it isn't. <em>Code</em>, like data,
+is king.</p>
+<p>Collaboration and contribution on GitHub revolve around the <em>pull
+request</em>. It's a way of saying, <em>hey, I made a change, will you take
+it?</em> There's nothing too novel in the concept of the <em>pull request</em>:
+it's fundamentally no different than sending emails with patches to a
+mailing list. But what is so special is GitHub's execution. Gone are
+the days of configuring and using one-off tools and processes. Instead,
+we have the friendly confines of a clean, friendly, and modern web
+experience. While GitHub is built upon the Git tool, you don't even
+need to use Git (a tool
+<a href="http://git-man-page-generator.lokaltog.net/">lampooned</a>
+for its
+<a href="http://stevelosh.com/blog/2013/04/git-koans/">horrible usability and approachability</a>)
+to contribute on GitHub! Instead, you can
+<a href="https://help.github.com/articles/github-flow-in-the-browser/">do everything from your browser</a>.
+That warrants repeating: <strong>you don't need to leave your browser to
+contribute on GitHub</strong>. GitHub has essentially reduced <em>process debt</em>
+to <em>edit a text document</em> territory, and pretty much anybody who has
+used a computer can do that. This has enabled GitHub to dabble into
+non-code territory, such as its
+<a href="https://government.github.com/">GitHub and Government</a> initiative to
+foster community involvement in government. (GitHub is really a platform
+for easily seeing and changing <em>any</em> content or data. But, please, let
+me continue using <em>code</em> as a stand-in, since I want to focus on the
+developer audience.)</p>
+<p>GitHub took an overly-complicated and fragmented world of varying
+contribution processes and made the new world revolve around code and a
+unified and simple process for change - the <em>pull request</em>.</p>
+<p>Yes, there are other reasons for GitHub's success. You can make strong
+arguments that GitHub has capitalized on the social and psychological
+aspects of coding and human desire for success and happiness. I agree.</p>
+<p>You can also argue GitHub succeeded because of Git. That statement is
+more or less technically accurate, but I don't think it is a sound
+argument. Git may have been the most feature complete open source
+DVCS at the time GitHub came into existence. But that doesn't mean there
+is something special about Git that no other DVCS has that makes GitHub
+popular. Had another tool been more feature complete or had the backing
+of a project as large as Linux at the time of GitHub's launch, we could
+very well be looking at a successful service built on something that
+isn't Git. Git had early market advantage and I argue its popularity
+today - a lot of it via GitHub - is largely a result of its early
+advantages over competing tools. And, I would go so far to say that when
+you consider the poor usability of Git and the pain that its users go
+through when first learning it, more accurate statements would be that
+<em>GitHub succeeded in spite of Git</em> and <em>Git owes much of its success to
+GitHub</em>.</p>
+<p>When I look back at the rise of GitHub, I see a service that has
+succeeded by putting people first by allowing them to capitalize
+on more productive workflows and processes. They've done this by
+emphasizing <em>code</em>, not process, as the means for change. Organizations
+and projects should take note.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="firefox-contribution-process-debt"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/09/firefox-contribution-process-debt" rel="bookmark" title="Permanent Link to Firefox Contribution Process Debt">Firefox Contribution Process Debt</a></h2>
   <small>January 09, 2015 at 04:45 PM | categories: 
@@ -495,184 +665,6 @@ tuned.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/30/firefox-source-documentation-versus-mdn#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="why-hg.mozilla.org-is-slow"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/19/why-hg.mozilla.org-is-slow" rel="bookmark" title="Permanent Link to Why hg.mozilla.org is Slow">Why hg.mozilla.org is Slow</a></h2>
-  <small>December 19, 2014 at 02:40 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>At Mozilla, I often hear statements like <em>Mercurial is slow.</em> That's a
-very general statement. Depending on the context, it can mean one or
-more of several things:</p>
-<ul>
-<li>My Mercurial workflow is not very efficient</li>
-<li><em>hg</em> commands I execute are slow to run</li>
-<li><em>hg</em> commands I execute appear to stall</li>
-<li>The Mercurial server I'm interfacing with is slow</li>
-</ul>
-<p>I want to spend time talking about a specific problem: why
-hg.mozilla.org (the server) is slow.</p>
-<h2>What Isn't Slow</h2>
-<p><strong>If you are talking to hg.mozilla.org over HTTP or HTTPS
-(https://hg.mozilla.org/), there should not currently be any server
-performance issues</strong>. Our Mercurial HTTP servers are pretty beefy and
-are able to absorb a lot of load.</p>
-<p>If https://hg.mozilla.org/ is slow, chances are:</p>
-<ul>
-<li>You are doing something like cloning a 1+ GB repository.</li>
-<li>You are asking the server to do something really expensive (like
-  generate JSON for 100,000 changesets via the pushlog query interface).</li>
-<li>You don't have a high bandwidth connection to the server.</li>
-<li>There is a network event.</li>
-</ul>
-<h2>Previous Network Events</h2>
-<p>There have historically been network capacity issues in the datacenter
-where hg.mozilla.org is hosted (SCL3).</p>
-<p>During Mozlandia, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1107156">excessive traffic to ftp.mozilla.org</a>
-essentially saturated the SCL3 network. During this time, requests to
-hg.mozilla.org were timing out: Mercurial traffic just couldn't traverse
-the network. Fortunately, events like this are quite rare.</p>
-<p>Up until recently, Firefox release automation was effectively
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096337">overwhelming the network</a>
-by doing some clownshoesy things.</p>
-<p>For example, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096653">gaia-central was being cloned all the time</a>
-We had a ~1.6 GB repository being cloned over a thousand times per day. We
-were transferring close to 2 TB of gaia-central data out of Mercurial servers
-per day</p>
-<p>We also found issues with
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096650">pushlogs sending 100+ MB responses</a>.</p>
-<p>And the <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1100574">build/tools repo was getting cloned for every job</a>. Ditto for mozharness.</p>
-<p>In all, <strong>we identified a few terabytes of excessive Mercurial traffic
-that didn't need to exist</strong>. This excessive traffic was saturating the
-SCL3 network and slowing down not only Mercurial traffic, but other
-traffic in SCL3 as well.</p>
-<p>Fortunately, people from Release Engineering were quick to respond to
-and fix the problems once they were identified. The problem is now
-firmly in control. Although, given the scale of Firefox's release
-automation, any new system that comes online that talks to version
-control is susceptible to causing server outages. I've already raised
-this concern when reviewing some TaskCluster code. The thundering herd
-of automation will be an ongoing concern. But I have plans to further
-mitigate risk in 2015. Stay tuned.</p>
-<p>Looking back at our historical data, it appears that we hit these
-network saturation limits a few times before we reached a tipping point
-in early November 2014. Unfortunately, we didn't realize this because up
-until recently, we didn't have a good source of data coming from the
-servers. We lacked the tooling to analyze what we had. We lacked the
-experience to know what to look for. Outages are effective flashlights.
-We learned a lot and know what we need to do with the data moving
-forward.</p>
-<h2>Available Network Bandwidth</h2>
-<p>One person pinged me on IRC with the comment <em>Git is cloning much faster
-than Mercurial.</em> I asked for timings and the Mercurial clone wall time
-for Firefox was much higher than I expected.</p>
-<p>The reason was network bandwidth. This person was performing a Git clone
-between 2 hosts in EC2 but was performing the Mercurial clone between
-hg.mozilla.org and a host in EC2. In other words, they were partially
-comparing the performance of a 1 Gbps network against a link over the
-public internet! When they did a fair comparison by removing the network
-connection as a variable, the clone times rebounded to what I expected.</p>
-<p>The single-homed nature of hg.mozilla.org in a single datacenter in
-northern California is not only bad for disaster recovery reasons, it
-also means that machines far away from SCL3 or connecting to SCL3 over a
-slow network aren't getting optimal performance.</p>
-<p>In 2015, expect us to build out a geo-distributed hg.mozilla.org so that
-connections are hitting a server that is closer and thus faster. This
-will probably be targeted at Firefox release automation in AWS first. We
-want those machines to have a fast connection to the server <strong>and</strong> we
-want their traffic isolated from the servers developers use so that
-hiccups in automation don't impact the ability for humans to access
-and interface with source code.</p>
-<h2>NFS on SSH Master Server</h2>
-<p>If you connect to http://hg.mozilla.org/ or https://hg.mozilla.org/, you
-are hitting a pool of servers behind a load balancer. These servers have
-repository data stored on local disk, where I/O is fast. In reality,
-most I/O is serviced by the page cache, so local disks don't come into
-play.</p>
-<p>If you connect to ssh://hg.mozilla.org/, you are hitting a single,
-master server. Its repository data is hosted on an NFS mount. I/O on the
-NFS mount is horribly slow. Any I/O intensive operation performed on the
-master is much, much slower than it should be. Such is the nature of
-NFS.</p>
-<p>We'll be exploring ways to mitigate this performance issue in 2015. But
-it isn't the biggest source of performance pain, so don't expect anything
-immediately.</p>
-<h2>Synchronous Replication During Pushes</h2>
-<p>When you <em>hg push</em> to hg.mozilla.org, the changes are first made on the
-SSH/NFS master server. They are subsequently mirrored out to the HTTP
-read-only slaves.</p>
-<p>As is currently implemented, the mirroring process is performed
-synchronously during the push operation. The server waits for the
-mirrors to complete (to a reasonable state) before it tells the client
-the push has completed.</p>
-<p>Depending on the repository, the size of the push, and server and
-network load, <strong>mirroring commonly adds 1 to 7 seconds to push times</strong>.
-This is time when a developer is sitting at a terminal, waiting for <em>hg
-push</em> to complete. The time for Try pushes can be larger: 10 to 20
-seconds is not uncommon (but fortunately not the norm).</p>
-<p>The current mirroring mechanism is overly simple and prone to many
-failures and sub-optimal behavior. I plan to work on fixing mirroring in
-2015. When I'm done, there should be no user-visible mirroring delay.</p>
-<h2>Pushlog Replication Inefficiency</h2>
-<p>Up until yesterday (when we
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1112415">deployed a rewritten pushlog extension</a>,
-the replication of pushlog data from master to server was very
-inefficient. Instead of tranferring a delta of pushes since last pull,
-we were literally copying the underlying SQLite file across the network!</p>
-<p>Try's pushlog is ~30 MB. mozilla-central and mozilla-inbound are in the
-same ballpark. 30 MB x 10 slaves is a lot of data to transfer. These
-operations were capable of periodically saturating the network, slowing
-everyone down.</p>
-<p>The rewritten pushlog extension performs a delta transfer automatically
-as part of <em>hg pull</em>. Pushlog synchronization now completes in
-milliseconds while commonly only consuming a few kilobytes of network
-traffic.</p>
-<p>Early indications reveal that deploying this change yesterday decreased the
-push times to repositories with long push history by 1-3s.</p>
-<h2>Try</h2>
-<p>Pretty much any interaction with the
-<a href="https://hg.mozilla.org/try">Try repository</a> is guaranteed to have poor
-performance. The Try repository is doing things that distributed
-versions control systems weren't designed to do. This includes Git.</p>
-<p>If you are using Try, all bets are off. Performance will be problematic
-until we roll out the <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1055298">headless try</a>
-repository.</p>
-<p>That being said, we've made changes recently to make Try perform better.
-<a href="https://twitter.com/lxt/status/546042588822642688">The median time for pushing to Try</a>
-has decreased significantly in the past few weeks. The first dip in
-mid-November was due to upgrading the server from Mercurial 2.5 to
-Mercurial 3.1 and from converting Try to use <em>generaldelta</em> encoding.
-The dip this week has been from merging all heads and from deploying the
-aforementioned pushlog changes. <strong>Pushing to Try is now significantly
-faster than 3 months ago.</strong></p>
-<h2>Conclusion</h2>
-<p>Many of the reasons for hg.mozilla.org slowness are known. More often
-than not, they are due to clownshoes or inefficiencies on Mozilla's
-part rather than fundamental issues with Mercurial.</p>
-<p><strong>We have made significant progress at making hg.mozilla.org faster.</strong>
-But we are not done. We are continuing to invest in fixing the
-sub-optimal parts and making hg.mozilla.org faster yet. I'm confident
-that within a few months, nobody will be able to say that the servers
-are a source of pain like they have been for years.</p>
-<p>Furthermore, Mercurial is investing in features to make the wire
-protocol faster, more efficient, and more powerful. When deployed,
-these should make pushes faster on <em>any</em> server. They will also enable
-workflow enhancements, such as Facebook's experimental extension to
-perform rebases as part of push (eliminating push races and having to
-manually rebase when you lose the push race).</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../7">« Previous Page</a>
   --  

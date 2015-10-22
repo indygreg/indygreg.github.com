@@ -19,6 +19,7 @@ Released   : 20101114
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     
   <title>Gregory Szorc's Digital Home
+  | Cloning Improvements in Mercurial 3.6
 </title>
 <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
 <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
@@ -49,7 +50,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="cloning-improvements-in-mercurial-3.6"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/10/22/cloning-improvements-in-mercurial-3.6" rel="bookmark" title="Permanent Link to Cloning Improvements in Mercurial 3.6">Cloning Improvements in Mercurial 3.6</a></h2>
@@ -243,210 +244,12 @@ eyeballs will see it and there's a good chance it will be acted upon.</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/10/22/cloning-improvements-in-mercurial-3.6#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="serving-mercurial-clones-from-a-cdn"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/09/01/serving-mercurial-clones-from-a-cdn" rel="bookmark" title="Permanent Link to Serving Mercurial Clones from a CDN">Serving Mercurial Clones from a CDN</a></h2>
-  <small>September 01, 2015 at 03:00 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>For the past few months, Mozilla has been
-<a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3/">serving Mercurial clones from Amazon S3</a>.
-We upload snapshots (called <em>bundles</em>) of large and/or high-traffic
-repositories to S3. We have a custom Mercurial extension on the
-client and server that knows how to exchange the URLs for these
-snapshots and to transparently use them to bootstrap a clone. The
-end result is drastically reduced Mercurial server load and faster
-clone times. The benefits are seriously ridiculous when you operate
-version control at scale.</p>
-<p><a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> is a CDN.
-You can easily configure it up to be backed by an S3 bucket. So
-we did.</p>
-<p><a href="https://hg.cdn.mozilla.net/">https://hg.cdn.mozilla.net/</a> is
-Mozilla's CDN for hosting Mercurial data. Currently it's just bundles to
-be used for cloning.</p>
-<p>As of today, if you
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">install the bundleclone Mercurial extension</a>
-and <em>hg clone</em> a repository on
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a> such as
-<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
-(<em>hg clone https://hg.mozilla.org/mozilla-central</em>), the CDN
-URLs will be preferred by default. (Previously we preferred S3 URLs
-that hit servers in Oregon, USA.)</p>
-<p><strong>This should result in clone time reductions for Mozillians not
-close to Oregon, USA</strong>, as the CloudFront CDN has servers all across
-the globe and your Mercurial clone should be bootstrapped from the
-closest and hopefully therefore fastest server to you.</p>
-<p>Unfortunately, you do need the the aforementioned <em>bundleclone</em>
-extension installed for this to work. But, this should only be
-temporary: I've
-<a href="https://mercurial.selenic.com/wiki/StaticBundlePlan">proposed</a>
-integrating this feature into the core of Mercurial so if a client
-talks to a server advertising pre-generated bundles the clone
-offload <em>just works</em>. I already have tentative buy-in from one
-Mercurial maintainer. So hopefully I can land this feature in
-Mercurial 3.6, which will be released November 1. After that,
-I imagine some high-traffic Mercurial servers (such as Bitbucket)
-will be very keen to deploy this so CPU load on their servers
-is drastically reduced.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="json-apis-on-hg.mozilla.org"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/08/18/json-apis-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to JSON APIs on hg.mozilla.org">JSON APIs on hg.mozilla.org</a></h2>
-  <small>August 18, 2015 at 04:00 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I added a feature to Mercurial 3.4 that exposes JSON from Mercurial's
-various <a href="https://hg.mozilla.org/mozilla-central/help/hgweb">web APIs</a>.
-Unfortunately, due to the presence of legacy code on hg.mozilla.org
-providing similar functionality, we weren't able to deploy this
-feature to hg.mozilla.org when we deployed Mercurial 3.4 several weeks
-ago.</p>
-<p>I'm pleased to announce that as of today, JSON is now exposed from
-hg.mozilla.org!</p>
-<p>To access JSON output, simply add <strong>json-</strong> to the <em>command</em> name
-in URLs. e.g. instead of
-<a href="https://hg.mozilla.org/mozilla-central/rev/de7aa6b08234">https://hg.mozilla.org/mozilla-central/rev/de7aa6b08234</a>
-use <a href="https://hg.mozilla.org/mozilla-central/json-rev/de7aa6b08234">https://hg.mozilla.org/mozilla-central/json-rev/de7aa6b08234</a>.
-The full list of web commands, URL patterns, and their parameters are
-<a href="https://hg.mozilla.org/mozilla-central/help/hgweb">documented</a> in
-the <em>hgweb</em> help topic.</p>
-<p>Not all web commands support JSON output yet. Not all web commands
-expose all data available to them. If there is data you need but isn't
-exposed, please
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>
-and I'll see what I can do.</p>
-<p>Thanks go to Steven MacLeod for
-<a href="https://reviewboard.mozilla.org/r/15617/">reviewing</a> the rather large
-series it took to make this happen.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="moz.build-metadata-on-hg.mozilla.org"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to moz.build metadata on hg.mozilla.org">moz.build metadata on hg.mozilla.org</a></h2>
-  <small>August 04, 2015 at 07:55 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Sometime last week we enabled a new API on hg.mozilla.org:
-<em>json-mozbuildinfo</em>. This endpoint will return JSON describing
-moz.build-derived metadata about the files that changed in a commit.</p>
-<p><a href="https://hg.mozilla.org/mozilla-central/json-mozbuildinfo/1164ec236273">Example</a>.
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/mozbuildinfo.html">Docs</a>.</p>
-<p>We plan to eventually leverage this API to do cool things like
-have MozReview automatically file bugs in the appropriate component and
-assign appropriate reviewers given the set of changed files in a commit.</p>
-<p>The API is currently only available on mozilla-central. And, we have
-very conservative resource limits in place. So large commits may cause
-it to error out. As such, the API is considered experimental. Also,
-performance is not as optimal as it could be. You have to start
-somewhere.</p>
-<p>I'd like to thank Guillaume Destuynder (kang) for his help with the
-security side of things. When I started on this project, I didn't think
-I'd be writing
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/02e353037996/testing/docker/builder-hgweb-chroot/mozbuild-eval.c">C code for spawning secure processes</a>,
-but here we are. In the not so distant future, I'll likely be adding
-<a href="http://man7.org/linux/man-pages/man2/seccomp.2.html">seccomp(2)</a>
-into the mix, which will make the execution environment as
-or more secure than the Firefox content process sandbox, depending
-on how it is implemented. The rabbit holes we find ourselves in to
-implement proper security...</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="hg.mozilla.org-operational-workings-now-open-sourced"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced" rel="bookmark" title="Permanent Link to hg.mozilla.org Operational Workings Now Open Sourced">hg.mozilla.org Operational Workings Now Open Sourced</a></h2>
-  <small>August 04, 2015 at 02:30 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Just a few minutes ago, hg.mozilla.org reached an important milestone:
-deployments are now performed via Ansible from our open source
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository instead of via Puppet from Mozilla's private <em>sysadmins</em>
-repository. This is important for a few reasons.</p>
-<p>First, the code behind the operation of hg.mozilla.org is now open source
-and available for the public to see and change. I strive for my work at
-Mozilla to be open by default. With hg.mozilla.org's private Puppet
-repository, people weren't able to see what was going on under the
-covers. Nor were they empowered to change anything. This may come as a
-shock, but even I don't have commit privileges to the internal Puppet
-repository that was previously powering hg.mozilla.org! I did have read
-access. But any change I wanted to make involved me proxying it through
-one of two people. It was tedious, made me feel uncomfortable for having to
-nag people to do my work, and slowed everyone down. We no longer have this
-problem, thankfully.</p>
-<p>Second, having the Ansible code in version-control-tools enables us to
-use the same operational configuration in production as we do in our
-Docker test environment. I can now spin up a cluster of Docker
-containers that behave very similarly to the production servers (which
-aren't running Docker). This enables us to write end-to-end tests of
-complex systems running across multiple Docker containers and have
-relatively high confidence that our production and testing environments
-behave very similarly. In other words, I can test complex interactions
-between multiple systems all from my local machine - even from a plane!
-For example, we can and do test that SSH connections to a simulated
-production environment running in Docker behave as expected, complete
-with an OpenSSH server speaking to an OpenLDAP server for SSH public
-key lookup. While we still have many tests to write, we had no such
-tests a year ago and every production deployment was a
-cross-your-fingers type moment. Having comprehensive tests gives us
-confidence to move fast and not break things.</p>
-<p>One year ago, hg.mozilla.org's infrastructure was opaque, didn't have
-automated tests, and was deployed too seldomly. There was the often
-correct perception that changing this critical-to-Mozilla service was
-difficult and slow. Today, things couldn't be more different. <strong>The
-hg.mozilla.org infrastructure is open, we have tests, and we can and
-do deploy multiple times per day without forward notice and without
-breaking things.</strong> I love this brave new world of open infrastructure
-and moving fast.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
- <a href="/blog/category/mercurial/2">Next Page »</a>
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2015/10/22/cloning-improvements-in-mercurial-3.6";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               
