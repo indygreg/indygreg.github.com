@@ -10,10 +10,101 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Wed, 14 Oct 2015 19:31:24 GMT</pubDate>
+    <pubDate>Thu, 22 Oct 2015 10:17:03 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Append I/O Performance on Windows</title>
+      <link>http://gregoryszorc.com/blog/2015/10/22/append-i/o-performance-on-windows</link>
+      <pubDate>Thu, 22 Oct 2015 02:15:00 PDT</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/10/22/append-i/o-performance-on-windows</guid>
+      <description>Append I/O Performance on Windows</description>
+      <content:encoded><![CDATA[<p>A few weeks ago, some coworkers were complaining about the relative
+performance of Mercurial cloning on Windows. I investigated on my
+brand new i7-6700K Windows 10 desktop machine and sure enough they were
+correct: cloning times on Windows were several minutes slower than
+Linux on the same hardware. What gives?</p>
+<p>I performed a few clones with Python under a profiler. It pointed to a
+potential slowdown in file I/O. I wanted more details so I fired up
+<a href="https://technet.microsoft.com/en-us/library/bb896645.aspx">Sysinternals Process Monitor</a>
+(strace for Windows) and captured data for a clone.</p>
+<p>As I was looking at the raw system calls related to I/O, something
+immediately popped out: <em>CloseFile()</em> operations were frequently
+taking 1-5 <em>milliseconds</em> whereas other operations like opening, reading,
+and writing files only took 1-5 <em>microseconds</em>. <strong>That's a 1000x
+difference!</strong></p>
+<p>I wrote a custom Python script to analyze an export of Process Monitor's
+data. Sure enough, it said we were spending hundreds of seconds in
+<em>CloseFile()</em> operations (it was being called a few hundred thousand
+times). I posted the findings to some mailing lists.
+<a href="https://groups.google.com/d/msg/mozilla.dev.platform/yupx2ToQ5T4/WAMC_Q-DCAAJ">Follow-ups</a>
+in Mozilla's dev-platform list pointed me to
+<a href="http://blogs.msdn.com/b/oldnewthing/archive/2011/09/23/10215586.aspx">an old MSDN blog post</a>
+where it documents behavior similar to what I was seeing.</p>
+<p>Long story short, <strong>closing file handles that have been appended to is
+slow on Windows.</strong> This is apparently due to an implementation detail of
+NTFS. Writing to a file in place is fine and only takes microseconds for
+the open, write, and close. But if you append a file, closing the
+associated file handle is going to take a few milliseconds. Even if you
+are using Overlapped I/O (async I/O on Windows), the <em>CloseHandle()</em>
+call to close the file handle blocks the calling thread! Seriously.</p>
+<p>This behavior is in stark contrast to Linux and OS X, where system I/O
+functions take microseconds (assuming your I/O subsystem can keep up).</p>
+<p>There are two ways to work around this issue:</p>
+<ol>
+<li>Reduce the amount of file closing operations on appended files.</li>
+<li>Use multiple threads for I/O on Windows.</li>
+</ol>
+<p>Armed with this knowledge, I dug into the guts of Mercurial and
+proceeded to write a
+<a href="https://selenic.com/repo/hg/rev/836291420d53">number</a>
+<a href="https://selenic.com/repo/hg/rev/39d643252b9f">of</a>
+<a href="https://selenic.com/repo/hg/rev/56a640b0f656">patches</a>
+that drastically reduced the amount of file I/O system calls during
+clone and pull operations. While I intend to write a blog post with the
+full details, <strong>cloning the Firefox repository with Mercurial 3.6 on
+Windows is now several minutes faster.</strong> Pretty much all of this is due
+to reducing the number of file close operations by aggressively reusing
+file handles.</p>
+<p>I also
+<a href="https://selenic.com/pipermail/mercurial-devel/2015-September/073788.html">experimented</a>
+with moving file close operations to a separate thread on Windows. While
+this change didn't make it into Mercurial 3.6, the results were very
+promising. Even on Python (which doesn't have real asynchronous threads
+due to the GIL), moving file closing to a background thread freed up the
+main thread to do the CPU heavy work of processing data. This made clones
+several minutes faster. (Python does release the GIL when performing an
+I/O system call.) Furthermore, <strong>simply creating a dedicated thread for
+closing file handles made Mercurial faster than 7-zip at writing tens of
+thousands of files from an uncompressed tar archive</strong>. (I'm not going to
+post the time for <em>tar</em> on Windows because it is embarassing.) That's a
+Python process on Windows faster than a native executable that is lauded
+for its speed (7-zip). Just by offloading file closing to a single
+separate thread. Crazy.</p>
+<p>I can optimize file closing in Mercurial all I want. However,
+Mercurial's storage model relies on several files. For the Firefox
+repository, we have to write ~225,000 files during clone. Assuming
+1ms per file close (which is generous), that's 225s (or 3:45) wall
+time performing file closes. That's not going to scale. I've already
+started experimenting with alternative storage modes that initially use
+1-6 files. This should enable Mercurial clones to run at over 100 MB/s
+(yes, Python and Windows can do I/O that quickly if you are smart about
+things).</p>
+<p>My primary takeaway is that creating/appending to thousands of files
+is slow on Windows and should be addressed at the architecture level
+by not requiring thousands of files and at the implementation level
+by minimizing the number of file close operations after write.
+If you absolutely must create/append to thousands of files, use multiple
+threads for at least closing file handles.</p>
+<p>My secondary takeaway is that Sysinternals Process Monitor is amazing.
+I used it against Firefox and immediately found
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1211090">performance concerns</a>.
+It can be extremely eye opening to see how your higher-level code
+is translated into function calls into your operating system and where
+the performance hot spots are or aren't at the OS level.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Lowering the Barrier to Pushing to MozReview</title>
       <link>http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview</link>
@@ -522,38 +613,6 @@ the MozReview world than we can from vanilla Bugzilla (automatic bug
 filing, automatic reviewer assignment, etc). Unofficially, I'd like to
 have more than 50% of Firefox commits go through MozReview by the end of
 the year.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Cloning From S3</title>
-      <link>http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3</link>
-      <pubDate>Wed, 08 Jul 2015 11:40:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3</guid>
-      <description>Cloning From S3</description>
-      <content:encoded><![CDATA[<p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
-bundle files</a>.
-But deploying the feature on the servers was only the tip of the
-iceberg.</p>
-<p>At the end of last week, Firefox release automation rolled out the
-<em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
-clones are bootstrapped from Amazon S3 automatically once this extension
-is installed.</p>
-<p>In just a few days of deployment, we've already seen a drastic shift in
-traffic. On UTC day 2015-07-07, S3 served 1,563,014,396,236 bytes of
-repository data! The hg.mozilla.org servers themselves served a total of
-1,976,057,201,583 bytes.</p>
-<p>But we're not done. The <em>bundleclone</em> extension
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181597">isn't yet deployed on Windows</a>. Nor is it always used on TaskCluster. In addition, there are
-still some high-use repositories that don't have bundles being
-generated. Yesterday, I crunched the data and
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181373">enabled bundles on more repositories</a>. It's too early to have conclusive data, but this should
-move an additional several hundred gigabytes of traffic to S3.</p>
-<p>At Whistler, I said that reducing traffic on hg.mozilla.org by 90% is
-within the realm of possibility. Between a partial rollout of S3
-clone offload that is already serving 44% of traffic and a
-<a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
-I'd say we're well on track.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

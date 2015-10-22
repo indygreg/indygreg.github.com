@@ -51,6 +51,65 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="hg.mozilla.org-operational-workings-now-open-sourced"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced" rel="bookmark" title="Permanent Link to hg.mozilla.org Operational Workings Now Open Sourced">hg.mozilla.org Operational Workings Now Open Sourced</a></h2>
+  <small>August 04, 2015 at 02:30 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Just a few minutes ago, hg.mozilla.org reached an important milestone:
+deployments are now performed via Ansible from our open source
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository instead of via Puppet from Mozilla's private <em>sysadmins</em>
+repository. This is important for a few reasons.</p>
+<p>First, the code behind the operation of hg.mozilla.org is now open source
+and available for the public to see and change. I strive for my work at
+Mozilla to be open by default. With hg.mozilla.org's private Puppet
+repository, people weren't able to see what was going on under the
+covers. Nor were they empowered to change anything. This may come as a
+shock, but even I don't have commit privileges to the internal Puppet
+repository that was previously powering hg.mozilla.org! I did have read
+access. But any change I wanted to make involved me proxying it through
+one of two people. It was tedious, made me feel uncomfortable for having to
+nag people to do my work, and slowed everyone down. We no longer have this
+problem, thankfully.</p>
+<p>Second, having the Ansible code in version-control-tools enables us to
+use the same operational configuration in production as we do in our
+Docker test environment. I can now spin up a cluster of Docker
+containers that behave very similarly to the production servers (which
+aren't running Docker). This enables us to write end-to-end tests of
+complex systems running across multiple Docker containers and have
+relatively high confidence that our production and testing environments
+behave very similarly. In other words, I can test complex interactions
+between multiple systems all from my local machine - even from a plane!
+For example, we can and do test that SSH connections to a simulated
+production environment running in Docker behave as expected, complete
+with an OpenSSH server speaking to an OpenLDAP server for SSH public
+key lookup. While we still have many tests to write, we had no such
+tests a year ago and every production deployment was a
+cross-your-fingers type moment. Having comprehensive tests gives us
+confidence to move fast and not break things.</p>
+<p>One year ago, hg.mozilla.org's infrastructure was opaque, didn't have
+automated tests, and was deployed too seldomly. There was the often
+correct perception that changing this critical-to-Mozilla service was
+difficult and slow. Today, things couldn't be more different. <strong>The
+hg.mozilla.org infrastructure is open, we have tests, and we can and
+do deploy multiple times per day without forward notice and without
+breaking things.</strong> I love this brave new world of open infrastructure
+and moving fast.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mercurial-3.5-released"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/07/31/mercurial-3.5-released" rel="bookmark" title="Permanent Link to Mercurial 3.5 Released">Mercurial 3.5 Released</a></h2>
   <small>July 31, 2015 at 01:15 PM | categories: 
@@ -409,48 +468,6 @@ the year.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="cloning-from-s3"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/07/08/cloning-from-s3" rel="bookmark" title="Permanent Link to Cloning From S3">Cloning From S3</a></h2>
-  <small>July 08, 2015 at 11:40 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
-bundle files</a>.
-But deploying the feature on the servers was only the tip of the
-iceberg.</p>
-<p>At the end of last week, Firefox release automation rolled out the
-<em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
-clones are bootstrapped from Amazon S3 automatically once this extension
-is installed.</p>
-<p>In just a few days of deployment, we've already seen a drastic shift in
-traffic. On UTC day 2015-07-07, S3 served 1,563,014,396,236 bytes of
-repository data! The hg.mozilla.org servers themselves served a total of
-1,976,057,201,583 bytes.</p>
-<p>But we're not done. The <em>bundleclone</em> extension
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181597">isn't yet deployed on Windows</a>. Nor is it always used on TaskCluster. In addition, there are
-still some high-use repositories that don't have bundles being
-generated. Yesterday, I crunched the data and
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181373">enabled bundles on more repositories</a>. It's too early to have conclusive data, but this should
-move an additional several hundred gigabytes of traffic to S3.</p>
-<p>At Whistler, I said that reducing traffic on hg.mozilla.org by 90% is
-within the realm of possibility. Between a partial rollout of S3
-clone offload that is already serving 44% of traffic and a
-<a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
-I'd say we're well on track.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../1">« Previous Page</a>
   --  

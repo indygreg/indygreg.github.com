@@ -51,6 +51,108 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="append-i/o-performance-on-windows"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/10/22/append-i/o-performance-on-windows" rel="bookmark" title="Permanent Link to Append I/O Performance on Windows">Append I/O Performance on Windows</a></h2>
+  <small>October 22, 2015 at 02:15 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/10/22/append-i/o-performance-on-windows#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A few weeks ago, some coworkers were complaining about the relative
+performance of Mercurial cloning on Windows. I investigated on my
+brand new i7-6700K Windows 10 desktop machine and sure enough they were
+correct: cloning times on Windows were several minutes slower than
+Linux on the same hardware. What gives?</p>
+<p>I performed a few clones with Python under a profiler. It pointed to a
+potential slowdown in file I/O. I wanted more details so I fired up
+<a href="https://technet.microsoft.com/en-us/library/bb896645.aspx">Sysinternals Process Monitor</a>
+(strace for Windows) and captured data for a clone.</p>
+<p>As I was looking at the raw system calls related to I/O, something
+immediately popped out: <em>CloseFile()</em> operations were frequently
+taking 1-5 <em>milliseconds</em> whereas other operations like opening, reading,
+and writing files only took 1-5 <em>microseconds</em>. <strong>That's a 1000x
+difference!</strong></p>
+<p>I wrote a custom Python script to analyze an export of Process Monitor's
+data. Sure enough, it said we were spending hundreds of seconds in
+<em>CloseFile()</em> operations (it was being called a few hundred thousand
+times). I posted the findings to some mailing lists.
+<a href="https://groups.google.com/d/msg/mozilla.dev.platform/yupx2ToQ5T4/WAMC_Q-DCAAJ">Follow-ups</a>
+in Mozilla's dev-platform list pointed me to
+<a href="http://blogs.msdn.com/b/oldnewthing/archive/2011/09/23/10215586.aspx">an old MSDN blog post</a>
+where it documents behavior similar to what I was seeing.</p>
+<p>Long story short, <strong>closing file handles that have been appended to is
+slow on Windows.</strong> This is apparently due to an implementation detail of
+NTFS. Writing to a file in place is fine and only takes microseconds for
+the open, write, and close. But if you append a file, closing the
+associated file handle is going to take a few milliseconds. Even if you
+are using Overlapped I/O (async I/O on Windows), the <em>CloseHandle()</em>
+call to close the file handle blocks the calling thread! Seriously.</p>
+<p>This behavior is in stark contrast to Linux and OS X, where system I/O
+functions take microseconds (assuming your I/O subsystem can keep up).</p>
+<p>There are two ways to work around this issue:</p>
+<ol>
+<li>Reduce the amount of file closing operations on appended files.</li>
+<li>Use multiple threads for I/O on Windows.</li>
+</ol>
+<p>Armed with this knowledge, I dug into the guts of Mercurial and
+proceeded to write a
+<a href="https://selenic.com/repo/hg/rev/836291420d53">number</a>
+<a href="https://selenic.com/repo/hg/rev/39d643252b9f">of</a>
+<a href="https://selenic.com/repo/hg/rev/56a640b0f656">patches</a>
+that drastically reduced the amount of file I/O system calls during
+clone and pull operations. While I intend to write a blog post with the
+full details, <strong>cloning the Firefox repository with Mercurial 3.6 on
+Windows is now several minutes faster.</strong> Pretty much all of this is due
+to reducing the number of file close operations by aggressively reusing
+file handles.</p>
+<p>I also
+<a href="https://selenic.com/pipermail/mercurial-devel/2015-September/073788.html">experimented</a>
+with moving file close operations to a separate thread on Windows. While
+this change didn't make it into Mercurial 3.6, the results were very
+promising. Even on Python (which doesn't have real asynchronous threads
+due to the GIL), moving file closing to a background thread freed up the
+main thread to do the CPU heavy work of processing data. This made clones
+several minutes faster. (Python does release the GIL when performing an
+I/O system call.) Furthermore, <strong>simply creating a dedicated thread for
+closing file handles made Mercurial faster than 7-zip at writing tens of
+thousands of files from an uncompressed tar archive</strong>. (I'm not going to
+post the time for <em>tar</em> on Windows because it is embarassing.) That's a
+Python process on Windows faster than a native executable that is lauded
+for its speed (7-zip). Just by offloading file closing to a single
+separate thread. Crazy.</p>
+<p>I can optimize file closing in Mercurial all I want. However,
+Mercurial's storage model relies on several files. For the Firefox
+repository, we have to write ~225,000 files during clone. Assuming
+1ms per file close (which is generous), that's 225s (or 3:45) wall
+time performing file closes. That's not going to scale. I've already
+started experimenting with alternative storage modes that initially use
+1-6 files. This should enable Mercurial clones to run at over 100 MB/s
+(yes, Python and Windows can do I/O that quickly if you are smart about
+things).</p>
+<p>My primary takeaway is that creating/appending to thousands of files
+is slow on Windows and should be addressed at the architecture level
+by not requiring thousands of files and at the implementation level
+by minimizing the number of file close operations after write.
+If you absolutely must create/append to thousands of files, use multiple
+threads for at least closing file handles.</p>
+<p>My secondary takeaway is that Sysinternals Process Monitor is amazing.
+I used it against Firefox and immediately found
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1211090">performance concerns</a>.
+It can be extremely eye opening to see how your higher-level code
+is translated into function calls into your operating system and where
+the performance hot spots are or aren't at the OS level.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/10/22/append-i/o-performance-on-windows#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="lowering-the-barrier-to-pushing-to-mozreview"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview" rel="bookmark" title="Permanent Link to Lowering the Barrier to Pushing to MozReview">Lowering the Barrier to Pushing to MozReview</a></h2>
   <small>October 14, 2015 at 12:30 PM | categories: 
@@ -227,65 +329,6 @@ implement proper security...</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="hg.mozilla.org-operational-workings-now-open-sourced"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced" rel="bookmark" title="Permanent Link to hg.mozilla.org Operational Workings Now Open Sourced">hg.mozilla.org Operational Workings Now Open Sourced</a></h2>
-  <small>August 04, 2015 at 02:30 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Just a few minutes ago, hg.mozilla.org reached an important milestone:
-deployments are now performed via Ansible from our open source
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository instead of via Puppet from Mozilla's private <em>sysadmins</em>
-repository. This is important for a few reasons.</p>
-<p>First, the code behind the operation of hg.mozilla.org is now open source
-and available for the public to see and change. I strive for my work at
-Mozilla to be open by default. With hg.mozilla.org's private Puppet
-repository, people weren't able to see what was going on under the
-covers. Nor were they empowered to change anything. This may come as a
-shock, but even I don't have commit privileges to the internal Puppet
-repository that was previously powering hg.mozilla.org! I did have read
-access. But any change I wanted to make involved me proxying it through
-one of two people. It was tedious, made me feel uncomfortable for having to
-nag people to do my work, and slowed everyone down. We no longer have this
-problem, thankfully.</p>
-<p>Second, having the Ansible code in version-control-tools enables us to
-use the same operational configuration in production as we do in our
-Docker test environment. I can now spin up a cluster of Docker
-containers that behave very similarly to the production servers (which
-aren't running Docker). This enables us to write end-to-end tests of
-complex systems running across multiple Docker containers and have
-relatively high confidence that our production and testing environments
-behave very similarly. In other words, I can test complex interactions
-between multiple systems all from my local machine - even from a plane!
-For example, we can and do test that SSH connections to a simulated
-production environment running in Docker behave as expected, complete
-with an OpenSSH server speaking to an OpenLDAP server for SSH public
-key lookup. While we still have many tests to write, we had no such
-tests a year ago and every production deployment was a
-cross-your-fingers type moment. Having comprehensive tests gives us
-confidence to move fast and not break things.</p>
-<p>One year ago, hg.mozilla.org's infrastructure was opaque, didn't have
-automated tests, and was deployed too seldomly. There was the often
-correct perception that changing this critical-to-Mozilla service was
-difficult and slow. Today, things couldn't be more different. <strong>The
-hg.mozilla.org infrastructure is open, we have tests, and we can and
-do deploy multiple times per day without forward notice and without
-breaking things.</strong> I love this brave new world of open infrastructure
-and moving fast.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/2">Next Page »</a>
 
