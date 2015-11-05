@@ -10,10 +10,59 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 22 Oct 2015 12:56:03 GMT</pubDate>
+    <pubDate>Thu, 05 Nov 2015 17:20:05 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>hg.mozilla.org Updates</title>
+      <link>http://gregoryszorc.com/blog/2015/11/05/hg.mozilla.org-updates</link>
+      <pubDate>Thu, 05 Nov 2015 09:20:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/11/05/hg.mozilla.org-updates</guid>
+      <description>hg.mozilla.org Updates</description>
+      <content:encoded><![CDATA[<p>A number of changes have been made to
+<a href="https://hg.mozilla.org">hg.mozilla.org</a> over the past few days:</p>
+<ul>
+<li>
+<p>Bookmarks are now replicated from master to mirrors properly (before,
+  you could have seen <em>foo@default</em> bookmarks appearing). This means
+  bookmarks now properly work on hg.mozilla.org!
+  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1139056">bug 1139056</a>).</p>
+</li>
+<li>
+<p>Universally upgraded to Mercurial 3.5.2. Previously we were running
+  3.5.1 on the SSH master server and 3.4.1 on the HTTP endpoints. Some
+  HTML templates received minor changes.
+  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1200769">bug 1200769</a>).</p>
+</li>
+<li>
+<p>Pushes from clients running Mercurial older than 3.5 will now see
+  an advisory message encouraging them to upgrade.
+  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1221827">bug 1221827</a>).</p>
+</li>
+<li>
+<p>Author/user fields are now validated to be a RFC 822-like value
+  (e.g. "Joe Smith &lt;someone@example.com&gt;").
+  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=787620">bug 787620</a>).</p>
+</li>
+<li>
+<p>We can now mark individual repositories as read-only.
+  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1183282">bug 1183282</a>).</p>
+</li>
+<li>
+<p>We can now mark all repositories read-only (useful during maintenance
+  events).
+  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1183282">bug 1183282</a>).</p>
+</li>
+<li>
+<p>Pushlog commit list view only shows first line of commit message.
+  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=666750">bug 666750</a>).</p>
+</li>
+</ul>
+<p>Please report any issues in their respective bugs. Or if it is an
+emergency, #vcs on irc.mozilla.org.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Cloning Improvements in Mercurial 3.6</title>
       <link>http://gregoryszorc.com/blog/2015/10/22/cloning-improvements-in-mercurial-3.6</link>
@@ -669,95 +718,6 @@ automated environments. It reflects knowledge I've learned from seeing
 Mercurial used in automation at Mozilla.</p>
 <p>Of course, there are plenty of other changes in Mercurial 3.5. Stay
 tuned for another blog post.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Prompting to Run mach mercurial-setup</title>
-      <link>http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup</link>
-      <pubDate>Fri, 17 Jul 2015 11:35:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup</guid>
-      <description>Prompting to Run mach mercurial-setup</description>
-      <content:encoded><![CDATA[<p>Earlier this week, I landed some changes to the Firefox development
-environment that aggressively make <em>mach</em> prompt to run <em>mach
-mercurial-setup</em>. Full details in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1182677">bug 1182677</a>.</p>
-<p>As expected, the change resulted in a fair amount of whining and
-bemoaning among various Firefox developers. I wanted to take some time
-to explain why we moved forward, even though we knew not everyone would
-like the feature.</p>
-<p>My official job title at Mozilla is <em>Developer Productivity Engineer</em>.
-My job is to make you do your job better.</p>
-<p>I've been an employee at Mozilla for four years and in that time I've
-witnessed a surprising lack of understanding around version control
-tools. (I don't think Mozilla is significantly different from most
-other companies here.) I find that a significant number of people
-are practicing sub-optimal version control workflows because they don't
-know any better (common) or because they are unwilling to change from
-learned habits.</p>
-<p>Furthermore, Mercurial is a highly customizable tool. A lot of
-Mozillians have spent a lot of time developing useful extensions to
-Mercurial that enable Mozillians to use Mercurial more effectively and
-to thus become more productive. The latest epic time-saving hack
-is <a href="http://www.ncalexander.net/blog/2015/07/02/build-fennec-frontend-fast-with-mach-artifact/">Nick Alexander's work to make Fennec build 80% faster by
-having deep integration with version control</a>.</p>
-<p><em>mach mercurial-setup</em> is almost
-<a href="/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development/">two years old</a>.
-Yet, when assisting my fellow Mozillians with Mercurial issues, my
-"have you run mach mercurial-setup?" question is still often met with
-blank stares followed by "wait, there's a mach mercurial-setup?!" What's
-even more frustrating is people wrongly believing that Mercurial can't
-do things like rebasing and then spreading misinformation about the
-lackings of Mercurial. (Mercurial has many advanced features disabled
-out of the box so new users don't footgun themselves.)</p>
-<p>Just like Firefox would be irrelevant if it didn't have millions of users,
-your awesome tool is mostly irrelevant if you are its only user. That's
-why when I hear of someone say they created an amazing tool for
-themselves or modified a third party tool without sending the improvements
-upstream, my blood pressure rises a little. It rises because here this
-person did something awesome and they or some limited subset of people
-who happened to be following the person on Twitter or reading their blog
-at that point in time managed to a) know about the tool b) take the
-effort to install it. The uptake rate is insanely low and return on
-investment for that tool is low. It results in duplication of effort.
-I find this painfully frustrating because I want everyone to have easy
-access to the best tools available. This requires that tools are well
-advertised and easy to install and use.</p>
-<p>The primary goal of <em>mach mercurial-setup</em> is to make it super easy for
-anyone to have an optimal Mercurial experience. It was apparent to me that
-despite <em>mach mercurial-setup</em> existing, numerous people didn't know it
-existed or weren't using it. Your awesome tool isn't very awesome unless
-people are using it. And a lot of the awesome tools people have built
-around Mercurial at Mozilla weren't being utilized and lots of
-productivity wins were thus being unrealized. Forcefully pushing <em>mach
-mercurial-setup</em> onto people is thus an attempt to unlock unrealized
-productivity wins and to make people happier about the state of their
-tools.</p>
-<p>I'm not thrilled that mach's prompting to run <em>mach mercurial-setup</em> is
-as disruptive as it is. It's bad user experience. I know better. But,
-(and this is explained somewhat in the bug), other solutions are more
-complicated and have other gotchas. The current, invasive implementation
-was the easiest to implement and has the biggest bang for the buck in
-terms of adoption. We knew people would complain about it. But from
-my perspective, it was do this or do nothing. And nothing hadn't been
-very effective. So we did something.</p>
-<p>There has been lots of feedback about the change this week. Most
-surprising to me is the general sentiment of "I don't want something
-automatically changing my hgrc file." I find this surprising because
-<em>mach mercurial-setup</em> puts the user firmly in control by prompting
-before doing anything, thus respecting user choice and avoiding gotchas
-and unwanted changes. It's clear this property needs to be advertised a
-bit more so people aren't scared to run <em>mach mercurial-setup</em> and don't
-spread fear, uncertainty, and doubt about the tool to others. (I also
-find it somewhat surprising people would think this in the first place:
-I'd like to think we'd implicitly trust most Mozillians to implement
-tools that respect user choice and don't do <em>malicious</em> things.)</p>
-<p>Like all software, things can and will change. The user experience of
-this new feature isn't terrific. We'll iterate on it. If you want to
-help enact change, please
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">file a bug in Core :: mach</a>
-(for now) and we'll go from there.</p>
-<p>Thank you for your patience and your understanding.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
