@@ -51,6 +51,405 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="macbook-pro-firefox-build-times-comparison"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/11/05/macbook-pro-firefox-build-times-comparison" rel="bookmark" title="Permanent Link to MacBook Pro Firefox Build Times Comparison">MacBook Pro Firefox Build Times Comparison</a></h2>
+  <small>November 05, 2013 at 10:00 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2013/11/05/macbook-pro-firefox-build-times-comparison#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Many developers use MacBook Pros for day-to-day Firefox development.
+So, I thought it would be worthwhile to perform a comparison of
+Firefox build times for various models of MacBook Pros.</p>
+<h2>Test setup</h2>
+<p>The numbers in this post are obtained from 3 generations of MacBook
+Pros:</p>
+<ol>
+<li>
+<p>A 2011 Sandy Bridge 4 core x 2.3 GHz with 8 GB RAM and an aftermarket
+   SSD.</p>
+</li>
+<li>
+<p>A 2012 Ivy Bridge retina with 4 core x 2.6 GHz, 16 GB RAM, and a
+   factory SSD (or possibly flash storage).</p>
+</li>
+<li>
+<p>A 2013 Haswell retina with 4 core x 2.6 GHz, 16 GB RAM, and flash
+   storage.</p>
+</li>
+</ol>
+<p>All machines were running OS X 10.9 Mavericks and were using the
+Xcode 5.0.1 toolchain (<em>Xcode 5 clang: Apple LLVM version 5.0
+(clang-500.2.79) (based on LLVM 3.3svn)</em>) to build.</p>
+<p>The power settings prevented machine sleep and machines were plugged
+into A/C power during measuring. I did not use the machines while
+obtaining measurements.</p>
+<p>The 2012 and 2013 machines were very vanilla OS installs. However,
+the 2011 machine was my primary work computer and may have had a
+few background services running and may have been slower due to
+normal wear and tear. The 2012 machine was a loaner machine from
+IT and has an unknown history.</p>
+<p>All data was obtained from mozilla-central revision d4a27d8eda28.</p>
+<p>The mozconfig used contained:</p>
+<p>export MOZ_PSEUDO_DERECURSE=1
+  mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-firefox.noindex</p>
+<p>Please note that the objdir name ends with <em>.noindex</em> to prevent Finder
+from indexing build files.</p>
+<p>I performed all tests multiple times and used the fastest time. I used
+<em>time</em> command for obtaining measurements of wall, user, and system
+time.</p>
+<h2>Results</h2>
+<h3>Configure Times</h3>
+<p>The result of <em>mach configure</em> is as follows:</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>29.748</td>
+    <td>17.921</td>
+    <td>11.644</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>26.765</td>
+    <td>15.942</td>
+    <td>10.501</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>21.581</td>
+    <td>12.597</td>
+    <td>8.595</td>
+  </tr>
+</table>
+
+<h3>Clobber build no ccache</h3>
+<p><em>mach build</em> was performed <em>after</em> running <em>mach configure</em>. ccache was
+not enabled.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+    <th>Total CPU time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>22:29 (1349)</td>
+    <td>145:35 (8735)</td>
+    <td>12:03 (723)</td>
+    <td>157:38 (9458)</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>15:00 (900)</td>
+    <td>94:18 (5658)</td>
+    <td>8:14 (494)</td>
+    <td>102:32 (6152)</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>11:13 (673)</td>
+    <td>69:55 (4195)</td>
+    <td>6:04 (364)</td>
+    <td>75:59 (4559)</td>
+  </tr>
+</table>
+
+<h3>Clobber build with empty ccache</h3>
+<p><em>mach build</em> was performed <em>after</em> running <em>mach configure</em>. ccache was
+enabled. The ccache ccache was cleared before running <em>mach configure</em>.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+    <th>Total CPU time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>25:57 (1557)</td>
+    <td>161:30 (9690)</td>
+    <td>18:21 (1101)</td>
+    <td>179:51 (10791)</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>16:58 (1018)</td>
+    <td>104:50 (6290)</td>
+    <td>12:32 (752)</td>
+    <td>117:22 (7042)</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>12:59 (779)</td>
+    <td>79:51 (4791)</td>
+    <td>9:24 (564)</td>
+    <td>89:15 (5355)</td>
+  </tr>
+</table>
+
+<h3>Clobber build with populated ccache</h3>
+<p><em>mach build</em> was performed after running <em>mach configure</em>. ccache was
+enabled and the ccache was populated with the results of a prior build.
+In theory, all compiler invocations should be serviced by ccache
+entries.</p>
+<p>This measure is a very crude way to measure how fast clobber builds
+would be if compiler invocations were nearly instantaneous.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>3:59 (239)</td>
+    <td>8:04 (484)</td>
+    <td>3:21 (201)(</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>3:11 (191)</td>
+    <td>6:45 (405)</td>
+    <td>2:53 (173)</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>2:31 (151)</td>
+    <td>5:22 (322)</td>
+    <td>2:12 (132)</td>
+  </tr>
+</table>
+
+<h3>No-op builds</h3>
+<p><em>mach build</em> was performed on a tree that was already built.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>1:58 (118)</td>
+    <td>2:25 (145)</td>
+    <td>0:41 (41)</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>1:42 (102)</td>
+    <td>2:02 (122)</td>
+    <td>0:37 (37)</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>1:20 (80)</td>
+    <td>1:39 (99)</td>
+    <td>0:28 (28)</td>
+  </tr>
+</table>
+
+<h3>binaries no-op</h3>
+<p><em>mach build binaries</em> was performed on a fully built tree. This results
+in nothing being executed. It's a way to test the overhead of the
+<em>binaries</em> make target.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>4.21</td>
+    <td>4.38</td>
+    <td>0.92</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>3.17</td>
+    <td>3.37</td>
+    <td>0.71</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>2.67</td>
+    <td>2.75</td>
+    <td>0.56</td>
+  </tr>
+</table>
+
+<h3>binaries touch single .cpp</h3>
+<p><em>mach build binaries</em> was performed on a fully built tree after touching
+the file <em>netwerk/dns/nsHostResolver.cpp</em>. ccache was enabled but
+cleared before running this test. This test simulates common C++
+developer workflow of changing C++ and recompiling.</p>
+<table border="1">
+  <tr>
+    <th>Machine</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>12.89</td>
+    <td>13.88</td>
+    <td>1.96</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>10.82</td>
+    <td>11.63</td>
+    <td>1.78</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>8.57</td>
+    <td>9.29</td>
+    <td>1.23</td>
+  </tr>
+</table>
+
+<h3>Tier times</h3>
+<p>The times of each build system <em>tier</em> were measured on the 2013 Haswell
+MacBook Pro. These timings were obtained out of curiosity to help
+isolate the impact of different parts of the build. ccache was not
+enabled for these tests.</p>
+<table border="1">
+  <tr>
+    <th>Action</th>
+    <th>Wall time</th>
+    <th>User time</th>
+    <th>System time</th>
+    <th>Total CPU time</th>
+  </tr>
+  <tr>
+    <td>export clobber</td>
+    <td>15.75</td>
+    <td>66.11</td>
+    <td>11.33</td>
+    <td>77.44</td>
+  </tr>
+  <tr>
+    <td>compile clobber</td>
+    <td>9:01 (541)</td>
+    <td>64:58 (3898)</td>
+    <td>5:08 (308)</td>
+    <td>70:06 (4206)</td>
+  </tr>
+  <tr>
+    <td>libs clobber</td>
+    <td>1:34 (94)</td>
+    <td>2:15 (135)</td>
+    <td>0:39 (39)</td>
+    <td>2:54 (174)</td>
+  </tr>
+  <tr>
+    <td>tools clobber</td>
+    <td>9.33</td>
+    <td>13.41</td>
+    <td>2.48</td>
+    <td>15.89</td>
+  </tr>
+  <tr>
+    <td>export no-op</td>
+    <td>3.01</td>
+    <td>9.72</td>
+    <td>3.47</td>
+    <td>13.19</td>
+  </tr>
+  <tr>
+    <td>compile no-op</td>
+    <td>3.18</td>
+    <td>18.02</td>
+    <td>2.64</td>
+    <td>20.66</td>
+  </tr>
+  <tr>
+    <td>libs no-op</td>
+    <td>58.2</td>
+    <td>46.9</td>
+    <td>13.4</td>
+    <td>60.3</td>
+  </tr>
+  <tr>
+    <td>tools no-op</td>
+    <td>8.82</td>
+    <td>12.68</td>
+    <td>1.72</td>
+    <td>14.40</td>
+  </tr>
+</table>
+
+<h2>Observations and conclusions</h2>
+<p>The data speaks for itself: <strong>the 2013 Haswell MacBook Pro is
+significantly faster than its predecessors.</strong> It clocks in at 2x faster
+than the benchmarked 2011 Sandy Bridge model (keep in mind the 300 MHz
+base clock difference) and is ~34% faster than the 2012 Ivy Bridge (at
+similar clock speed). Personally, I was surprised by this. I was
+expecting speed improvements over Ivy Bridge, but not 34%.</p>
+<p>It should go without saying: <strong>if you have the opportunity to upgrade
+to a new, Haswell-based machine: do it.</strong> If possible, purchase
+the upgrade to a 2.6 GHz CPU, as it contains ~13% more MHz than the
+base 2.3 GHz model: this will make a measurable difference in build
+times.</p>
+<p>It's worth noting the increased efficiency of Haswell over its
+predecessors. The total CPU time required to build decreased from ~158
+minutes to ~103 minutes to 76 minutes! That 76 minute number is worth
+highlighting because it means if we get 100% CPU saturation during
+builds, we'll be able to build the tree in under 10 wall time minutes!</p>
+<p>I hadn't performed crude benchmarks of high-level build system actions
+since the <em>MOZ_PSEUDO_DERECURSE</em> work landed and I wanted to use the
+opportunity of this hardware comparison to grab some numbers.</p>
+<p>The overhead of ccache continues to surprise me. On the 2013
+machine, enabling ccache increased the wall time of a clobber build by
+1:46 and added 13:16 of CPU time. This is an increase of 16% and 17%,
+respectively.</p>
+<p>It's worth highlighting just how much time is spent compiling C/C++. In
+our artificial tier measuring results, our clobber build time was ~660
+wall time seconds (11 minutes) and used ~4473s CPU time (74:33). Of
+this, 9:01 wall time and 70:06 CPU time was spent compiling C/C++. This
+represents ~82% wall time and ~94% CPU time! Please note this does not
+include linking. <strong>Anything we can do to decrease the CPU time used by
+the compiler will make the build faster.</strong></p>
+<p>I also found it interesting to note variances in obtained times. Even on
+my brand new 2013 Haswell MacBook Pro where I know there aren't many
+background processes running, wall times could vary significantly. I
+<em>think</em> I isolated it to CPU bursting and heat issues. If I wait a few
+minutes between CPU intensive tests, results are pretty consistent. But
+if I perform CPU intensive tests back-to-back, the run times often vary.
+The only other thing coming into play could be page caching or
+filesystem indexing. I accounted for the latter by disabling Finder
+on the object directory. And, I'd like to think that flash storage is
+fast enough to remove I/O latency from the equation. Who knows. At the
+end of the day, laptops aren't servers and OS X is a consumer OS, so I
+don't expect ultra consistency.</p>
+<p>Finally, I want to restate just how fast Haswell is. If you have the
+opportunity to upgrade, do it.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/05/macbook-pro-firefox-build-times-comparison#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="distributed-compiling-and-firefox"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/10/31/distributed-compiling-and-firefox" rel="bookmark" title="Permanent Link to Distributed Compiling and Firefox">Distributed Compiling and Firefox</a></h2>
   <small>October 31, 2013 at 11:35 AM | categories: 
@@ -640,276 +1039,6 @@ hard work. Wish us luck. Please help out where you can.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/15/the-state-of-the-firefox-build-system-(2013-q3-review)#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="phabricator-is-awesome"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/10/14/phabricator-is-awesome" rel="bookmark" title="Permanent Link to Phabricator is Awesome">Phabricator is Awesome</a></h2>
-  <small>October 14, 2013 at 11:00 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/10/14/phabricator-is-awesome#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>When I talk to Mozillians who now work at Facebook, they all say
-something similar: <em>the tools at Facebook are amazing and put what
-Mozilla uses to shame</em>. Having worked at places with decent tools, I
-do know that Mozilla is behind the times. So it was easy for me to
-dismiss these observations as obvious. But, when you start asking them
-about specifics, one tool they are quick to name is
-<a href="http://phabricator.org/">Phabricator</a>.</p>
-<p>For those who don't want to follow the link, Phabricator is your
-all-in-on software engineering web application and platform. It has
-issue/bug tracking, code review, repository navigation, wikis, etc. It's
-the kitchen sink for software lifecycle management. And, it's open
-source and easy to extend. Sounds promising.</p>
-<p>After hearing Facebookers rave about Phabricator and having casually
-interacted with an instance to review patches to Clang, I was keen
-to have a closer look.</p>
-<p>So, I spent a lazy afternoon and installed Phabricator on an EC2
-instance (connection details below). Having interacted with the
-default setup for a few hours, I can say with high confidence
-that the Facebookers can back up their claim that Phabricator is
-pretty damn amazing. My initial impressions are that it's one of
-those tools that's so good that once you start using it, you'll
-never tolerate anything subpar again. Again, hearing the
-Mozillians-turned-Facebookers opine about Bugzilla, code review,
-etc, I think this initial impression might be right.</p>
-<p>In the sections below, I'll talk a bit about Phabricator and why I
-think it is superior to what Mozilla uses.</p>
-<h2>Integrated UI</h2>
-<p>One thing I really love about Phabricator is the integrated UI.
-Phabricator is essentially a collection of <em>applications</em> tied together
-by a single web interface. So, everything is readily available under one
-site/domain/service.</p>
-<p>This means everything is easier to find. You search for something and
-all the different components have their results surfaced. Contrast with
-Mozilla as of today, where you need separate searches for Bugzilla,
-MXR/DXR, wiki.mozilla.org, etherpad, MDN, etc.</p>
-<p>For IT, it means there is only a single service to run and scale. Less
-overhead to operate. Less effort to secure.</p>
-<h2>Arcanist command line tool</h2>
-<p>Phabricator ships with a command line tool called
-<a href="http://www.phabricator.com/docs/phabricator/article/Arcanist_User_Guide.html">Arcanist</a>.
-It is amazing.</p>
-<p>Projects put <em>.arcconfig</em> files under version control which contain the
-settings used to configure Arcanist for that project. They essentially
-point back towards the Phabricator instance for that project.</p>
-<p>You can do a lot with the Arcanism command line interface. Want to
-create a code review? <em>arc diff</em>. It opens up an editor and allows you
-to fill in details about the review. It then automatically publishes it
-for review. No leaving the command line necessary.</p>
-<p>You can download and apply patches undergoing code review by
-specifying their review identifier. e.g. <em>arc patch D1</em>.</p>
-<p>You can create tasks for yourself by running <em>arc todo</em>. The tasks are
-uploaded to Phabricator automatically and show up in your dashboard.</p>
-<p>If your repo has configured which tests apply to which paths, <em>arc unit</em>
-will run all tests impacted by the current patch. (If we ever get around
-to annotating this, it would significantly reduce load in automation by
-eliminating unnecessary tests.)</p>
-<p>There is an <em>arc land</em> command to land patches on the appropriate
-landing branch.</p>
-<p>Arcanist abstracts the differences between version control systems
-pretty well. You can use the same commands for Mercurial, Git, or
-Subversion.</p>
-<p>Arcanist is pretty nice. It reminds me a lot of mach and what I
-originally wanted mach to become with regard to helping to improve
-developer workflow.</p>
-<h2>Real Code Review</h2>
-<p>Phabricator features a real code review tool -
-<a href="http://www.phabricator.com/docs/phabricator/article/Differential_User_Guide.html">Differential</a>.</p>
-<p>Things like interdiff actually work. It integrates with the code
-repository, which means you can expand context right from the
-review interface. It can detect blocks
-of code that moved between files. It has a nice file tree for navigating
-changed files (optional feature). It hides whitespace only changes by
-default. You can specify a group of people for review and reviews will
-show up in the dashboard of individuals in that group. It has a flag
-to say whether a patch underwent <em>linting</em> before upload. (You can
-configure linting through Arcanist and have your patches linted before
-upload. If you properly deploy linting, style nits all but go away. As I
-like to say, every time I write a style nit in code review, my time is
-wasted and Mozilla is throwing away part of my salary.)</p>
-<p>Mozilla is apparently integrating ReviewBoard into Bugzilla. This is
-good. ReviewBoard's review features are infinitely better than Splinter
-(Bugzilla's current review interface). However, ReviewBoard is mostly a
-standalone tool. What makes Phabricator's approach better is that code
-review integrates tightly with everything else. This enables some pretty
-awesome scenarios. Keep reading for more.</p>
-<h2>Auditing</h2>
-<p>An interesting and potentially very useful feature of Phabricator is
-<a href="http://www.phabricator.com/docs/phabricator/article/Audit_User_Guide.html">auditing</a>.
-Where Differential handles pre-push code review, the Audit
-application supports post-push code review. You may say <em>but all changes
-at Mozilla must go through pre-push code review - there's no use for
-post-push code review</em>. Yes, but post-push review opens up a whole new
-realm of possibilities.</p>
-<p>It's possible for individual users or projects to set up rules to
-automatically trigger audits. For example, as build module owner, I'm
-very interested in ensuring people follow the code review policy of
-having a build peer review changes to make files. With Phabricator, I
-was able to easily configure a rule that automatically creates an audit
-every time a make file has changed but it wasn't signed off by a build
-peer. Front and center on my dashboard are a list of commits that I
-should probably look at. Neat!</p>
-<p>Audits are potentially useful for reviews that focus less on code. For
-example, Firefox Health Report and Telemetry are two Firefox features
-that collect data and send it (anonymously) to Mozilla. Audits could be
-used to flag a privacy review when probes are changed. We often don't
-want this privacy review to hold up code landing. But we do want to
-track that this review occurs before a patch is shipped to our Beta
-channel users. I think audits would be great for facilitating this.</p>
-<p>Of course, there is a web interface to create new audits. Any individual
-can watch anything they have access to. No process involved. Just log in
-and create a rule.</p>
-<p>Mozilla has audits today, but it isn't user intuitive. They commonly
-take the form of Bugzilla keywords or whiteboard entries. Phabricator's
-feature is much more powerful.</p>
-<h2>Creating rules as a result of actions</h2>
-<p>Phabricator has an application called <em>Herald</em> that allows users to
-install rules to do something as a result of an action.</p>
-<p>For example, I can create a rule against new review requests that will
-CC me or automatically add me as a reviewer if a certain file is touched
-by a patch.</p>
-<p>I can have Phabricator email me whenever a specific user makes a commit
-or when a commit touching a specific file is made.</p>
-<p>This feature is self-service. You just open the web interface and
-program custom rules to your heart's content.</p>
-<p>Herald is insanely useful. To my knowledge, Mozilla has nothing quite
-like it today. I wish we did. If Mozilla doesn't official deploy
-Phabricator, I may continue to run my own personal instance just so I
-can have this feature.</p>
-<p>Of course, there's an
-<a href="http://www.phabricator.com/docs/phabricator/article/Events_User_Guide_Installing_Event_Listeners.html">Event Listener API</a>
-so you can write your own events and rules. The sky is literally the
-limit here. For example, we could have all uploaded patches
-automatically submitted to Try so they run the release automation
-gamut. And, we could have Phabricator's background daemons poll for try
-results and report them directly in the web interface!</p>
-<h2>Module ownership defined inside Phabricator</h2>
-<p>Phabricator has a <em>modules</em> concept built into it called
-<a href="http://www.phabricator.com/docs/phabricator/article/Owners_Tool_User_Guide.html">Owners</a>. You
-create a <em>package</em> that has a single owner and a number of members. This
-package can be associated with multiple repositories and individual
-paths inside repositories.</p>
-<p>The power of this feature is realized when it is integrated with other
-components of Phabricator.</p>
-<p>For example, there is a checkbox for each <em>package</em> where you can
-automatically have Phabricator ensure that a package member is involved
-with code review touching files belonging to a package. It will also
-automatically report commits not reviewed by members of a package. How
-insanely useful is that!</p>
-<h2>Other applications and features.</h2>
-<p>Phabricator ships with a number of other applications and features.</p>
-<p>There's a blogging platform called
-<a href="http://www.phabricator.com/docs/phabricator/article/Phame_User_Guide.html">Phame</a>.</p>
-<p>There's a simple wiki called
-<a href="http://www.phabricator.com/docs/phabricator/article/Phriction_User_Guide.html">Phriction</a>.</p>
-<p>There's a simple polling application called
-<a href="http://www.phabricator.com/docs/phabricator/article/Slowvote_User_Guide.html">Slowvote</a>.</p>
-<p>There's a mechanism to upload and view files.</p>
-<p>There's a pastebin-like application called Paste. It integrates with
-authentication and authorization, so you can limit the audience of
-pastes.</p>
-<p>There's a JSON over HTTP API that allows you to do nearly everything.
-(I assume this is what Arcanist uses for everything.)</p>
-<p>There's a built-in badges mechanism called Tokens.</p>
-<p>You can exchange messages and chats with other users (similar to IRC)
-using Conpherence.</p>
-<p>There is a question and answer application called Ponder. People ask
-questions and other people answer them. You can search questions, of
-course. This helps build up a searchable knowledge base.</p>
-<p>There is a mockups viewing and collaboration tool called Pholio. You can
-upload mockups as photos and then annotate images through the web
-interface. e.g. you can create a rectangle and ask a question about what
-you see in that rectangle.</p>
-<p>There is a time tracking application called Phrequent.</p>
-<p>Phabricator can receive inbound email to update issues, reviews, etc.
-You can even file new bugs via email! Having used an email interface to
-Bugzilla at a previous job, I can say from experience this is extremely
-useful.</p>
-<p>Phabricator allows you to cherry pick which applications you have
-enabled. Want just code review and repository browsing without issue
-tracking? You can do that.</p>
-<h2>Test instance for Mozilla</h2>
-<p>As I alluded to above, I have installed an instance of Phabricator on
-EC2. My intention for this instance is for Mozillians to start playing
-with it and seeing if it's something they'll like.</p>
-<p>The test instance is available at
-<a href="http://phabricator.gregoryszorc.com/">http://phabricator.gregoryszorc.com/</a>.</p>
-<p>You can log in using OAuth with one of the configured service providers
-or by creating an account. Please note that I'm only serving on plain
-HTTP, so your password are sent in the clear.</p>
-<p>I have configured a few popular Mozilla repositories with the install.
-It's easy to configure new repositories. Send me their info and I'll add
-them!</p>
-<p>While the web UI is nice, Arcanist is essential to get the most out of
-Phabricator. To get <em>arc</em> working with your machine, follow the
-<a href="http://www.phabricator.com/docs/phabricator/article/Arcanist_Quick_Start.html">official instructions</a>
-to install Arcanist. For your <em>.arcconfig</em> file, use something like:</p>
-<pre><code>{
-  "project_id": "gecko",
-  "conduit_uri": "http://phabricator.gregoryszorc.com/"
-}
-</code></pre>
-<p>Then, have Arcanist fetch authentication credentials:</p>
-<pre><code>$ arc install-certificate
-</code></pre>
-<p>From there, run <em>arc help</em> and see what you can do!</p>
-<p>Of course, you'll need to adjust the <em>project_id</em> when appropriate.</p>
-<p>When you use this Phabricator instance, please keep the following in
-mind:</p>
-<ul>
-<li>I'm hosting this on my own dime and have the most powerful EC2
-  instance I felt like paying out of pocket. That instance sadly isn't
-  powerful enough. I installed Phabricator on my desktop at home and it
-  flies like a rocket ship. Please don't blame slowness on Phabricator.</li>
-<li>I didn't even attempt to tune the HTTP or MySQL servers yet. Expect
-  more slowness.</li>
-<li>The service and all the data inside could go away at any time. I don't
-  have monitoring of the service (yet). <strong>Use at your own risk.</strong></li>
-<li>At the time I wrote this, Phabricator was still indexing some
-  repositories, notably mozilla-central. Anything interacting with
-  source navigation appears to be slow as a result.</li>
-<li>The install is effectively a vanilla, out-of-the-box install. Things
-  like Mozilla styling could presumably be added. There are likely also
-  many sub-par configuration settings. Leave comments and I'll see about
-  changing things.</li>
-<li>The front page insists on a sign-in. However, I believe all of the
-  content should be accessible to the public. Contact me if you know of
-  a way to fix this!</li>
-<li>This could be hooked up with Persona. I couldn't find a Persona auth
-  provider and coding one is beyond my current PHP skills. If someone
-  writes one, let me know and I'll install it!</li>
-<li>I could hook up authentication against Mozilla's LDAP server. However,
-  I don't want your Mozilla credentials going to my personal server nor
-  traveling over the wire in the clear.</li>
-<li>I'm not an expert on Phabricator. I'll try to help where appropriate.
-  But don't count on me being a support desk.</li>
-</ul>
-<h2>Next steps at Mozilla</h2>
-<p>How should we use Phabricator at Mozilla? Good question!</p>
-<p>I encourage people to play around with my personal instance. Upload some
-patches. Perform some code reviews. Set up Herald rules to notify you of
-repository change events. Just keep in mind that I don't guarantee an
-SLA for my instance. So please don't rely on it.</p>
-<p>I anticipate that people will come to the conclusion that Phabricator is
-awesome and that Mozilla should install an officially supported instance
-on a mozilla.org domain with proper hardware. I'll likely be reaching
-out to IT shortly to see how feasible that is. But, I imagine it will
-get shuffled to the bottom of the priority queue unless people make
-noise. If you like Phabricator, tell other people about it. Let your
-management chain know how amazing it is. If enough of or the right
-people clamor for it, priorities can get changed.</p>
-<p>I hope you enjoy Phabricator!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/10/14/phabricator-is-awesome#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/16">« Previous Page</a>
   --  

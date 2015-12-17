@@ -10,10 +10,62 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Thu, 05 Nov 2015 17:20:05 GMT</pubDate>
+    <pubDate>Thu, 17 Dec 2015 01:38:31 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Mozilla Mercurial Extension Updates</title>
+      <link>http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates</link>
+      <pubDate>Wed, 16 Dec 2015 17:40:00 PST</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates</guid>
+      <description>Mozilla Mercurial Extension Updates</description>
+      <content:encoded><![CDATA[<p>There have been a handful of updates to Mozilla's client-side
+Mercurial tools in the past week and all users are encouraged
+to pull down the latest commit of mozilla-central and run
+<em>mach mercurial-setup</em> to ensure their configuration is up to
+date.</p>
+<p>Improvements to <em>mach mercurial-setup</em> include:</p>
+<ul>
+<li><em>~</em> are now used in paths when appropriate</li>
+<li>Mercurial 3.5.2 is now the oldest version you can run without
+  the wizard complaining</li>
+<li>The clone bundles feature is enabled when running Mercurial 3.6</li>
+<li><em>hg wip</em> is available for configuration</li>
+<li><em>hgwatchman</em> (make <em>hg status</em> significantly faster via background
+  filesystem watching) is now available on OS X</li>
+<li>x509 host key fingerprints are no longer pinned if your Python
+  and Mercurial version is modern (this pinning exists in Mercurial
+  because old versions of Python don't verify x509 certificates
+  properly)</li>
+<li>3rd party Mercurial extensions are pulled with extensions disabled
+  (to prevent issues with old, incompatible extensions crashing the
+  <em>hg pull</em> invocation)</li>
+</ul>
+<p>The firefoxtree extension has also been updated. It now uses the
+new <em>namespaces</em> feature of Mercurial so all Firefox labels/names/refs
+are exposed in a <em>firefoxtree</em> namespace instead of as tags. As part
+of this change, <strong>you will lose old tags created by this extension
+and will need to re-pull repos to recreate them as namespaced
+labels</strong>. <em>hg log</em> output will now look like the following:</p>
+<pre><code>changeset:   332223:0babaa3edcf9
+fxtree:      central
+parent:      332188:40038a66525f
+parent:      332222:c6fc9d77e86f
+user:        Carsten "Tomcat" Book &lt;cbook@mozilla.com&gt;
+date:        Wed Dec 16 12:01:46 2015 +0100
+summary:     merge mozilla-inbound to mozilla-central a=merge
+</code></pre>
+<p>(Note the <em>fxtree</em> line.)</p>
+<p>The firefoxtree extension also now works with <em>hg share</em>. i.e. if
+you <em>hg share</em> from a Firefox repository and <em>hg pull</em> from
+the source repo or any shared repo, the labels will be updated in
+every repo. This only works on newly-created shares. If you want
+to enable this on an existing share, see
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1115188#c31">this comment</a>.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Cloning Improvements in Mercurial 3.6</title>
       <link>http://gregoryszorc.com/blog/2015/10/22/cloning-improvements-in-mercurial-3.6</link>
@@ -672,48 +724,6 @@ within the realm of possibility. Between a partial rollout of S3
 clone offload that is already serving 44% of traffic and a
 <a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
 I'd say we're well on track.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Changeset Metadata on hg.mozilla.org</title>
-      <link>http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org</link>
-      <pubDate>Thu, 04 Jun 2015 13:55:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org</guid>
-      <description>Changeset Metadata on hg.mozilla.org</description>
-      <content:encoded><![CDATA[<p>Just a few minutes ago, I deployed some updates to
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a> to display more
-metadata on changeset pages. See
-<a href="https://hg.mozilla.org/mozilla-central/rev/4b69a62d1905">4b69a62d1905</a>,
-<a href="https://hg.mozilla.org/mozilla-central/rev/dc4023d54436">dc4023d54436</a>,
-and <a href="https://hg.mozilla.org/mozilla-central/rev/b617a57d6bf1">b617a57d6bf1</a>
-for examples of what's shown.</p>
-<p>We currently display:</p>
-<ul>
-<li>More detailed pushlog info. (Before you had to load another page to
-  see things like the date of the push.)</li>
-<li>The list of reviewers, each being a link that searches for other
-  changesets they've reviewed.</li>
-<li>A concise list of bugs referenced in the commit message.</li>
-<li>Links to changesets that were backed out by this changeset.</li>
-<li>On changesets that were backed out, we <em>may</em> also display a message
-  that the changeset was backed out.</li>
-<li>For Firefox repos, we also display the application <em>milestone</em>. This
-  is the Gecko/app version recorded in the <em>config/milestone.txt</em> file
-  in that changeset. The value can be used to quickly answer the
-  question <em>What versions of Firefox have this changeset.</em></li>
-</ul>
-<p>If you notice any issues or have requests for new features, please
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>.</p>
-<p>This work is built on top of a feature I added to Mercurial 3.4 to make
-it easier to inject extra data into Mercurial's web templates. We just
-deployed Mercurial 3.4.1 to hg.mozilla.org yesterday. It's worth noting
-that this deployment happened in the middle of the day with no
-user-perceived downtime. This is a far cry from where we were a year
-ago, when any server change required a maintenance window. We've
-invested a lot of work into a test suite for this service so we can
-continuously deploy without fear of breaking things. Moving fast feels
-so good.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

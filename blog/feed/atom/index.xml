@@ -7,12 +7,69 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-11-05T17:20:05Z</updated>
+  <updated>2015-12-17T01:38:31Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mozilla Mercurial Extension Updates]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates" />
+    <id>http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates</id>
+    <updated>2015-12-16T17:40:00Z</updated>
+    <published>2015-12-16T17:40:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Mozilla Mercurial Extension Updates]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates"><![CDATA[<p>There have been a handful of updates to Mozilla's client-side
+Mercurial tools in the past week and all users are encouraged
+to pull down the latest commit of mozilla-central and run
+<em>mach mercurial-setup</em> to ensure their configuration is up to
+date.</p>
+<p>Improvements to <em>mach mercurial-setup</em> include:</p>
+<ul>
+<li><em>~</em> are now used in paths when appropriate</li>
+<li>Mercurial 3.5.2 is now the oldest version you can run without
+  the wizard complaining</li>
+<li>The clone bundles feature is enabled when running Mercurial 3.6</li>
+<li><em>hg wip</em> is available for configuration</li>
+<li><em>hgwatchman</em> (make <em>hg status</em> significantly faster via background
+  filesystem watching) is now available on OS X</li>
+<li>x509 host key fingerprints are no longer pinned if your Python
+  and Mercurial version is modern (this pinning exists in Mercurial
+  because old versions of Python don't verify x509 certificates
+  properly)</li>
+<li>3rd party Mercurial extensions are pulled with extensions disabled
+  (to prevent issues with old, incompatible extensions crashing the
+  <em>hg pull</em> invocation)</li>
+</ul>
+<p>The firefoxtree extension has also been updated. It now uses the
+new <em>namespaces</em> feature of Mercurial so all Firefox labels/names/refs
+are exposed in a <em>firefoxtree</em> namespace instead of as tags. As part
+of this change, <strong>you will lose old tags created by this extension
+and will need to re-pull repos to recreate them as namespaced
+labels</strong>. <em>hg log</em> output will now look like the following:</p>
+<pre><code>changeset:   332223:0babaa3edcf9
+fxtree:      central
+parent:      332188:40038a66525f
+parent:      332222:c6fc9d77e86f
+user:        Carsten "Tomcat" Book &lt;cbook@mozilla.com&gt;
+date:        Wed Dec 16 12:01:46 2015 +0100
+summary:     merge mozilla-inbound to mozilla-central a=merge
+</code></pre>
+<p>(Note the <em>fxtree</em> line.)</p>
+<p>The firefoxtree extension also now works with <em>hg share</em>. i.e. if
+you <em>hg share</em> from a Firefox repository and <em>hg pull</em> from
+the source repo or any shared repo, the labels will be updated in
+every repo. This only works on newly-created shares. If you want
+to enable this on an existing share, see
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1115188#c31">this comment</a>.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -690,82 +747,5 @@ article provides a Mozilla tailored yet generally applicable guide for
 installing or upgrading Mercurial to 3.5. As always, conservative
 software users may want to wait until September 1 for the 3.5.1 point
 release to fix any issues or regressions from 3.5.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[My Contributions to Mercurial 3.5]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5" />
-    <id>http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5</id>
-    <updated>2015-07-31T10:55:00Z</updated>
-    <published>2015-07-31T10:55:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[My Contributions to Mercurial 3.5]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5"><![CDATA[<p>Mercurial 3.5 was released today. I contributed some small
-improvements to this version that I thought I'd share with the world.</p>
-<p>The feature I'm most proud of adding to Mercurial 3.5 is what I'm
-referring to as <em>auto share</em>. The existing <em>hg share</em> extension/command
-enables multiple checkouts of a repository to share the same backing
-repository store. Essentially the <em>.hg/store</em> directory is a symlink
-to shared directory. This feature has existed in Mercurial for years
-and is essentially identical to the <em>git worktree</em> feature just
-recently added in Git 2.5.</p>
-<p>My addition to the <em>share</em> extension is the ability for Mercurial to
-automatically perform an <em>hg clone</em> + <em>hg share</em> in the same operation.
-If the <em>share.pool</em> config option is defined, <em>hg clone</em>
-will automatically clone or pull the repository data somewhere inside
-the directory pointed to by <em>share.pool</em> then create a new working copy
-from that shared location. But here's the magic: <strong>Mercurial can
-automatically deduce that different remotes are the same logical
-repository (by looking at the root changeset) and automatically have
-them share storage</strong>. So if you first <em>hg clone</em> the <em>canonical</em>
-repository then later do a <em>hg clone</em> of a <em>fork</em>, Mercurial will
-pull down the changesets unique to the fork into the previously
-created shared directory and perform a checkout from that. Contrast
-with performing a full clone of the fork. <strong>If you are cloning multiple
-repositories that are logically derived from the same original one,
-this can result in a significant reduction of disk space and network
-usage.</strong> I wrote this feature with automated consumers in mind,
-particularly continuous integration systems. However, there is also
-mode more suitable for humans where repositories are pooled not by their
-root changeset but by their URL. For more info, see <em>hg help -e share</em>.</p>
-<p>For Mercurial 3.4, I contributed changes that refactored how Mercurial's
-tags cache works. This cache was a source of performance problems at
-Mozilla's scale for many years. Since upgrading to Mercurial 3.4,
-Mozilla has not encountered any significant performance problems with
-the cache on either client or server as far as I know.</p>
-<p>Building on this work, Mercurial 3.5 supports transferring tags cache
-entries from server to client when clients clone/pull. Before, clients
-would have to recompute tags cache entries for pulled changesets. On
-repositories that are very large in terms of number of files (over 50,000)
-or heads (hudreds or more), this could take several dozen seconds or
-even minutes. This would manifest as a delay either during or after
-initial clone. In Mercurial 3.5 - assuming both client and server
-support the new <em>bundle2</em> wire protocol - the cache entries are
-transferred from server to client and no extra computation needs to
-occur. The client does pay a very small price for transferring this
-additional data over the wire, but the payout is almost always worth it.
-<strong>For large repositories, this feature means clones are usable sooner.</strong></p>
-<p>A few weeks ago, a coworker told me that connections to a Mercurial
-server were timing out mid clone. We investigated and discovered a
-potential for a long CPU-intensive pause during clones where Mercurial
-would not touch the network. On this person's under-powered EC2
-instance, the pause was so long that the server's inactivity timeout
-was triggered and it dropped the client's TCP connection. I refactored
-Mercurial's cloning code so there is no longer a pause. There should
-be no overall change in clone time, but there is no longer a perceivable
-delay between applying changesets and manifests where the network could
-remain idle. This investigation also revealed some potential follow-up
-work for Mercurial to be a bit smarter about how it interacts with
-networks.</p>
-<p>Finally, I contributed <em>hg help scripting</em> to Mercurial's help database.
-This help topic covers how to use Mercurial from scripting and other
-automated environments. It reflects knowledge I've learned from seeing
-Mercurial used in automation at Mozilla.</p>
-<p>Of course, there are plenty of other changes in Mercurial 3.5. Stay
-tuned for another blog post.</p>]]></content>
   </entry>
 </feed>

@@ -51,6 +51,68 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mozilla-mercurial-extension-updates"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/12/16/mozilla-mercurial-extension-updates" rel="bookmark" title="Permanent Link to Mozilla Mercurial Extension Updates">Mozilla Mercurial Extension Updates</a></h2>
+  <small>December 16, 2015 at 05:40 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>There have been a handful of updates to Mozilla's client-side
+Mercurial tools in the past week and all users are encouraged
+to pull down the latest commit of mozilla-central and run
+<em>mach mercurial-setup</em> to ensure their configuration is up to
+date.</p>
+<p>Improvements to <em>mach mercurial-setup</em> include:</p>
+<ul>
+<li><em>~</em> are now used in paths when appropriate</li>
+<li>Mercurial 3.5.2 is now the oldest version you can run without
+  the wizard complaining</li>
+<li>The clone bundles feature is enabled when running Mercurial 3.6</li>
+<li><em>hg wip</em> is available for configuration</li>
+<li><em>hgwatchman</em> (make <em>hg status</em> significantly faster via background
+  filesystem watching) is now available on OS X</li>
+<li>x509 host key fingerprints are no longer pinned if your Python
+  and Mercurial version is modern (this pinning exists in Mercurial
+  because old versions of Python don't verify x509 certificates
+  properly)</li>
+<li>3rd party Mercurial extensions are pulled with extensions disabled
+  (to prevent issues with old, incompatible extensions crashing the
+  <em>hg pull</em> invocation)</li>
+</ul>
+<p>The firefoxtree extension has also been updated. It now uses the
+new <em>namespaces</em> feature of Mercurial so all Firefox labels/names/refs
+are exposed in a <em>firefoxtree</em> namespace instead of as tags. As part
+of this change, <strong>you will lose old tags created by this extension
+and will need to re-pull repos to recreate them as namespaced
+labels</strong>. <em>hg log</em> output will now look like the following:</p>
+<pre><code>changeset:   332223:0babaa3edcf9
+fxtree:      central
+parent:      332188:40038a66525f
+parent:      332222:c6fc9d77e86f
+user:        Carsten "Tomcat" Book &lt;cbook@mozilla.com&gt;
+date:        Wed Dec 16 12:01:46 2015 +0100
+summary:     merge mozilla-inbound to mozilla-central a=merge
+</code></pre>
+<p>(Note the <em>fxtree</em> line.)</p>
+<p>The firefoxtree extension also now works with <em>hg share</em>. i.e. if
+you <em>hg share</em> from a Firefox repository and <em>hg pull</em> from
+the source repo or any shared repo, the labels will be updated in
+every repo. This only works on newly-created shares. If you want
+to enable this on an existing share, see
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1115188#c31">this comment</a>.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="cloning-improvements-in-mercurial-3.6"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/10/22/cloning-improvements-in-mercurial-3.6" rel="bookmark" title="Permanent Link to Cloning Improvements in Mercurial 3.6">Cloning Improvements in Mercurial 3.6</a></h2>
   <small>October 22, 2015 at 05:00 AM | categories: 
@@ -386,65 +448,6 @@ implement proper security...</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="hg.mozilla.org-operational-workings-now-open-sourced"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced" rel="bookmark" title="Permanent Link to hg.mozilla.org Operational Workings Now Open Sourced">hg.mozilla.org Operational Workings Now Open Sourced</a></h2>
-  <small>August 04, 2015 at 02:30 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Just a few minutes ago, hg.mozilla.org reached an important milestone:
-deployments are now performed via Ansible from our open source
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository instead of via Puppet from Mozilla's private <em>sysadmins</em>
-repository. This is important for a few reasons.</p>
-<p>First, the code behind the operation of hg.mozilla.org is now open source
-and available for the public to see and change. I strive for my work at
-Mozilla to be open by default. With hg.mozilla.org's private Puppet
-repository, people weren't able to see what was going on under the
-covers. Nor were they empowered to change anything. This may come as a
-shock, but even I don't have commit privileges to the internal Puppet
-repository that was previously powering hg.mozilla.org! I did have read
-access. But any change I wanted to make involved me proxying it through
-one of two people. It was tedious, made me feel uncomfortable for having to
-nag people to do my work, and slowed everyone down. We no longer have this
-problem, thankfully.</p>
-<p>Second, having the Ansible code in version-control-tools enables us to
-use the same operational configuration in production as we do in our
-Docker test environment. I can now spin up a cluster of Docker
-containers that behave very similarly to the production servers (which
-aren't running Docker). This enables us to write end-to-end tests of
-complex systems running across multiple Docker containers and have
-relatively high confidence that our production and testing environments
-behave very similarly. In other words, I can test complex interactions
-between multiple systems all from my local machine - even from a plane!
-For example, we can and do test that SSH connections to a simulated
-production environment running in Docker behave as expected, complete
-with an OpenSSH server speaking to an OpenLDAP server for SSH public
-key lookup. While we still have many tests to write, we had no such
-tests a year ago and every production deployment was a
-cross-your-fingers type moment. Having comprehensive tests gives us
-confidence to move fast and not break things.</p>
-<p>One year ago, hg.mozilla.org's infrastructure was opaque, didn't have
-automated tests, and was deployed too seldomly. There was the often
-correct perception that changing this critical-to-Mozilla service was
-difficult and slow. Today, things couldn't be more different. <strong>The
-hg.mozilla.org infrastructure is open, we have tests, and we can and
-do deploy multiple times per day without forward notice and without
-breaking things.</strong> I love this brave new world of open infrastructure
-and moving fast.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/2">Next Page »</a>
 
