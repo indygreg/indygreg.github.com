@@ -7,12 +7,59 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2015-12-17T01:38:31Z</updated>
+  <updated>2016-01-05T23:07:54Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[hg.mozilla.org replication updates]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates" />
+    <id>http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates</id>
+    <updated>2016-01-05T15:00:00Z</updated>
+    <published>2016-01-05T15:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[hg.mozilla.org replication updates]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates"><![CDATA[<p>A few minutes ago, I formally enabled a new replication system
+for <a href="https://hg.mozilla.org/">hg.mozilla.org</a>. For the curious,
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/replication.html">technical details</a>
+are available.</p>
+<p>This impacts you because pushes to hg.mozilla.org should now be
+significantly faster. For example, pushes to mozilla-inbound
+that used to take 15s now take 2s. Pushes to Try that used to
+take 45s now take 10s. (Yes, the old replication system really
+added a lot of overhead.) Pushes to hg.mozilla.org are still not
+as fast as they could be due to us running the service on 5 year
+old hardware (we plan to buy new servers this year) and due to the
+use of NFS on the server. However, I believe push latency is now
+reasonable for every repo except Try.</p>
+<p>The new replication system opens the door to a number of future
+improvements. We'd like to stand up mirrors in multiple data
+centers - perhaps even offices - so clients have the fastest
+connectivity and so we have a better disaster recovery story.
+The new replication system facilitates this.</p>
+<p>The new replication log is effectively a unified pushlog -
+something people have wanted for years. While there is not yet
+a public API for it, one could potentially be exposed, perhaps
+indirectly via Pulse.</p>
+<p>It is now trivial for us to stand up new consumers of the
+replication log that react to repository events merely milliseconds
+after they occur. This should eventually result in downstream
+systems like build automation and conversion to Git repos starting
+and thus completing faster.</p>
+<p>Finally, the new replication system has been running unofficially for
+a few weeks, so you likely won't notice anything different today
+(other than removal of some printed messages when you push). What
+changed today is the new system is enabled by default and we have
+no plans to continue supporting or operating the legacy system.
+Good riddance.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -736,42 +783,5 @@ help enact change, please
 <a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">file a bug in Core :: mach</a>
 (for now) and we'll go from there.</p>
 <p>Thank you for your patience and your understanding.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Cloning From S3]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3" />
-    <id>http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3</id>
-    <updated>2015-07-08T11:40:00Z</updated>
-    <published>2015-07-08T11:40:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Cloning From S3]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3"><![CDATA[<p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
-bundle files</a>.
-But deploying the feature on the servers was only the tip of the
-iceberg.</p>
-<p>At the end of last week, Firefox release automation rolled out the
-<em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
-clones are bootstrapped from Amazon S3 automatically once this extension
-is installed.</p>
-<p>In just a few days of deployment, we've already seen a drastic shift in
-traffic. On UTC day 2015-07-07, S3 served 1,563,014,396,236 bytes of
-repository data! The hg.mozilla.org servers themselves served a total of
-1,976,057,201,583 bytes.</p>
-<p>But we're not done. The <em>bundleclone</em> extension
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181597">isn't yet deployed on Windows</a>. Nor is it always used on TaskCluster. In addition, there are
-still some high-use repositories that don't have bundles being
-generated. Yesterday, I crunched the data and
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181373">enabled bundles on more repositories</a>. It's too early to have conclusive data, but this should
-move an additional several hundred gigabytes of traffic to S3.</p>
-<p>At Whistler, I said that reducing traffic on hg.mozilla.org by 90% is
-within the realm of possibility. Between a partial rollout of S3
-clone offload that is already serving 44% of traffic and a
-<a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
-I'd say we're well on track.</p>]]></content>
   </entry>
 </feed>

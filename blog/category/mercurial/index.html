@@ -51,6 +51,58 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="hg.mozilla.org-replication-updates"></a>
+  <h2 class="blog_post_title"><a href="/blog/2016/01/05/hg.mozilla.org-replication-updates" rel="bookmark" title="Permanent Link to hg.mozilla.org replication updates">hg.mozilla.org replication updates</a></h2>
+  <small>January 05, 2016 at 03:00 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A few minutes ago, I formally enabled a new replication system
+for <a href="https://hg.mozilla.org/">hg.mozilla.org</a>. For the curious,
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/replication.html">technical details</a>
+are available.</p>
+<p>This impacts you because pushes to hg.mozilla.org should now be
+significantly faster. For example, pushes to mozilla-inbound
+that used to take 15s now take 2s. Pushes to Try that used to
+take 45s now take 10s. (Yes, the old replication system really
+added a lot of overhead.) Pushes to hg.mozilla.org are still not
+as fast as they could be due to us running the service on 5 year
+old hardware (we plan to buy new servers this year) and due to the
+use of NFS on the server. However, I believe push latency is now
+reasonable for every repo except Try.</p>
+<p>The new replication system opens the door to a number of future
+improvements. We'd like to stand up mirrors in multiple data
+centers - perhaps even offices - so clients have the fastest
+connectivity and so we have a better disaster recovery story.
+The new replication system facilitates this.</p>
+<p>The new replication log is effectively a unified pushlog -
+something people have wanted for years. While there is not yet
+a public API for it, one could potentially be exposed, perhaps
+indirectly via Pulse.</p>
+<p>It is now trivial for us to stand up new consumers of the
+replication log that react to repository events merely milliseconds
+after they occur. This should eventually result in downstream
+systems like build automation and conversion to Git repos starting
+and thus completing faster.</p>
+<p>Finally, the new replication system has been running unofficially for
+a few weeks, so you likely won't notice anything different today
+(other than removal of some printed messages when you push). What
+changed today is the new system is enabled by default and we have
+no plans to continue supporting or operating the legacy system.
+Good riddance.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mozilla-mercurial-extension-updates"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/12/16/mozilla-mercurial-extension-updates" rel="bookmark" title="Permanent Link to Mozilla Mercurial Extension Updates">Mozilla Mercurial Extension Updates</a></h2>
   <small>December 16, 2015 at 05:40 PM | categories: 
@@ -406,48 +458,6 @@ series it took to make this happen.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/18/json-apis-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="moz.build-metadata-on-hg.mozilla.org"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to moz.build metadata on hg.mozilla.org">moz.build metadata on hg.mozilla.org</a></h2>
-  <small>August 04, 2015 at 07:55 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Sometime last week we enabled a new API on hg.mozilla.org:
-<em>json-mozbuildinfo</em>. This endpoint will return JSON describing
-moz.build-derived metadata about the files that changed in a commit.</p>
-<p><a href="https://hg.mozilla.org/mozilla-central/json-mozbuildinfo/1164ec236273">Example</a>.
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/mozbuildinfo.html">Docs</a>.</p>
-<p>We plan to eventually leverage this API to do cool things like
-have MozReview automatically file bugs in the appropriate component and
-assign appropriate reviewers given the set of changed files in a commit.</p>
-<p>The API is currently only available on mozilla-central. And, we have
-very conservative resource limits in place. So large commits may cause
-it to error out. As such, the API is considered experimental. Also,
-performance is not as optimal as it could be. You have to start
-somewhere.</p>
-<p>I'd like to thank Guillaume Destuynder (kang) for his help with the
-security side of things. When I started on this project, I didn't think
-I'd be writing
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/02e353037996/testing/docker/builder-hgweb-chroot/mozbuild-eval.c">C code for spawning secure processes</a>,
-but here we are. In the not so distant future, I'll likely be adding
-<a href="http://man7.org/linux/man-pages/man2/seccomp.2.html">seccomp(2)</a>
-into the mix, which will make the execution environment as
-or more secure than the Firefox content process sandbox, depending
-on how it is implemented. The rabbit holes we find ourselves in to
-implement proper security...</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/2">Next Page »</a>
 

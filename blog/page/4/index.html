@@ -51,6 +51,40 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="publish-when-pushing-to-mozreview"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/07/07/publish-when-pushing-to-mozreview" rel="bookmark" title="Permanent Link to Publish When Pushing to MozReview">Publish When Pushing to MozReview</a></h2>
+  <small>July 07, 2015 at 02:55 PM | categories: 
+
+<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A lot of people contributed some really great feedback about MozReview
+at Whistler. One of the most frequent requests was for the ability to
+publish submitted review requests without having to open a browser.
+I'm pleased to report that as of yesterday, this feature is implemented!
+If reviewers have been assigned to all your review requests, Mercurial
+will now prompt you to publish the review requests during <em>hg push</em>.
+It should <em>just work</em>.</p>
+<p>As part of this change, we also introduced more advanced feature
+negotiation into the handshake between client and server. This means
+we now have a mechanism for detecting out-of-date client installations.
+This will enable us to more aggressively drop backwards compatibility
+(making server-side development easier) while simultaneously ensuring
+that more people are running modern and hopefully better versions of the
+client code. This should translate to moving faster and a better
+experience for everyone.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="changeset-metadata-on-hg.mozilla.org"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to Changeset Metadata on hg.mozilla.org">Changeset Metadata on hg.mozilla.org</a></h2>
   <small>June 04, 2015 at 01:55 PM | categories: 
@@ -395,200 +429,6 @@ ask, we could probably make this more official.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="notes-from-git-merge-2015"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/12/notes-from-git-merge-2015" rel="bookmark" title="Permanent Link to Notes from Git Merge 2015">Notes from Git Merge 2015</a></h2>
-  <small>May 12, 2015 at 03:40 PM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/12/notes-from-git-merge-2015#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p><a href="http://git-merge.com/">Git Merge 2015</a> was a Git user conference held
-in Paris on April 8 and 9, 2015.</p>
-<p>I'm kind of a version control geek. I'm also responsible for a large
-part of Mozilla's version control hosting. So, when the videos were
-made public, you can bet I took interest.</p>
-<p>This post contains my notes from a few of the Git Merge talks. I try
-to separate content/facts from my opinions by isolating my opinions
-(within parenthesis).</p>
-<h2>Git at Google</h2>
-<p><a href="http://git-merge.com/videos/git-at-google-dave-borowitz.html">Git at Google: Making Big Projects (and everyone else) Happy</a>
-is from a Googler (Dave Borowitz) who works on JGit for the Git
-infrastructure team at Google.</p>
-<p>"Everybody in this room is going to feel some kind of pain working with
-Git at scale at some time in their career."</p>
-<p>First Git usage at Google in 2008 for Android. 2011 googlesource.com
-launches.</p>
-<p>24,000 total Git repos at Google. 77.1M requests/day. 30-40 TB/day. 2-3
-Gbps.</p>
-<p>Largest repo is 210GB (not public it appears).</p>
-<p>800 repos in AOSP. Google maintains internal fork of all Android repos
-(so they can throw stuff over the wall). Fresh AOSP tree is 17 GiB. Lots
-of contracts dictating access.</p>
-<p>Chrome repos include Chromium, Blink, Chromium OS. Performed giant
-Subversion migration. Developers of Chrome very set in their ways. Had
-many workflows integrated with Subversion web interface. Subversion
-blame was fast, Git blame slow. Built caching backend for Git blame to
-make developers happy.</p>
-<p>Chromium 2.9 GiB, 3.6M objects, 390k commits. Blink 5.3 GiB, 3.1M
-objects, 177k commits. They merged them into a monorepo. Mention of
-Facebook's monorepo talk and Mercurial scaling efforts for a repo larger
-then Chromium/Blink monorepo. Benefits to developers for doing atomic
-refactorings, etc.</p>
-<p>"Being big is hard."</p>
-<p>AOSP: 1 Gbps -&gt; 2 minutes for 17 GiB. 20 Mbps -&gt; 3 hours. Flaky internet
-combined with non-resumable clone results in badness. Delta resolution
-can take a while. Checkout of hundreds of thousands of files can be
-slow, especially on Windows.</p>
-<p>"As tool developers... it's hard to tell people don't check in large
-binaries, do things this way, ... when all they are trying to do is
-get their job done." (I couldn't agree more: tools should ideally not
-impose sub-optimal workflows.)</p>
-<p>They prefer scaling pain to supporting multiple tools. (I think this
-meant don't use multiple VCSs if you can just make one scale.)</p>
-<p>Shallow clone beneficial. But some commands don't work. log not very
-useful.</p>
-<p>Narrow clones mentioned. Apparently talked about elsewhere at Git Merge
-not captured on video. Non-trivial problem for Git. "We have no idea
-when this is going to happen."</p>
-<p>Split repos until narrow clone is available. Google wrote repo to manage
-multiple repos. They view repo and multiple repos as stop-gap until
-narrow clone is implemented.</p>
-<p>git submodule needs some love. Git commands don't handle submodules
-or multiple repos very well. They'd like to see repo features
-incorporated into git submodule.</p>
-<p>Transition to server operation.</p>
-<p>Pre-2.0, counting objects was hard. For Linux kernel, 60s 100% CPU time
-per clone to count objects. "Linux isn't even that big."</p>
-<p>Traditionally Git is single homed. Load from users. Load from
-automation.</p>
-<p>Told anecdote about how Google's automation once recloned the repo after
-a failed Git command. Accidentally made a change one day that caused a
-command to persistently fail. DoS against server. (We've had this at
-Mozilla.)</p>
-<p>Garbage collection on server is CPU intensive and necessary. Takes cores
-away from clients.</p>
-<p>Reachability bitmaps implemented in JGit, ported to Git 2.0. Counting
-objects for Linux clones went from 60s CPU to ~100ms.</p>
-<p>Google puts static, pre-generated bundles on a CDN. Client downloads
-bundle then does incremental fetch. Massive reduction in server load.
-Bundle files better for users. Resumable.</p>
-<p>They have ideas for integrating bundles into git fetch, but it's
-"a little way's off." (This feature is partially implemented in
-Mercurial 3.4 and we have plans for using it at Mozilla.) It's feature
-in repo today.</p>
-<p>Shared filesystem would be really nice to spread CPU load. NFS "works."
-Performance problems with high throughput repositories.</p>
-<p>Master-mirror replication can help. Problems with replication lag.
-Consistency is hard.</p>
-<p>Google uses a distributed Git store using Bigtable and GFS built on
-JGit. Git-aware load balancer. Completely separate pool of garbage
-collection workers. They do replication to multiple datacenters before
-pushes. 6 datacenters across world. Some of their stuff is open source.
-A lot isn't.</p>
-<p>Humans have difficulty managing hundreds of repositories. "How do you as
-a human know what you need to modify?" Monorepos have this problem too.
-Inherent with lots of content. (Seemed to imply it is worse with
-multiple repos than with a monorepo.)</p>
-<p>Porting changes between forks is hard. e.g. cherry picking between
-internal and external Android repos.</p>
-<p>ACLs are a mess.</p>
-<p>Google built Gerrit code review. It does ACLs, auto rebasing, release
-branch management. It's a swiss army knife. (This aligns with my
-vision for MozReview and code-centric development.)</p>
-<h2>Scaling Git at Twitter</h2>
-<p>Wilhelm Bierbaum from Twitter talks about
-<a href="http://git-merge.com/videos/scaling-git-at-twitter-wilhelm-bierbaum.html">Scaling Git at Twitter</a>.</p>
-<p>"We've decided it's really important to make Twitter a good place to work for
-developers. Source control is one of those points where we were
-lacking. We had some performance problems with Git in the past."</p>
-<p>Twitter runs a monorepo. Used to be 3 repos. "Working with a single
-repository is the way they prefer to develop software when developing
-hundreds of services." They also have a single build system. They have
-a geo diverse workforce.</p>
-<p>They use normal canonical implementation of Git + some optimizations.</p>
-<p>Benefits of a monorepo:</p>
-<p>Visibility. Easier for people to find code in one repo. Code search tools
-tailored towards single repos.</p>
-<p>Single toolchain. single set of tools to build, test, and deploy. When
-improvements to tools made, everyone benefits because one toolchain.</p>
-<p>Easy to share code (particularly generated code like IDL). When operating
-many small services, services developed together. Code duplication is
-minimized. Twitter relies on IDL heavily.</p>
-<p>Simpler to predict the impact of your changes. Easier to look at single
-code base then to understand how multiple code bases interact. Easy to
-make a change and see what breaks rather than submit changes to N repos
-and do testing in N repos.</p>
-<p>Makes refactoring less arduous.</p>
-<p>Surfaces architecture issues earlier.</p>
-<p>Breaking changes easier to coordinate</p>
-<p>Drawbacks of monorepos:</p>
-<p>Large disk footprint for full history.</p>
-<p>Tuning filesystem only goes so far.</p>
-<p>Forces some organizations to adopt sparse checkouts and shallow clones.</p>
-<p>Submodules aren't good enough to use. <em>add</em> and <em>commit</em> don't recognize
-submodule boundaries very well and aren't very usable.</p>
-<p>"To us, using a tool such as repo that is in effect a secondary version
-control tool on top of Git does not feel right and doesn't lead to a
-fluid experience."</p>
-<p>Twitter has centralized use of Git. Don't really benefit from
-distributed version control system. Feature branches. Goal is to live as
-close to master as possible. Long-running branches discouraged. Fewer
-conflicts to resolve.</p>
-<p>They have project-level ownership system. But any developer can change
-anything.</p>
-<p>They have lots of read-only replicas. Highly available writable server.</p>
-<p>They use reference repos heavily so object exchange overhead is
-manageable.</p>
-<p>Scaling issues with many refs. Partially due to how refs are stored on
-disk. File locking limits in OS. Commands like status, add, and commit
-can be slow, even with repo garbage collected and packed. Locking issues
-with garbage collection.</p>
-<p>Incorporated file alteration monitor to make status faster. Reference to
-Facebook's work on watchman and its Mercurial integration. Significant
-impact on OS X. "Pretty much all our developers use OS X." (I assume
-they are using Watchman with Git - I've seen patches for this on the Git
-mailing list but they haven't been merged into core yet.)</p>
-<p>They implemented a custom index format. Adopted faster hashing
-algorithm that uses native instructions.</p>
-<p>Discovery with many refs didn't scale. 13 MB of raw data for refs
-exchange at Twitter. (!!) Experimenting with clients sending a bloom
-filter of refs. Hacked it together via HTTP header.</p>
-<p>Fetch protocol is expensive. Lots of random I/O. Can take minutes
-to do incremental fetches. Bitmap indices help, but aren't good enough
-for them. Since they have central and well-defined environment, they
-changed fetch protocol to work like a journal: send all changed data since
-client's last fetch. Server work is essentially a sendfile system call.
-git push appends push packs to a log-structured journal. On fetch,
-clients "replay" the transactions from the journal. Similar to MySQL
-binary log replication. (This is very similar to some of the Mercurial
-replication work I'm doing at Mozilla. Yay technical validation.)
-(Append only files are also how Mercurial's storage model works by
-default.)</p>
-<p>Log-structured data exchange means server side is cheap. They can insert
-HTTP caches to handle Range header aware requests.</p>
-<p>Without this hack, they can't scale their servers.</p>
-<p>Initial clone is seeded by BitTorrent.</p>
-<p>It sounds like everyone's unmerged feature branches are on the one
-central repo and get transferred everywhere by default. Their journal
-fetch can selectively fetch refs so this isn't a huge problem.</p>
-<p>They'd like to experiment with sparse repos. But they haven't gotten to
-that yet. They'd like a better storage abstraction in Git to enable
-necessary future scalability. They want a network-aware storage backend.
-Local objects not necessary if the network has them.</p>
-<p>They are running a custom Git distribution/fork on clients. But they
-don't want to maintain forever. Prefer to send upstream.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/12/notes-from-git-merge-2015#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../3">« Previous Page</a>
   --  
