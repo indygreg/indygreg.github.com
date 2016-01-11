@@ -10,10 +10,61 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 05 Jan 2016 23:07:54 GMT</pubDate>
+    <pubDate>Mon, 11 Jan 2016 22:23:19 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Investing in the Firefox Build System in 2016</title>
+      <link>http://gregoryszorc.com/blog/2016/01/11/investing-in-the-firefox-build-system-in-2016</link>
+      <pubDate>Mon, 11 Jan 2016 14:20:00 PST</pubDate>
+      <category><![CDATA[Mozilla]]></category>
+      <category><![CDATA[build system]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2016/01/11/investing-in-the-firefox-build-system-in-2016</guid>
+      <description>Investing in the Firefox Build System in 2016</description>
+      <content:encoded><![CDATA[<p>Most of Mozilla gathered in Orlando in December for an all hands meeting.
+If you attended any of the plenary sessions, you probably heard people
+like David Bryant and Lawrence Mandel make references to improving the
+Firefox build system and related tools. Well, the cat is out of the bag:
+<strong>Mozilla will be investing heavily in the Firefox build system and related
+tooling in 2016!</strong></p>
+<p>In the past 4+ years, the Firefox build system has mostly been held
+together and incrementally improved by a loose coalition of people who
+cared. We had a period in 2013 where a number of people were making
+significant updates (this is when moz.build files happened). But for the
+past 1.5+ years, there hasn't really been a coordinated effort to
+improve the build system - just a lot of one-off tasks and
+(much-appreciated) individual heroics. This is changing.</p>
+<p>Improving the build system is a high priority for Mozilla in 2016.
+And investment has already begun. In Orlando, we had a marathon 3 hour
+meeting planning work for Q1. At least 8 people have committed to
+projects in Q1.</p>
+<p>The focus of work is split between immediate short-term wins and
+longer-term investments. <strong>We also decided to prioritize the Firefox and
+Fennec developer workflows (over Gecko/Platform) as well as the
+development experience on Windows.</strong> This is because these areas have
+been under-loved and therefore have more potential for impact.</p>
+<p>Here are the projects we're focusing on in Q1:</p>
+<ul>
+<li>Turnkey artifact based builds for Firefox and Fennec (download
+  pre-built binaries so you don't have to spend 20 minutes compiling
+  C++)</li>
+<li>Running tests from the source directory (so you don't have to copy
+  tens of thousands of files to the object directory)</li>
+<li>Speed up configure / prototype a replacement</li>
+<li>Telemetry for mach and the build system</li>
+<li>NSPR, NSS, and (maybe) ICU build system rewrites</li>
+<li><em>mach build faster</em> improvements</li>
+<li>Improvements to build rules used for building binaries (enables
+  non-make build backends)</li>
+<li>mach command for analyzing C++ dependencies</li>
+<li>Deploy automated testing for <em>mach bootstrap</em> on TaskCluster</li>
+</ul>
+<p>Work has already started on a number of these projects. I'm optimistic
+2016 will be a watershed year for the Firefox build system and the
+improvements will have a drastic positive impact on developer
+productivity.</p>]]></content:encoded>
+    </item>
     <item>
       <title>hg.mozilla.org replication updates</title>
       <link>http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates</link>
@@ -572,55 +623,6 @@ into the mix, which will make the execution environment as
 or more secure than the Firefox content process sandbox, depending
 on how it is implemented. The rabbit holes we find ourselves in to
 implement proper security...</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>hg.mozilla.org Operational Workings Now Open Sourced</title>
-      <link>http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced</link>
-      <pubDate>Tue, 04 Aug 2015 14:30:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced</guid>
-      <description>hg.mozilla.org Operational Workings Now Open Sourced</description>
-      <content:encoded><![CDATA[<p>Just a few minutes ago, hg.mozilla.org reached an important milestone:
-deployments are now performed via Ansible from our open source
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository instead of via Puppet from Mozilla's private <em>sysadmins</em>
-repository. This is important for a few reasons.</p>
-<p>First, the code behind the operation of hg.mozilla.org is now open source
-and available for the public to see and change. I strive for my work at
-Mozilla to be open by default. With hg.mozilla.org's private Puppet
-repository, people weren't able to see what was going on under the
-covers. Nor were they empowered to change anything. This may come as a
-shock, but even I don't have commit privileges to the internal Puppet
-repository that was previously powering hg.mozilla.org! I did have read
-access. But any change I wanted to make involved me proxying it through
-one of two people. It was tedious, made me feel uncomfortable for having to
-nag people to do my work, and slowed everyone down. We no longer have this
-problem, thankfully.</p>
-<p>Second, having the Ansible code in version-control-tools enables us to
-use the same operational configuration in production as we do in our
-Docker test environment. I can now spin up a cluster of Docker
-containers that behave very similarly to the production servers (which
-aren't running Docker). This enables us to write end-to-end tests of
-complex systems running across multiple Docker containers and have
-relatively high confidence that our production and testing environments
-behave very similarly. In other words, I can test complex interactions
-between multiple systems all from my local machine - even from a plane!
-For example, we can and do test that SSH connections to a simulated
-production environment running in Docker behave as expected, complete
-with an OpenSSH server speaking to an OpenLDAP server for SSH public
-key lookup. While we still have many tests to write, we had no such
-tests a year ago and every production deployment was a
-cross-your-fingers type moment. Having comprehensive tests gives us
-confidence to move fast and not break things.</p>
-<p>One year ago, hg.mozilla.org's infrastructure was opaque, didn't have
-automated tests, and was deployed too seldomly. There was the often
-correct perception that changing this critical-to-Mozilla service was
-difficult and slow. Today, things couldn't be more different. <strong>The
-hg.mozilla.org infrastructure is open, we have tests, and we can and
-do deploy multiple times per day without forward notice and without
-breaking things.</strong> I love this brave new world of open infrastructure
-and moving fast.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

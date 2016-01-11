@@ -51,6 +51,40 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mozilla-mercurial-statistics"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/09/30/mozilla-mercurial-statistics" rel="bookmark" title="Permanent Link to Mozilla Mercurial Statistics">Mozilla Mercurial Statistics</a></h2>
+  <small>September 30, 2014 at 01:17 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/09/30/mozilla-mercurial-statistics#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I recently gained SSH access to Mozilla's Mercurial servers. This allows
+me to run some custom queries directly against the data. I was
+interested in some high-level numbers and thought I'd share the results.</p>
+<p>hg.mozilla.org hosts a total of 3,445 repositories. Of these, there are
+1,223 distinct root commits (i.e. distinct graphs). Altogether, there
+are 32,123,211 commits. Of those, there are 865,594 distinct commits (not
+double counting commits that appear in multiple repositories).</p>
+<p>We have a high ratio of total commits to distinct commits (about 37:1).
+This means we have high duplication of data on disk. This basically
+means a lot of repos are clones/forks of existing ones. No big surprise
+there.</p>
+<p>What is surprising to me is the low number of total distinct commits. I
+was expecting the number to run into the millions. (Firefox itself
+accounts for ~240,000 commits.) Perhaps a lot of the data is sitting in
+Git, Bitbucket, and GitHub. Sounds like a good data mining expedition...</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/30/mozilla-mercurial-statistics#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="on-monolithic-repositories"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/09/09/on-monolithic-repositories" rel="bookmark" title="Permanent Link to On Monolithic Repositories">On Monolithic Repositories</a></h2>
   <small>September 09, 2014 at 10:00 AM | categories: 
@@ -387,65 +421,6 @@ please email me. gps@mozilla.com.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/08/19/submit-feedback-about-mercurial#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-hooks-move-and-testing-mercurial"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial" rel="bookmark" title="Permanent Link to Mercurial hooks move and testing Mercurial">Mercurial hooks move and testing Mercurial</a></h2>
-  <small>August 18, 2014 at 03:10 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mozilla has a number of source repositories under
-<a href="https://hg.mozilla.org/hgcustom/">https://hg.mozilla.org/hgcustom/</a>
-that cumulatively define how version control works at Mozilla.</p>
-<p>Back in February, I
-<a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools/">launched an effort</a>
-to establish a unified Mercurial repository for all this code. That
-repository is <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
-and it has slowly grown.</p>
-<p>The <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1052201">latest addition</a>
-to this repository is the import of the <em>hghooks</em> repository. This
-now-defunct repository contained all the server-side Mercurial hooks
-that Mozilla has deployed on <em>hg.mozilla.org</em>.</p>
-<p>Soon after that repository was imported into version-control-tools, we
-started executing the hooks tests as part of the existing test suite in
-version-control-tools. This means we get
-<a href="https://ci.mozilla.org/job/version-control-tools/">continuous integration</a>,
-<a href="https://ci.mozilla.org/job/version-control-tools/coveragepy/?">code coverage</a>,
-and the ability to run tests against multiple versions of Mercurial
-(2.5.4 through 3.1) in one go.</p>
-<p><strong>This is new for Mozilla and is a big deal.</strong> For the first time, we
-have a somewhat robust testing environment for Mercurial that is testing
-things we run in production.</p>
-<p>But we still have a long way to go. The ultimate goal is to get everything
-rolled into the version-control-tools repository and to write tests for
-everything people rely on. We also want the test environment to look as
-much like our production environment as possible. Once that's in place,
-most of the fear and uncertainty around upgrading or changing the server
-goes away. This will allow Mozilla to move faster and issues like our
-recent server problems can be diagnosed more quickly (Mercurial has
-added better logging in newer versions).</p>
-<p>If you want to contribute to this effort, <strong>please write tests for
-behavior you rely on.</strong> We're now relying on Mercurial's test harness
-and <a href="http://mercurial.selenic.com/wiki/WritingTests">test types</a>
-rather than low-level unit tests. This means our tests are now running
-a Mercurial server and running actual Mercurial commands. The tests thus
-explicitly verify that client-seen behavior is exactly as you intend.
-For an example, see the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/abc1c5bdca9b/hghooks/tests/test-prevent-webidl.t">WebIDL hook test</a>.</p>
-<p>So what are you waiting for? Find some gaps in code coverage and write
-some tests today!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/08/18/mercurial-hooks-move-and-testing-mercurial#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/11">« Previous Page</a>
   --  
