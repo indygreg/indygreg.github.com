@@ -51,6 +51,184 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="why-hg.mozilla.org-is-slow"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/12/19/why-hg.mozilla.org-is-slow" rel="bookmark" title="Permanent Link to Why hg.mozilla.org is Slow">Why hg.mozilla.org is Slow</a></h2>
+  <small>December 19, 2014 at 02:40 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>At Mozilla, I often hear statements like <em>Mercurial is slow.</em> That's a
+very general statement. Depending on the context, it can mean one or
+more of several things:</p>
+<ul>
+<li>My Mercurial workflow is not very efficient</li>
+<li><em>hg</em> commands I execute are slow to run</li>
+<li><em>hg</em> commands I execute appear to stall</li>
+<li>The Mercurial server I'm interfacing with is slow</li>
+</ul>
+<p>I want to spend time talking about a specific problem: why
+hg.mozilla.org (the server) is slow.</p>
+<h2>What Isn't Slow</h2>
+<p><strong>If you are talking to hg.mozilla.org over HTTP or HTTPS
+(https://hg.mozilla.org/), there should not currently be any server
+performance issues</strong>. Our Mercurial HTTP servers are pretty beefy and
+are able to absorb a lot of load.</p>
+<p>If https://hg.mozilla.org/ is slow, chances are:</p>
+<ul>
+<li>You are doing something like cloning a 1+ GB repository.</li>
+<li>You are asking the server to do something really expensive (like
+  generate JSON for 100,000 changesets via the pushlog query interface).</li>
+<li>You don't have a high bandwidth connection to the server.</li>
+<li>There is a network event.</li>
+</ul>
+<h2>Previous Network Events</h2>
+<p>There have historically been network capacity issues in the datacenter
+where hg.mozilla.org is hosted (SCL3).</p>
+<p>During Mozlandia, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1107156">excessive traffic to ftp.mozilla.org</a>
+essentially saturated the SCL3 network. During this time, requests to
+hg.mozilla.org were timing out: Mercurial traffic just couldn't traverse
+the network. Fortunately, events like this are quite rare.</p>
+<p>Up until recently, Firefox release automation was effectively
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096337">overwhelming the network</a>
+by doing some clownshoesy things.</p>
+<p>For example, <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096653">gaia-central was being cloned all the time</a>
+We had a ~1.6 GB repository being cloned over a thousand times per day. We
+were transferring close to 2 TB of gaia-central data out of Mercurial servers
+per day</p>
+<p>We also found issues with
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1096650">pushlogs sending 100+ MB responses</a>.</p>
+<p>And the <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1100574">build/tools repo was getting cloned for every job</a>. Ditto for mozharness.</p>
+<p>In all, <strong>we identified a few terabytes of excessive Mercurial traffic
+that didn't need to exist</strong>. This excessive traffic was saturating the
+SCL3 network and slowing down not only Mercurial traffic, but other
+traffic in SCL3 as well.</p>
+<p>Fortunately, people from Release Engineering were quick to respond to
+and fix the problems once they were identified. The problem is now
+firmly in control. Although, given the scale of Firefox's release
+automation, any new system that comes online that talks to version
+control is susceptible to causing server outages. I've already raised
+this concern when reviewing some TaskCluster code. The thundering herd
+of automation will be an ongoing concern. But I have plans to further
+mitigate risk in 2015. Stay tuned.</p>
+<p>Looking back at our historical data, it appears that we hit these
+network saturation limits a few times before we reached a tipping point
+in early November 2014. Unfortunately, we didn't realize this because up
+until recently, we didn't have a good source of data coming from the
+servers. We lacked the tooling to analyze what we had. We lacked the
+experience to know what to look for. Outages are effective flashlights.
+We learned a lot and know what we need to do with the data moving
+forward.</p>
+<h2>Available Network Bandwidth</h2>
+<p>One person pinged me on IRC with the comment <em>Git is cloning much faster
+than Mercurial.</em> I asked for timings and the Mercurial clone wall time
+for Firefox was much higher than I expected.</p>
+<p>The reason was network bandwidth. This person was performing a Git clone
+between 2 hosts in EC2 but was performing the Mercurial clone between
+hg.mozilla.org and a host in EC2. In other words, they were partially
+comparing the performance of a 1 Gbps network against a link over the
+public internet! When they did a fair comparison by removing the network
+connection as a variable, the clone times rebounded to what I expected.</p>
+<p>The single-homed nature of hg.mozilla.org in a single datacenter in
+northern California is not only bad for disaster recovery reasons, it
+also means that machines far away from SCL3 or connecting to SCL3 over a
+slow network aren't getting optimal performance.</p>
+<p>In 2015, expect us to build out a geo-distributed hg.mozilla.org so that
+connections are hitting a server that is closer and thus faster. This
+will probably be targeted at Firefox release automation in AWS first. We
+want those machines to have a fast connection to the server <strong>and</strong> we
+want their traffic isolated from the servers developers use so that
+hiccups in automation don't impact the ability for humans to access
+and interface with source code.</p>
+<h2>NFS on SSH Master Server</h2>
+<p>If you connect to http://hg.mozilla.org/ or https://hg.mozilla.org/, you
+are hitting a pool of servers behind a load balancer. These servers have
+repository data stored on local disk, where I/O is fast. In reality,
+most I/O is serviced by the page cache, so local disks don't come into
+play.</p>
+<p>If you connect to ssh://hg.mozilla.org/, you are hitting a single,
+master server. Its repository data is hosted on an NFS mount. I/O on the
+NFS mount is horribly slow. Any I/O intensive operation performed on the
+master is much, much slower than it should be. Such is the nature of
+NFS.</p>
+<p>We'll be exploring ways to mitigate this performance issue in 2015. But
+it isn't the biggest source of performance pain, so don't expect anything
+immediately.</p>
+<h2>Synchronous Replication During Pushes</h2>
+<p>When you <em>hg push</em> to hg.mozilla.org, the changes are first made on the
+SSH/NFS master server. They are subsequently mirrored out to the HTTP
+read-only slaves.</p>
+<p>As is currently implemented, the mirroring process is performed
+synchronously during the push operation. The server waits for the
+mirrors to complete (to a reasonable state) before it tells the client
+the push has completed.</p>
+<p>Depending on the repository, the size of the push, and server and
+network load, <strong>mirroring commonly adds 1 to 7 seconds to push times</strong>.
+This is time when a developer is sitting at a terminal, waiting for <em>hg
+push</em> to complete. The time for Try pushes can be larger: 10 to 20
+seconds is not uncommon (but fortunately not the norm).</p>
+<p>The current mirroring mechanism is overly simple and prone to many
+failures and sub-optimal behavior. I plan to work on fixing mirroring in
+2015. When I'm done, there should be no user-visible mirroring delay.</p>
+<h2>Pushlog Replication Inefficiency</h2>
+<p>Up until yesterday (when we
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1112415">deployed a rewritten pushlog extension</a>,
+the replication of pushlog data from master to server was very
+inefficient. Instead of tranferring a delta of pushes since last pull,
+we were literally copying the underlying SQLite file across the network!</p>
+<p>Try's pushlog is ~30 MB. mozilla-central and mozilla-inbound are in the
+same ballpark. 30 MB x 10 slaves is a lot of data to transfer. These
+operations were capable of periodically saturating the network, slowing
+everyone down.</p>
+<p>The rewritten pushlog extension performs a delta transfer automatically
+as part of <em>hg pull</em>. Pushlog synchronization now completes in
+milliseconds while commonly only consuming a few kilobytes of network
+traffic.</p>
+<p>Early indications reveal that deploying this change yesterday decreased the
+push times to repositories with long push history by 1-3s.</p>
+<h2>Try</h2>
+<p>Pretty much any interaction with the
+<a href="https://hg.mozilla.org/try">Try repository</a> is guaranteed to have poor
+performance. The Try repository is doing things that distributed
+versions control systems weren't designed to do. This includes Git.</p>
+<p>If you are using Try, all bets are off. Performance will be problematic
+until we roll out the <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1055298">headless try</a>
+repository.</p>
+<p>That being said, we've made changes recently to make Try perform better.
+<a href="https://twitter.com/lxt/status/546042588822642688">The median time for pushing to Try</a>
+has decreased significantly in the past few weeks. The first dip in
+mid-November was due to upgrading the server from Mercurial 2.5 to
+Mercurial 3.1 and from converting Try to use <em>generaldelta</em> encoding.
+The dip this week has been from merging all heads and from deploying the
+aforementioned pushlog changes. <strong>Pushing to Try is now significantly
+faster than 3 months ago.</strong></p>
+<h2>Conclusion</h2>
+<p>Many of the reasons for hg.mozilla.org slowness are known. More often
+than not, they are due to clownshoes or inefficiencies on Mozilla's
+part rather than fundamental issues with Mercurial.</p>
+<p><strong>We have made significant progress at making hg.mozilla.org faster.</strong>
+But we are not done. We are continuing to invest in fixing the
+sub-optimal parts and making hg.mozilla.org faster yet. I'm confident
+that within a few months, nobody will be able to say that the servers
+are a source of pain like they have been for years.</p>
+<p>Furthermore, Mercurial is investing in features to make the wire
+protocol faster, more efficient, and more powerful. When deployed,
+these should make pushes faster on <em>any</em> server. They will also enable
+workflow enhancements, such as Facebook's experimental extension to
+perform rebases as part of push (eliminating push races and having to
+manually rebase when you lose the push race).</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/19/why-hg.mozilla.org-is-slow#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mach-sub-commands"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/12/18/mach-sub-commands" rel="bookmark" title="Permanent Link to mach sub-commands">mach sub-commands</a></h2>
   <small>December 18, 2014 at 09:45 AM | categories: 
@@ -293,184 +471,6 @@ the repository over SSH, not HTTP.</strong></p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-server-hiccup-2014-11-06"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/11/07/mercurial-server-hiccup-2014-11-06" rel="bookmark" title="Permanent Link to Mercurial Server Hiccup 2014-11-06">Mercurial Server Hiccup 2014-11-06</a></h2>
-  <small>November 07, 2014 at 11:00 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/11/07/mercurial-server-hiccup-2014-11-06#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>We had a hiccup on hg.mozilla.org yesterday. It resulted in prolonged
-tree closures for Firefox.
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1094922">Bug 1094922</a>
-tracks the issue.</p>
-<h2>What Happened</h2>
-<p>We noticed that many HTTP requests to hg.mozilla.org were getting 503
-responses. On initial glance, the servers were healthy. CPU was below
-100% utilization, I/O wait was reasonable. And there was little to no
-swapping. Furthermore, the logs showed a healthy stream of requests
-being successfully processed at levels that are typical. In other words,
-it looked like business as usual on the servers.</p>
-<p>Upon deeper investigation, we noticed that the WSGI process pool on the
-servers was fully saturated. There were were 24 slots/processes per server
-allocated to process Mercurial requests and all 24 of them were actively
-processing requests. This created a backlog of requests that had been
-accepted by the HTTP server but were waiting an internal dispatch/proxy
-to WSGI. To the client, this would appear as a request with a long lag
-before response generation.</p>
-<h2>Mitigation</h2>
-<p>This being an emergency (trees were already closed and developers were
-effectively unable to use hg.mozilla.org), we decided to increase the
-size of the WSGI worker pool. After all, we had CPU, I/O, and memory
-capacity to spare and we could identify the root cause later. We first
-bumped worker pool capacity from 24 to 36 and immediately saw a significant
-reduction in the number of pending requests awaiting a WSGI worker. We
-still had spare CPU, I/O, and memory capacity and were still seeing
-requests waiting on a WSGI worker, so we bumped the capacity to 48
-processes. At that time, we stopped seeing worker pool exhaustion and
-all incoming requests were being handed off to a WSGI worker as soon as
-they came in.</p>
-<p>At this time, things were looking pretty healthy from the server end.</p>
-<h2>Impact on Memory and Swapping</h2>
-<p>Increasing the number of WSGI processes had the side-effect of
-increasing the total amount of system memory used by Mercurial
-processes in two ways. First, more processes means more memory. That
-part is obvious. Second, more processes means fewer requests for each
-process per unit of time and thus it takes longer for each process to
-reach its max number of requests being being reaped. (It is a common
-practice in servers to have a single process hand multiple requests.
-This prevents overhead associated with spawning a new process and
-loading possibly expensive context in it.)</p>
-<p>We had our Mercurial WSGI processes configured to serve 100 requests
-before being reaped. With the doubling of WSGI processes from 24 to 48,
-those processes were lingering for 2x as long as before. Since the
-Mercurial processes grow over time (they are aggressive about caching
-repository data), this was slowly exhausting our memory pool.</p>
-<p>It took a few hours, but a few servers started flirting with high swap
-usage. (We don't expect the servers to swap.) This is how we identified
-that memory use wasn't sane.</p>
-<p>We lowered the maximum requests per process from 100 to 50 to match
-the ratio increase in the WSGI worker pool.</p>
-<h2>Mercurial Memory "Leak"</h2>
-<p>When we started looking at the memory usage of WSGI processes in more
-detail, we noticed something strange: RSS of Mercurial processes was
-growing steadily when processes were streaming bundle data. This seemed
-very odd to me. Being a Mercurial developer, I was pretty sure the
-behavior was wrong.</p>
-<p>I <a href="http://bz.selenic.com/show_bug.cgi?id=4443">filed a bug</a> against
-Mercurial.</p>
-<p>I was able to reproduce the issue locally and started running a
-bisection to find the regressing changeset. To my surprise, this issue
-has been around since Mercurial 2.7!</p>
-<p>I looked at the code in question, identified why so much memory was
-being allocated, and submitted patches to
-<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-November/063518.html">stop an unbounded memory growth during clone/pull</a>
-and to
-<a href="http://www.selenic.com/pipermail/mercurial-devel/2014-November/063520.html">further reduce memory use during those operations</a>.
-Both of those patches have been queued to go in the next stable release
-of Mercurial, 3.2.1.</p>
-<p>Mercurial 3.2 is still not as memory efficient during clones as Mercurial
-2.5.4. If I have time, I'd like to formulate more patches. But the
-important fix - not growing memory unbounded during clone/pull - is
-in place.</p>
-<p>Armed with the knowledge that Mercurial is leaky (although not a leak
-in the traditional sense since the memory was eventually
-getting garbage collected), we further reduced the max requests per
-process from 50 to 20. This will cause processes to get reaped sooner
-and will be more aggressive about keeping RSS growth in check.</p>
-<h2>Root Cause</h2>
-<p>We suspect the root cause of the event is a network event.</p>
-<p>Before this outage, we rarely had more than 10 requests being served
-from the WSGI worker pool. In other words, we were often well below 50%
-capacity. But something changed yesterday. More slots were being
-occupied and high-bandwidth operations were taking longer to complete.
-Kendall Libby noted that outbound traffic dropped by ~800 Mbps
-during the event. For reasons that still haven't been identified, the
-network became slower, clones weren't being processed as quickly, and
-clients were occupying WSGI processes for longer amounts of time. This
-eventually exhausted the available process pool, leading to HTTP 503's,
-intermittent service availability, and a tree closure.</p>
-<p>Interestingly, we noticed that in-flight HTTP requests are abnormally
-high again this morning. However, because the servers are now configured
-to handle the extra capacity, we seem to be powering through it without
-any issues.</p>
-<h2>In Hindsight</h2>
-<p>You can make the argument that the servers weren't configured to serve
-as much traffic as possible. After all, we were able to double the
-WSGI process pool without hitting CPU, I/O, and memory limits.</p>
-<p>The servers were conservatively configured. However, the worker pool
-was initially configured at 2x CPU core count. And as a general rule of
-thumb, you don't want your worker pool to be much greater than CPU
-count because that introduces context switching and can give each
-individual process a smaller slice of the CPU to process requests,
-leading to higher latency. Since clone operations often manage to
-peg a single CPU core, there is some justification for keeping the
-ratio of WSGI workers to CPU count low. Furthermore, we rarely came
-close to exhausting the WSGI worker pool before. There was little
-to no justification for increasing capacity to a threshold not normally
-seen.</p>
-<p>But at the same time, even with 4x workers to CPU cores, our CPU
-usage rarely flirts with 100% across all cores, even with the
-majority of workers occupied. Until we actually hit CPU (or I/O)
-limits, running a high multiplier seems like the right thing to do.</p>
-<p>Long term, we expect CPU usage during clone operations to drop
-dramatically. Mike Hommey has contributed a patch to Mercurial that
-allows servers to hand out a URL of a bundle file to fetch during
-clone. So, a server can say <em>I have your data: fetch this static file
-from S3 and then apply this small subset of the data that I'll give
-you.</em> When properly deployed and used at Mozilla, this will effectively
-drop server-side CPU usage for clones to nothing.</p>
-<h2>Where to do Better</h2>
-<p>There was a long delay between the Nagios alerts firing and someone
-with domain-specific knowledge looking at the problem.</p>
-<p>The trees could have reopened earlier. We were pretty confident about
-the state of things at 1000. Trees opened in metered mode at 1246 and
-completely at 1909. Although, the swapping issue wasn't mitigated until
-1615, so you can argue that being conservative on the tree reopening
-was justified. There is a chance that full reopening could have
-triggered excessive swap and another round of chaos for everyone
-involved.</p>
-<p>We need an alert on WSGI pool exhaustion. It took longer than it should
-have to identify this problem. However, now that we've encountered it,
-it should be obvious if/when it happens again.</p>
-<p>Firefox release automation is the largest single consumer of
-hg.mozilla.org. Since they are operating thousands of machines, any
-reduction in interaction or increase in efficiency will result in
-drastic load reductions on the server. Chris AtLee and Jordan Lund
-have been working on
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1050109">bug 1050109</a> to
-reduce clones of the mozharness and build/tools repositories, which
-should go a long way to dropping load on the server.</p>
-<h2>Timeline of Events</h2>
-<p>All times PST.</p>
-<p>November 6</p>
-<ul>
-<li>0705 - First Nagios alerts fire</li>
-<li>0819 - Trees closed</li>
-<li>0915 - WSGI process pool increased from 24 to 36</li>
-<li>0945 - WSGI process pool increased from 36 to 48</li>
-<li>1246 - Trees reopen in metered mode</li>
-<li>1615 - Decrease max requests per process from 100 to 50</li>
-<li>1909 - Trees open completely</li>
-</ul>
-<p>November 7</p>
-<ul>
-<li>0012 - Patches to reduce memory usage submitted to Mercurial</li>
-<li>0800 - Mercurial patches accepted</li>
-<li>0915 - Decrease max requests per process from 50 to 20</li>
-</ul>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/11/07/mercurial-server-hiccup-2014-11-06#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/9">« Previous Page</a>
   --  
