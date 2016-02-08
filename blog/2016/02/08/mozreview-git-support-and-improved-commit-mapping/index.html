@@ -1,0 +1,196 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | MozReview Git Support and Improved Commit Mapping
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="mozreview-git-support-and-improved-commit-mapping"></a>
+  <h2 class="blog_post_title"><a href="/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping" rel="bookmark" title="Permanent Link to MozReview Git Support and Improved Commit Mapping">MozReview Git Support and Improved Commit Mapping</a></h2>
+  <small>February 08, 2016 at 11:05 AM | categories: 
+
+<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>MozReview - Mozilla's Review Board based code review tool - now
+supports ingestion from Git. Previously, it only supported Mercurial.</p>
+<p><a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install-git.html">Instructions</a>
+for configuring Git with MozReview are available. Because blog posts
+are not an appropriate medium for documenting systems and processes, I
+will not say anything more here on how to use Git with MozReview.</p>
+<p>Somewhat related to the introduction of Git support is an improved
+mechanism for mapping commits to existing review requests.</p>
+<p>When you submit commits to MozReview, MozReview has to decide how
+to <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/commits.html#understanding-how-commits-are-mapped-to-review-requests">map</a>
+those commits to review requests in Review Board. It has to choose
+whether to recycle an existing review request or create a new one.
+When recycling, is has to pick an appropriate one. If it chooses
+incorrectly, wonky things can happen. For example, a review request
+could switch to tracking a new and completely unrelated commit. That's
+bad.</p>
+<p>Up until today, our commit mapping algorithm was extremely simple. Yet
+it seemed to work 90% of the time. However, a number of people
+found the cracks and complained. With Git support coming online,
+I had a feeling that Git users would find these cracks with higher
+frequency than Mercurial users due to what I perceive to be
+variations in the commit workflows of Git versus Mercurial. So,
+I decided to proactively improve the commit mapping before the Git
+users had time to complain.</p>
+<p><strong>Both the Git and Mercurial MozReview client-side extensions now insert
+a <em>MozReview-Commit-ID</em> metadata line in commit messages.</strong> This line
+effectively defines a (likely) unique ID that identifies the commit
+across rewrites. When MozReview maps commits to review requests,
+it uses this identifier to find matches. What this means is that
+history rewriting (such as reordering commits) should be handled
+well by MozReview and should not confuse the commit mapping
+mechanism.</p>
+<p>I'm not claiming the commit mapping mechanism is perfect. In fact,
+I know of areas where it can still fall apart. But it is much
+better than it was before. If you think you found a bug in the
+commit mapping, don't hesitate to
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=MozReview">file a bug</a>.
+Please have it block <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1243483">bug 1243483</a>.</p>
+<p>A side-effect of introducing this improved commit mapping is that
+commit messages will have a <em>MozReview-Commit-ID</em> line in them. This
+may startle some. Some may complain about the <em>spam</em>. Unfortunately,
+there's no better alternative. Both Mercurial and Git do support a
+hidden key-value dictionary for each commit object. In fact, the
+MozReview Mercurial extension has been storing the very commit IDs
+that now appear in the commit message in this dictionary for months!
+Unfortunately, actually using this hidden dictionary for metadata
+storage is riddled with problems. For example, some Mercurial
+commands don't preserve all the metadata. And accessing or setting
+this data from Git is painful. While I wish this metadata (which
+provides little value to humans) were not located in the commit
+message where humans could be bothered by it, it's really the only
+practical place to put it. If people find it super annoying, we
+could modify Autoland to strip it before landing. Although, I think
+I like having it preserved because it will enable some useful
+scenarios down the road, such as better workflows for uplift
+requests. It's also worth noting that there is precedent for storing
+unique IDs in commit messages for purposes of commit mapping in the
+code review tool: <a href="https://gerrit-documentation.storage.googleapis.com/Documentation/2.11.5/user-changeid.html">Gerrit uses Change-ID lines</a>.</p>
+<p>I hope you enjoy the Git support and the more robust commit to review
+request mapping mechanism!</p>
+
+  </div>
+</div>
+
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozreview">MozReview</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2015 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

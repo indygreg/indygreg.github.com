@@ -51,6 +51,85 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mozreview-git-support-and-improved-commit-mapping"></a>
+  <h2 class="blog_post_title"><a href="/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping" rel="bookmark" title="Permanent Link to MozReview Git Support and Improved Commit Mapping">MozReview Git Support and Improved Commit Mapping</a></h2>
+  <small>February 08, 2016 at 11:05 AM | categories: 
+
+<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>MozReview - Mozilla's Review Board based code review tool - now
+supports ingestion from Git. Previously, it only supported Mercurial.</p>
+<p><a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install-git.html">Instructions</a>
+for configuring Git with MozReview are available. Because blog posts
+are not an appropriate medium for documenting systems and processes, I
+will not say anything more here on how to use Git with MozReview.</p>
+<p>Somewhat related to the introduction of Git support is an improved
+mechanism for mapping commits to existing review requests.</p>
+<p>When you submit commits to MozReview, MozReview has to decide how
+to <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/commits.html#understanding-how-commits-are-mapped-to-review-requests">map</a>
+those commits to review requests in Review Board. It has to choose
+whether to recycle an existing review request or create a new one.
+When recycling, is has to pick an appropriate one. If it chooses
+incorrectly, wonky things can happen. For example, a review request
+could switch to tracking a new and completely unrelated commit. That's
+bad.</p>
+<p>Up until today, our commit mapping algorithm was extremely simple. Yet
+it seemed to work 90% of the time. However, a number of people
+found the cracks and complained. With Git support coming online,
+I had a feeling that Git users would find these cracks with higher
+frequency than Mercurial users due to what I perceive to be
+variations in the commit workflows of Git versus Mercurial. So,
+I decided to proactively improve the commit mapping before the Git
+users had time to complain.</p>
+<p><strong>Both the Git and Mercurial MozReview client-side extensions now insert
+a <em>MozReview-Commit-ID</em> metadata line in commit messages.</strong> This line
+effectively defines a (likely) unique ID that identifies the commit
+across rewrites. When MozReview maps commits to review requests,
+it uses this identifier to find matches. What this means is that
+history rewriting (such as reordering commits) should be handled
+well by MozReview and should not confuse the commit mapping
+mechanism.</p>
+<p>I'm not claiming the commit mapping mechanism is perfect. In fact,
+I know of areas where it can still fall apart. But it is much
+better than it was before. If you think you found a bug in the
+commit mapping, don't hesitate to
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=MozReview">file a bug</a>.
+Please have it block <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1243483">bug 1243483</a>.</p>
+<p>A side-effect of introducing this improved commit mapping is that
+commit messages will have a <em>MozReview-Commit-ID</em> line in them. This
+may startle some. Some may complain about the <em>spam</em>. Unfortunately,
+there's no better alternative. Both Mercurial and Git do support a
+hidden key-value dictionary for each commit object. In fact, the
+MozReview Mercurial extension has been storing the very commit IDs
+that now appear in the commit message in this dictionary for months!
+Unfortunately, actually using this hidden dictionary for metadata
+storage is riddled with problems. For example, some Mercurial
+commands don't preserve all the metadata. And accessing or setting
+this data from Git is painful. While I wish this metadata (which
+provides little value to humans) were not located in the commit
+message where humans could be bothered by it, it's really the only
+practical place to put it. If people find it super annoying, we
+could modify Autoland to strip it before landing. Although, I think
+I like having it preserved because it will enable some useful
+scenarios down the road, such as better workflows for uplift
+requests. It's also worth noting that there is precedent for storing
+unique IDs in commit messages for purposes of commit mapping in the
+code review tool: <a href="https://gerrit-documentation.storage.googleapis.com/Documentation/2.11.5/user-changeid.html">Gerrit uses Change-ID lines</a>.</p>
+<p>I hope you enjoy the Git support and the more robust commit to review
+request mapping mechanism!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="making-mozreview-faster-by-disregarding-restful-design"></a>
   <h2 class="blog_post_title"><a href="/blog/2016/01/13/making-mozreview-faster-by-disregarding-restful-design" rel="bookmark" title="Permanent Link to Making MozReview Faster by Disregarding RESTful Design">Making MozReview Faster by Disregarding RESTful Design</a></h2>
   <small>January 13, 2016 at 03:25 PM | categories: 
@@ -276,116 +355,6 @@ experience for everyone.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/07/publish-when-pushing-to-mozreview#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="important-changes-to-mozreview"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/29/important-changes-to-mozreview" rel="bookmark" title="Permanent Link to Important Changes to MozReview">Important Changes to MozReview</a></h2>
-  <small>May 29, 2015 at 04:20 PM | categories: 
-
-<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/29/important-changes-to-mozreview#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>This was a busy week for MozReview! There are a number of changes people
-need to be aware of.</p>
-<h2>Support for Specifying Reviewers via Commit Messages</h2>
-<p>MozReview will now parse <strong>r?gps</strong> syntax out of commit messages to
-set reviewers for pushed commits.</p>
-<p><a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/review-requests.html#specifying-reviewers-in-commit-messages">Read the docs</a>
-for more information, including why we are preferring <strong>r?</strong> to <strong>r=</strong>.</p>
-<p>Since it landed, a number of workflow concerns have been reported.
-See the bug tree for
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1142251">bug 1142251</a>
-before filing a bug to help avoid duplicates.</p>
-<p>Thank Dan Minor for the feature!</p>
-<h2>Review Attachment/Flag Per Commit</h2>
-<p>Since the beginning of MozReview, there was one Bugzilla attachment /
-review flag per commit series. This has changed to one attachment /
-review flag per commit.</p>
-<p>Before, you needed to grant <em>Ship It</em> on the parent/root review request
-in order to r+ the MozReview review request. Now, you grant <em>Ship It</em>
-on individual commits and these turn into individual r+ on Bugzilla.
-To reinforce that reviewing the parent/root review request doesn't do
-anything meaningful any more, the <em>Ship It</em> button and checkbox have been
-removed from the parent/root review request.</p>
-<p>The new model more closely maps to how code review in Bugzilla has
-worked at Mozilla for ages. And, it is a superior workflow for
-future workflows we're trying to enable.</p>
-<p>We tried to run a one-time migration script to convert existing
-parent/root attachments/review flags to per-commit attachments/flags.
-However, there were issues. We will attempt again sometime next week.
-In the interim, <strong>in-flight review requests may enter an inconsistent
-state if they are updated</strong>. If a new push is performed, the old
-parent/root attachment/review flag may linger and per-commit
-attachments/flags will be created. This could be confusing. The
-workaround is to manually clear the r? flag from the parent/root
-attachment or wait for the migration script to run in a few days.</p>
-<p>Mark Côté put in a lot of hard work to make this change happen.</p>
-<h2>r? Flags Cleared After Review</h2>
-<p>Before, submitting a review without granting <em>Ship It</em> wouldn't do
-anything to the r? flag: the r? flag would linger.</p>
-<p>Now, submitting review without granting <em>Ship It</em> will clear the r?
-flag. We think the new default is better for the majority of users.
-However, we recognize it isn't always wanted. There is a bug open to
-provide a checkbox to keep the r? flag present.</p>
-<h2>Metadata Added to Changesets</h2>
-<p>If you update to the tip of the version-control-tools repository
-(you should do this every week or so to stay fresh - use <em>mach
-mercurial-setup</em> to do this automatically), metadata will automatically
-be added to commits when working with MozReview-enabled repositories.</p>
-<p>Specifically, we insert a hidden, unique, random ID into every changeset.
-This ID can be used to map commits to each other. We don't use this ID
-yet. But we have plans.</p>
-<p>A side-effect of this change is that you can no longer push to MozReview
-if you have uncommitted local changes. If this is annoying, use <em>hg
-shelve</em> and <em>hg unshelve</em> to create and undo temporary commits. If this
-is too annoying, complain by filing a bug and we can look into doing
-this automatically as part of pushing.</p>
-<h2>What's Next?</h2>
-<p>We're actively working on more workflow enhancements to make MozReview
-an even more compelling experience.</p>
-<p>I'm building a web service to query file metadata from moz.build files.
-This will allow MozReview to automatically file bugs in proper
-components based on what files changed. Once code reviewer metadata
-is added to moz.build files, it will enable us to assign reviewers
-automatically as well. The end goal here is to lower the number of steps
-needed to turn changed code into a landing. This will be useful when we
-turn GitHub pull requests into MozReview review requests (random GitHub
-contributors shouldn't need to know who to flag for review, nor should
-they be required to file a bug if they write some code). Oh year, we're
-working on integrating GitHub pull requests.</p>
-<p>Another area of focus is better commit tracking and partially landed
-series. I have preliminary patches for automatically adding review URL
-annotations to commit messages. This will enable people to easily go
-from commit (message) to MozReview, without having to jump through
-Bugzilla. This also enables better commit tracking. If you e.g.
-perform complicated history rewriting, the review URL annotation will
-enable the MozReview server to better map previously-submitted commits
-to existing review requests. Partially landed series will enable
-commits to land as soon as they are reviewed, without having to wait
-on the entire series. It's my strong belief that if a commit is granted
-review, it should land as soon as possible. This helps prevent bit rot
-of ready-to-land commits. Landings also make people feel better because
-you feel like you've accomplished something. Positive feedback loops are
-good.</p>
-<p>Major work is also being done to overhaul the web UI. The commit series
-view (which is currently populated via XHR) will soon be generated on
-the server and served as part of the page. This should make pages load a
-bit faster. And, things should be prettier as well.</p>
-<p>And, of course, work is being invested into Autoland. Support for
-submitting pushes to Try landed a few weeks ago. Having Autoland
-actually land reviewed commits is on the radar.</p>
-<p>Exciting times are ahead. Please continue to provide feedback. If you
-see something, <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hacking-mozreview.html#filing-bugs">say something</a>.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/29/important-changes-to-mozreview#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozreview/2">Next Page »</a>
 
