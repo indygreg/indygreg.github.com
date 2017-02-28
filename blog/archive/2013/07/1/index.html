@@ -117,7 +117,7 @@ with the local client:</p>
 all the data. On subsequent runs, it only downloads new data, so it
 should be much faster.</p>
 <p>Then, you can search for the push history of a changeset:</p>
-<div class="pygments_murphy"><pre>$ hg changesetpushes -a b968708558b9
+<div class="pygments_murphy"><pre><span></span>$ hg changesetpushes -a b968708558b9
 133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
 
 Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
@@ -187,32 +187,32 @@ usage info:</p>
 <pre><code>$ hg help mozext
 </code></pre>
 <p>Here are some examples:</p>
-<div class="pygments_murphy"><pre><span class="c"># Clone mozilla-central into the mc directory.</span>
+<div class="pygments_murphy"><pre><span></span><span class="c1"># Clone mozilla-central into the mc directory.</span>
 hg clone central mc
 hg clone mc mc
 
-<span class="c"># Create a unified Mercurial repository containing changesets</span>
-<span class="c"># from all the release repositories.</span>
+<span class="c1"># Create a unified Mercurial repository containing changesets</span>
+<span class="c1"># from all the release repositories.</span>
 hg cloneunified gecko
 
-<span class="c"># Pull changes from the central and inbound repositories.</span>
+<span class="c1"># Pull changes from the central and inbound repositories.</span>
 hg pull central
 hg pull inbound
 
-<span class="c"># Update the working tree to the tip of inbound.</span>
+<span class="c1"># Update the working tree to the tip of inbound.</span>
 hg up inbound/default
 
-<span class="c"># View the tree open/closed status.</span>
+<span class="c1"># View the tree open/closed status.</span>
 hg treestatus
 
-<span class="c"># Show a list of all known trees and their aliases.</span>
+<span class="c1"># Show a list of all known trees and their aliases.</span>
 hg moztrees
 
-<span class="c"># Open TBPL for the push containing a changeset.</span>
+<span class="c1"># Open TBPL for the push containing a changeset.</span>
 hg tbpl inbound 821e984ef423
 hg tbpl inbound inbound/default
 
-<span class="c"># Push the tip of inbound to mozilla-central</span>
+<span class="c1"># Push the tip of inbound to mozilla-central</span>
 hg pushtree -r inbound/default central
 </pre></div>
 

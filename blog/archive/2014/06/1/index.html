@@ -71,7 +71,7 @@ Firefox source repository? Yeah, I do too.</p>
 <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
 repository into <em>~/.mozbuild/version-control-tools</em>.</p>
 <p>Then, add the following to your <em>~/.hgrc</em> file:</p>
-<div class="pygments_murphy"><pre><span class="k">[extensions]</span>
+<div class="pygments_murphy"><pre><span></span><span class="k">[extensions]</span>
 <span class="na">bzpost</span> <span class="o">=</span> <span class="s">~/.mozbuild/version-control-tools/hgext/bzpost</span>
 
 <span class="k">[bugzilla]</span>
@@ -173,17 +173,17 @@ the following to your <em>.hg/hgrc</em>:</p>
 firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
 </code></pre>
 <p>To use, simply pull from a Firefox repo:</p>
-<div class="pygments_murphy"><pre><span class="nv">$ </span>hg pull https://hg.mozilla.org/mozilla-central
+<div class="pygments_murphy"><pre><span></span>$ hg pull https://hg.mozilla.org/mozilla-central
 
-<span class="nv">$ </span>hg up central
+$ hg up central
 
-<span class="c"># Do your development work.</span>
+<span class="c1"># Do your development work.</span>
 
-<span class="c"># Time to land.</span>
-<span class="nv">$ </span>hg pull https://hg.mozilla.org/integration/mozilla-inbound
-<span class="nv">$ </span>hg rebase -d inbound
-<span class="nv">$ </span>hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
-<span class="nv">$ </span>hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
+<span class="c1"># Time to land.</span>
+$ hg pull https://hg.mozilla.org/integration/mozilla-inbound
+$ hg rebase -d inbound
+$ hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
+$ hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
 </pre></div>
 
 <p>Please note that <em>hg push</em> tries to push all local changes on all
@@ -435,27 +435,27 @@ child of d5741ada659d, then there should be absolutely no way
 that 23d165967da3 should fail to apply directly to d5741ada659d.
 The problem is that mq fails to update the parent changeset when
 you push patches on top of a new parent! e.g.</p>
-<div class="pygments_murphy"><pre><span class="c"># Let&#39;s create a root commit.</span>
-<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;foo&#39;</span> &gt; foo
-<span class="nv">$ </span>hg commit -A -m <span class="s1">&#39;initial commit&#39;</span>
+<div class="pygments_murphy"><pre><span></span><span class="c1"># Let&#39;s create a root commit.</span>
+$ <span class="nb">echo</span> <span class="s1">&#39;foo&#39;</span> &gt; foo
+$ hg commit -A -m <span class="s1">&#39;initial commit&#39;</span>
 adding foo
-<span class="nv">$ </span>hg log
-changeset:   0:23d165967da3
+$ hg log
+changeset:   <span class="m">0</span>:23d165967da3
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
+date:        Sun Jun <span class="m">22</span> <span class="m">13</span>:48:05 <span class="m">2014</span> -0700
 summary:     initial commit
 </pre></div>
 
 <p>Notice the changeset of that commit. <em>023d165...</em>.</p>
 <p>Now let's create a new mq patch.</p>
-<div class="pygments_murphy"><pre><span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;patch 1&#39;</span> &gt; foo
-<span class="nv">$ </span>hg qnew -m <span class="s1">&#39;make mq patch 1&#39;</span> p1
+<div class="pygments_murphy"><pre><span></span>$ <span class="nb">echo</span> <span class="s1">&#39;patch 1&#39;</span> &gt; foo
+$ hg qnew -m <span class="s1">&#39;make mq patch 1&#39;</span> p1
 
-<span class="c"># Creating an mq patch creates a file in .hg/patches.</span>
-<span class="nv">$ </span>cat .hg/patches/p1
-<span class="c"># HG changeset patch</span>
-<span class="c"># Parent 23d165967da39e5846976eb6ed967f1058827ffa</span>
-<span class="c"># User Gregory Szorc &lt;gps@mozilla.com&gt;</span>
+<span class="c1"># Creating an mq patch creates a file in .hg/patches.</span>
+$ cat .hg/patches/p1
+<span class="c1"># HG changeset patch</span>
+<span class="c1"># Parent 23d165967da39e5846976eb6ed967f1058827ffa</span>
+<span class="c1"># User Gregory Szorc &lt;gps@mozilla.com&gt;</span>
 make p1
 
 diff --git a/foo b/foo
@@ -463,56 +463,56 @@ diff --git a/foo b/foo
 +++ b/foo
 @@ -1,1 +1,1 @@
 -foo
-+patch 1
++patch <span class="m">1</span>
 </pre></div>
 
 <p>Notice how the parent is listed as the changeset in Mercurial's core
 store.</p>
 <p>Now let's pop that patch, create a new commit, and push the old mq
 patch.</p>
-<div class="pygments_murphy"><pre><span class="nv">$ </span>hg qpop
+<div class="pygments_murphy"><pre><span></span>$ hg qpop
 popping p1
 patch queue now empty
 
-<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;bar&#39;</span> &gt; bar
-<span class="nv">$ </span>hg commit -A -m <span class="s1">&#39;second commit&#39;</span>
+$ <span class="nb">echo</span> <span class="s1">&#39;bar&#39;</span> &gt; bar
+$ hg commit -A -m <span class="s1">&#39;second commit&#39;</span>
 adding bar
 
-<span class="nv">$ </span>hg log
-changeset:   1:d5741ada659d
+$ hg log
+changeset:   <span class="m">1</span>:d5741ada659d
 tag:         tip
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun <span class="m">22</span> 13:48:37 <span class="m">2014</span> -0700
+date:        Sun Jun <span class="m">22</span> <span class="m">13</span>:48:37 <span class="m">2014</span> -0700
 summary:     second commit
 
-changeset:   0:23d165967da3
+changeset:   <span class="m">0</span>:23d165967da3
 user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
+date:        Sun Jun <span class="m">22</span> <span class="m">13</span>:48:05 <span class="m">2014</span> -0700
 summary:     initial commit
 
-<span class="nv">$ </span>hg qpush
+$ hg qpush
 applying p1
 now at: p1
 
-<span class="nv">$ </span>hg log --graph
-@ changeset:   2:64851294d038
+$ hg log --graph
+@ changeset:   <span class="m">2</span>:64851294d038
 <span class="p">|</span> tag:         p1
 <span class="p">|</span> tag:         qbase
 <span class="p">|</span> tag:         qtip
 <span class="p">|</span> tag:         tip
 <span class="p">|</span> user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-<span class="p">|</span> date:        Sun Jun <span class="m">22</span> 14:27:55 <span class="m">2014</span> -0700
-<span class="p">|</span> summary:     make mq patch 1
+<span class="p">|</span> date:        Sun Jun <span class="m">22</span> <span class="m">14</span>:27:55 <span class="m">2014</span> -0700
+<span class="p">|</span> summary:     make mq patch <span class="m">1</span>
 <span class="p">|</span>
-o changeset:   1:d5741ada659d
+o changeset:   <span class="m">1</span>:d5741ada659d
 <span class="p">|</span> tag:         qparent
 <span class="p">|</span> user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-<span class="p">|</span> date:        Sun Jun <span class="m">22</span> 13:48:37 <span class="m">2014</span> -0700
+<span class="p">|</span> date:        Sun Jun <span class="m">22</span> <span class="m">13</span>:48:37 <span class="m">2014</span> -0700
 <span class="p">|</span> summary:     second commit
 <span class="p">|</span>
-o changeset:   0:23d165967da3
+o changeset:   <span class="m">0</span>:23d165967da3
   user:        Gregory Szorc &lt;gps@mozilla.com&gt;
-  date:        Sun Jun <span class="m">22</span> 13:48:05 <span class="m">2014</span> -0700
+  date:        Sun Jun <span class="m">22</span> <span class="m">13</span>:48:05 <span class="m">2014</span> -0700
   summary:     initial commit
 </pre></div>
 
@@ -520,10 +520,10 @@ o changeset:   0:23d165967da3
 <em>d5741ada659d</em> because it was pushed while the working directory
 was sitting at <em>d5741ada659d</em>.</p>
 <p>But let's see what mq says:</p>
-<div class="pygments_murphy"><pre><span class="nv">$ </span>hg cat .hg/patches/p1
-<span class="c"># HG changeset patch</span>
-<span class="c"># Parent 23d165967da39e5846976eb6ed967f1058827ffa</span>
-<span class="c"># User Gregory Szorc &lt;gps@mozilla.com&gt;</span>
+<div class="pygments_murphy"><pre><span></span>$ hg cat .hg/patches/p1
+<span class="c1"># HG changeset patch</span>
+<span class="c1"># Parent 23d165967da39e5846976eb6ed967f1058827ffa</span>
+<span class="c1"># User Gregory Szorc &lt;gps@mozilla.com&gt;</span>
 make p1
 
 diff --git a/foo b/foo
@@ -531,7 +531,7 @@ diff --git a/foo b/foo
 +++ b/foo
 @@ -1,1 +1,1 @@
 -foo
-+patch 1
++patch <span class="m">1</span>
 </pre></div>
 
 <p>mq still says <em>23d165967da3</em> is the parent, even though we changed the
@@ -641,35 +641,35 @@ line examples.</p>
 <p>I use bookmarks for managing my <em>feature branches</em>. I use one
 bookmark per logical feature. This workflow is very similar to
 using Git branches.</p>
-<div class="pygments_murphy"><pre><span class="c"># Create a new bookmark for the new feature I&#39;m developing.</span>
-<span class="nv">$ </span>hg bookmark gps/my-new-feature
+<div class="pygments_murphy"><pre><span></span><span class="c1"># Create a new bookmark for the new feature I&#39;m developing.</span>
+$ hg bookmark gps/my-new-feature
 
-<span class="c"># make changes to files</span>
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit
-<span class="c"># make more changes)</span>
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit
-<span class="c"># keep making small changes</span>
-<span class="o">(</span>gps/my-new-features<span class="o">)</span> <span class="nv">$ </span>hg commit
+<span class="c1"># make changes to files</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg commit
+<span class="c1"># make more changes)</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg commit
+<span class="c1"># keep making small changes</span>
+<span class="o">(</span>gps/my-new-features<span class="o">)</span> $ hg commit
 
-<span class="c"># I decide I want to reorder or merge a few commits. I look at the</span>
-<span class="c"># DAG to see which changeset to rewrite.</span>
-<span class="o">(</span>gps/my-new-features<span class="o">)</span> <span class="nv">$ </span>hg log --graph
+<span class="c1"># I decide I want to reorder or merge a few commits. I look at the</span>
+<span class="c1"># DAG to see which changeset to rewrite.</span>
+<span class="o">(</span>gps/my-new-features<span class="o">)</span> $ hg log --graph
 
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg histedit 5e907ed10e22
-<span class="c"># this opens an editor where I can say what changes to make)</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg histedit 5e907ed10e22
+<span class="c1"># this opens an editor where I can say what changes to make)</span>
 
-<span class="c"># Let&#39;s start a new feature.</span>
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg up central
+<span class="c1"># Let&#39;s start a new feature.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg up central
 <span class="o">(</span>leaving bookmark gps/my-new-feature<span class="o">)</span>
-<span class="nv">$ </span>hg bookmark gps/feature2
-<span class="c"># Make some changes</span>
-<span class="o">(</span>gps/feature2<span class="o">)</span> <span class="nv">$ </span>hg commit
+$ hg bookmark gps/feature2
+<span class="c1"># Make some changes</span>
+<span class="o">(</span>gps/feature2<span class="o">)</span> $ hg commit
 
-<span class="c"># I got review on my original feature. Let&#39;s push it.</span>
-<span class="o">(</span>gps/feature2<span class="o">)</span> <span class="nv">$ </span>hg up gps/my-new-feature
+<span class="c1"># I got review on my original feature. Let&#39;s push it.</span>
+<span class="o">(</span>gps/feature2<span class="o">)</span> $ hg up gps/my-new-feature
 <span class="o">(</span>activating bookmark gps/marionette-restart<span class="o">)</span>
 
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg pull gecko
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg pull gecko
 pulling from http://hg.stage.mozaws.net/gecko
 searching <span class="k">for</span> changes
 adding changesets
@@ -691,16 +691,16 @@ updating bookmark inbound
 updating bookmark release
 <span class="o">(</span>run <span class="s1">&#39;hg heads .&#39;</span> to see heads, <span class="s1">&#39;hg merge&#39;</span> to merge<span class="o">)</span>
 
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg rebase -d fx-team
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg rebase -d fx-team
 
-<span class="c"># Verify I&#39;m about to push what I want to push.</span>
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg out -r . fx-team
+<span class="c1"># Verify I&#39;m about to push what I want to push.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg out -r . fx-team
 
-<span class="c"># And push the changes.</span>
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg push -r . fx-team
+<span class="c1"># And push the changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg push -r . fx-team
 
-<span class="c"># And delete the bookmark that I don&#39;t need any more.</span>
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg bookmark -d gps/my-new-feature
+<span class="c1"># And delete the bookmark that I don&#39;t need any more.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg bookmark -d gps/my-new-feature
 </pre></div>
 
 <p>That's how bookmarks work. If you upgrade to Mercurial 3.0 or newer,
@@ -715,48 +715,48 @@ bookmark. This helps me keep track of what head I'm committing to.</p>
 This is the extension that is implementing the <em>Changeset Evolution</em>
 feature. Eventually the functionality will be merged into core
 Mercurial. One such workflow with <em>evolve</em> is as follows.</p>
-<div class="pygments_murphy"><pre><span class="c"># Create a bookmark for a new feature</span>
-<span class="nv">$ </span>hg bookmark gps/my-new-feature
+<div class="pygments_murphy"><pre><span></span><span class="c1"># Create a bookmark for a new feature</span>
+$ hg bookmark gps/my-new-feature
 
-<span class="c"># Make some changes.</span>
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit -m <span class="s1">&#39;first commit&#39;</span>
+<span class="c1"># Make some changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg commit -m <span class="s1">&#39;first commit&#39;</span>
 
-<span class="c"># Make some more changes.</span>
-<span class="o">(</span>gps/my-new-feature<span class="o">)</span> <span class="nv">$ </span>hg commit -m <span class="s1">&#39;second commit&#39;</span>
+<span class="c1"># Make some more changes.</span>
+<span class="o">(</span>gps/my-new-feature<span class="o">)</span> $ hg commit -m <span class="s1">&#39;second commit&#39;</span>
 
-<span class="c"># Submit code for review. (Exact commands excluded.)</span>
+<span class="c1"># Submit code for review. (Exact commands excluded.)</span>
 
-<span class="c"># Wait for review comments. There is a nit on the first commit.</span>
-<span class="nv">$ </span>hg previous
-<span class="o">[</span>204142<span class="o">]</span> first commit
+<span class="c1"># Wait for review comments. There is a nit on the first commit.</span>
+$ hg previous
+<span class="o">[</span><span class="m">204142</span><span class="o">]</span> first commit
 
-<span class="c"># Make changes</span>
-<span class="nv">$ </span>hg amend
+<span class="c1"># Make changes</span>
+$ hg amend
 <span class="m">1</span> new unstable changesets
 
-<span class="c"># (amend is provided by evolve. It is equivalent to hg commit --amend)</span>
+<span class="c1"># (amend is provided by evolve. It is equivalent to hg commit --amend)</span>
 
-<span class="c"># evolve is the command that looks at the history rewriting markers</span>
-<span class="c"># and knows how to rebase, etc other changesets in the face of</span>
-<span class="c"># rewriting.</span>
-<span class="nv">$ </span>hg evolve
-move:<span class="o">[</span>204143<span class="o">]</span> second commit
-atop:<span class="o">[</span>204144<span class="o">]</span> first commit
+<span class="c1"># evolve is the command that looks at the history rewriting markers</span>
+<span class="c1"># and knows how to rebase, etc other changesets in the face of</span>
+<span class="c1"># rewriting.</span>
+$ hg evolve
+move:<span class="o">[</span><span class="m">204143</span><span class="o">]</span> second commit
+atop:<span class="o">[</span><span class="m">204144</span><span class="o">]</span> first commit
 merging foo
 warning: conflicts during merge.
 merging foo incomplete! <span class="o">(</span>edit conflicts, <span class="k">then</span> use <span class="s1">&#39;hg resolve --mark&#39;</span><span class="o">)</span>
 evolve failed!
 fix conflict and run <span class="s2">&quot;hg evolve --continue&quot;</span>
-abort: unresolved merge conflicts <span class="o">(</span>see hg <span class="nb">help </span>resolve<span class="o">)</span>
+abort: unresolved merge conflicts <span class="o">(</span>see hg <span class="nb">help</span> resolve<span class="o">)</span>
 
-<span class="c"># Manually address conflict markers in file &quot;foo&quot;</span>
-<span class="nv">$ </span>hg resolve -m foo
+<span class="c1"># Manually address conflict markers in file &quot;foo&quot;</span>
+$ hg resolve -m foo
 no more unresolved files
 
-<span class="nv">$ </span>hg evolve --continue
-grafting revision 204143
+$ hg evolve --continue
+grafting revision <span class="m">204143</span>
 
-<span class="c"># And I&#39;m ready to push.</span>
+<span class="c1"># And I&#39;m ready to push.</span>
 </pre></div>
 
 <p>If you really love the concept of mq and patch queues and absolutely

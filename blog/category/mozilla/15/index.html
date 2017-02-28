@@ -73,12 +73,12 @@ extension aggregates Mozilla's <em>pushlog</em> data into a local SQLite
 database and makes this data available to revision sets and templates.</p>
 <p>My hack of the day is to use revision sets and templates to create a
 weekly status report:</p>
-<div class="pygments_murphy"><pre>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
+<div class="pygments_murphy"><pre><span></span>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
 --template &#39;* {ifeq(reviewer, &quot;gps&quot;, &quot;Review: &quot;, &quot;Landing: &quot;)}{firstline(desc)}\n&#39;
 </pre></div>
 
 <p>When I run this, I get the output:</p>
-<div class="pygments_murphy"><pre>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
+<div class="pygments_murphy"><pre><span></span>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
 * Review: Bug 987146 - Represent SQL queries more efficiently. r=gps.
 * Review: Bug 987984 - VirtualenvManager.call_setup() should use self.python_path instead of sys.executable, r=gps
 * Landing: Bug 987398 - Part 1: Run mochitests from manifests with mach; r=ahal
@@ -170,7 +170,7 @@ tests.</p>
 writing tests, I only recently realized it has another benefit: it's
 helped cut down on hung tests!</p>
 <p>Before, with callback-based APIs, we'd code tests like so:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
   <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
      <span class="nx">Assert</span><span class="p">.</span><span class="nx">ok</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">success</span><span class="p">);</span>
      <span class="nx">run_next_test</span><span class="p">();</span>
@@ -179,7 +179,7 @@ helped cut down on hung tests!</p>
 </pre></div>
 
 <p>Or another pattern:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
   <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">// The next line throws an Error by accident!</span>
     <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
@@ -197,7 +197,7 @@ thrown from a callback! This results in the same behavior:
 <em>run_next_test()</em> (the function that says to advance to the next test)
 won't execute and the test will hang until it times out.</p>
 <p>A more proper way to write this test is:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
   <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">try</span> <span class="p">{</span>
       <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
@@ -216,7 +216,7 @@ it's necessary (the test passes most of the time, doesn't it?).</p>
 <p>What promises and task-based tests are doing is enabling us to write
 more robust tests without all of the extra work. Here is how you would
 use task-based tests:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_task</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="nx">add_task</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
   <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="nx">do_something</span><span class="p">();</span>
   <span class="c1">// The next line throws an Error by accident!</span>
   <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>

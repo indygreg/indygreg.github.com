@@ -70,7 +70,7 @@ with the local client:</p>
 all the data. On subsequent runs, it only downloads new data, so it
 should be much faster.</p>
 <p>Then, you can search for the push history of a changeset:</p>
-<div class="pygments_murphy"><pre>$ hg changesetpushes -a b968708558b9
+<div class="pygments_murphy"><pre><span></span>$ hg changesetpushes -a b968708558b9
 133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
 
 Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
@@ -140,32 +140,32 @@ usage info:</p>
 <pre><code>$ hg help mozext
 </code></pre>
 <p>Here are some examples:</p>
-<div class="pygments_murphy"><pre><span class="c"># Clone mozilla-central into the mc directory.</span>
+<div class="pygments_murphy"><pre><span></span><span class="c1"># Clone mozilla-central into the mc directory.</span>
 hg clone central mc
 hg clone mc mc
 
-<span class="c"># Create a unified Mercurial repository containing changesets</span>
-<span class="c"># from all the release repositories.</span>
+<span class="c1"># Create a unified Mercurial repository containing changesets</span>
+<span class="c1"># from all the release repositories.</span>
 hg cloneunified gecko
 
-<span class="c"># Pull changes from the central and inbound repositories.</span>
+<span class="c1"># Pull changes from the central and inbound repositories.</span>
 hg pull central
 hg pull inbound
 
-<span class="c"># Update the working tree to the tip of inbound.</span>
+<span class="c1"># Update the working tree to the tip of inbound.</span>
 hg up inbound/default
 
-<span class="c"># View the tree open/closed status.</span>
+<span class="c1"># View the tree open/closed status.</span>
 hg treestatus
 
-<span class="c"># Show a list of all known trees and their aliases.</span>
+<span class="c1"># Show a list of all known trees and their aliases.</span>
 hg moztrees
 
-<span class="c"># Open TBPL for the push containing a changeset.</span>
+<span class="c1"># Open TBPL for the push containing a changeset.</span>
 hg tbpl inbound 821e984ef423
 hg tbpl inbound inbound/default
 
-<span class="c"># Push the tip of inbound to mozilla-central</span>
+<span class="c1"># Push the tip of inbound to mozilla-central</span>
 hg pushtree -r inbound/default central
 </pre></div>
 
@@ -691,11 +691,11 @@ was ready to analyze how hg-git was performing conversion from Mercurial
 to Git. Since profiling revealed it was the <em>convert a single changeset
 into Git commit</em> function that was taking all the time, I started there.</p>
 <p>In Python (but not the actual Python), the algorithm was essentially:</p>
-<div class="pygments_murphy"><pre><span class="k">def</span> <span class="nf">export_changeset_to_git</span><span class="p">(</span><span class="n">changeset</span><span class="p">,</span> <span class="n">git</span><span class="p">,</span> <span class="n">already_converted</span><span class="p">):</span>
+<div class="pygments_murphy"><pre><span></span><span class="k">def</span> <span class="nf">export_changeset_to_git</span><span class="p">(</span><span class="n">changeset</span><span class="p">,</span> <span class="n">git</span><span class="p">,</span> <span class="n">already_converted</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Receives the Mercurial changeset and a handle on a Git object storre.&quot;&quot;&quot;</span>
-    <span class="c"># This is an entity that helps us build Git tree objects from</span>
-    <span class="c"># paths and blobs. The logic is at</span>
-    <span class="c"># https://github.com/jelmer/dulwich/blob/2a8548be3b1fd4a1ae7d0436dce91611112c47c2/dulwich/index.py#L298</span>
+    <span class="c1"># This is an entity that helps us build Git tree objects from</span>
+    <span class="c1"># paths and blobs. The logic is at</span>
+    <span class="c1"># https://github.com/jelmer/dulwich/blob/2a8548be3b1fd4a1ae7d0436dce91611112c47c2/dulwich/index.py#L298</span>
     <span class="n">tree_builder</span> <span class="o">=</span> <span class="n">TreeBuilder</span><span class="p">()</span>
 
     <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">changeset</span><span class="o">.</span><span class="n">manifest</span><span class="p">:</span>
@@ -714,7 +714,7 @@ into Git commit</em> function that was taking all the time, I started there.</p>
 
     <span class="n">root_tree</span> <span class="o">=</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">root_tree</span>
 
-    <span class="c"># And proceed to build the Git commit and insert it.</span>
+    <span class="c1"># And proceed to build the Git commit and insert it.</span>
 </pre></div>
 
 <p>On the face of it, this code doesn't seem too bad. If I were writing the

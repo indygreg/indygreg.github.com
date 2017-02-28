@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 08 Feb 2016 19:05:22 GMT</pubDate>
+    <pubDate>Tue, 28 Feb 2017 20:42:23 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -44,7 +44,7 @@ tests.</p>
 writing tests, I only recently realized it has another benefit: it's
 helped cut down on hung tests!</p>
 <p>Before, with callback-based APIs, we'd code tests like so:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
   <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
      <span class="nx">Assert</span><span class="p">.</span><span class="nx">ok</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">success</span><span class="p">);</span>
      <span class="nx">run_next_test</span><span class="p">();</span>
@@ -53,7 +53,7 @@ helped cut down on hung tests!</p>
 </pre></div>
 
 <p>Or another pattern:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
   <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">// The next line throws an Error by accident!</span>
     <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
@@ -71,7 +71,7 @@ thrown from a callback! This results in the same behavior:
 <em>run_next_test()</em> (the function that says to advance to the next test)
 won't execute and the test will hang until it times out.</p>
 <p>A more proper way to write this test is:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="nx">add_test</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
   <span class="nx">do_something</span><span class="p">(</span><span class="kd">function</span> <span class="nx">onThatThing</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">try</span> <span class="p">{</span>
       <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>
@@ -90,7 +90,7 @@ it's necessary (the test passes most of the time, doesn't it?).</p>
 <p>What promises and task-based tests are doing is enabling us to write
 more robust tests without all of the extra work. Here is how you would
 use task-based tests:</p>
-<div class="pygments_murphy"><pre><span class="nx">add_task</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="nx">add_task</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
   <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="nx">do_something</span><span class="p">();</span>
   <span class="c1">// The next line throws an Error by accident!</span>
   <span class="nx">result</span><span class="p">.</span><span class="nx">foo</span><span class="p">();</span>

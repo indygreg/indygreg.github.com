@@ -100,17 +100,17 @@ the following to your <em>.hg/hgrc</em>:</p>
 firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
 </code></pre>
 <p>To use, simply pull from a Firefox repo:</p>
-<div class="pygments_murphy"><pre><span class="nv">$ </span>hg pull https://hg.mozilla.org/mozilla-central
+<div class="pygments_murphy"><pre><span></span>$ hg pull https://hg.mozilla.org/mozilla-central
 
-<span class="nv">$ </span>hg up central
+$ hg up central
 
-<span class="c"># Do your development work.</span>
+<span class="c1"># Do your development work.</span>
 
-<span class="c"># Time to land.</span>
-<span class="nv">$ </span>hg pull https://hg.mozilla.org/integration/mozilla-inbound
-<span class="nv">$ </span>hg rebase -d inbound
-<span class="nv">$ </span>hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
-<span class="nv">$ </span>hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
+<span class="c1"># Time to land.</span>
+$ hg pull https://hg.mozilla.org/integration/mozilla-inbound
+$ hg rebase -d inbound
+$ hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
+$ hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
 </pre></div>
 
 <p>Please note that <em>hg push</em> tries to push all local changes on all

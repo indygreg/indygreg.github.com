@@ -4,8 +4,10 @@
 .pygments_murphy .err { color: #FF0000; background-color: #FFAAAA } /* Error */
 .pygments_murphy .k { color: #228899; font-weight: bold } /* Keyword */
 .pygments_murphy .o { color: #333333 } /* Operator */
+.pygments_murphy .ch { color: #666666; font-style: italic } /* Comment.Hashbang */
 .pygments_murphy .cm { color: #666666; font-style: italic } /* Comment.Multiline */
 .pygments_murphy .cp { color: #557799 } /* Comment.Preproc */
+.pygments_murphy .cpf { color: #666666; font-style: italic } /* Comment.PreprocFile */
 .pygments_murphy .c1 { color: #666666; font-style: italic } /* Comment.Single */
 .pygments_murphy .cs { color: #cc0000; font-weight: bold; font-style: italic } /* Comment.Special */
 .pygments_murphy .gd { color: #A00000 } /* Generic.Deleted */
@@ -45,8 +47,10 @@
 .pygments_murphy .mh { color: #005588; font-weight: bold } /* Literal.Number.Hex */
 .pygments_murphy .mi { color: #6666ff; font-weight: bold } /* Literal.Number.Integer */
 .pygments_murphy .mo { color: #4400EE; font-weight: bold } /* Literal.Number.Oct */
+.pygments_murphy .sa { background-color: #e0e0ff } /* Literal.String.Affix */
 .pygments_murphy .sb { background-color: #e0e0ff } /* Literal.String.Backtick */
 .pygments_murphy .sc { color: #8888FF } /* Literal.String.Char */
+.pygments_murphy .dl { background-color: #e0e0ff } /* Literal.String.Delimiter */
 .pygments_murphy .sd { color: #DD4422 } /* Literal.String.Doc */
 .pygments_murphy .s2 { background-color: #e0e0ff } /* Literal.String.Double */
 .pygments_murphy .se { color: #666666; font-weight: bold; background-color: #e0e0ff } /* Literal.String.Escape */
@@ -57,7 +61,9 @@
 .pygments_murphy .s1 { background-color: #e0e0ff } /* Literal.String.Single */
 .pygments_murphy .ss { color: #ffcc88 } /* Literal.String.Symbol */
 .pygments_murphy .bp { color: #007722 } /* Name.Builtin.Pseudo */
+.pygments_murphy .fm { color: #55eedd; font-weight: bold } /* Name.Function.Magic */
 .pygments_murphy .vc { color: #ccccff } /* Name.Variable.Class */
 .pygments_murphy .vg { color: #ff8844 } /* Name.Variable.Global */
 .pygments_murphy .vi { color: #aaaaff } /* Name.Variable.Instance */
+.pygments_murphy .vm { color: #003366 } /* Name.Variable.Magic */
 .pygments_murphy .il { color: #6666ff; font-weight: bold } /* Literal.Number.Integer.Long */

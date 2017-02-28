@@ -938,10 +938,10 @@ containers periodically fail to shut down. Our images periodically fail
 to delete.</p>
 <p>During container shutdown and delete at the end of tests, we periodically
 see error messagess like the following:</p>
-<div class="pygments_murphy"><pre>docker.errors.APIError: 500 Server Error: Internal Server Error (&quot;Cannot destroy container f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255: Driver aufs failed to remove root filesystem f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255: rename /mnt/sda1/var/lib/docker/aufs/mnt/f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255 /mnt/sda1/var/lib/docker/aufs/mnt/f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255-removing: device or resource busy&quot;)
+<div class="pygments_murphy"><pre><span></span>docker.errors.APIError: 500 Server Error: Internal Server Error (&quot;Cannot destroy container f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255: Driver aufs failed to remove root filesystem f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255: rename /mnt/sda1/var/lib/docker/aufs/mnt/f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255 /mnt/sda1/var/lib/docker/aufs/mnt/f13828df94c9d295bfe24b69ac02377a757edcf948a3355cf7bc16ff2de84255-removing: device or resource busy&quot;)
 </pre></div>
 
-<div class="pygments_murphy"><pre>500 Server Error: Internal Server Error (&quot;Cannot destroy container 7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: Unable to remove filesystem for 7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: remove /mnt/sda1/var/lib/docker/containers/7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: directory not empty&quot;)
+<div class="pygments_murphy"><pre><span></span>500 Server Error: Internal Server Error (&quot;Cannot destroy container 7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: Unable to remove filesystem for 7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: remove /mnt/sda1/var/lib/docker/containers/7e87e5950501734b2a1c02705e9c19f65357a15bad605d8168452aa564d63786: directory not empty&quot;)
 </pre></div>
 
 <p>Due to the way we're executing tests (Mercurial's .t test format), this

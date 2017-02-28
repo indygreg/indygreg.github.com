@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 08 Feb 2016 19:05:22 GMT</pubDate>
+    <pubDate>Tue, 28 Feb 2017 20:42:22 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -1175,11 +1175,11 @@ was ready to analyze how hg-git was performing conversion from Mercurial
 to Git. Since profiling revealed it was the <em>convert a single changeset
 into Git commit</em> function that was taking all the time, I started there.</p>
 <p>In Python (but not the actual Python), the algorithm was essentially:</p>
-<div class="pygments_murphy"><pre><span class="k">def</span> <span class="nf">export_changeset_to_git</span><span class="p">(</span><span class="n">changeset</span><span class="p">,</span> <span class="n">git</span><span class="p">,</span> <span class="n">already_converted</span><span class="p">):</span>
+<div class="pygments_murphy"><pre><span></span><span class="k">def</span> <span class="nf">export_changeset_to_git</span><span class="p">(</span><span class="n">changeset</span><span class="p">,</span> <span class="n">git</span><span class="p">,</span> <span class="n">already_converted</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Receives the Mercurial changeset and a handle on a Git object storre.&quot;&quot;&quot;</span>
-    <span class="c"># This is an entity that helps us build Git tree objects from</span>
-    <span class="c"># paths and blobs. The logic is at</span>
-    <span class="c"># https://github.com/jelmer/dulwich/blob/2a8548be3b1fd4a1ae7d0436dce91611112c47c2/dulwich/index.py#L298</span>
+    <span class="c1"># This is an entity that helps us build Git tree objects from</span>
+    <span class="c1"># paths and blobs. The logic is at</span>
+    <span class="c1"># https://github.com/jelmer/dulwich/blob/2a8548be3b1fd4a1ae7d0436dce91611112c47c2/dulwich/index.py#L298</span>
     <span class="n">tree_builder</span> <span class="o">=</span> <span class="n">TreeBuilder</span><span class="p">()</span>
 
     <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">changeset</span><span class="o">.</span><span class="n">manifest</span><span class="p">:</span>
@@ -1198,7 +1198,7 @@ into Git commit</em> function that was taking all the time, I started there.</p>
 
     <span class="n">root_tree</span> <span class="o">=</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">root_tree</span>
 
-    <span class="c"># And proceed to build the Git commit and insert it.</span>
+    <span class="c1"># And proceed to build the Git commit and insert it.</span>
 </pre></div>
 
 <p>On the face of it, this code doesn't seem too bad. If I were writing the

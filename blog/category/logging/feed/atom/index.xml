@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2016-02-08T19:05:22Z</updated>
+  <updated>2017-02-28T20:42:23Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -161,12 +161,12 @@ applications (<a href="https://wiki.mozilla.org/Services/Sagrada/Metlog">metlog<
 are mostly the same.</p>
 <p>From the perspective of a log-producing application, a function call to
 produce an unstructured message may look something like:</p>
-<div class="pygments_murphy"><pre><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">username</span> <span class="o">+</span> <span class="s">&quot; successfully logged in&quot;</span><span class="p">)</span>
+<div class="pygments_murphy"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">username</span> <span class="o">+</span> <span class="s2">&quot; successfully logged in&quot;</span><span class="p">)</span>
 </pre></div>
 
 <p>Whereas a call to produce that same message in structured form may look
 like:</p>
-<div class="pygments_murphy"><pre><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;successful_login&quot;</span><span class="p">,</span> <span class="n">who</span><span class="o">=</span><span class="n">username</span><span class="p">)</span>
+<div class="pygments_murphy"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;successful_login&quot;</span><span class="p">,</span> <span class="n">who</span><span class="o">=</span><span class="n">username</span><span class="p">)</span>
 </pre></div>
 
 <p>You'll immediately notice that the API retains the original pieces of
@@ -183,7 +183,7 @@ original structure) and encodes them into something machine readable.</p>
 <p>How objects are encoded again depends on the structured logger
 implementation. JSON is a well-understood encoding format. An example
 JSON encoding of our example message might look like:</p>
-<div class="pygments_murphy"><pre><span class="p">[</span><span class="mf">1354317157.034534</span><span class="p">,</span> <span class="s">&quot;INFO&quot;</span><span class="p">,</span> <span class="s">&quot;sucessful_login&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s">&quot;who&quot;</span><span class="p">:</span> <span class="s">&quot;gps@mozilla.com&quot;</span><span class="p">}]</span>
+<div class="pygments_murphy"><pre><span></span><span class="p">[</span><span class="mf">1354317157.034534</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="s2">&quot;sucessful_login&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;who&quot;</span><span class="p">:</span> <span class="s2">&quot;gps@mozilla.com&quot;</span><span class="p">}]</span>
 </pre></div>
 
 <p>That's an array of current time, log level, event name/message type, and
@@ -199,7 +199,7 @@ don't have a generic enough encoding format.</p>
 <p>Going back to implementation details, what about a consumer? In
 JavaScript, our JSON structured logger from above might look something
 like:</p>
-<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="k">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
   <span class="kd">let</span> <span class="p">[</span><span class="nx">time</span><span class="p">,</span> <span class="nx">level</span><span class="p">,</span> <span class="nx">action</span><span class="p">,</span> <span class="nx">fields</span><span class="p">]</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">line</span><span class="p">)</span>
 
   <span class="k">if</span> <span class="p">(</span><span class="nx">action</span> <span class="o">==</span> <span class="s2">&quot;successful_login&quot;</span><span class="p">)</span> <span class="p">{</span>
@@ -213,7 +213,7 @@ like:</p>
 </pre></div>
 
 <p>Compare this with a destructured parser:</p>
-<div class="pygments_murphy"><pre><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="nx">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+<div class="pygments_murphy"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="kd">let</span> <span class="nx">line</span> <span class="k">of</span> <span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="nx">line</span><span class="p">.</span><span class="nx">endsWith</span><span class="p">(</span><span class="s2">&quot;successfully logged in&quot;</span><span class="p">))</span> <span class="p">{</span>
     <span class="c1">// Find username.</span>
     <span class="kd">let</span> <span class="nx">spaceIndex</span> <span class="o">=</span> <span class="nx">line</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">);</span>

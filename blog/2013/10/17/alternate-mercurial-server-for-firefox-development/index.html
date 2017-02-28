@@ -109,19 +109,19 @@ More on that feature and why it is amazing in a future blog post. Stay tuned.</p
 paltry EC2 server a favor and bootstrap your clone from an existing
 clone. e.g. if you have a copy of mozilla-central sitting around but
 don't want my repo's changesets to <em>pollute</em> it, do the following:</p>
-<div class="pygments_murphy"><pre>hg clone mozilla-central gecko
-<span class="nb">cd </span>gecko
+<div class="pygments_murphy"><pre><span></span>hg clone mozilla-central gecko
+<span class="nb">cd</span> gecko
 hg pull http://hg.gregoryszorc.com/gecko
 </pre></div>
 
 <p>Or, if you are OK with your clone accumulating the extra changesets from
 all the project branches, just run:</p>
-<div class="pygments_murphy"><pre>hg pull http://hg.gregoryszorc.com/gecko
+<div class="pygments_murphy"><pre><span></span>hg pull http://hg.gregoryszorc.com/gecko
 </pre></div>
 
 <p>Don't forget to update the <em>[paths]</em> section in your <em>.hg/hgrc</em> file
 to point to hg.gregoryszorc.com! e.g.</p>
-<div class="pygments_murphy"><pre>[paths]
+<div class="pygments_murphy"><pre><span></span>[paths]
 gecko = http://hg.gregoryszorc.com/gecko
 collab = http://hg.gregoryszorc.com/gecko-collab
 </pre></div>

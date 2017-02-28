@@ -73,12 +73,12 @@ extension aggregates Mozilla's <em>pushlog</em> data into a local SQLite
 database and makes this data available to revision sets and templates.</p>
 <p>My hack of the day is to use revision sets and templates to create a
 weekly status report:</p>
-<div class="pygments_murphy"><pre>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
+<div class="pygments_murphy"><pre><span></span>hg log -r &#39;public() and me() and firstpushdate(&quot;-7&quot;)&#39; \
 --template &#39;* {ifeq(reviewer, &quot;gps&quot;, &quot;Review: &quot;, &quot;Landing: &quot;)}{firstline(desc)}\n&#39;
 </pre></div>
 
 <p>When I run this, I get the output:</p>
-<div class="pygments_murphy"><pre>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
+<div class="pygments_murphy"><pre><span></span>* Review: Bug 957241 - Don&#39;t package the full sdk when we don&#39;t need it. r=gps
 * Review: Bug 987146 - Represent SQL queries more efficiently. r=gps.
 * Review: Bug 987984 - VirtualenvManager.call_setup() should use self.python_path instead of sys.executable, r=gps
 * Landing: Bug 987398 - Part 1: Run mochitests from manifests with mach; r=ahal
