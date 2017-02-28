@@ -51,6 +51,64 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="serving-mercurial-clones-from-a-cdn"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/09/01/serving-mercurial-clones-from-a-cdn" rel="bookmark" title="Permanent Link to Serving Mercurial Clones from a CDN">Serving Mercurial Clones from a CDN</a></h2>
+  <small>September 01, 2015 at 03:00 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>For the past few months, Mozilla has been
+<a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3/">serving Mercurial clones from Amazon S3</a>.
+We upload snapshots (called <em>bundles</em>) of large and/or high-traffic
+repositories to S3. We have a custom Mercurial extension on the
+client and server that knows how to exchange the URLs for these
+snapshots and to transparently use them to bootstrap a clone. The
+end result is drastically reduced Mercurial server load and faster
+clone times. The benefits are seriously ridiculous when you operate
+version control at scale.</p>
+<p><a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> is a CDN.
+You can easily configure it up to be backed by an S3 bucket. So
+we did.</p>
+<p><a href="https://hg.cdn.mozilla.net/">https://hg.cdn.mozilla.net/</a> is
+Mozilla's CDN for hosting Mercurial data. Currently it's just bundles to
+be used for cloning.</p>
+<p>As of today, if you
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">install the bundleclone Mercurial extension</a>
+and <em>hg clone</em> a repository on
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a> such as
+<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
+(<em>hg clone https://hg.mozilla.org/mozilla-central</em>), the CDN
+URLs will be preferred by default. (Previously we preferred S3 URLs
+that hit servers in Oregon, USA.)</p>
+<p><strong>This should result in clone time reductions for Mozillians not
+close to Oregon, USA</strong>, as the CloudFront CDN has servers all across
+the globe and your Mercurial clone should be bootstrapped from the
+closest and hopefully therefore fastest server to you.</p>
+<p>Unfortunately, you do need the the aforementioned <em>bundleclone</em>
+extension installed for this to work. But, this should only be
+temporary: I've
+<a href="https://mercurial.selenic.com/wiki/StaticBundlePlan">proposed</a>
+integrating this feature into the core of Mercurial so if a client
+talks to a server advertising pre-generated bundles the clone
+offload <em>just works</em>. I already have tentative buy-in from one
+Mercurial maintainer. So hopefully I can land this feature in
+Mercurial 3.6, which will be released November 1. After that,
+I imagine some high-traffic Mercurial servers (such as Bitbucket)
+will be very keen to deploy this so CPU load on their servers
+is drastically reduced.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="json-apis-on-hg.mozilla.org"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/08/18/json-apis-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to JSON APIs on hg.mozilla.org">JSON APIs on hg.mozilla.org</a></h2>
   <small>August 18, 2015 at 04:00 PM | categories: 
@@ -320,88 +378,6 @@ release to fix any issues or regressions from 3.5.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/31/mercurial-3.5-released#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="my-contributions-to-mercurial-3.5"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/07/31/my-contributions-to-mercurial-3.5" rel="bookmark" title="Permanent Link to My Contributions to Mercurial 3.5">My Contributions to Mercurial 3.5</a></h2>
-  <small>July 31, 2015 at 10:55 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial 3.5 was released today. I contributed some small
-improvements to this version that I thought I'd share with the world.</p>
-<p>The feature I'm most proud of adding to Mercurial 3.5 is what I'm
-referring to as <em>auto share</em>. The existing <em>hg share</em> extension/command
-enables multiple checkouts of a repository to share the same backing
-repository store. Essentially the <em>.hg/store</em> directory is a symlink
-to shared directory. This feature has existed in Mercurial for years
-and is essentially identical to the <em>git worktree</em> feature just
-recently added in Git 2.5.</p>
-<p>My addition to the <em>share</em> extension is the ability for Mercurial to
-automatically perform an <em>hg clone</em> + <em>hg share</em> in the same operation.
-If the <em>share.pool</em> config option is defined, <em>hg clone</em>
-will automatically clone or pull the repository data somewhere inside
-the directory pointed to by <em>share.pool</em> then create a new working copy
-from that shared location. But here's the magic: <strong>Mercurial can
-automatically deduce that different remotes are the same logical
-repository (by looking at the root changeset) and automatically have
-them share storage</strong>. So if you first <em>hg clone</em> the <em>canonical</em>
-repository then later do a <em>hg clone</em> of a <em>fork</em>, Mercurial will
-pull down the changesets unique to the fork into the previously
-created shared directory and perform a checkout from that. Contrast
-with performing a full clone of the fork. <strong>If you are cloning multiple
-repositories that are logically derived from the same original one,
-this can result in a significant reduction of disk space and network
-usage.</strong> I wrote this feature with automated consumers in mind,
-particularly continuous integration systems. However, there is also
-mode more suitable for humans where repositories are pooled not by their
-root changeset but by their URL. For more info, see <em>hg help -e share</em>.</p>
-<p>For Mercurial 3.4, I contributed changes that refactored how Mercurial's
-tags cache works. This cache was a source of performance problems at
-Mozilla's scale for many years. Since upgrading to Mercurial 3.4,
-Mozilla has not encountered any significant performance problems with
-the cache on either client or server as far as I know.</p>
-<p>Building on this work, Mercurial 3.5 supports transferring tags cache
-entries from server to client when clients clone/pull. Before, clients
-would have to recompute tags cache entries for pulled changesets. On
-repositories that are very large in terms of number of files (over 50,000)
-or heads (hudreds or more), this could take several dozen seconds or
-even minutes. This would manifest as a delay either during or after
-initial clone. In Mercurial 3.5 - assuming both client and server
-support the new <em>bundle2</em> wire protocol - the cache entries are
-transferred from server to client and no extra computation needs to
-occur. The client does pay a very small price for transferring this
-additional data over the wire, but the payout is almost always worth it.
-<strong>For large repositories, this feature means clones are usable sooner.</strong></p>
-<p>A few weeks ago, a coworker told me that connections to a Mercurial
-server were timing out mid clone. We investigated and discovered a
-potential for a long CPU-intensive pause during clones where Mercurial
-would not touch the network. On this person's under-powered EC2
-instance, the pause was so long that the server's inactivity timeout
-was triggered and it dropped the client's TCP connection. I refactored
-Mercurial's cloning code so there is no longer a pause. There should
-be no overall change in clone time, but there is no longer a perceivable
-delay between applying changesets and manifests where the network could
-remain idle. This investigation also revealed some potential follow-up
-work for Mercurial to be a bit smarter about how it interacts with
-networks.</p>
-<p>Finally, I contributed <em>hg help scripting</em> to Mercurial's help database.
-This help topic covers how to use Mercurial from scripting and other
-automated environments. It reflects knowledge I've learned from seeing
-Mercurial used in automation at Mozilla.</p>
-<p>Of course, there are plenty of other changes in Mercurial 3.5. Stay
-tuned for another blog post.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">« Previous Page</a>
   --  

@@ -7,12 +7,182 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2017-02-28T20:42:23Z</updated>
+  <updated>2017-02-28T20:43:50Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mercurial, SHA-1, and Trusting Version Control]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2017/02/28/mercurial,-sha-1,-and-trusting-version-control" />
+    <id>http://gregoryszorc.com/blog/2017/02/28/mercurial,-sha-1,-and-trusting-version-control</id>
+    <updated>2017-02-28T12:40:00Z</updated>
+    <published>2017-02-28T12:40:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Mercurial, SHA-1, and Trusting Version Control]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2017/02/28/mercurial,-sha-1,-and-trusting-version-control"><![CDATA[<p>The Internet went crazy on Thursday when Google
+<a href="https://security.googleblog.com/2017/02/announcing-first-sha1-collision.html">announced a SHA-1 collision</a>.
+This has spawned a lot of talk about the impact of SHA-1 in version
+control. Linus Torvalds (the creator of Git) weighed in on the
+<a href="http://marc.info/?l=git&amp;m=148787047422954">Git mailing list</a> and on
+<a href="https://plus.google.com/+LinusTorvalds/posts/7tp2gYWQugL">Google+</a>.
+There are also posts like
+<a href="http://www.metzdowd.com/pipermail/cryptography/2017-February/031623.html">SHA1 collisions make Git vulnerable to attakcs by third-parties, not just repo maintainers</a>
+outlining the history of Git and SHA-1. On the Mercurial side,
+Matt Mackall (the creator of Mercurial) authored a
+<a href="https://www.mercurial-scm.org/wiki/mpm/SHA1">SHA-1 and Mercurial security article</a>.
+(If you haven't read Matt's article, please do so now before
+continuing.)</p>
+<p>I'd like to contribute my own take on the problem with a slant towards
+Mercurial and while also comparing Mercurial's exposure to SHA-1
+collisions to Git's. Since this is a security topic, I'd like to
+explicitly state that I'm not a cryptographer. However, I've worked on
+a number of software components that do security/cryptography (like
+Firefox Sync) and I'm pretty confident saying that my grasp on
+cryptographic primitives and security techniques is better than the
+average developer's.</p>
+<p>Let's talk about Mercurial's exposure to SHA-1 collisions on a technical
+level.</p>
+<p>Mercurial, like Git, is <em>vulnerable</em> to SHA-1 collisions. Mercurial is
+vulnerable because its logical storage mechanism (like Git's) indexes
+tracked content by SHA-1. If two objects with differing content have the
+same SHA-1, content under version control could be changed and detecting
+that would be difficult or impossible. That's obviously bad.</p>
+<p>But, Mercurial's exposure to SHA-1 collisions isn't as severe as Git's.
+To understand why, we have to understand how each stores data.</p>
+<p>Git's logical storage model is a content-addressable key-value store.
+Values (<em>objects</em> in Git parlance) consist of a header identifying the
+object type (commit, tree, blob, or tag), the size of the data (as a
+string), and the raw content of the thing being stored. Common content
+types are file content (blob), a list of files (tree), and a description
+of a commit (commit). Keys in this blob store are SHA-1 hashes of objects.
+All Git objects go into a single <em>namespace</em> in the Git repository's
+<em>store</em>. A beneficial side-effect of this is data de-duplication: if the
+same file is added to a Git repository, it's <em>blob</em> object will be
+identical and it will only be stored once by Git. A detrimental
+side-effect is that hash collisions are possible between any two objects,
+irregardless of their type or location in the repository.</p>
+<p>Mercurial's logical storage model is also content-addressable. However,
+it is significantly different from Git's approach. Mercurial's logical
+storage model allocates a separate sub-store for each tracked <em>path</em>.
+If you run <code>find .hg/store -name '*.i'</code> inside a Mercurial repository,
+you'll see these files. There is a separate file for each path
+that has committed data. If you <code>hg add foo.txt</code> and <code>hg commit</code>, there
+will be a <code>data/foo.txt.i</code> file holding data for <code>foo.txt</code>.
+There are also special files <code>00changelog.i</code> and <code>00manifest.i</code> holding
+data for commits/changesets and file lists, respectively. Each of these
+<code>.i</code> files - a <a href="https://www.mercurial-scm.org/repo/hg/file/a185b903bda3/mercurial/help/internals/revlogs.txt">revlog</a> -
+is roughly equivalent to an ordered collection of Git objects for a
+specific tracked path. This means that Mercurial's store consists of
+N discrete and independent namespaces for data. Contrast with Git's
+single namespace.</p>
+<p>The benefits and drawbacks are the opposite of those pointed out for
+Git above: Mercurial doesn't have automatic content-based de-duplication
+but it does provide some defense against hash collisions. Because each
+logical path is independent of all others, a Mercurial repository will
+happily commit two files with different content but same hashes. This
+is more robust than Git because a hash collision is isolated to a single
+logical path / revlog. In other words, a random file added to the
+repository in directory <code>X</code> that has a hash collision with a file in
+directory <code>Y</code> won't cause problems.</p>
+<p>Mercurial also differs significantly from Git in terms of how the hash
+is obtained. Git's hash is computed from raw content preceded by a header
+derived directly from the object's role and size. (Takeaway: the header is
+static and can be derived trivially.) Mercurial's hash is computed from
+raw content preceded by a header. But that header consists of the 20 byte
+SHA-1 hash(es) of the parent revisions in the revlog to which the content
+is being added. This <em>chaining</em> of hashes means that the header is not
+always static nor always trivially derived. This means that the same
+content can be stored in the revlog under multiple hashes. It also means
+that it is possible to store differing content having a hash collision
+within the same revlog! But only under some conditions - Mercurial will
+still barf in some scenarios if there is a hash collision within content
+tracked by the revlog. This is different from Git's behavior, where the
+same content <em>always</em> results in the same Git object hash. (It's worth
+noting that a SHA-1 collision on data with a Git object header has not
+yet been encountered in the wild.)</p>
+<p>The takeaway from the above paragraphs is Mercurial's storage model
+is slightly more robust against hash collisions than Git's because there
+are multiple, isolated namespaces for storing content and because all
+hashes are chained to previous content. So, when SHA-1 collisions
+are more achievable and someone manages to create a collision for a
+hash used by version control, Mercurial's storage layer will be able
+to cope with that better than Git's.</p>
+<p>But the concern about SHA-1 weakness is more about security than storage
+robustness. The disaster scenario for version control is that an
+attacker could replace content under version control, possibly
+undetected. If one can generate a hash collision, then this is
+possible. Mercurial's chaining of content provides some defense, but
+it isn't sufficient.</p>
+<p>I agree with <a href="https://www.mercurial-scm.org/wiki/mpm/SHA1">Matt Mackall</a>
+that at the present time there are bigger concerns with content
+safety than SHA-1 collisions. Namely, if you are an attacker, it is
+much easier to introduce a subtle bug that contains a security
+vulnerability than to introduce a SHA-1 collision. It is also
+much easier to hack the canonical version control server (or any
+user or automated agent that has permissions to push to the server)
+and add a <em>bad</em> commit. Many projects don't have adequate defenses
+to detect such <em>bad</em> commits. Ask yourself: if a bad actor pushed
+a <em>bad</em> commit to my repository, would it be detected? Keep in mind
+that spoofing author and committer metadata in commits is trivial.
+<strong>The current state of Mercurial and Git rely primarily on trust -
+not SHA-1 hashes - as their primary defense against malicious
+actors.</strong></p>
+<p>The desire to move away from SHA-1 has been on the radar of the
+Mercurial project for years. For 10+ years, the <em>revlog</em> data
+structure has allocated 32 bytes for hashes while only using 20 bytes
+for SHA-1. And, the topic of SHA-1 weakness and desire to move to
+something stronger has come up at the developer <em>sprints</em> for the
+past several years. However, it has never been pressing enough to act
+on because <em>there are bigger problems</em>. If it were easy to change, then
+Mercurial likely would have done it already. But changing is not easy.
+As soon as you introduce a new hash format in a repository, you've
+potentially locked out all legacy versions of the Mercurial software
+from accessing the repository (unless the repository stores multiple
+hashes and allows legacy clients to access the legacy SHA-1 hashes).
+There are a number of concerns from legacy compatibility (something
+Mercurial cares deeply about) to user experience to even performance
+(SHA-1 hashing even at 1000+MB/s floats to the top of performance
+profiling for some Mercurial operations). I'm sure the topic will be
+discussed heavily at the upcoming developers sprint in a few weeks.</p>
+<p>While Mercurial should (and will eventually) replace SHA-1, I think
+the biggest improvement Mercurial (or Git for that matter) can make
+to repository <em>security</em> is providing a better mechanism for tracking
+and auditing trust. Existing mechanisms for GPG signing every commit
+aren't practical or are a non-starer for many workflows. And, they
+rely on GPG, which has notorious end-user usability problems (I would
+prefer my version control tool not subject me to toiling with GPG.)
+I've thought about this topic considerably, authoring a
+<a href="https://www.mercurial-scm.org/wiki/CommitSigningPlan">proposal for easier and more flexible commit signing</a>.
+There is also a related proposal to establish a
+<a href="https://www.mercurial-scm.org/wiki/CommitCustodyConcept">cryptographically meaningful chain-of-custody for a patch</a>.
+There are some good ideas there. But, like all user-facing
+cryptography, the devil is in the details. There are some hard
+problems to solve, like how to manage/store public keys that were
+used for signatures. While there is some prior art in version control
+tools (see Monotone), it is far from a solved problem. And at the
+end of the day, you are still left having to trust a set of keys
+used to produce signatures.</p>
+<p>While version control can keep using cryptographically strong hashes
+to mitigate collisions within its storage layer to prevent content
+swapping and can employ cryptographic signatures of tracked data,
+there is still the issue of trust. Version control can give you the
+tools for establishing and auditing trust. Version control can also
+provide tools for managing trust relationships. But at the end of the
+day, the actual act of trusting trust boils down to people making
+decisions (possibly through corporate or project policies). This
+will always be a weak link. Therefore, it's what malicious actors
+will attack. The best your version control tool can do is give its
+users the capability and tools to run a secure and verifiable
+repository so that when bad content is inevitably added you can't
+blame the version control tool for having poor security.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -689,99 +859,5 @@ automated environments. It reflects knowledge I've learned from seeing
 Mercurial used in automation at Mozilla.</p>
 <p>Of course, there are plenty of other changes in Mercurial 3.5. Stay
 tuned for another blog post.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Prompting to Run mach mercurial-setup]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup" />
-    <id>http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup</id>
-    <updated>2015-07-17T11:35:00Z</updated>
-    <published>2015-07-17T11:35:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Prompting to Run mach mercurial-setup]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup"><![CDATA[<p>Earlier this week, I landed some changes to the Firefox development
-environment that aggressively make <em>mach</em> prompt to run <em>mach
-mercurial-setup</em>. Full details in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1182677">bug 1182677</a>.</p>
-<p>As expected, the change resulted in a fair amount of whining and
-bemoaning among various Firefox developers. I wanted to take some time
-to explain why we moved forward, even though we knew not everyone would
-like the feature.</p>
-<p>My official job title at Mozilla is <em>Developer Productivity Engineer</em>.
-My job is to make you do your job better.</p>
-<p>I've been an employee at Mozilla for four years and in that time I've
-witnessed a surprising lack of understanding around version control
-tools. (I don't think Mozilla is significantly different from most
-other companies here.) I find that a significant number of people
-are practicing sub-optimal version control workflows because they don't
-know any better (common) or because they are unwilling to change from
-learned habits.</p>
-<p>Furthermore, Mercurial is a highly customizable tool. A lot of
-Mozillians have spent a lot of time developing useful extensions to
-Mercurial that enable Mozillians to use Mercurial more effectively and
-to thus become more productive. The latest epic time-saving hack
-is <a href="http://www.ncalexander.net/blog/2015/07/02/build-fennec-frontend-fast-with-mach-artifact/">Nick Alexander's work to make Fennec build 80% faster by
-having deep integration with version control</a>.</p>
-<p><em>mach mercurial-setup</em> is almost
-<a href="/blog/2013/07/29/mercurial-setup-wizard-for-firefox-development/">two years old</a>.
-Yet, when assisting my fellow Mozillians with Mercurial issues, my
-"have you run mach mercurial-setup?" question is still often met with
-blank stares followed by "wait, there's a mach mercurial-setup?!" What's
-even more frustrating is people wrongly believing that Mercurial can't
-do things like rebasing and then spreading misinformation about the
-lackings of Mercurial. (Mercurial has many advanced features disabled
-out of the box so new users don't footgun themselves.)</p>
-<p>Just like Firefox would be irrelevant if it didn't have millions of users,
-your awesome tool is mostly irrelevant if you are its only user. That's
-why when I hear of someone say they created an amazing tool for
-themselves or modified a third party tool without sending the improvements
-upstream, my blood pressure rises a little. It rises because here this
-person did something awesome and they or some limited subset of people
-who happened to be following the person on Twitter or reading their blog
-at that point in time managed to a) know about the tool b) take the
-effort to install it. The uptake rate is insanely low and return on
-investment for that tool is low. It results in duplication of effort.
-I find this painfully frustrating because I want everyone to have easy
-access to the best tools available. This requires that tools are well
-advertised and easy to install and use.</p>
-<p>The primary goal of <em>mach mercurial-setup</em> is to make it super easy for
-anyone to have an optimal Mercurial experience. It was apparent to me that
-despite <em>mach mercurial-setup</em> existing, numerous people didn't know it
-existed or weren't using it. Your awesome tool isn't very awesome unless
-people are using it. And a lot of the awesome tools people have built
-around Mercurial at Mozilla weren't being utilized and lots of
-productivity wins were thus being unrealized. Forcefully pushing <em>mach
-mercurial-setup</em> onto people is thus an attempt to unlock unrealized
-productivity wins and to make people happier about the state of their
-tools.</p>
-<p>I'm not thrilled that mach's prompting to run <em>mach mercurial-setup</em> is
-as disruptive as it is. It's bad user experience. I know better. But,
-(and this is explained somewhat in the bug), other solutions are more
-complicated and have other gotchas. The current, invasive implementation
-was the easiest to implement and has the biggest bang for the buck in
-terms of adoption. We knew people would complain about it. But from
-my perspective, it was do this or do nothing. And nothing hadn't been
-very effective. So we did something.</p>
-<p>There has been lots of feedback about the change this week. Most
-surprising to me is the general sentiment of "I don't want something
-automatically changing my hgrc file." I find this surprising because
-<em>mach mercurial-setup</em> puts the user firmly in control by prompting
-before doing anything, thus respecting user choice and avoiding gotchas
-and unwanted changes. It's clear this property needs to be advertised a
-bit more so people aren't scared to run <em>mach mercurial-setup</em> and don't
-spread fear, uncertainty, and doubt about the tool to others. (I also
-find it somewhat surprising people would think this in the first place:
-I'd like to think we'd implicitly trust most Mozillians to implement
-tools that respect user choice and don't do <em>malicious</em> things.)</p>
-<p>Like all software, things can and will change. The user experience of
-this new feature isn't terrific. We'll iterate on it. If you want to
-help enact change, please
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">file a bug in Core :: mach</a>
-(for now) and we'll go from there.</p>
-<p>Thank you for your patience and your understanding.</p>]]></content>
   </entry>
 </feed>

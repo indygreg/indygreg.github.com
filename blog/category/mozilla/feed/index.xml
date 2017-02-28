@@ -10,10 +10,175 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 28 Feb 2017 20:42:22 GMT</pubDate>
+    <pubDate>Tue, 28 Feb 2017 20:43:50 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Mercurial, SHA-1, and Trusting Version Control</title>
+      <link>http://gregoryszorc.com/blog/2017/02/28/mercurial,-sha-1,-and-trusting-version-control</link>
+      <pubDate>Tue, 28 Feb 2017 12:40:00 PST</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2017/02/28/mercurial,-sha-1,-and-trusting-version-control</guid>
+      <description>Mercurial, SHA-1, and Trusting Version Control</description>
+      <content:encoded><![CDATA[<p>The Internet went crazy on Thursday when Google
+<a href="https://security.googleblog.com/2017/02/announcing-first-sha1-collision.html">announced a SHA-1 collision</a>.
+This has spawned a lot of talk about the impact of SHA-1 in version
+control. Linus Torvalds (the creator of Git) weighed in on the
+<a href="http://marc.info/?l=git&amp;m=148787047422954">Git mailing list</a> and on
+<a href="https://plus.google.com/+LinusTorvalds/posts/7tp2gYWQugL">Google+</a>.
+There are also posts like
+<a href="http://www.metzdowd.com/pipermail/cryptography/2017-February/031623.html">SHA1 collisions make Git vulnerable to attakcs by third-parties, not just repo maintainers</a>
+outlining the history of Git and SHA-1. On the Mercurial side,
+Matt Mackall (the creator of Mercurial) authored a
+<a href="https://www.mercurial-scm.org/wiki/mpm/SHA1">SHA-1 and Mercurial security article</a>.
+(If you haven't read Matt's article, please do so now before
+continuing.)</p>
+<p>I'd like to contribute my own take on the problem with a slant towards
+Mercurial and while also comparing Mercurial's exposure to SHA-1
+collisions to Git's. Since this is a security topic, I'd like to
+explicitly state that I'm not a cryptographer. However, I've worked on
+a number of software components that do security/cryptography (like
+Firefox Sync) and I'm pretty confident saying that my grasp on
+cryptographic primitives and security techniques is better than the
+average developer's.</p>
+<p>Let's talk about Mercurial's exposure to SHA-1 collisions on a technical
+level.</p>
+<p>Mercurial, like Git, is <em>vulnerable</em> to SHA-1 collisions. Mercurial is
+vulnerable because its logical storage mechanism (like Git's) indexes
+tracked content by SHA-1. If two objects with differing content have the
+same SHA-1, content under version control could be changed and detecting
+that would be difficult or impossible. That's obviously bad.</p>
+<p>But, Mercurial's exposure to SHA-1 collisions isn't as severe as Git's.
+To understand why, we have to understand how each stores data.</p>
+<p>Git's logical storage model is a content-addressable key-value store.
+Values (<em>objects</em> in Git parlance) consist of a header identifying the
+object type (commit, tree, blob, or tag), the size of the data (as a
+string), and the raw content of the thing being stored. Common content
+types are file content (blob), a list of files (tree), and a description
+of a commit (commit). Keys in this blob store are SHA-1 hashes of objects.
+All Git objects go into a single <em>namespace</em> in the Git repository's
+<em>store</em>. A beneficial side-effect of this is data de-duplication: if the
+same file is added to a Git repository, it's <em>blob</em> object will be
+identical and it will only be stored once by Git. A detrimental
+side-effect is that hash collisions are possible between any two objects,
+irregardless of their type or location in the repository.</p>
+<p>Mercurial's logical storage model is also content-addressable. However,
+it is significantly different from Git's approach. Mercurial's logical
+storage model allocates a separate sub-store for each tracked <em>path</em>.
+If you run <code>find .hg/store -name '*.i'</code> inside a Mercurial repository,
+you'll see these files. There is a separate file for each path
+that has committed data. If you <code>hg add foo.txt</code> and <code>hg commit</code>, there
+will be a <code>data/foo.txt.i</code> file holding data for <code>foo.txt</code>.
+There are also special files <code>00changelog.i</code> and <code>00manifest.i</code> holding
+data for commits/changesets and file lists, respectively. Each of these
+<code>.i</code> files - a <a href="https://www.mercurial-scm.org/repo/hg/file/a185b903bda3/mercurial/help/internals/revlogs.txt">revlog</a> -
+is roughly equivalent to an ordered collection of Git objects for a
+specific tracked path. This means that Mercurial's store consists of
+N discrete and independent namespaces for data. Contrast with Git's
+single namespace.</p>
+<p>The benefits and drawbacks are the opposite of those pointed out for
+Git above: Mercurial doesn't have automatic content-based de-duplication
+but it does provide some defense against hash collisions. Because each
+logical path is independent of all others, a Mercurial repository will
+happily commit two files with different content but same hashes. This
+is more robust than Git because a hash collision is isolated to a single
+logical path / revlog. In other words, a random file added to the
+repository in directory <code>X</code> that has a hash collision with a file in
+directory <code>Y</code> won't cause problems.</p>
+<p>Mercurial also differs significantly from Git in terms of how the hash
+is obtained. Git's hash is computed from raw content preceded by a header
+derived directly from the object's role and size. (Takeaway: the header is
+static and can be derived trivially.) Mercurial's hash is computed from
+raw content preceded by a header. But that header consists of the 20 byte
+SHA-1 hash(es) of the parent revisions in the revlog to which the content
+is being added. This <em>chaining</em> of hashes means that the header is not
+always static nor always trivially derived. This means that the same
+content can be stored in the revlog under multiple hashes. It also means
+that it is possible to store differing content having a hash collision
+within the same revlog! But only under some conditions - Mercurial will
+still barf in some scenarios if there is a hash collision within content
+tracked by the revlog. This is different from Git's behavior, where the
+same content <em>always</em> results in the same Git object hash. (It's worth
+noting that a SHA-1 collision on data with a Git object header has not
+yet been encountered in the wild.)</p>
+<p>The takeaway from the above paragraphs is Mercurial's storage model
+is slightly more robust against hash collisions than Git's because there
+are multiple, isolated namespaces for storing content and because all
+hashes are chained to previous content. So, when SHA-1 collisions
+are more achievable and someone manages to create a collision for a
+hash used by version control, Mercurial's storage layer will be able
+to cope with that better than Git's.</p>
+<p>But the concern about SHA-1 weakness is more about security than storage
+robustness. The disaster scenario for version control is that an
+attacker could replace content under version control, possibly
+undetected. If one can generate a hash collision, then this is
+possible. Mercurial's chaining of content provides some defense, but
+it isn't sufficient.</p>
+<p>I agree with <a href="https://www.mercurial-scm.org/wiki/mpm/SHA1">Matt Mackall</a>
+that at the present time there are bigger concerns with content
+safety than SHA-1 collisions. Namely, if you are an attacker, it is
+much easier to introduce a subtle bug that contains a security
+vulnerability than to introduce a SHA-1 collision. It is also
+much easier to hack the canonical version control server (or any
+user or automated agent that has permissions to push to the server)
+and add a <em>bad</em> commit. Many projects don't have adequate defenses
+to detect such <em>bad</em> commits. Ask yourself: if a bad actor pushed
+a <em>bad</em> commit to my repository, would it be detected? Keep in mind
+that spoofing author and committer metadata in commits is trivial.
+<strong>The current state of Mercurial and Git rely primarily on trust -
+not SHA-1 hashes - as their primary defense against malicious
+actors.</strong></p>
+<p>The desire to move away from SHA-1 has been on the radar of the
+Mercurial project for years. For 10+ years, the <em>revlog</em> data
+structure has allocated 32 bytes for hashes while only using 20 bytes
+for SHA-1. And, the topic of SHA-1 weakness and desire to move to
+something stronger has come up at the developer <em>sprints</em> for the
+past several years. However, it has never been pressing enough to act
+on because <em>there are bigger problems</em>. If it were easy to change, then
+Mercurial likely would have done it already. But changing is not easy.
+As soon as you introduce a new hash format in a repository, you've
+potentially locked out all legacy versions of the Mercurial software
+from accessing the repository (unless the repository stores multiple
+hashes and allows legacy clients to access the legacy SHA-1 hashes).
+There are a number of concerns from legacy compatibility (something
+Mercurial cares deeply about) to user experience to even performance
+(SHA-1 hashing even at 1000+MB/s floats to the top of performance
+profiling for some Mercurial operations). I'm sure the topic will be
+discussed heavily at the upcoming developers sprint in a few weeks.</p>
+<p>While Mercurial should (and will eventually) replace SHA-1, I think
+the biggest improvement Mercurial (or Git for that matter) can make
+to repository <em>security</em> is providing a better mechanism for tracking
+and auditing trust. Existing mechanisms for GPG signing every commit
+aren't practical or are a non-starer for many workflows. And, they
+rely on GPG, which has notorious end-user usability problems (I would
+prefer my version control tool not subject me to toiling with GPG.)
+I've thought about this topic considerably, authoring a
+<a href="https://www.mercurial-scm.org/wiki/CommitSigningPlan">proposal for easier and more flexible commit signing</a>.
+There is also a related proposal to establish a
+<a href="https://www.mercurial-scm.org/wiki/CommitCustodyConcept">cryptographically meaningful chain-of-custody for a patch</a>.
+There are some good ideas there. But, like all user-facing
+cryptography, the devil is in the details. There are some hard
+problems to solve, like how to manage/store public keys that were
+used for signatures. While there is some prior art in version control
+tools (see Monotone), it is far from a solved problem. And at the
+end of the day, you are still left having to trust a set of keys
+used to produce signatures.</p>
+<p>While version control can keep using cryptographically strong hashes
+to mitigate collisions within its storage layer to prevent content
+swapping and can employ cryptographic signatures of tracked data,
+there is still the issue of trust. Version control can give you the
+tools for establishing and auditing trust. Version control can also
+provide tools for managing trust relationships. But at the end of the
+day, the actual act of trusting trust boils down to people making
+decisions (possibly through corporate or project policies). This
+will always be a weak link. Therefore, it's what malicious actors
+will attack. The best your version control tool can do is give its
+users the capability and tools to run a secure and verifiable
+repository so that when bad content is inevitably added you can't
+blame the version control tool for having poor security.</p>]]></content:encoded>
+    </item>
     <item>
       <title>MozReview Git Support and Improved Commit Mapping</title>
       <link>http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping</link>
@@ -676,54 +841,6 @@ towards MozReview over Bugzilla/patch-based workflows</strong> (such as
 bzexport).</p>
 <p><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1195856">Bug 1195856</a>
 tracked this feature.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Serving Mercurial Clones from a CDN</title>
-      <link>http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn</link>
-      <pubDate>Tue, 01 Sep 2015 15:00:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn</guid>
-      <description>Serving Mercurial Clones from a CDN</description>
-      <content:encoded><![CDATA[<p>For the past few months, Mozilla has been
-<a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3/">serving Mercurial clones from Amazon S3</a>.
-We upload snapshots (called <em>bundles</em>) of large and/or high-traffic
-repositories to S3. We have a custom Mercurial extension on the
-client and server that knows how to exchange the URLs for these
-snapshots and to transparently use them to bootstrap a clone. The
-end result is drastically reduced Mercurial server load and faster
-clone times. The benefits are seriously ridiculous when you operate
-version control at scale.</p>
-<p><a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> is a CDN.
-You can easily configure it up to be backed by an S3 bucket. So
-we did.</p>
-<p><a href="https://hg.cdn.mozilla.net/">https://hg.cdn.mozilla.net/</a> is
-Mozilla's CDN for hosting Mercurial data. Currently it's just bundles to
-be used for cloning.</p>
-<p>As of today, if you
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">install the bundleclone Mercurial extension</a>
-and <em>hg clone</em> a repository on
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a> such as
-<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
-(<em>hg clone https://hg.mozilla.org/mozilla-central</em>), the CDN
-URLs will be preferred by default. (Previously we preferred S3 URLs
-that hit servers in Oregon, USA.)</p>
-<p><strong>This should result in clone time reductions for Mozillians not
-close to Oregon, USA</strong>, as the CloudFront CDN has servers all across
-the globe and your Mercurial clone should be bootstrapped from the
-closest and hopefully therefore fastest server to you.</p>
-<p>Unfortunately, you do need the the aforementioned <em>bundleclone</em>
-extension installed for this to work. But, this should only be
-temporary: I've
-<a href="https://mercurial.selenic.com/wiki/StaticBundlePlan">proposed</a>
-integrating this feature into the core of Mercurial so if a client
-talks to a server advertising pre-generated bundles the clone
-offload <em>just works</em>. I already have tentative buy-in from one
-Mercurial maintainer. So hopefully I can land this feature in
-Mercurial 3.6, which will be released November 1. After that,
-I imagine some high-traffic Mercurial servers (such as Bitbucket)
-will be very keen to deploy this so CPU load on their servers
-is drastically reduced.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
