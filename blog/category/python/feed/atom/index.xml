@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2017-03-07T18:25:20Z</updated>
+  <updated>2017-03-07T20:00:01Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -385,7 +385,7 @@ compressed data versus 294,926,418 as a single stream (without the
 method. Drastically different results. That's the impact of input
 size on compression performance.</p>
 <p>While the compression ratio and speed of a single large stream is
-often better than better multiple smaller chunks, there are still
+often better than multiple smaller chunks, there are still
 use cases that either don't have enough data or prefer independent
 access to each piece of input (like Firefox's <code>omni.ja</code> file). So
 a robust compression algorithm should handle small inputs as well
