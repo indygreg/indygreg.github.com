@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 07 Mar 2017 18:03:46 GMT</pubDate>
+    <pubDate>Tue, 07 Mar 2017 18:09:40 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -33,7 +33,7 @@ a link to the
 operated by Yann Collet (then known as the author of LZ4 - a compression
 algorithm known for its insane speeds) and people were completely
 nerding out over the excellent articles and the data within showing the
-beginnings of a ne general purpose lossless compression algorithm named
+beginnings of a general purpose lossless compression algorithm named
 Zstandard. It promised better-than-deflate/zlib compression ratios <strong>and</strong>
 performance on both compression and decompression. This being a Mercurial
 meeting, many of us were intrigued because zlib is used by Mercurial
