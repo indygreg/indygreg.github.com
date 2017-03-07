@@ -51,6 +51,799 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mozilla-central-build-times"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/07/29/mozilla-central-build-times" rel="bookmark" title="Permanent Link to mozilla-central Build Times">mozilla-central Build Times</a></h2>
+  <small>July 29, 2012 at 01:20 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>In my previous post, I
+<a href="http://gregoryszorc.com/blog/2012/07/29/mozilla-build-system-overview/">explained how Mozilla's build system works</a>.
+In this post, I want to give people a feel for where time is spent and to
+identify obvious areas that need improvement.</p>
+<p>To my knowledge, nobody has provided such a comprehensive collection of
+measurements before. Thus, most of our thoughts on where build time goes
+have been largely lacking scientific rigor. I hope this post changes
+matters and injects some much-needed quantitative figures into the
+discussion.</p>
+<h2>Methodology</h2>
+<p>All the times reported in this post were obtained from my 2011
+generation MacBook Pro. It has 8 GB of RAM and a magnetic hard drive. It
+is not an ultimate build rig by any stretch of the imagination. However,
+it's no slouch either. The machine has 1 physical Core i7 processor with
+4 cores, each clocked at 2.3GHz. Each core has hyperthreading, so to the
+OS there appears to be 8 cores. For the remainder of this post, I'll
+simply state that my machine has 8 cores.</p>
+<p>When I obtained measurements, I tried to limit the number of processes
+running elsewhere on the machine. I also performed multiple runs and
+reported the best timings. This means that the results are likely
+synthetic and highly influenced by the page cache. More on that later.</p>
+<p>I configured make to use up to 8 parallel processes (adding -j8 to the
+make flags). I also used silent builds (the -s flag to make). Silent
+builds are important because terminal rendering can add many seconds of
+wall time to builds, especially on slow terminals (like Windows). I
+measured results with make output being written to the terminal. In
+hindsight, I wish I hadn't done this. Next time.</p>
+<p>To obtain the times, I used the ubiquitous <em>time</em> utility. Wall times
+are the <em>real</em> times from <em>time</em>. CPU time is the sum of the <em>user</em> and
+<em>sys</em> times.</p>
+<p>CPU utilization is the percentage of CPU cores busy during the wall time
+of execution. In other words, I divided the CPU time by 8 times the wall
+time (8 for the number of cores in my machine). 100% is impossible to
+obtain, as obviously the CPU on my machine is doing other things during
+measurement. But, I tried to limit the number of background processes
+running, so there shouldn't have been that much noise.</p>
+<p>I built a debug version of Firefox (the <em>browser</em> app in
+mozilla-central) using r160922 of the Clang compiler (pulled and built
+the day I did this measurement). The revision of mozilla-central being
+built was <a href="https://hg.mozilla.org/mozilla-central/rev/08428deb1e89">08428edb1e89</a>.
+I also had <em>--enable-tests</em>, which adds a significant amount of extra
+work to builds.</p>
+<h2>Configure</h2>
+<p><em>time</em> reported the following for running <em>configure</em>:</p>
+<pre><code>real 0m25.927s
+user 0m9.595s
+sys  0m8.729s
+</code></pre>
+<p>This is a one-time cost. Unless you are hacking on the build system or
+pull down a tree change that modified the build system, you typically
+don't need to worry about this.</p>
+<h2>Clobber Builds with Empty ccache</h2>
+<p>I built each tier separately with an empty ccache on a
+recently-configured object directory. This measures the optimal worst
+case time for building mozilla-central. In other words, we have nothing
+cached in the object directory, so the maximum amount of work needs to
+be performed. Since I measured multiple times and used the best results,
+this is what I mean by <em>optimal</em>.</p>
+<p>The table below contains the measurements. I omitted CPU utilization
+calculation for small time values because I don't feel it is relevant.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Utilization</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.714</td>
+    <td>0.774</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>5.081</td>
+    <td>8.620</td>
+    <td>21%</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.453</td>
+    <td>0.444</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>base (total)</td>
+    <td>6.248</td>
+    <td>9.838</td>
+    <td>19.7%</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>9.309</td>
+    <td>8.404</td>
+    <td>11.3%</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>1.030</td>
+    <td>1.877</td>
+    <td>22.8%</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>71.450</td>
+    <td>416.718</td>
+    <td>52%</td>
+  </tr>
+  <tr>
+    <td>js tools</td>
+    <td>0.324</td>
+    <td>0.246</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>js (total)</td>
+    <td>72.804</td>
+    <td>418.841</td>
+    <td>71.9%</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>40.487</td>
+    <td>141.704</td>
+    <td>43.7%</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>1211</td>
+    <td>4896</td>
+    <td>50.5%</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>70.416</td>
+    <td>90.917</td>
+    <td>16.1%</td>
+  </tr>
+  <tr>
+    <td>platform (total)</td>
+    <td>1312</td>
+    <td>5129</td>
+    <td>48.9%</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>4.383</td>
+    <td>3.059</td>
+    <td>8.7%</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>18.727</td>
+    <td>18.976</td>
+    <td>12.7%</td>
+  </tr>
+  <tr>
+    <td>app tools (no-op)</td>
+    <td>0.519s</td>
+    <td>0.968</td>
+    <td>N/A</td>
+  </tr>
+  <tr>
+    <td>app (total)</td>
+    <td>23.629</td>
+    <td>23.003</td>
+    <td>12.2%</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>1424 (23:44)</td>
+    <td>5589 (93:15)</td>
+    <td>49.1%</td>
+  </tr>
+</table>
+
+<p>It's worth mentioning that linking libxul is part of the platform libs
+tier. libxul linking should be called out because it is unlike other
+parts of the build in that it is more I/O bound and can't use multiple
+cores. On my machine, libxul linking (not using gold) takes ~61s. During
+this time, only 1 CPU core is in use. The ~61s wall time corresponds to
+roughly 5% of platform libs' wall time. Yet, even if we subtract this ~61s
+from the effective CPU calculation, the percentage doesn't change much.</p>
+<h2>Clobber with Populated ccache</h2>
+<p>Using the ccache from a recently built tree to make C/C++ compilation
+faster, I measured how long it took each tier to build on a clobber
+build.</p>
+<p>This measurement can be used to estimate the overhead of C/C++ compilation
+during builds. In theory, the difference between CPU times between this
+and the former measurement will be the amount of CPU time spent in the
+C/C++ compiler.</p>
+<p>This will also isolate how much time we spend <em>not</em> in the C/C++
+compiler. It will arguably be very difficult to
+make the C/C++ compiler faster (although things like reducing the abuse
+of templates can have a measureable impact). However, we do have control
+over many of the other things we do. If we find that CPU time spent
+outside the C/C++ compiler is large, we can look for pieces to optimize.</p>
+<p>Tiers not containing compiled files are omitted from the data.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+    <th>ccache savings (s) (Time in Compiler)</th>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>1.075</td>
+    <td>1.525</td>
+    <td>7.095</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>1.957</td>
+    <td>0.933</td>
+    <td>1.522</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>5.582</td>
+    <td>1.688</td>
+    <td>6.716</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>22.829</td>
+    <td>9.529</td>
+    <td>407.189</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>431</td>
+    <td>328</td>
+    <td>4568</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>14.498</td>
+    <td>25.744</td>
+    <td>65.173</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>10.193</td>
+    <td>15.809</td>
+    <td>3.167</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>487.134 (6:07)</td>
+    <td>383.229 (6:23)</td>
+    <td>5059 (84:19)</td>
+  </tr>
+</table>
+
+<h2>No-op Build</h2>
+<p>A <em>no-op</em> build is a build performed in an object directory that was
+just built. Nothing changed in the source repository nor object
+directory, so theoretically the build should do nothing. And, it should
+be fast.</p>
+<p>In reality, our build system isn't smart and performs some redundant
+work. One part of redundant work is because one of the first things the
+main Makefile does before invoking the tiers is delete a large chunk of
+the <em>dist/</em> directory and the entirety of the <em>_tests/</em> directory from
+the object directory.</p>
+<p>In these measurements, I bypassed the deletion of these directories. In
+other words, I measure what <em>no-op</em> builds are if we eliminate the
+clown shoes around blowing away large parts of the object directory.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>CPU Time (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.524</td>
+    <td>0.537</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.625</td>
+    <td>0.599</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.447</td>
+    <td>0.437</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.809</td>
+    <td>0.752</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.334</td>
+    <td>0.324</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.375</td>
+    <td>0.361</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>10.904</td>
+    <td>13.136</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>30.969</td>
+    <td>44.25</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>8.213</td>
+    <td>10.737</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.524</td>
+    <td>1.006</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>6.090</td>
+    <td>13.753</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>59.814</td>
+    <td>85.892</td>
+  </tr>
+</table>
+
+<p>So, no-op builds use ~60s of wall time and only make use of 17.9% of
+available CPU resources.</p>
+<h2>No-op Build With Directory Removal Silliness</h2>
+<p>As mentioned above, before the tiers are iterated, the top-level
+Makefile blows away large parts of <em>dist/</em> and the entirety of
+<em>_tests/</em>. What impact does this have?</p>
+<p>In this section, I try to isolate how much time was thrown away by doing
+this.</p>
+<p>First, we have to account for the deletion of these directories. On my
+test build, deleting 15,005 files in these directories took ~3 seconds.</p>
+<p>The table below contains my results. This is a more accurate reading
+than the above on how long no-op builds takes because this is actually
+what we do during normal builds. The time delta column contains the
+difference between this build and a build without the removal silliness.
+Positive times can be attributes to overhead associated with
+repopulating <em>dist/</em> and <em>_tests/</em>.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>Wall Time Delta (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Time Delta (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.544</td>
+    <td>Negligible</td>
+    <td>0.559</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.616</td>
+    <td>Negligible</td>
+    <td>0.594</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.447</td>
+    <td>Negligible</td>
+    <td>0.436</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.803</td>
+    <td>Negligible</td>
+    <td>0.743</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.338</td>
+    <td>Negligible</td>
+    <td>0.329</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.378</td>
+    <td>Negligible</td>
+    <td>0.363</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>13.140</td>
+    <td>2.236</td>
+    <td>13.314</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>35.290</td>
+    <td>4.329</td>
+    <td>43.059</td>
+    <td>-1.191 (normal variance?)</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>8.819</td>
+    <td>0.606</td>
+    <td>10.983</td>
+    <td>0.246</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.525</td>
+    <td>Negligible</td>
+    <td>1.012</td>
+    <td>Negligible</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>8.876</td>
+    <td>2.786</td>
+    <td>13.527</td>
+    <td>-0.226</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>69.776</td>
+    <td>9.962</td>
+    <td>84.919</td>
+    <td>-0.973 (normal variance)</td>
+  </tr>
+</table>
+
+<p>If a delta is listed as negligible, it was within 100ms of the original
+value and I figured this was either due to expected variance between
+runs or below our threshold for caring. In the case of base, nspr, and
+js tiers, the delta was actually much smaller than 100ms, often less
+then 10ms.</p>
+<p>It certainly appears that the penalty for deleting large parts of
+<em>dist/</em> and the entirety of <em>_tests/</em> is about 10 seconds.</p>
+<h2>The Overhead of Make</h2>
+<p>We've measured supposed no-op build times. As I stated above, our no-op
+builds actually aren't no-op builds. Even if we bypass the deletion of
+<em>dist/</em> and <em>_tests/</em> we always evaluate some make rules. Can we measure how
+much work it takes to just load the make files without actually doing
+anything? This would allow us to get a rough estimate of how much we are
+wasting by doing redundant work. It will also help us establish a
+baseline for make overhead.</p>
+<p>Turns out we can! Make has a <em>--dry-run</em> argument which evaluates the make
+file but doesn't actually do anything. It simply prints what would have
+been done.</p>
+<p>Using <em>--dry-run</em>, I timed the different tiers. The difference from a no-op
+build should roughly be the overhead associated with make itself. It is
+possible that <em>--dry-run</em> adds a little overhead because it prints the
+commands that would have been executed. (Previous timings were using
+<em>-s</em>, which suppresses this.)</p>
+<p>The delta times in the following table are the difference in times
+between the true no-op build from above (the one where we don't delete
+<em>dist/</em> and <em>_tests/</em>) and the times measured here. It roughly isolates
+the amount of time spent outside of make, doing redundant work.</p>
+<table border="1">
+  <tr>
+    <th>Tier - Sub-tier</th>
+    <th>Wall Time (s)</th>
+    <th>Wall Time Delta (s)</th>
+    <th>CPU Time (s)</th>
+    <th>CPU Time Delta (s)</th>
+  </tr>
+  <tr>
+    <td>base export</td>
+    <td>0.369</td>
+    <td>0.155</td>
+    <td>0.365</td>
+    <td>0.172</td>
+  </tr>
+  <tr>
+    <td>base libs</td>
+    <td>0.441</td>
+    <td>0.184</td>
+    <td>0.431</td>
+    <td>0.168</td>
+  </tr>
+  <tr>
+    <td>base tools</td>
+    <td>0.368</td>
+    <td>0.079</td>
+    <td>0.364</td>
+    <td>0.073</td>
+  </tr>
+  <tr>
+    <td>nspr</td>
+    <td>0.636</td>
+    <td>0.173</td>
+    <td>0.591</td>
+    <td>0.161</td>
+  </tr>
+  <tr>
+    <td>js export</td>
+    <td>0.225</td>
+    <td>0.109</td>
+    <td>0.225</td>
+    <td>0.099</td>
+  </tr>
+  <tr>
+    <td>js libs</td>
+    <td>0.278</td>
+    <td>0.097</td>
+    <td>0.273</td>
+    <td>0.088</td>
+  </tr>
+  <tr>
+    <td>platform export</td>
+    <td>3.841</td>
+    <td>7.063</td>
+    <td>6.108</td>
+    <td>7.028</td>
+  </tr>
+  <tr>
+    <td>platform libs</td>
+    <td>8.938</td>
+    <td>22.031</td>
+    <td>14.723</td>
+    <td>29.527</td>
+  </tr>
+  <tr>
+    <td>platform tools</td>
+    <td>3.962</td>
+    <td>4.251</td>
+    <td>6.185</td>
+    <td>4.552</td>
+  </tr>
+  <tr>
+    <td>app export</td>
+    <td>0.422</td>
+    <td>0.102</td>
+    <td>0.865</td>
+    <td>0.141</td>
+  </tr>
+  <tr>
+    <td>app libs</td>
+    <td>0.536</td>
+    <td>5.554</td>
+    <td>1.148</td>
+    <td>12.605</td>
+  </tr>
+  <tr>
+    <td>Total</td>
+    <td>20.016</td>
+    <td>39.798</td>
+    <td>31.278</td>
+    <td>54.614</td>
+  </tr>
+</table>
+
+<h2>Observations</h2>
+<p>The numbers say a lot. I'll get to key takeaways in a bit.</p>
+<p>First, what the numbers don't show is the variance between runs.
+Subsequent runs are almost always <em>significantly</em> faster than the
+initial, even on no-op builds. I suspect this is due mostly to
+I/O wait. In the initial tier run, files are loaded into the page cache.
+Then, in subsequent runs, all I/O comes from physical memory rather than
+waiting on a magnetic hard drive.</p>
+<p>Because of the suspected I/O related variance, I fear that the numbers I
+obtained are highly synthetic, at least for my machine. It is unlikely
+I'll ever see all these numbers in one mozilla-central build. Instead,
+it requires a specific sequence of events to obtain the best times
+possible. And, this sequence of events is not likely to correspond with
+real-world usage.</p>
+<p>That being said, I think these numbers are important. If you remove I/O
+from the equation - say you have an SSD with near 0 service times or
+have enough memory so you don't need a hard drive - these numbers will
+tell what limits you are brushing up against. And, as computers get more
+powerful, I think more and more people will cross this threshold and
+will be more limited by the build system than the capabilities of their
+hardware. (A few months ago, I
+<a href="https://groups.google.com/forum/#!topic/mozilla.dev.builds/FJclsTA_OBQ/discussion">measured resource usage</a>
+when compiling mozilla-central on Linux and concluded you need roughly
+9GB of dedicated memory to compile and link mozilla-central without page
+cache eviction. In other words, if building on a machine with only 8GB
+of RAM, your hard drive will play a role.)</p>
+<p>Anyway, to the numbers.</p>
+<p>I think the most important number in the above tables is <strong>49.1%</strong>. That
+is the effective CPU utilization during a clobber build. This means that
+<strong>during a build, on average half of the available CPU cores are
+unused.</strong> Now, I could be generous and bump this number to 50.7%. That's
+what the effective CPU utilization is if you remove the ~60s of libxul
+linking from the calculation.</p>
+<p>The 49.1% has me reaching the following conclusions:</p>
+<ol>
+<li>I/O wait really matters.</li>
+<li>Our recursive use of make is incapable of executing more than 4 items
+   at a time on average (assuming 8 cores).</li>
+<li>My test machine had more CPU wait than I think.</li>
+</ol>
+<p>I/O wait is easy to prove: compare times on an SSD or with a similar I/O
+bus with near zero service times (e.g. a filled page cache with no
+eviction - like a machine with 16+ GB of memory that has built
+mozilla-central recently).</p>
+<p>A derived time not captured in any table is 11:39. This is the total
+CPU time of a clobber build (93:15) divided by the number of cores (8).
+<strong>If we had 100% CPU utilization across all cores during builds, we should
+be able to build mozilla-central in 11:39.</strong> This is an ideal figure and
+won't be reached. As mentioned above, libxul linking takes ~60s itself! I
+think 13:00 is a more realistic optimal compilation time for a modern 8
+core machine. This points out a startling number: <strong>we are wasting
+~12 minutes of wall time due to not fully utilizing CPU cores during
+clobber builds.</strong></p>
+<p>Another important number is 5059 out of 5589, or 90.5%. That is the CPU
+time in a clobber build spent in the C/C++ compiler, as measured by the
+speedup of using ccache. It's unlikely we are going to make the C/C++
+compiler go much faster (short of not compiling things). So, this is a
+big fat block of time we will never be able to optimize. On my machine
+<strong>compiling mozilla-central will always take at least ~10:30 wall time,
+just in compiling C/C++.</strong></p>
+<p>A clobber build with a saturated ccache took 487s wall time but only 383s
+CPU time. That's only about 10% total CPU utilization. And, this
+represents only 6.8% of total CPU time from the original clobber build.
+Although, it is 34.2% of total wall time.</p>
+<p>The above means that everything not the C/C++ compiler is horribly
+inefficient. These are clown shoes of epic proportions. We're not even
+using 1 full core doing build actions outside of the C/C++ compiler!</p>
+<p>Because we are inefficient when it comes to core usage, I
+think a key takeaway is that throwing more cores at the existing build
+system will have diminishing returns. Sure, some parts of the build system
+today could benefit from it (mainly js, layout, and dom, as they have
+Makefile's with large numbers of source files). But, most of the build
+system won't take advantage of many cores. <strong>If you want to throw money
+at a build machine, I think your first choice should be an SSD. If you
+can't do that, have as much memory as you can so most of your filesystem
+I/O is serviced by the page cache, not your disk drive.</strong></p>
+<p>In the final table, we isolated how much time <em>make</em> is spending to
+just to figure out what to do. That amounts to ~20 seconds wall
+time and ~31s CPU time. That leaves ~40s wall and ~55s CPU for non-make
+work during no-op builds. Translation: we are doing 40s of wall time work
+during no-op builds. Nothing changed. <strong>We are throwing 40s of wall time
+away because the build system isn't using proper dependencies and is
+doing redundant work.</strong></p>
+<p>I've long been a critic of us blowing away parts of <em>dist/</em> and
+<em>_tests/</em> at the top of builds. Well, after measuring it, I have mixed
+reactions. It only amounts to about ~10s of added time to builds. This
+doesn't seem like a lot in the grand scheme of things. However, this is
+~10s on top of the ~60s it actually takes to iterate through the tiers.
+So, in terms of percentages for no-op builds, it is actually quite
+significant.</p>
+<p>No-op builds with the existing build system take ~70s under ideal
+conditions. In order of time, the breakdown is roughly:</p>
+<ul>
+<li>~40s for doing redundant work in Makefiles</li>
+<li>~20s for make traversal and loading overhead</li>
+<li>~10s for repopulating deleted content from <em>dist/</em> and <em>_tests/</em></li>
+</ul>
+<p>In other words, <strong>~50s of ~70s no-op build times are spent doing work
+we have already done.</strong> This is almost purely clown shoes. Assuming we
+can't make make traversal and loading faster, the shortest possible
+no-op build time will be ~20s.</p>
+<p>Splitting things up a bit more:</p>
+<ul>
+<li>~22s - platform libs make evaluation</li>
+<li>~20s - make file traversal and loading (readying for evaluation)</li>
+<li>~10s - repopulating deleted content from <em>dist/</em> and <em>_tests/</em></li>
+<li>~7s - platform export make evaluation</li>
+<li>~5.5 - app libs make evaluation</li>
+<li>~4s - platform tools</li>
+</ul>
+<p>The ~20s for make file traversal and loading is interesting. I suspect
+(although I haven't yet measured) that a lot of this is due to the sheer
+size of rules.mk. As I
+<a href="http://gregoryszorc.com/blog/2012/07/28/makefile-execution-times/">measured</a>
+on Friday, the overhead of rules.mk with pymake is significant. I
+hypothesized that it would have a similar impact on GNU make. I think a
+good amount of this ~20s is similar overhead. I need to isolate,
+however. I am tempted to say that if we truly did no-op builds and make
+Makefile's load into make faster, we could attain no-op build times in
+the ~10s range. I think this is pretty damn good! Even ~20s isn't too
+bad. As surprising as it is for me to say it, <strong>recursive make is not
+(a significant) part of our no-op build problem</strong>.</p>
+<h2>Why is the Build System Slow?</h2>
+<p>People often ask the question above. As the data has told me, the
+answer, like many to complicated problems, is nuanced.</p>
+<p>If you are doing a clobber build on a fresh machine, the build system is
+slow because 1) compiling all the C/C++ takes a lot of time (84:19 CPU
+time actually) 2) we don't make efficient use of all available cores
+when building. Half of the CPU horsepower during a fresh build is
+unharnessed.</p>
+<p>If you are doing a no-op build, the build system is slow mainly because
+it is performing a lot of needless and redundant work. A significant
+contributor is the overhead of make, probably due to rules.mk being
+large.</p>
+<p>If you are doing an incremental build, you will fall somewhere between
+either extreme. You will likely get nipped by both inefficient core
+usage as well as redundant work. Which one hurts the most depends on the
+scope of the incremental change.</p>
+<p>If you are building on a machine with a magnetic hard drive (not an
+SSD), your builds are slow because you are waiting on I/O. You can
+combat this by putting 8+GB of memory in your system and doing your best
+to ensure that building mozilla-central can use as much of it as
+possible. I highly recommend 12GB, if not 16GB.</p>
+<h2>Follow-ups</h2>
+<p>The measurements reported in this post are only the tip of the iceberg.
+If I had infinite time, I would:</p>
+<ul>
+<li>Measure other applications, not just browser/Firefox. I've heard that
+  mobile/Fennec's build config is far from optimal, for example. I would
+  love to quantify that.</li>
+<li>Set up buildbot to record and post measurements so we have a dashboard
+  of build times. We have some of this today, but the granularity isn't
+  as fine as what I captured.</li>
+<li>Record per-directory times.</li>
+<li>Isolate time spent in different processes (DTrace could be used here).</li>
+<li>Capture I/O numbers.</li>
+<li>Correlate the impact of I/O service times on build times.</li>
+<li>Isolate the overhead of ccache (mainly in terms of I/O).</li>
+<li>Obtain numbers on other platforms and systems. Ensure results can be
+  reproduced.</li>
+</ul>
+<h2>Next Steps</h2>
+<p>If we want to make our existing recursive make build backend faster, I
+recommend the following actions (in no particular order):</p>
+<ol>
+<li>Factor pieces out of rules.mk into separate .mk files and
+   conditionally load based on presence of specific variables. In other
+   words, finish what we have started. This definitely cuts down on the
+   overhead with pymake (as measured on Friday) and <em>likely</em> makes GNU
+   make faster as well.</li>
+<li>Don't blow away parts of <em>dist/</em> and <em>_tests/</em> at the top of builds.
+   I know this introduces a problem where we could leave orphaned files
+   in the object directory. We should solve this problem by having
+   proper manifests for everything so we can detect and delete orphans.
+   The cheap man's solution is to periodically clobber these
+   directories.</li>
+<li>Don't perform unnecessary work during no-op builds. I suspect a lot
+   of redundant work is due to rules in Makefile's not the rules in
+   rules.mk. As we eliminate rules from Makefile's, this problem should
+   gradually go away since rules.mk is generally intelligent about these
+   things.</li>
+<li>More parallelism. I'm not sure how we're going to solve this with
+   recursive make short of using PARALLEL_DIRS more and/or consolidating
+   Makefile's together.</li>
+</ol>
+<p>Again, these steps apply to our current recursive make build backend.</p>
+<p>Because the most significant losses are due to ungained parallelism, <strong>our
+focus should be on increasing parallelism.</strong> We can only do this so much
+with recursive make. It is clear now more than ever that recursive make
+needs to be replaced with something that can fully realize the potential
+of multiple CPU cores. That could be non-recursive make or a separate
+build backend altogether.</p>
+<p>We will likely not have an official alternate build backend soon. Until
+then, there are no shortage of clown shoes that can be looked at.</p>
+<p>The redundant work during no-op builds is definitely tempting to
+address, as I think that has significant impact to most developers.
+Eliminating the absurdly long no-op build times removes the needs for
+hacks like <em>smart-make</em> and instills a culture of <em>trust the build
+system.</em></p>
+<p>I suspect a lot of the redundant work during no-op builds is due to
+poorly implemented rules in individual Makefiles rather than on
+silliness in rules.mk. Therefore,
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=769378">removing rules from Makefile's</a>
+again seems to be one of the most important things we can do to make the
+build system faster. It also prepares us for implementing newer build
+backends, so it is a win-win!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/29/mozilla-central-build-times#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mozilla-build-system-overview"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/07/29/mozilla-build-system-overview" rel="bookmark" title="Permanent Link to Mozilla Build System Overview">Mozilla Build System Overview</a></h2>
   <small>July 29, 2012 at 01:15 PM | categories: 
@@ -862,761 +1655,6 @@ ofer data recovery to the vast majority of our users. <strong>This is huge.</str
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/18/one-year-at-mozilla#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="improving-mozilla's-build-system"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/06/25/improving-mozilla's-build-system" rel="bookmark" title="Permanent Link to Improving Mozilla's Build System">Improving Mozilla's Build System</a></h2>
-  <small>June 25, 2012 at 10:15 AM | categories: 
-
-<a href='/blog/category/make'>make</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/pymake'>pymake</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla's-build-system#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Makefiles. Love them or hate them, they are ubiquitous. For projects
-like Firefox (which has on the order of 1500 Makefiles), Makefiles
-aren't going away any time soon. This despite that newer - arguably
-better - build system (such as CMake and GYP) exist.</p>
-<p>Many have decried the numerous ways in which GNU make and make files
-suck. I won't pile on here. Instead, please read
-<a href="http://www.conifersystems.com/whitepapers/gnu-make/">What's Wrong with GNU make</a>
-for a great overview.</p>
-<p>Despite the many flaws with make, I would argue that the single most
-significant one is the slow speed often associated with it. People
-lauding make replacements (such as
-<a href="http://martine.github.com/ninja/">Ninja</a>) almost always emphasize this
-one aspect above all others. (OK, Ninja isn't exactly a make replacement,
-but the execution aspects are comparable.)</p>
-<p>Why is make slow? It is almost always due to the use of recursive make.
-This is make executing itself recursively, usually as it traverses a
-directory tree. This is how Mozilla's build system works. You start in
-one directory. Then, for each directory defined in the <em>DIRS</em> variable,
-make invokes make in that directory. In Mozilla's case, we amplify this
-by performing multiple passes over the directory tree - an <em>export</em> pass
-that installs header files, etc into a common directory, a <em>libs</em> pass
-that does most of the compilation, and a <em>tools</em> pass which performs
-other miscellaneous actions. Each of these is a recursive make
-iteration. As we say at Mozilla: clown shoes.</p>
-<p>The deficiencies of recursive make and a workaround are called out in
-the classic paper
-<a href="http://aegis.sourceforge.net/auug97.pdf">Recursive Make Considered Harmful</a>.
-Despite its age, it is still relevant - GNU make hasn't changed that
-much, after all. The thesis of the paper can be boiled down to the fact
-that make assembles a directed acyclic graph (DAG) and then executes it.
-Using recursive make, you are assembling N DAGs instead of of 1. Each DAG
-must be executed separately. This adds execution overhead. On top of
-that, since the DAGs are separate, you are either
-a) missing information from each DAG (it doesn't know about other
-DAGs) thus creating an incomplete and possibly error-prone dependency
-graph or b) duplicating information in multiple DAGs, creating more
-work for make in aggregate.</p>
-<p>The solution for this is non-recursive make. That's just a fancy way of
-saying <em>create 1 monolithic DAG and execute it once</em> (as opposed to N
-separate DAGs with at least N invocations of make). Modern build systems
-like Ninja do this. While these build systems have other properties that
-contribute to faster execution times, in my opinion the single feature
-that has the greatest impact is consolidating the build dependencies
-into a single graph. This minimizes the aggregate amount of work the
-driver needs to perform and all but eliminates redundant operations.</p>
-<p>Non-recursive make is typically achieved one of 2 ways:</p>
-<ol>
-<li>Create a single monolithic make file</li>
-<li>Concatenate all of your make files together (using the built-in
-<em>include</em> directive)</li>
-</ol>
-<p>Either way, you produce a single DAG and all is well. More on this
-later.</p>
-<h2>Transitioning to a Single DAG</h2>
-<p>A big problem with non-recursive make is transitioning to it. For
-projects like Firefox with its 1500 Makefiles, each existing in its own
-little universe, this is a Herculean effort. There is a reason why
-many (including Mozilla) haven't done it: it's just too hard.</p>
-<p>The problem of slow build times with Firefox is important to me because
-I suffer from it almost every day. So, I got to thinking of creative
-ways to solve this problem. How can we work towards a monolithic DAG? How
-can we do this incrementally so as to not cause too much disruption and
-so the effort isn't near impossible?</p>
-<p>I've come up with a plan that I believe Mozilla should pursue. The plan
-consists of many different parts, each of which is described in a separate
-section below. Each part is presented in roughly the order it needs to
-be addressed in.</p>
-<p>I want to emphasize that <strong>this is my personal opinion and what I'm about
-to propose is merely that: a proposal</strong>. For all I know, people will think
-I'm smoking crack and none of these ideas will be pursued.</p>
-<p>Let's begin.</p>
-<h2>Part 1: No Rules</h2>
-<p>Make files consist of
-<a href="https://www.gnu.org/software/make/manual/make.html#Rule-Introduction">rules</a>.
-These are, well, rules that tell make how to evaluate a target. A rule
-will say something like <em>to turn hello.cpp into hello.o, call the C++
-compiler with these arguments</em>.</p>
-<p>People naturally take advantage of the fact that the body of the rule
-(the <em>recipe</em> in make parlance) is often similar for many targets, so
-you make use of <a href="https://www.gnu.org/software/make/manual/make.html#Wildcards">wildcard rules</a>
-or by specifying multiple prerequisites and/or targets for a rule.</p>
-<p>Wildcard rules are great. Their problem is that the recipe is often
-useful across many make files. The solution here is to put the rule
-definition (and thus the recipe) in a common file and use make's
-<a href="https://www.gnu.org/software/make/manual/make.html#Include">include directive</a>
-to bring those rules into the current make file.</p>
-<p>This is the general approach Mozilla takes. All of the generic rules are
-defined in the (oh-it-hurts-my-eyes-to-look-at-so-much-make-syntax)
-<a href="https://hg.mozilla.org/mozilla-central/file/default/config/rules.mk">rules.mk</a>
-file. Individual Makefiles in the tree simply define specifically-named
-variables such as <em>CPPSRCS</em> or <em>XPIDLSRCS</em> and then include <em>rules.mk</em>.
-When make executes, <em>rules.mk</em> transforms these variables into
-rules which are automagically inserted into the DAG.</p>
-<p>From a user perspective, this is splendid. You simply define some variables
-and magic ensues. Instead of hairy looking make files, you literally
-have a file with simple variable assignments. If all goes to plan, you
-don't need to look at these rules definitions. Instead, you leave that
-up to professional dragon trainers, such as Ted Mielczarek, Joey
-Armstrong, and Kyle Huey.</p>
-<p>A large problem is that many make files define custom rules - things not
-using the magic from rules.mk. What's worse is that these custom rules
-are often <em>cargo culted</em> around. They work, yes, but there is redundancy.
-The installation of mochitest files is a perfect example of this.
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=370750">Bug 370750</a>)
-tracks establishing a rule for this
-<a href="https://mxr.mozilla.org/mozilla-central/search?string=TEST_FILES">absurd repetition</a>
-of make logic in Mozilla's tree. Even in the case of mochitest rules
-where the recipe is simple (it's just calling <em>$(INSTALL)</em>), the lack of
-a unified rule hurts us. If we wanted to change the directory the
-mochitest files were installed to, this would require editing scores of
-files. Not cool.</p>
-<p>Anyway, the first step towards improving the Mozilla build system (and
-any make file based build system really) is what I'm calling the <strong>no
-rules initiative</strong>.</p>
-<p>We should strive for no explicit rules in non-shared make files
-(things outside of <em>config/</em> and <em>build/</em> in the Mozilla source tree -
-basically all the files named <em>Makefile.in</em> or <em>Makefile</em>).
-Instead, individual make files should define variables that cause rules
-from a shared make file (like <em>rules.mk</em>) to be applied.</p>
-<p>In Mozilla's case, this will be a lot of manual effort and it will seem
-like there is no immediate gain. The benefits will be explained in
-subsequent sections.</p>
-<h2>Part 2: Eliminate Make File Content Not Related to Building</h2>
-<p>Mozilla's make files are riddled with content that isn't directly
-related to the action of building Mozilla applications. Not only does
-this contribute to the overhead of invoking make (these bits need to be
-evaluated when parsing, added to the DAG, etc, adding cost), but they
-also make the make files harder to read and thus edit.</p>
-<p><a href="https://hg.mozilla.org/mozilla-central/file/default/testing/testsuite-targets.mk">testsuite-targets.mk</a>
-is a good example of this. While it isn't included in every make file
-(just the top-level one), the code isn't related to building at
-all! Instead, it is essentially proxy code that maps make targets to
-commands. It is supposed to be convenient: type |make xpcshell-tests|
-and some tests run. OK, fine. I'll give you that.
-The main problem is this make file is just a glorified shell script.
-Make is great at constructing a dependency graph. As a DSL for shell
-scripts, I'd rather just write a script. Therefore, I would argue code
-like this belongs elsewhere - not in make files.</p>
-<p>Anyway, a problem for Mozilla is that our make files are riddled with
-pieces of content that aren't directly related to <em>building</em>. And, build
-system maintainers pay the price. Every time you see some part of a make
-file that doesn't appear to be directly related to the act of building,
-your mind is like, "wut ist das?" (That's High German for <em>WTF?</em>) You
-start asking questions. What's it for. Who uses it? Is it really needed?
-What happens if it breaks? How will I know? These questions all need
-answered and that adds overhead to editing these files. Oftentimes these
-little one-off gems are undocumented and the questions are nearly
-impossible to answer easily. The wise course of action is usually
-<em>preserve existing behavior</em>. Nobody wants to melt someone else's
-precious snowflake, after all. Thus, cargo cult programming prevails.</p>
-<p>The solution I propose is along the same vein as the <em>no rules
-initiative</em> - you can actually think of it as a specifically-tailored
-subset: <em>limit the make files to what's necessary for building.</em> If it
-doesn't relate to the act of building the application - if it is an
-island in the DAG - remove it.</p>
-<p>But where do you move it to? Good question. We don't have an obvious
-location today. But, in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">bug 751795</a> I am
-creating what is essentially a frontend for the build system. That is
-where it should go. (I will publish more information about that project
-on this blog once it has landed.)</p>
-<h2>Part 3: Make File Style Conventions and Enforced Review Requirements</h2>
-<p>My first two points revolved around what is effectively a make file
-style convention. If we are serious about making that convention stick,
-we need to enforce it better.</p>
-<p>This can be done in two ways.</p>
-<p>First, we establish a review policy that any changes to make files must
-be signed off by a build system peer. Maybe we carve out an exception
-for simple cases, such as adding a file to a <em>XPIDLSRCS</em> variable. I
-don't know. We certainly don't allow people to add new make files or
-even targets without explicit sign-off. I <em>think</em> this is how it is
-supposed to be today. It isn't enforced very well if it is.</p>
-<p>To aid in enforcing the style convention, we arm people with a tool that
-checks the style so they can fix things before it lands on a build
-peer's plate. This is actually pretty trivial to implement (I even
-have code that does this). The hard part is coming to consensus on the
-rules. If there is a will, I can make this happen easily.</p>
-<p>Once you have the tool to check for convention/style violations, your
-checkin policy is amended to include: <em>no make file changes can be checked
-in unless the file passes the style checker.</em> This is sure to draw ire
-from some, I'm sure. But, the alternative is having a cat and mouse
-game between the build system maintainers making the build system suck
-less and other people undoing their work with new features, etc.</p>
-<p>Anyway, these rules wouldn't be absolute - there could always be
-exceptions, of course. If we're serious about making the build system
-better, we need it to be more consistent and have less variance. I'm
-open to other suggestions to accomplish this.</p>
-<h2>Part 4: Extracting Data from Make Files</h2>
-<p>Once we have make files which consist of simple variable assignments (not
-rules), it is possible to take the values of these variables, and extract
-them from the make files to some higher-level system. For
-example, we could scour all the make files for the <em>CPPSRCS</em> variable
-and assemble a unified list of all C++ source files defined by that
-variable across the entire build system. Then, we could do some really
-interesting things.</p>
-<p>What kind of things you ask? Well, one idea is you could write out a
-monolithic make file that explicitly listed every target from the
-extracted data. No recursive make necessary here! Another idea would
-be to produce Visual Studio project files.</p>
-<p>Think I'm crazy and this is impossible?
-<a href="https://raw.github.com/gist/1363034/b3d956a66e049e7624fbdb79762551202fe9a465/optimized.mk">Feast your eyes</a>.
-That make file was generated by parsing the existing Firefox make files,
-extracting statically-defined data, then transforming that data
-structure back into a single make file. I also have code somewhere that
-produces Visual Studio projects.</p>
-<p>Now, all of this is just a proof-of-concept. It works just well enough
-for me to prove it is feasible. (The linked example is 7 months old and
-won't work on the current tree.) Although, at one time, I did have have a
-functioning transformation of essentially the <em>make export</em> stage. All
-include files and IDL generation was in a single make file. It ran in a
-fraction of the time as recursive make. A no-op execution of the
-monolithic make file took about 0.5 seconds and - <em>gasp</em> - actually did
-no work (unlike the no-op builds in the Mozilla tree today which
-actually run many commands, even though nothing changed).</p>
-<p>My point is that by having your make files - your build system - be
-statically defined, you can extract and combine pieces of information.
-Then, with relative ease, you can transform it to something else. Instead
-of make files/build systems being a DSL for shell script execution, they
-are data structures. And, you can do a lot more with data structures
-(including generating shell scripts). Representing a build system as a
-unified, constant data structure is what I consider to be the <em>holy grail</em>
-of build systems. If you can do this, all you need to do is transform a
-data structure to a format some other build tool can read and you are
-set. If you do a good job designing your data structure, what you've
-essentially built is an intermediate language (IR) that can be
-compiled to different build tools (like make, Ninja, and Visual Studio).</p>
-<p>(The previous paragraph is important. You may want to read it again.)</p>
-<p>Getting back on point, our goal is to assemble aggregate data for
-Mozilla's build system so we can construct a monolithic DAG. We can work
-towards this by extracting variable values from our make files.</p>
-<p>Unfortunately, there are technical problems with naive data extraction
-from make files. Fortunately, I have solutions.</p>
-<p>The first problem is getting at individual variable values in make
-files. Simple parsing is ruled out, as make files can be more complex
-than you realize (all those pesky built-in functions). You don't want
-to burden people to add targets to print variable values and then
-execute make just to print variables. This would be violating steps
-1 and 2 from above! So, you somehow need to inject yourself into a
-make execution context.</p>
-<p>Fortunately, we have <a href="http://benjamin.smedbergs.us/pymake/">pymake</a>.
-Pymake is a mostly feature complete implementation of GNU make written
-in Python. You should be able to swap out GNU make for pymake and things
-just work. If they don't, there is a bug in pymake.</p>
-<p>pymake is useful because it provides an API for manipulating make and
-make files. Contrast this was GNU make, which is essentially a black
-box: make file goes in, process invocations come out. There's no really
-good way to inspect things. The closest is the <em>-p</em> argument, which
-dumps some metadata of the parsed file. But, this would require you to
-parse that output. As they say, <em>now you have two problems</em>.</p>
-<p>Using pymake, it's possible to get at the raw parser output and to poke
-around the assembled data structures before the make file is evaluated.
-This opens up some interesting possibilities.</p>
-<p>With pymake's API, you can query for the value of a variable, such as
-<em>XPIDLSRCS</em>. So, you just need to feed every make file into pymake,
-query for the value of a variable, then do cool things with the
-extracted data.</p>
-<p>Not so fast.</p>
-<p>The problem with simple extraction of variables from make files is that
-there is no guarantee of idempotence. You see, make files aren't static
-structures. You don't parse a make file into a read-only structure,
-build the DAG, and go. Oh no, because of how make files work, you have
-to constantly re-evaluate things, possibly modifying the DAG in the
-process.</p>
-<p>When you obtain the value of a variable in make, you need to evaluate it.
-In make parlance, this is called <em>expansion</em>.</p>
-<p>Expansion is easy when variables have simple string content. e.g.</p>
-<pre><code>CPPSRCS = foo.cpp bar.cpp
-</code></pre>
-<p>It gets more complicated when they have references to other variables:</p>
-<pre><code>FILES = foo.cpp bar.cpp
-CPPSRCS = $(FILES) other.cpp
-</code></pre>
-<p>Here the expansion of <em>CPPSRCS</em> must descend into <em>FILES</em> and expand
-that. If <em>FILES</em> contained a reference, make would descend into that.
-And so on.</p>
-<p>The problem of non-guaranteed idempotence is introduced when variable
-expansion interfaces with something that is non-deterministic, such as
-the file system. This almost always involve a call to one of make's
-built-in functions. For example:</p>
-<pre><code>CPPSRCS = $(wildcard *.cpp)
-SOURCES = $(shell find . -type f -name '*.cpp')
-</code></pre>
-<p>Here, the expanded value of <em>CPPSRCS</em> depends on the state of the
-filesystem at the time of expansion. This is obviously not
-deterministic. Since you can't guarantee the results of that expansion,
-doing something with the evaluated value (such as generating a new
-make file) is dangerous.</p>
-<p>It gets worse.</p>
-<p>The expansion of a variable can occur multiple times during the execution
-of a make file due to deferred evaluation. When you use the <em>=</em> operator
-in make files, the variable isn't actually expanded until it is accessed
-(make just stores a reference to the string literal on the right
-side of the assignment operator). Furthermore, the expansion occurs <em>every
-time</em> the variable is accessed. Seriously.</p>
-<p>The <em>:=</em> operator, however, expands the variable once - at assignment time.
-Instead of storing a string reference, make evaluates that string
-immediately and assigns the result to the variable.</p>
-<p>The distinction is important and can have significant implications. Use
-of <em>=</em> can lead to degraded performance via redundant work during multiple
-expansions (e.g. file system access or shell invocation). It can also
-cause the value of a variable to change during the course of execution
-from changes to systems not directly under the make file's control (such
-as the file system). For these reasons, <strong>I recommend to use the
-immediate assignment operator (:=) instead of the deferred assignment
-operator (=) unless you absolutely need deferred assignment</strong>. This is
-because immediate assignment approximates what most think assignment
-should be. Unfortunately, since <em>=</em> is the only assignment operator in the
-overwhelming majority of popular programming languages, most people don't
-even know that other assignment operators exist or that the deferred
-assignment operator comes with baggage. Now you do. I hope you use it
-properly.</p>
-<p>Anyway, if a variable's value changes while a make file is executing, what
-is the appropriate value to extract for external uses? In my opinion,
-the safe answer is there is none: don't extract the value of that
-variable. If you do, you are asking for trouble.</p>
-<p>It sounds like I just tore a giant hole in my idea to extract simple
-data from make files since I just said that the value may not be
-deterministic. Correct. But, the key word here is <em>may</em>. Again, pymake
-comes to the rescue.</p>
-<p>Using pymake, I was able to implement a prover that guarantees whether a
-variable is deterministic and thus idempotent. Basically, it examines
-the statement list generated by pymake's parser. It traces the
-assignment of a variable through the course of a statement list. If the
-variable itself, any variable referenced inside of it, or any variable
-that impacts the assignment (such as assignment inside a condition block)
-is tainted by a non-deterministic evaluation (notably file system querying
-and shell calls), that variable is marked as non-deterministic. Using
-this prover, we can identify which variables are guaranteed to be
-idempotent as long as the make file doesn't change. If you want to learn
-more, see the
-<a href="https://raw.github.com/indygreg/mozilla-central/build-splendid/build/buildsplendid/makefile.py">code</a>.</p>
-<p>Now that we have a way of proving that a variable in a make file is
-deterministic as long as the source make file doesn't change, we can
-extract data from make files with confidence, without having to worry
-about side-effects during execution of the make file. Essentially, the
-only thing we need to monitor is the original make file and any make
-files included by it. As long as they don't change, our static analysis
-holds.</p>
-<p>So, I've solved the technical problem of extracting data from make
-files. This allows us to emancipate build system data into a constant
-data structure. As mentioned above, this opens up a number of
-possibilities.</p>
-<p>It's worth noting that we can combine the prover with the style
-enforcer from part 3 to help ensure Mozilla's make files are statically
-defined. Over time, the make files will not only look like simple
-variable assignments (from part 1), but will also become static data
-structures. <strong>This will enable the Mozilla build system to be
-represented as a single, constant data structure.</strong> This opens up the
-transformation possibilities described above. It also allows for more
-radical changes, such as replacing the make files with something else.
-More on that later.</p>
-<h2>Part 5: Rewriting Make Files</h2>
-<p>Extracting data from make files to produce new build system data
-(possibly a unified make file) introduces a new problem: redundancy
-and/or fragmentation. You now have the original definition sitting
-around in the original make file and an optimized version in a derived
-file. What happens when the original file (still containing the original
-values) is evaluated? Do you want the targets (now defined elsewhere from
-the extracted data) to still work when executed from the original file?
-(Probably not.)</p>
-<p>There is also a concern for how to handle the partially converted build
-system scenario. In theory, porting the build system to the <em>new world
-order</em> would go something like this:</p>
-<p>1) Identify a variable/feature you want to extract from the make files
-2) Write routine to convert extracted data into an optimized builder
-(maybe it just prints out a new make file)
-3) For make files where that variable is defined but couldn't be safely
-extracted (because it wasn't determinant), continue to execute the old,
-inherited rule from <em>rules.mk</em> (as we do today).</p>
-<p>This acknowledges the reality that any particular transition of a
-variable to use an optimized build routine from extracted values will
-likely be difficult to do atomically. The flag day will be held up by
-stragglers. It would be much more convenient to accomplish the
-transition incrementally. Files that are ready see the benefit today,
-not only after everyone else is ready.</p>
-<p>My solution to this problem is make file rewriting. For variables that
-are deterministic and have their functionality replaced by some other
-system, we simply strip out references to these variables from the make
-files. No variable. No inherited rule. No redundancy. No extra burden.
-Of course, we're not altering the <em>original</em> make file. Instead,
-we take the input make file (<em>Makefile.in</em> in the Mozilla tree), do
-static analysis, remove variables handled elsewhere, then write out a
-new make file.</p>
-<p>Unfortunately, this invented a new problem: rewriting make files. As far
-as I can tell, nobody has done this before. At least not to the degree
-or robustness that I have (previous solutions are effectively sed +
-grep).</p>
-<p>Using pymake, I was able to create an API sitting between the
-parser and evaluator which allows high-level manipulation of the make
-file data structure. Want to delete a variable? Go for it. Want to delete
-a target? Sure! It's really the missing API from pymake (or any make
-implementation for that matter). I stopped short of writing a
-fully-featured API (things like adding rules, etc). Someday I would love
-to fill that in because then you could create new/anonymous make
-files/DAGS using just API calls. You would thus have a generic API for
-creating and evaluating a DAG using make's semantics. This is
-potentially very useful. For example, the optimized make files
-generated from static data extracted from other make files I've been
-talking about could be produced with this API. In my opinion, this
-would be much cleaner than printing make directives by hand (which is
-how I'm doing it today).</p>
-<p>This new make file manipulation API was relatively easy to write. The hard
-part was actually formatting the statement list back into a make file
-that was both valid <strong>and</strong> functionally equivalent to the original.
-(There's actually a lot of dark corners involving escaping, etc.) But, I
-eventually slayed this dragon. And, the best part is I can prove it is
-correct by feeding the output into the pymake parser and verifying the
-two statement lists are identical! Furthermore, after the first
-iteration (which doesn't preserve formatting of the original make file
-because a) it doesn't need to and b) it would be a <em>lot</em> of effort) I can
-even compare the generated string content of the make files as an added
-sanity check.</p>
-<p>If you are interested, the code for this lives alongside the
-deterministic proving code linked to in the previous section. I would
-like to land it as part of pymake someday. We'll see how receptive the
-pymake maintainers are to my crazy ideas.</p>
-<p>Anyway, we can now strip extracted variables handled by more efficient
-build mechanisms out of generated make files. That's cool. It gives us an
-incremental transition path for Mozilla's build system that bridges new
-and old.</p>
-<p>But wait - there's more!</p>
-<p>That deterministic prover I wrote for data extraction: I can actually
-use it for rewriting make files!</p>
-<p>Make files support
-<a href="https://www.gnu.org/software/make/manual/make.html#Conditionals">conditional directives</a>
-such as <em>ifeq</em>, <em>ifneq</em>, <em>ifdef</em>, <em>else</em>, etc. For each conditional
-directive, I can query the deterministic prover and ask whether an
-expansion of that directive is deterministic. If it is, I evaluate the
-conditional directive and determine which branch to take. And, I may
-have invented the first make file optimizer!</p>
-<p>I simply replace the condition block (and all the branches therein) with
-the statements constituting the branch that is guaranteed to be
-executed.</p>
-<p>As a contrived example:</p>
-<pre><code>DO_FOO := 1
-
-ifeq ($(DO_FOO), 1)
-foo.o: foo.cpp
-    clang++ -o foo.o foo.cpp
-endif
-</code></pre>
-<p>We can prove the <em>ifeq</em> branch will always be taken. So, using the
-deterministic prover, we can rewrite this as:</p>
-<pre><code>DO_FOO := 1
-
-foo.o: foo.cpp
-    clang++ -o foo.o foo.cpp
-</code></pre>
-<p>Actually, we can now see that the value of <em>DO_FOO</em> is not referenced
-and is free from side-effects (like a shell call), and can eliminate it!</p>
-<pre><code>foo.o: foo.cpp
-    clang++ -o foo.o foo.cpp
-</code></pre>
-<p>Cool!</p>
-<p>The practical implication of this is that it is shifting the burden of
-make file evaluation from once every time you run make to <em>some time
-before</em>. Put another way, we are reducing the amount of work make performs
-when evaluating a make file. As long as the original file and any files
-included by it don't change frequently, the cost of the static analysis
-and rewriting is repaid by simpler make files and the lower run-time
-cost they incur. This should translate to speedier make invocations.
-(Although, I have no data to prove this.)</p>
-<p>Another nice side-effect is that the rewritten and reduced make file is
-easy to read. You know exactly what is going to happen without having to
-perform the evaluation of (constant) conditional statements in your head
-(which likely involves consulting other files, like <em>autoconf.mk</em> in the
-case of Mozilla's make files). My subjective feeling is that this makes
-generated make files much easier to understand.</p>
-<p>So, not only does rewriting make files allow us to incrementally
-transition to a build system where work is offloaded to a more optimized
-execution model, but it also makes the evaluated make files smaller,
-easier to understand, and hopefully faster. As Charlie Sheen would say:
-winning!</p>
-<h2>Review Through Part 5</h2>
-<p>At this point, I've laid out effectively phase 1 of making Mozilla's
-build system suck much less. We now have make files that are:</p>
-<ul>
-<li>Reusing rule logic from rules.mk to do everything (specially-named
-  variables cause magic to ensure). No cargo culted rules.</li>
-<li>Devoid of cruft from targets not related to building the application.</li>
-<li>Variables defined such that they are deterministic (essentially no
-  shell and filesystem calls in make files)</li>
-<li>A review system in place to ensure we don't deviate from the above</li>
-<li>A higher-level tool to extract specific variables from make files
-  which also produces an optimized, non-recursive make file to evaluate
-  those targets. Ideally, this encompasses all rules inherited from
-  rules.mk and the need for recursion and to evaluate individual make
-  files is eliminated.</li>
-</ul>
-<p>If we wanted, we could stop here. This is about the limit we can take
-the existing build system while maintaining some resemblence to the
-current architecture.</p>
-<p>But, I'm not done.</p>
-<h2>Part 6: Transition Away from Make Files</h2>
-<p>If we've implemented the previous parts of this post, it is only
-natural for us to shift away from make files.</p>
-<p>If all we have in our make files are variable assignments, why are we
-using make files to define a static document? There are much better
-formats for static data representation. YAML and JSON come to mind.</p>
-<p>If we transition the build system definition to something actually
-declarative - not just something we shoehorn into being declarative
-(because that is how you make it fast and maintainable) - that cuts out
-a lot of the hacky-feeling middleware described above (static analysis,
-data extraction, and rewriting). It makes parsing simpler (no need for
-pymake). It also takes away a foot gun (non-deterministic make
-statements). Still not convinced? We could actually properly represent
-an array (make doesn't have arrays, just strings split on whitespace)!
-OK, just kidding - the array thing isn't that big of a deal.</p>
-<p>Anyway, the important characteristic of the build system is achieving
-that <em>holy grail</em> where the entire thing can be represented as a single
-generic (and preferably constant) data structure. As long as you can
-arrive at that (a state that can be transformed into something else),
-it doesn't matter the road you take. But, some roads are certainly
-cleaner than others.</p>
-<p>At the point where you are transitioning away from make files, I would
-argue the correct thing to do is convert the build definition to files
-understood by another build tool. Or, we should at least use a format
-that is easily loaded into another tool. If we don't, we've just invented
-a custom one-off build system. A project the size of Mozilla could
-probably justify it. But, I think the right thing to do is find an open
-source solution that fits the bill and run with that.</p>
-<p>While I'm far from an expert on it, I'll throw out
-<a href="https://code.google.com/p/gyp/">GYP</a> as a candidate. GYP defines the
-build system in JSON files (which can actually be directly evaluated in
-a Python interpreter). GYP consumes all of the individual .gyp/JSON
-files and assembles an aggregate representation of the <em>entire</em> build
-system. You then feed that representation into a generator, which
-produces make files, Ninja files, or even Visual Studio or Xcode
-project files. Sound familiar? It's essentially my <em>holy grail</em> where
-you transform a data structure into something consumed by a specific
-tool. I approve.</p>
-<p>Now, GYP is not perfect. No build system is perfect. I will say
-that GYP is good enough to build Chromium. And, if it can handle
-Chromium, surely it can handle Firefox.</p>
-<h2>Next Steps for Mozilla</h2>
-<p>I'm not sure what the next steps are. I've been trying to convince
-people for a while that a data-centric declarative build system is
-optimal and we should be working towards it. Specifically, we should be
-working towards a monolithic DAG, not separate DAGs in separate make
-files. I think people generally agree with me here. We obviously have a
-build system today that is very declarative (with variables turning into
-rules). And, I know people like Joey Armstrong understand why recursive
-make is so slow and are working on ways to switch away from it.</p>
-<p>I think the main problem is people are overwhelmed by what a transition
-plan would look like. There is a lot of crap in our make files and
-fixing it all in one go is next to impossible. Nobody wants to do it
-this way. And, I think the sheer scope of the overall problem along with
-a constant stream of new features (Fennec make files, ARM support,
-Windows 8, etc) has relegated people to merely chipping away at the
-fringe.</p>
-<p>Supplementing that, I think there has been doubt over some of what I've
-proposed, specifically around the scarier-sounding bits like performing
-static analysis and rewriting of make files. It scared me when I first
-realized it was possible, too. But, it's possible. It's real. I have
-code that does it. I'll admit the code is far from perfect. But, I've
-done enough that I've convinced my self it is possible. It just needs a
-little polish and everything I described above is a reality. We just
-need to commit to it. Let's do it.</p>
-<h2>Loose Ends</h2>
-<h3>What About "Sand-boxed" Make or Concatenating Make Files?</h3>
-<p>I anticipate that the main <em>competition</em> for my proposal will involve
-the following approaches:</p>
-<ol>
-<li>"sand-boxed" make files (described in the aforementioned <em>Recursive
-   Make Considered Harmful</em> paper)</li>
-<li>Concatenate all the make files together</li>
-</ol>
-<p>The concatenating one is definitely a non-controversial alternative to
-my proposal of extracting data then creating derived build files
-(possibly a monolithic make file) from it. And, if we go with
-concatenating, I'll generally be happy. We'll have a mostly
-statically-defined build system and it will exist in one monolithic DAG.
-This has desirable attributes.</p>
-<p>FWIW, the stalled
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=623617">bug 623617</a> has an
-amazing patch from Joey Armstrong which partially implements concatenated
-make files. If this lands, I will be extremely happy because it will make
-the build system much faster and thus make developers' lives less
-painful.</p>
-<p>That being said, I do have a complaint against the concatenating
-approach: it is still defined in make files.</p>
-<p>The problem isn't make itself: it's that at the point you have pulled off
-concatenating everything together, your build system is effectively static
-data declarations. Why not use something like GYP instead? That way, you
-get Ninja, Visual Studio, Xcode, Eclipse, or even make file generation
-<strong>for free</strong>. I think it would be silly to ignore this opportunity.</p>
-<p>If we continue to define everything in make files, we'll have to rely on
-data extraction from the concatenated make file to create project files for
-Visual Studio, Xcode, etc. This is possible (as I've proved above). And,
-I will gladly lend my time to implementing solutions (I've already
-performed a lot of work to get Visual Studio project generation working
-in this manner, but I abandoned work because I reached the long tail that
-is one-off targets and redundancy - which would be eliminated if we
-accomplish parts 1 and 2). Furthermore, we may have to reinvent the
-wheel of generating these project files (believe me, generating Visual
-Studio projects is not fun). Or, we could find a way to extract
-the make file data into something like GYP and have it do the generation
-for us. But, if we are going to end up in GYP (or similar), why don't we
-just start there?</p>
-<p>I will also throw out that if we are really intent on preserving our
-existing make rules, it would be possible to define the build system in
-GYP/other files and write a custom GYP/other generator which
-produced make files tailored for our existing make rules.</p>
-<p>In summary, the crux of my argument against concatenated make files is
-that it is a lot of work and that for roughly the same effort you could
-produce something else which has almost identical properties but has
-more features (which will make the end-developer experience better).</p>
-<p>You could say the additional complexity of my proposal is just to buy us
-Visual Studio, etc support. That is more or less accurate. I think I've
-put in more time than anyone to devise a solution that programmatically
-generates Visual Studio projects. (Manually tailored files out out of
-the question because the maintenance of keeping them in sync with build
-system changes would be too high and error prone.) From my perspective,
-if we want to provide Visual Studio, Xcode, etc files for Mozilla
-projects - if we want to provide developers access to amazing tools so
-they can be more productive - we need the build system defined in
-something <em>not make</em> so this is robust.</p>
-<h3>Eclipse Project Files</h3>
-<p>Jonathan Watt recently
-<a href="https://jwatt.org/blog/2012/06/10/the-new-eclipse-cdt-and-mozilla-development">posted instructions</a>
-on configuring Eclipse CDT to build Firefox. Awesome!</p>
-<p>Some may say that debunks my theory that it is difficult/impossible to
-generate build project files from just make files (without the sorcery I
-describe above). Perhaps.</p>
-<p>As cool as the Eclipse CDT integration is, the way it works is a giant
-hack. And, I don't mean to belittle Jonathan or his work here - it is
-very much appreciated and a large step in the right direction.</p>
-<p>The Eclipse CDT integration works by scanning the output of make,
-looking for compiler invocations. It parses these out, converting the
-arguments to Eclipse project data. Not only do you have to perform a
-standard make to configure Eclipse, but it also has to run without any
-parallelization so as to not confuse the parser (interleaved output,
-etc). And, Eclipse doesn't do everything for you - you still have to
-manage part of your build from the command line.</p>
-<p>So, Eclipse is really a hybrid solution - albeit a rather useful one
-and, importantly, one that seems to work. Yet, In my opinion, this is
-all a little fragile and less than ideal. I want the ability to build
-the whole thing from your build tool. This <em>is</em> possible with the
-solutions I've proposed above.</p>
-<h3>Improving GYP</h3>
-<p>Above, I recommended GYP as a build system which I think is a good
-example of my <em>holy grail</em> build system - one which represents
-everything as data and allows transformations to multiple build tools.</p>
-<p>While I like the concept of GYP, there are parts of the implementation I
-don't like. Every build system inevitably needs to deal with
-conditionals. e.g. <em>if on Windows, use this flag; if on Linux, use this
-one.</em> GYP represents conditions as specially crafted property names in
-JSON objects. For example:</p>
-<pre><code>{
-  'conditions': [
-    ['OS=="linux"', {
-      'targets': [
-        {
-          'target_name': 'linux_target'
-        },
-      ],
-    }],
-    ['OS=="win"', {
-      'targets': [
-        {
-          'target_name': 'windows_target',
-        },
-      ],
-    }]
-  ]
-}
-</code></pre>
-<p>That special string as a key name really rubs me the wrong way. You are
-using declarative data to represent procedural flow. Yuck. It reminds me
-of a horror from a previous life - VXML. Don't ever try to write a
-computer program complete with branching and functions in XML: you will
-just hate yourself.</p>
-<p>Anyway, despite the conflation of logic and data, it isn't too bad. As
-long as you limit the expressions that can be performed (or that
-actually are performed - I think I read they just feed it into eval),
-it's still readable. And, I'll happily sacrifice some purity to achieve
-the <em>holy grail</em>.</p>
-<p>Anyway, I think my optimal build system would look a lot like GYP except
-that the data definition language would be a little more powerful.
-Knowing that you will inevitably need to tackle conditionals and other
-simple logic, I would give up and give my build system files access to a
-real programming language. But, it would need to be a special language.
-One that doesn't allow foot guns (so you can preserve determinism) and
-one that can't be abused to allow people to stray too far from a
-data-first model.</p>
-<p>For this task, I would employ the <a href="http://www.lua.org/">Lua</a>
-programming language. I would use Lua because it is designed to be an
-embeddable and easily sandboxed programming language. These attributes
-are perfect for what I'd need it to do.</p>
-<p>Basically, files defining the build system would be Lua scripts. Some
-driver program would discover all these Lua files. It would create a new
-Lua context (an instance of the Lua interpreter) for each file. The
-context's global registry (namespace) would be populated
-with variables that defined the existing build
-configuration.  <em>IS_WINDOWS</em>, <em>HAVE_STRFTIME</em>, etc - the kind of stuff
-<em>exported</em> by configure. The Lua script would get executed in that
-context. It would do stuff. It would either set specially-named global
-variables to certain values or it would call functions installed in the
-global registry like <em>add_library</em>, etc. Then, the driving program would
-collect everything the Lua script did and merge that into a data
-structure representing the build system, achieving the <em>holy grail</em>.</p>
-<p>In the simple case, build files/Lua scripts would just look like simple
-variable assignments:</p>
-<pre><code>EXPORTED_INCLUDES = {"foo.h", "bar.h"]
-LIBRARY_NAME = "hello"
-</code></pre>
-<p>If the build system needed to do something conditional, you would have a
-real programming language to fall back on:</p>
-<pre><code>if IS_WINDOWS then
-    SOURCE_FILES = "windows.cpp"
-else
-    SOURCE_FILES = "other.cpp"
-end
-</code></pre>
-<p>To my eye, this is cleaner than hacking JSON while still readable.</p>
-<p>For people not familiar with Lua, new context instances are cheap, tiny,
-and have almost no features. Even the standard library must be
-explicitly added to a context! Contrast this with a batteries-included
-language like Python or JavaScript. So, while the build definition files
-would have a fully-featured programming language backing them, they
-would be severely crippled. I'm thinking I would load the <em>string</em> and
-<em>table</em> libraries from the <a href="http://www.lua.org/manual/5.2/manual.html#6">standard library</a>.
-Maybe I'd throw the <em>math</em> one in too. If I did, I'd disable the random
-function, because that's not deterministic!</p>
-<p>Anyway, I think that would get me to a happy place. Maybe I'll get bored
-on a weekend and implement it! I'm thinking I'll have a Python program
-drive Lua through the ctypes module (if someone hasn't written a binding
-already - I'm sure they have). Python will collect data from the Lua
-scripts and then translate that to GYP data structures. If someone beats
-me to it, please name it <em>Lancelot</em> and leave a comment linking to the
-source.</p>
-<h3>Using Code for Other Projects</h3>
-<p>The code I wrote for pymake can be applied to any make file, not just
-Mozilla's. I hope to have some of it integrated with the official pymake
-repository some day. If this interests you, please drop me a line in the
-comments and I'll see what I can do.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla's-build-system#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../24">« Previous Page</a>
   --  

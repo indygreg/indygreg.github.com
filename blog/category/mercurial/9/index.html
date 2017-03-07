@@ -51,6 +51,85 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="track-firefox-repositories-with-local-only-mercurial-tags"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags" rel="bookmark" title="Permanent Link to Track Firefox Repositories with Local-Only Mercurial Tags">Track Firefox Repositories with Local-Only Mercurial Tags</a></h2>
+  <small>June 30, 2014 at 10:25 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>After reading my recent
+<a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
+a number of people asked me about my development workflow. While I
+still owe a full answer to that question, one of the cornerstores
+is a unified Mercurial repository. Instead of having separate clones
+for mozilla-central, mozilla-inbound, aurora, beta, etc, I have a
+single clone with the changesets from all the repositories.</p>
+<p>I feel having a unified repository has made me more productive. I no
+longer have to waste time shuffling changesets between local clones.
+This introduced all kinds of extra cognitive load and manual
+processes that slowed me down. I highly encourage others to adopt
+unified repositories.</p>
+<p>Because the various Firefox repositories don't have unique branches
+or bookmarks tracking the various heads, aggregating multiple
+repositories introduces a client-side problem of identifying
+which head is which. If you merely do a <em>hg pull</em>, you'll get a
+bunch of anonymous heads.</p>
+<p>To solve this problem, you'll need to employ minor client-side
+magic. Previously, I <a href="/2013/07/22/mercurial-extension-for-gecko-development/">recommended</a>
+my heavyweight <em>mozext</em> extension.</p>
+<p>Today, I'm proud to announce a new, lighter extension:
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">firefoxtree</a>.
+When pulling from a known Firefox repository, this extension will add
+a local-only Mercurial tag for that repository. For example,
+when pulling mozilla-central, the <em>central</em> tag will be created.</p>
+<p>Local-only tags are a Mercurial feature only available to
+extensions. A local-only tag is effectively an overlay of tags
+that don't get transferred as part of push and pull operations.
+They behave like normal tags: you can <em>hg up</em> to them and reference
+them elsewhere changeset identifiers are used. They are also read
+only: if you update to a tag and then commit, the tag will not
+move forward (contrast with branches or bookmarks).</p>
+<h2>Example Usage</h2>
+<p>Clone <em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and add
+the following to your <em>.hg/hgrc</em>:</p>
+<pre><code>[extensions]
+firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
+</code></pre>
+<p>To use, simply pull from a Firefox repo:</p>
+<div class="pygments_murphy"><pre><span></span>$ hg pull https://hg.mozilla.org/mozilla-central
+
+$ hg up central
+
+<span class="c1"># Do your development work.</span>
+
+<span class="c1"># Time to land.</span>
+$ hg pull https://hg.mozilla.org/integration/mozilla-inbound
+$ hg rebase -d inbound
+$ hg out -r . https://hg.mozilla.org/integration/mozilla-inbound
+$ hg push -r .  https://hg.mozilla.org/integration/mozilla-inbound
+</pre></div>
+
+<p>Please note that <em>hg push</em> tries to push all local changes on all
+heads to a remote by default. When operating a unified repo, you'll
+need to use the <em>-r</em> argument to <em>hg push</em> and <em>hg out</em> to limit
+what changesets are considered. I most frequently use <em>-r .</em> to limit
+changes to the current checked out changeset.</p>
+<p>Also note that this extension conflicts with my <em>mozext</em> extension.
+I hope to update <em>mozext</em> to make it behave in the same manner. (It
+was easier to write a new extension than to update mozext.)</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="please-stop-using-mq"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/06/23/please-stop-using-mq" rel="bookmark" title="Permanent Link to Please Stop Using MQ">Please Stop Using MQ</a></h2>
   <small>June 23, 2014 at 11:50 AM | categories: 
@@ -1166,95 +1245,6 @@ changing its default configuration.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/02/05/the-mercurial-revlog#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="aggregating-version-control-info-at-mozilla"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/01/21/aggregating-version-control-info-at-mozilla" rel="bookmark" title="Permanent Link to Aggregating Version Control Info at Mozilla">Aggregating Version Control Info at Mozilla</a></h2>
-  <small>January 21, 2014 at 10:50 AM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/python'>Python</a>
- | <a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Over the winter break, I set out on an ambitious project to create
-a service to help developers and others manage the flury
-of patches going into Firefox. While the project is far from complete,
-I'm ready to unleash the first part of the project upon the world.</p>
-<p>If you point your browsers to
-<a href="http://moztree.gregoryszorc.com/">moztree.gregoryszorc.com</a>, you'll
-hopefully see some documentation about what I've built.
-<a href="https://bitbucket.org/indygreg/moz-tree-utopia">Source code</a> is
-available and free, of course. Patches very welcome.</p>
-<p>Essentially, I built a centralized indexing service for version
-control repositories with Mozilla's extra metadata thrown in.
-I tell it what repositories to mirror, and it clones everything,
-fetches data such as the pushlog and Git SHA-1 mappings, and
-stores everything in a central database. It then exposes this
-aggregated data through world-readable web services.</p>
-<p>Currently, I have the service indexing the popular project branches
-for Firefox (central, aurora, beta, release, esr, b2g, inbound, fx-team,
-try, etc). You can view the
-<a href="http://moztree.gregoryszorc.com/api/repos">full list</a> via the web
-service. As a bonus, I'm also serving these repositories via
-<a href="http://hg.gregoryszorc.com/">hg.gregoryszorc.com</a>. My server appears
-to be significantly faster than
-<a href="https://hg.mozilla.org">hg.mozilla.org</a>. If you want to use it for
-your daily needs, go for it. I make no SLA guarantees, however.</p>
-<p>I'm also using this service as an opportunity to experiment with
-alternate forms of Mercurial hosting. I have mirrors of mozilla-central
-and the try repository with generaldelta and lz4 compression enabled.
-I may blog about what those are eventually. The teaser is that they can
-make Mercurial perform a lot faster under some conditions. I'm also
-using ZFS under the hood to manage repositories. Each repository is a
-ZFS filesystem. This means I can create repository copies on the server
-(user repositories anyone?) at a nearly free cost. Contrast this to the
-traditional method of full clones, which take lots of time, memory, CPU,
-and storage.</p>
-<p>Anyway, some things you can do with the existing web service:</p>
-<ul>
-<li>Obtain metadata about Mercurial changesets.
-  <a href="http://moztree.gregoryszorc.com/api/changeset/940b2974f35b">Example</a>.</li>
-<li>Look up metadata about Git commits.
-  <a href="http://moztree.gregoryszorc.com/api/git-sha1/40438af67c321">Example</a>.</li>
-<li>Obtain a <a href="http://moztree.gregoryszorc.com/api/spore">SPORE descriptor</a>
-  describing the web service endpoints. This allows you to auto-generate
-  clients from descriptors. Yay!</li>
-</ul>
-<p>Obviously, that's not a lot. But adding new endpoints is relatively
-straightforward. See the <a href="https://bitbucket.org/indygreg/moz-tree-utopia/src/tip/repodata/web/app.py">source</a>.
-It's literally as easy as defining a URL mapping and writing a
-database query.</p>
-<p>The performance is also not the best. I just haven't put in the effort
-to tune things yet. All of the querying hits the database, not
-Mercurial. So, making things faster should merely be a matter of
-database and hosting optimization. Patches welcome!</p>
-<p>Some ideas that I haven't had time to implement yet:</p>
-<ul>
-<li>Return changests in a specific repository</li>
-<li>Return recently pushed changesets</li>
-<li>Return pushes for a given user</li>
-<li>Return commits for a given author</li>
-<li>Return commits referencing a given bug</li>
-<li>Obtain TBPL URLs for pushes with changeset</li>
-<li>Integrate bugzilla metadata</li>
-</ul>
-<p>Once those are in place, I foresee this service powering a number of
-dashboards. Patches welcome.</p>
-<p>Again, this service is only the tip of what's possible. There's a lot
-that could be built on this service. I have ideas. Others have ideas.</p>
-<p>The project includes a Vagrant file and Puppet
-manifests for provisioning the server. It's a one-liner to get a
-development environment up and running. It should be really easy to
-contribute to this project. Patches welcome.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/21/aggregating-version-control-info-at-mozilla#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/8">« Previous Page</a>
   --  

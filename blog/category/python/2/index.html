@@ -51,6 +51,56 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="python-package-providing-clients-for-mozilla-services"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/06/python-package-providing-clients-for-mozilla-services" rel="bookmark" title="Permanent Link to Python Package Providing Clients for Mozilla Services">Python Package Providing Clients for Mozilla Services</a></h2>
+  <small>January 06, 2014 at 10:45 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I have a number of Python projects and tools that interact with
+various Mozilla services. I had authored clients for all these services
+as standalone Python modules so they could be reused across projects.</p>
+<p>I have consolidated all these Python modules into a unified source
+control
+<a href="https://bitbucket.org/indygreg/python-mozautomation">repository</a>
+and have made the project available on
+<a href="https://pypi.python.org/pypi/mozautomation">PyPI</a>. You can install it
+by running:</p>
+<p>$ pip install mozautomation</p>
+<p>Currently included in the Python package are:</p>
+<ul>
+<li>A client for <a href="https://treestatus.mozilla.org/">treestatus.mozilla.org</a></li>
+<li>Module for extracting cookies from Firefox profiles (useful for
+  programmatically getting Bugzilla auth credentials).</li>
+<li>A client for reading and interpretting the
+  <a href="http://builddata.pub.build.mozilla.org/buildjson/">JSON dumps of automation jobs</a></li>
+<li>An interface to a SQLite database to manage associations between
+  Mercurial changesets, bugs, and pushes.</li>
+<li>Rudimentary parsing of commit messages to extract bugs and reviewers.</li>
+<li>A client to obtain information about Firefox releases via the
+  <a href="http://releases-api.mozilla.org/">releases API</a></li>
+<li>A module defining common Firefox source repositories, aliases, logical
+  groups (e.g. twigs and integration trees), and APIs for fetching
+  pushlog data.</li>
+<li>A client for the <a href="https://secure.pub.build.mozilla.org/buildapi/self-serve/">self serve API</a></li>
+</ul>
+<p>Documentation and testing is currently sparse. Things aren't up to my
+regular high quality standard. But something is better than nothing.</p>
+<p>If you are interested in contributing, drop me a line or send pull
+requests my way!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="python-bindings-updates-in-clang-3.1"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/05/14/python-bindings-updates-in-clang-3.1" rel="bookmark" title="Permanent Link to Python Bindings Updates in Clang 3.1">Python Bindings Updates in Clang 3.1</a></h2>
   <small>May 14, 2012 at 12:05 AM | categories: 
