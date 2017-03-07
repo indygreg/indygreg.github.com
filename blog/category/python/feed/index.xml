@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 07 Mar 2017 20:00:01 GMT</pubDate>
+    <pubDate>Tue, 07 Mar 2017 20:08:45 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -571,7 +571,7 @@ production, I wouldn't be too worried. I think the biggest risk is
 to people (like me) who are writing code against the <em>experimental</em>
 C APIs. But even then, the changes to the experimental APIs in the
 past several months have been minor. I'm not losing sleep over it.</p>
-<p>That may seem like long a concerning list. But I think the issues are
+<p>That may seem like a long and concerning list. But I think the issues are
 relatively minor. From my perspective, the biggest thing Zstandard has
 going against it is its youth. But that will only improve with age.
 While I'm usually pretty conservative about adopting new technology
