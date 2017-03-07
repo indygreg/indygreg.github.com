@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 07 Mar 2017 17:54:50 GMT</pubDate>
+    <pubDate>Tue, 07 Mar 2017 18:03:46 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -46,7 +46,7 @@ software optimization, I highly recommend perusing the
 There are some absolute nuggets of info in there.</p>
 <p>Anyway, over the months, the news about Zstandard (zstd) kept getting
 better and more promising. As the 1.0 release neared, the Facebook
-engineers I interact with (Yann Collett - Zstandard's author - is now
+engineers I interact with (Yann Collet - Zstandard's author - is now
 employed by Facebook) were absolutely ecstatic about Zstandard and its
 potential. I was toying around with pre-release versions and was
 absolutely blown away by the performance and features. I believed
