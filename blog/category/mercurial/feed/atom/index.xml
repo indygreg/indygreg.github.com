@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2017-03-07T20:08:45Z</updated>
+  <updated>2017-03-08T18:10:44Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -21,7 +21,7 @@
     <title type="html"><![CDATA[Better Compression with Zstandard]]></title>
     <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2017/03/07/better-compression-with-zstandard" />
     <id>http://gregoryszorc.com/blog/2017/03/07/better-compression-with-zstandard</id>
-    <updated>2017-03-07T09:55:00Z</updated>
+    <updated>2017-03-08T10:08:00Z</updated>
     <published>2017-03-07T09:55:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="Python" />
     <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
@@ -565,7 +565,19 @@ generator instead of using something like Myers diff). If this topic
 interests you, there is a
 <a href="https://www.mercurial-scm.org/pipermail/mercurial-devel/2017-January/092186.html">thread on the Mercurial developers list</a>
 where Yann Collet and I discuss this.</p>
-<p>Fifth and finally, Zstandard is still relatively new. I can totally
+<p>Fifth, the patent rights grant. There is some
+<a href="https://github.com/facebook/zstd/blob/4ded9e591cbed57c54fc8f7a50412af5980e23a7/PATENTS#L14">wording in the PATENTS file</a>
+in the Zstandard project that may... concern lawyers. While Zstandard
+is covered by the standard BSD 3-Clause license, that supplemental
+<code>PATENTS</code> file may scare some lawyers enough that you won't be able
+to use Zstandard. You may want to talk to a lawyer before using
+Zstandard, especially if you or your company likes initiating patent
+lawsuits against companies (or wishes to reserve that right - as many
+companies do), as that is the condition upon which the license
+terminates. Note that there is a long history between Facebook and
+consumers of its open source software regarding this language in the
+<code>PATENTS</code> file. Do a search for <code>React patent grant</code> to read more.</p>
+<p>Sixth and finally, Zstandard is still relatively new. I can totally
 relate to holding off until something new and shiny proves itself.
 That being said, the Zstandard framing protocol has some escape
 hatches for future needs. And, the project proved during its pre-1.0
@@ -575,8 +587,9 @@ production, I wouldn't be too worried. I think the biggest risk is
 to people (like me) who are writing code against the <em>experimental</em>
 C APIs. But even then, the changes to the experimental APIs in the
 past several months have been minor. I'm not losing sleep over it.</p>
-<p>That may seem like a long and concerning list. But I think the issues are
-relatively minor. From my perspective, the biggest thing Zstandard has
+<p>That may seem like a long and concerning list. Most of the issues are
+relatively minor. The language in the <code>PATENTS</code> file may be a
+showstopper to some. From my perspective, the biggest thing Zstandard has
 going against it is its youth. But that will only improve with age.
 While I'm usually pretty conservative about adopting new technology
 (I've gotten burned enough times that I prefer the neophytes do the
@@ -607,7 +620,9 @@ was <em>good enough</em> for most use cases, I can attest that Zstandard is
 game changing. After being enlightened to all the advantages of
 Zstandard, I'll never casually use zlib again: it's just too slow and
 inflexible for the needs of modern computing. If you use compression,
-I highly recommend investigating Zstandard.</p>]]></content>
+I highly recommend investigating Zstandard.</p>
+<p><em>(I updated the post on 2017-03-08 to include a paragraph about the
+supplemental license in the <code>PATENTS</code> file.)</em></p>]]></content>
   </entry>
   <entry>
     <author>
