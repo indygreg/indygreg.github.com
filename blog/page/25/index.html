@@ -51,6 +51,114 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="build-firefox-faster-with-build-splendid"></a>
+  <h2 class="blog_post_title"><a href="/blog/2012/08/15/build-firefox-faster-with-build-splendid" rel="bookmark" title="Permanent Link to Build Firefox Faster with Build Splendid">Build Firefox Faster with Build Splendid</a></h2>
+  <small>August 15, 2012 at 02:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/build-system'>build system</a>
+ | <a href="http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Would you like to build Firefox faster? If so, do the following:</p>
+<pre><code>hg qimport http://people.mozilla.org/~gszorc/build-splendid.patch
+hg qpush
+rm .mozconfig* (you may want to create a backup first)
+./mach build
+</code></pre>
+<p>This should <em>just work</em> on OS X, Linux, and other Unix-style systems.
+<strong>Windows support is currently broken, sorry.</strong></p>
+<p><em>mach</em> can do much more than build. Run the following to see what:</p>
+<pre><code>./mach --help
+</code></pre>
+<h2>Important Info</h2>
+<p><em>mach</em> replaces client.mk. <em>mach</em> has its own configuration file. The
+first time you run <em>mach</em>, it will create the file <em>mach.ini</em> in the
+same directory as the <em>mach</em> script. This is your new <em>mozconfig</em> file.</p>
+<p>The default <em>mach.ini</em> places the object directory into the directory
+<em>objdir</em> under the top source directory. It also builds an optimized
+binary without debug info.</p>
+<p>Run the following to see which config settings you can add to
+<em>mach.ini</em>:</p>
+<pre><code>./mach settings-create
+./mach settings-list
+</code></pre>
+<p>This <em>may</em> fail because I'm still working out the kinks with <em>gettext</em>.
+If it doesn't work, open <em>python/mozbuild-bs/mozbuild/base.py</em> and search
+for <em>_register_settings</em>. Open
+<em>python/mozbuild-bs/mozbuild/locale/en-US/LC_MESSAGES/mozbuild.po</em> for
+the help messages.</p>
+<p>As a point of reference, my <em>mach.ini</em> looks like the following:</p>
+<pre><code>[build]
+application = browser
+
+configure_extra = --enable-dtrace --enable-tests
+
+[compiler]
+cc = /usr/local/llvm/bin/clang
+cxx = /usr/local/llvm/bin/clang++
+
+cflags = -fcolor-diagnostics
+cxxflags = -fcolor-diagnostics
+
+[paths]
+source_directory = /Users/gps/src/mozilla-central-git
+object_directory = /Users/gps/src/mozilla-central-git/objdir
+</code></pre>
+<p>I am on OS X and am using a locally-built version of LLVM/Clang, which I
+have installed to <em>/usr/local/llvm</em>.</p>
+<p>You'll notice there are no options to configure make. The patch
+automatically selects optimal settings for your platform!</p>
+<h2>Known Issues and Caveats</h2>
+<p>This is alpha. It works in scenarios in which I have tested it, mainly
+building the <em>browser</em> application on OS X and Linux. There are many
+features missing and likely many bugs.</p>
+<p>I have been using this as part of my day-to-day development for weeks.
+However, your mileage may vary.</p>
+<p>As stated above, Windows support is lacking. It will appear to work, but
+things will blow up during building. Don't even try to use it on
+Windows.</p>
+<p>There are likely many bugs. Please don't file Bugzilla bugs, as this
+isn't part of the build system just yet.</p>
+<p><strong>This patch takes over the build system. Do not attempt to use
+client.mk or run make directly with this patch applied.</strong></p>
+<p>If you encounter an issue, your methods of recourse are:</p>
+<ol>
+<li>Post a comment on this blog post</li>
+<li>Ping me on irc.mozilla.org. My nick is <em>gps</em>. Try the #buildfaster
+   channel.</li>
+<li>Send an email to gps@mozilla.com</li>
+</ol>
+<p>I am particularly interested in exceptions and build failures.</p>
+<p>If you encounter an issue building with this, just reverse the patch and
+build like you have always done (don't forget to restore your mozconfig
+file).</p>
+<p>If <em>mach.ini</em> does not support everything you were doing in your
+mozconfig, please send me a copy of your mozconfig so I can implement
+whatever you need.</p>
+<h2>Other Info</h2>
+<p>I will likely write a follow-up post detailing what's going on. If you
+are curious, the code lives in <em>python/mozbuild-bs</em>. The <em>backend</em> and
+<em>frontend</em> sub-packages are where the magic is at. Once the backend has
+been configured, check out <em>hybridmake.mk</em> and all of the <em>splendid.mk</em>
+files in the object directory.</p>
+<p>I am particularly interested in the real-world impact of this patch on
+people's build times. In this early version of the patch, you likely
+won't see drastic speed increases. On my MacBook Pro with an SSD, I see
+end-to-end clobber build times decrease by over a minute. With a little
+more work, I should be able to shave another minute or two off of that.</p>
+<p>I will try to keep the patch up-to-date as I improve the build system.
+Refresh early and often.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/08/15/build-firefox-faster-with-build-splendid#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mozilla-central-build-times"></a>
   <h2 class="blog_post_title"><a href="/blog/2012/07/29/mozilla-central-build-times" rel="bookmark" title="Permanent Link to mozilla-central Build Times">mozilla-central Build Times</a></h2>
   <small>July 29, 2012 at 01:20 PM | categories: 
@@ -1382,279 +1490,6 @@ and help out in any way you can.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/25/mozilla-build-system-plan-of-attack#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="one-year-at-mozilla"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/07/18/one-year-at-mozilla" rel="bookmark" title="Permanent Link to One Year at Mozilla">One Year at Mozilla</a></h2>
-  <small>July 18, 2012 at 12:00 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/sync'>Sync</a>
- | <a href="http://gregoryszorc.com/blog/2012/07/18/one-year-at-mozilla#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>It is hard to believe that my first day as a full-time employee of Mozilla
-was one year ago today! But, here I am. And, I'd like to think the past
-year is worth reflecting on.</p>
-<p>So, what have I been doing for a year? Good question!</p>
-<h2>Accomplishments</h2>
-<ul>
-<li>First patch and commit to Firefox: <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=673209">bug 673209</a>.
-  Yes, my first patch was to configure.in. It scared me too.</li>
-<li>Number of non-merge commits: 133</li>
-<li>Number of merge commits: 49</li>
-<li>Number of reviews: 31</li>
-<li>Favorite commit message: <a href="https://hg.mozilla.org/mozilla-central/rev/88d02a07d390">88d02a07d390</a>
-  <em>Fix bug 725478 because we run a buggy Python released almost 5 years
-  ago; r=tigerblood</em> (it was a bustage follow-up).</li>
-<li>Biggest mistake: buildbotcustom change to packaging turned every tree
-  red. All of them. Including release. I think I have philor on record
-  saying it is the worst burnage he's ever seen. Mission accomplished!</li>
-</ul>
-<p>Major User-Facing Features:</p>
-<ul>
-<li>Wrote add-on sync for Firefox (with help from many others, especially
-  Dave Townsend and Blair McBride).</li>
-<li>Principle reviewer for Apps in the Cloud (apps sync) in Firefox. (Are
-  reviewers allowed to take credit?)</li>
-</ul>
-<p>Honestly, when I see that list, I think <em>that's all?</em> It doesn't feel
-like a lot, especially since I work on a major user-facing feature
-(Firefox Sync). I do contribute to more. But, if you ask me what the
-most significant impact was, I don't think I can call anything else out
-as <em>major</em>.</p>
-<p>There are certainly a lot of minor things:</p>
-<ul>
-<li>Actually managed to understand how Firefox Sync works, including the
-  crypto model. I even <a href="http://docs.services.mozilla.com/sync/storageformat5.html">documented</a>
-  it! I don't think I knew any of that when I started (I basically knew
-  that Firefox Sync was using strong client-side encryption. What that
-  meant, I had no clue.)</li>
-<li>Filed initial bugs (including some patches) to compile mozilla-central
-  on Windows 8 and MSVC 2011. By the time people started working on
-  Metro development, mozilla-build, configure, and the like already
-  supported building.</li>
-<li>Configured <a href="https://ci.mozilla.org/job/sync-android/">Android Sync Jenkins Builder</a>.
-  I'm told the Android Sync team loves it! You gotta love all the
-  built-in dashboards. I really wish we had this for mozilla-central.</li>
-<li>Made xpcshell test harness write xUnit files. Machine readable output
-  of test results, baby!</li>
-<li>Implement <em>send tab to device</em> API in Firefox Sync. Too bad we don't
-  have UX to use it :(</li>
-<li>Implemented testing-only JavaScript modules. So, instead of the hack
-  that is [head] files in tests, you can
-  <em>Cu.import("resource://testing-common/foo.js");</em></li>
-<li>Made test package generation quieter. This made build logs about 30%
-  smaller. This means you can get at build results faster.</li>
-<li>Hacked around with JavaScript code coverage using the JS Debugger API.
-  Failed in the process. But, I learned a lot about the JS Debugger API,
-  so I consider it a win.</li>
-<li>Rewrote Firefox Sync's record reconciling algorithm. The old one was
-  full of subtle data loss corner cases. The new algorithm is much more
-  robust (we think - even with 3 reviewers there was still some head
-  scratching).</li>
-<li>Emancipated lots of generic JavaScript code from the Sync tree into
-  the a <em>services-common</em> package. This anticipated Apps in the Cloud
-  and notifications' requirement to use this functionality and allowed
-  those projects to get going quicker. At this point, we're effectively
-  running a mini Toolkit. We really need to port some of this
-  <em>upstream</em>.</li>
-<li>Helped design the <a href="http://docs.services.mozilla.com/storage/apis-2.0.html">next version</a>
-  of the HTTP service to be used by Sync.</li>
-<li>Implemented a standalone JavaScript implementation of the above. The
-  production server used by Mozilla runs on Python (running the Python
-  server in Mozilla's test environment would be too difficult). The
-  server was also implemented using just the spec. This allowed us to
-  clarify many parts of the spec. The Python functional tests can also
-  be executed against the JS server. This gives us confidence that
-  functionality is equivalent and tests hitting the test/JS server will
-  behave the same as if they are hitting the production Python server.</li>
-<li>Implemented a standalone JavaScript
-  <a href="https://hg.mozilla.org/mozilla-central/file/default/services/common/storageservice.js">client</a>  for the above service. Previously, all the logic for this was scattered
-  over about a dozen files and was notoriously difficult to audit and
-  update. I also think it is a decent example of good code.  Clean.
-  Highly documented. No hacks.</li>
-<li>Reviewed a skeleton for the notifications service, which will
-  eventually power browser notifications in Firefox.</li>
-<li>Build system patches to better support Clang. Thankfully, Rafael
-  Espíndola has been our Clang champion as of late and is now ensuring
-  the bleeding edge of Clang does not break the tree. Thanks, Rafael! (I
-  actually think he is in the process of switching our OS X builds to
-  use Clang as I type this!)</li>
-<li>Worked with security and crypto people to devise the security model
-  behind the next version of Firefox Sync. (Brian Warner and Ben Adida
-  have been doing most of the crypto work. I'm mostly on the sidelines
-  making sure they design a system that can easily interop with Sync.)</li>
-<li>Helped devise the <a href="http://docs.services.mozilla.com/sync/storageformat6.html">next version</a>
-  of Sync's server-side storage format. This will make the next version
-  of Sync faster and able to hold more data at lower server cost.</li>
-<li>Gave lots of love to documentation at
-  <a href="http://docs.services.mozilla.com/">https://docs.services.mozilla.com/</a>
-  (especially the Sync docs). It's almost at the point where others can
-  implement Sync clients without having to ask one of the fewer than 10
-  people on the planet who actually know.</li>
-<li>Contributed many small patches to the build system. Mostly general
-  cleanup so far. Although, I have much bigger plans in the works.</li>
-<li>Many miscellaneous small things. (I get distracted easily.)</li>
-</ul>
-<p>Well, that list doesn't seem too shabby. But, a lot of it is smaller
-ticket items. I don't think there's anything there worth writing home
-about.  Whatever. The future is looking bright for Firefox Sync (Persona
-integration will make Sync usable by millions more) and new sync
-backends are coming (including search engine sync). So, I'm fine with
-not having a longer list of big ticket contributions after only a year.</p>
-<h2>On Ramping up at Mozilla</h2>
-<p>I will be the first to admit that I had a difficult time getting into
-the groove at Mozilla and my first months (dare I say my first half
-year) were unproductive by my personal standards.</p>
-<p>I can't say I wasn't warned. My manager (Mike Connor) told me
-multiple times that it would happen. I was skeptical, insteading
-rationalizing that my previous track record of learnly quickly
-would hold. He was right. I was wrong. I got fat from the humble pie.</p>
-<p>There are a few reasons for this. For starters, I was starting a new
-job. It's almost impossible achieve 100% productivity on your first day.
-Second, I was working with tools I knew little about, including
-JavaScript and especially including the flavor of JavaScript used
-inside Firefox. (Short version: the JavaScript within Firefox is awesome
-in that it implements bleeding-edge features of the language.
-Unfortunately, the JavaScript inside Firefox/Gecko is contaminated
-by this blight called XPCOM. It makes things ugly and not very
-JavaScript-y. XPCOM also makes the learning curve that much harder
-because now you have to learn multiple technologies at the same time.)
-It was daunting.</p>
-<p>Not helping matters was the fact that Firefox Sync is complicated.
-Syncing data is in of itself a difficult problem. Throw in remote
-servers, an HTTP protocol, a encryption, and interaction with systems
-inside Firefox that are themselves complicated, and you have a <strong>hard</strong>
-problem. My first months were literally spent being a thorn in Philipp
-von Wieter^H^H^H^H^H^H philikon's side, barraging him with an endless
-stream of questions. I am forever in beer debt to him because of this.
-When Philipp left the team to work on Boot 2 Gecko and the rest of the
-Firefox Sync team was retasked to work on Android Sync shortly
-thereafter, I was on my own little island to manage Firefox Sync.
-I kind of felt like Tom Hanks' character in <em>Castaway</em>.</p>
-<p>If I have one piece of advice for people starting at Mozilla it's this:
-be prepared to be humbled by your own ignorance. There is a lot to
-learn. It's not easy. Don't feel bad when you struggle. The payoff is
-worth it.</p>
-<h2>On Life at Mozilla</h2>
-<p>Despite the hurdles I initially faced ramping up at Mozilla, life at
-Mozilla is great. This mostly stems from the people, of course.</p>
-<p>If you are just looking for technical excellence, I think Mozilla has
-one of the highest concentrations of any company in the world. Sure,
-larger companies will have <em>more</em> amazing individuals. But, the number
-per capita at Mozilla is just staggering. I don't know how many times
-I've met or talked with someone only to find out later they are
-considered to be one of the best in his or her respective field. Reading
-Mozilla's phonebook is like looking at a <em>Who's Who</em> list. For someone
-like me who loves being a sponge for knowledge, Mozilla is an environment
-in which I can thrive. Just thinking back at everything I've learned in
-the past year makes my mind asplode.</p>
-<p>On the personal front, the personalities of Mozillians are also top
-notch. People are generally helpful and supportive. (They need to be for
-an open source project to thrive.) People recognize good ideas when they
-hear them and there is comparatively few political battles to be won
-when enacting change. People themselves are generally interesting and
-passionate about the world and the work they do. If you are living
-inside the Mozilla bubble, you may not realize how lucky you have it.
-I could give specific examples, but I'd be writing all night. Just
-take my word for it.</p>
-<p>If you need something to whet your appetite, just check out the
-zaniness that is <a href="http://mozillamemes.tumblr.com/">Mozilla Memes</a>.
-I don't expect you to understand many of the posts unless you are a
-Mozillian or follower of Reddit and know what internet memes are. But, if
-you are either, it pretty much sums up a large part of the culture for
-you. Sometimes I feel like I'm living in one giant, happy meme.</p>
-<p>One of the aspects I love most about working at Mozilla is I finally
-feel that my career interests are aligned with an organization I
-philosophically agree with. Just read the
-<a href="https://www.mozilla.org/about/manifesto.html">Mozilla Manifesto</a>. What's
-not to like?</p>
-<p>This is one of the primary factors that convinced me to join Mozilla.
-After Microsoft acquired the startup where I had my first post-college
-job (Tellme Networks), I could never hold my head high in Silicon Valley
-among my friends in the tech sector. <em>Normal</em> people and those outside
-of Silicon Valley were like, "Microsoft, cool!" But, something just
-didn't feel right about saying I worked for them. I felt like I was working
-for the Empire while I really wanted to be working for the Rebel Alliance.
-I felt like I had to atone for my time at Microsoft. I felt like I needed
-to cleanse my soul. Mozilla was an obvious answer.</p>
-<p>(I don't mean to disparage Microsoft. I actually think the culture has
-changed since the days when their behavior earned them the reputation
-that Silicon Valley stills holds them accountable for. Still, I would
-not work for them in Silicon Valley. Anyway, I'm not here to talk about
-the past.)</p>
-<p>Mozilla is an organization I'm proud to work for. I exercise that pride
-by frequently wearing my awesome Firefox hoodie. Nearly every time I do,
-random people come up to me and say how they love Firefox and/or what
-Mozilla does for the world. Every time they do, it brings a smile to my
-face. This constantly reinforces what I know to be true: that I'm
-working for a great organization.</p>
-<h2>Future at Mozilla</h2>
-<p>I'm already looking forward to the next year at Mozilla. It is already
-shaping up to be much, much more productive than my first.</p>
-<p>On the roadmap, all of my hacking about with the build system is about
-to pay dividends. Ever since my first day at Mozilla I have been
-frustrated with the build system and the developer experience one must
-go through to contribute to Firefox. After many months of casual (mostly
-evenings and weekends) experimentation, my work is about to pay off.</p>
-<p>I have successfully formulated a <a href="http://gregoryszorc.com/blog/2012/06/25/improving-mozilla%27s-build-system/">plan of attack</a>
-and helped convince others this is what we need to do. We have since
-<a href="http://coop.deadsquid.com/2012/07/reviving-buildfaster-plan-of-attack/">committed</a>
-to the fundamental components of that plan and are
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774049">tracking</a> its
-progress. (I don't mean to take sole or even primary responsibility for
-this as the credit resides with a number of people. But, I would like to
-think that the dozens of times I championed aspects of this plan in IRC
-and in hallway chats before I was the first person to articulate it in a
-post helped lay the groundwork for the eventual acceptance of this
-project.) Once we see progress on this project, great things will come
-from it. I promise.</p>
-<p>My work towards making the build system faster had an unintended
-consequence: the creation of a new tool that serves as a frontend to the
-build system. One day, I took a step backwards and realized that the
-potential for such a tool is much greater than simply interacting with
-the build system. So, I extracted that work from my build system
-hacking and polished it up a bit. It is now
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=751795">one review away</a>
-from landing. When it does, thousands of Firefox developers will have a
-much better experience when developing Firefox. And, my hope is for
-<a href="https://bugzilla.mozilla.org/showdependencytree.cgi?id=774108">many more features</a>
-to follow to make it even more awesome, especially for first-time
-contributors. I believe this is important to help advance Mozilla's
-Mission.</p>
-<p>Improving the developer experience of Firefox is exciting and it will
-likely make a lot of people really happy. But, it's neither the most
-exciting nor most important project I'll contribute to in the upcoming
-year. The most exciting and important project for me will be
-refactoring Firefox Sync to make it faster, more robust, sync more data,
-and, most importantly, usable by more people.</p>
-<p>Firefox Sync stands out from similar products in that it keeps your data
-safe. Really safe. I
-<a href="http://gregoryszorc.com/blog/2012/04/08/comparing-the-security-and-privacy-of-browser-syncing/">blogged</a>
-about this previously. But, I intentionally kept the tone of that post
-neutral and factual. The truth is that the security model of Firefox Sync
-makes it look like nearly all other products aren't even trying. I take
-immense pride in working on a data-sharing feature that makes users'
-lives better <strong>without undermining security</strong>. Firefox Sync stands in
-rare company in this regard.</p>
-<p>Unfortunately, in our zeal for the best security possible, we designed a
-product that isn't usable by the majority of people because it is too
-complicated to set up and is prone to losing your data. In the end, this
-doesn't really serve the overall Firefox user base.</p>
-<p>We've been hard at work devising the next version of Firefox Sync which
-will retain the optimum security and privacy settings of the existing
-product while extending usability at nearly-comparable security and
-ofer data recovery to the vast majority of our users. <strong>This is huge.</strong></p>
-<p>Yeah, I'm pretty damn excited about my next year at Mozilla.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/07/18/one-year-at-mozilla#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../24">« Previous Page</a>
   --  

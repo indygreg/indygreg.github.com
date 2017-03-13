@@ -51,6 +51,74 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="why-do-projects-support-old-python-releases"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/01/08/why-do-projects-support-old-python-releases" rel="bookmark" title="Permanent Link to Why do Projects Support old Python Releases">Why do Projects Support old Python Releases</a></h2>
+  <small>January 08, 2014 at 05:00 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I see a number of open source projects supporting old versions
+of Python. Mercurial supports 2.4, for example. I have to ask: why do
+projects continue to support old Python releases?</p>
+<p>Consider:</p>
+<ul>
+<li><a href="http://python.org/download/releases/2.4.6/">Python 2.4</a> was last
+  released on December 19, 2008 and <strong>there will be no more releases of
+  Python 2.4</strong>.</li>
+<li><a href="http://python.org/download/releases/2.5.6/">Python 2.5</a> was last
+  released on May 26, 2011 and <strong>there will be no more releases of
+  Python 2.5</strong>.</li>
+<li><a href="http://python.org/download/releases/2.6.9/">Python 2.6</a> was last
+  released on October 29, 2013 and <strong>there will be no more releases of
+  Python 2.6</strong>.</li>
+<li><strong>Everything before Python 2.7 is end-of-lifed</strong></li>
+<li>Python 2.7 continues to see periodic releases, but mostly for bug fixes.</li>
+<li>Practically all of the work on CPython is happening in the 3.3 and 3.4
+  branches. Other implementations continue to support 2.7.</li>
+<li>Python 2.7 has been available since July 2010</li>
+<li>Python 2.7 provides some very compelling language features over
+  earlier releases that developers want to use</li>
+<li>It's much easier to write dual compatible 2/3 Python when 2.7 is the
+  only 2.x release considered.</li>
+<li>Python 2.7 can be installed in userland relatively easily (see
+  projects like <a href="https://github.com/yyuu/pyenv">pyenv</a>).</li>
+</ul>
+<p>Given these facts, I'm not sure why projects insist on supporting old
+and end-of-lifed Python releases.</p>
+<p><strong>I think maintainers of Python projects should seriously consider
+dropping support for Python 2.6 and below.</strong> Are there really that many
+people on systems that don't have Python 2.7 easily available? Why are
+we Python developers inflicting so much pain on ourselves to support
+antiquated Python releases?</p>
+<p>As a data point, I successfully transitioned Firefox's build system
+from requiring Python 2.5+ to 2.7.3+ and it was relatively
+<a href="https://groups.google.com/d/msg/mozilla.dev.platform/djN02O03APc/OS8A9LuHX0sJ">pain</a>
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=870420">free</a>.
+Sure, a few people complained. But as far as I know, not very many new
+developers are coming in and complaining about the requirement.
+If we can do it with a few thousand developers, I'm guessing your
+project can as well.</p>
+<p><strong>Update 2014-01-09 16:05:00 PST</strong>: This post is being discussed on
+<a href="http://developers.slashdot.org/story/14/01/09/1940232/why-do-projects-continue-to-support-old-python-releases">Slashdot</a>. A lot of the comments
+talk about Python 3. Python 3 is its own set of
+considerations. The intended focus of this post is strictly about
+dropping support for Python 2.6 and below. Python 3 is related
+in that porting Python 2.x to Python 3 is much easier the higher
+the Python 2.x version. This especially holds true when you want
+to write Python that works simultaneously in both 2.x and 3.x.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/01/08/why-do-projects-support-old-python-releases#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="python-package-providing-clients-for-mozilla-services"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/01/06/python-package-providing-clients-for-mozilla-services" rel="bookmark" title="Permanent Link to Python Package Providing Clients for Mozilla Services">Python Package Providing Clients for Mozilla Services</a></h2>
   <small>January 06, 2014 at 10:45 AM | categories: 

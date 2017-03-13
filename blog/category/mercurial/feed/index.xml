@@ -10,10 +10,146 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Wed, 08 Mar 2017 18:10:44 GMT</pubDate>
+    <pubDate>Mon, 13 Mar 2017 16:52:52 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>from __past__ import bytes_literals</title>
+      <link>http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals</link>
+      <pubDate>Mon, 13 Mar 2017 09:55:00 PDT</pubDate>
+      <category><![CDATA[Python]]></category>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals</guid>
+      <description>from __past__ import bytes_literals</description>
+      <content:encoded><![CDATA[<p>Last year, I simultaneously committed one of the ugliest and
+impressive hacks of my programming <em>career</em>. I haven't had time
+to write about it. Until now.</p>
+<p>In summary, the hack is a
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1c22400db72d">source-transforming module loader</a>
+for Python. It can be used by Python 3 to import a Python 2 source
+file while translating certain primitives to their Python 3 equivalents.
+It is kind of like <a href="https://docs.python.org/3.6/library/2to3.html">2to3</a>
+except it executes at run-time during <code>import</code>. The main goal of the
+hack was to facilitate porting Mercurial to Python 3 while deferring
+having to make the most invasive - and therefore most annoying -
+elements of the port in the canonical source code representation.</p>
+<p>For the technically curious, it works as follows.</p>
+<p>The <code>hg</code> Python executable registers a custom
+<a href="https://docs.python.org/3.6/library/sys.html#sys.meta_path">meta path finder</a>
+instance. This entity is invoked during <code>import</code> statements to try
+to find the module being imported. It tells a later phase of the
+import mechanism how to <em>load</em> that module from wherever it is
+(usually a <code>.py</code> or <code>.pyc</code> file on disk) to a Python module object.
+The custom finder only responds to requests for modules known
+to be managed by the Mercurial project. For these modules, it tells
+the next stage of the import mechanism to invoke a custom
+<a href="https://docs.python.org/3.6/library/importlib.html#importlib.abc.SourceLoader">SourceLoader</a>
+instance. Here's where the real magic is: when the custom <em>loader</em>
+is invoked, it tokenizes the Python source code using the
+<a href="https://docs.python.org/3.6/library/tokenize.html">tokenize</a> module,
+iterates over the token stream, finds specific patterns, and
+rewrites them to something <em>more appropriate</em>. It then <em>untokenizes</em>
+back to Python source code then falls back to the built-in loader
+which does the heavy lifting of compiling the source to Python code
+objects. So, we have Python 2 source files on disk that magically get
+transformed to be Python compatible when they are loaded by Python 3.
+Oh, and there is no performance penalty for the token transformation
+on subsequence loads because the transformed bytecode is cached in
+the <code>.pyc</code> file (using a custom header so we know it was transformed
+and can be invalidated when the transformation logic changes).</p>
+<p>At the time I wrote it, the token stream manipulation converted most
+string literals (<code>''</code>) to bytes literals (<code>b''</code>). In other words, it
+restored the Python 2 behavior of string literals being <code>bytes</code> and
+not <code>unicode</code>. We jokingly call it
+<code>from __past__ import bytes_literals</code> (a play on Python 2's
+<code>from __future__ import unicode_literals</code> special syntax which
+changes string literals from Python 2's <code>str</code>/<code>bytes</code> type to
+<code>unicode</code> to match Python 3's behavior).</p>
+<p>Since I implemented the first version, others have implemented:</p>
+<ul>
+<li><a href="https://www.mercurial-scm.org/repo/hg/rev/178c89e8519a">Automatically inserting</a>
+  a <code>from mercurial.pycompat import ...</code> statement to the top of the
+  source. This statement is the Mercurial equivalent of importing
+  common wrapper types similar to what
+  <a href="https://pythonhosted.org/six/">six</a> provides.</li>
+<li>More robust
+  <a href="https://www.mercurial-scm.org/repo/hg/rev/423377290a3a">function argument parsing support</a>.
+  (Because going from a token stream to a higher-level primitive like a
+  function call is difficult.)</li>
+<li><a href="https://www.mercurial-scm.org/repo/hg/rev/eaaedad68011">Automatically rewriting</a>
+  <code>.iteritems()</code> to <code>.items()</code>.</li>
+</ul>
+<p>As one can expect, when I tweeted a link to this commit, many Python
+developers (including a few CPython core developers) expressed a mix
+of intrigue and horror. But mostly horror.</p>
+<p>I fully concede that what I did here is a gross hack. And, it is the
+intention of the Mercurial project to undo this hack and perform a
+proper port once Python 3 support in Mercurial is more mature. But, I
+want to lay out my defense on why I did this and why the Mercurial
+project is tolerant of this ugly hack.</p>
+<p>Individuals within the Mercurial project have wanted to port to Python
+3 for years. Until recently, it hasn't been a project priority
+because a port was too much work for too little end-user gain. And, on
+the technical front, a port was just not practical until Python 3.5.
+(Two main blockers were no <code>u''</code> literals - restored in Python 3.3 -
+and no <code>%</code> formatting for <code>b''</code> literals - restored in 3.5. And as I
+understand it, senior members of the Mercurial project had to lobby
+Python maintainers pretty hard to get features like <code>%</code> formatting of
+<code>b''</code> literals restored to Python 3.)</p>
+<p>Anyway, after a number of failed attempts to initiate the Python 3
+port over the years, the Mercurial project started making some
+positive steps towards Python 3 compatibility, such as switching
+to <a href="https://www.python.org/dev/peps/pep-0328/">absolute imports</a> and
+addressing syntax issues that allowed modules to be parsed into
+an AST and even compiled and loadable. These may seem like small
+steps, but for a larger project, it was a lot of work.</p>
+<p>The porting effort hit a large wall when it came time to actually
+make the AST-valid Python code run on Python 3. Specifically, we had
+a strings problem.</p>
+<p>When you write software that exchanges data between machines -
+sometimes machines running different operating systems or having
+different encodings - and there is an expectation that things work
+the same and data roundtrips accordingly, trying to force text
+encodings is essentially impossible and inevitably breaks something or
+someone. It is much easier for Mercurial to operate <em>bytes first</em> and
+only take text encoding into consideration when absolutely necessary
+(such as when emitting bytes to the terminal in the wanted encoding
+or when emitting JSON). That's not to say Mercurial ignores the
+existence of encodings. Far from it: Mercurial does attempt to
+normalize some data to Unicode. But it often does so with a special
+Python type that internally stores the raw byte sequence of the
+source so that a consumer can choose to operate at the bytes or
+Unicode level. </p>
+<p>Anyway, this means that practically every string variable in Mercurial
+is a <code>bytes</code> type (or something that acts like a <code>bytes</code> type). And
+since string literals in Python 3 are the <code>str</code> type (which represents
+Unicode), that would mean having to prefix almost every <code>''</code> string
+literal in Mercurial with <code>b''</code> in order to placate Python 3. Having
+to update every occurrence of simple primitives that could be statically
+transformed automatically felt like busy work. <strong>We wanted to spend time
+on the meaningful parts of the Python 3 port so we could find
+interesting problems and challenges, not toil with mechanical
+conversions that add little to no short-term value while simultaneously
+increasing cognitive dissonance and quite possibly increasing the odds
+of introducing a bug in Python 2.</strong> In other words, why should humans
+do the work that machines can do for us? Thus, the source-transforming
+module importer was born.</p>
+<p>While I concede what Mercurial did is a giant hack, I maintain it was
+the correct thing to do. It has allowed the Python 3 port to move
+forward without being blocked on the more tedious and invasive
+transformations that could introduce subtle bugs (including performance
+regressions) in Python 2. Perfect is the enemy of good. People time is
+valuable. The source-transforming module importer allowed us to unblock
+an important project without sinking a lot of people time into it. I'd
+make that trade-off again.</p>
+<p>While I won't encourage others to take this approach to porting to
+Python 3, if you want to, Mercurial's source is available under a GPL
+license and the custom module importer could be adapted to any project
+with minimal modifications. If someone does extract it as reusable code,
+please leave a comment and I'll update the post to link to it.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Better Compression with Zstandard</title>
       <link>http://gregoryszorc.com/blog/2017/03/07/better-compression-with-zstandard</link>
@@ -1225,125 +1361,6 @@ hg.mozilla.org infrastructure is open, we have tests, and we can and
 do deploy multiple times per day without forward notice and without
 breaking things.</strong> I love this brave new world of open infrastructure
 and moving fast.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Mercurial 3.5 Released</title>
-      <link>http://gregoryszorc.com/blog/2015/07/31/mercurial-3.5-released</link>
-      <pubDate>Fri, 31 Jul 2015 13:15:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/07/31/mercurial-3.5-released</guid>
-      <description>Mercurial 3.5 Released</description>
-      <content:encoded><![CDATA[<p>Mercurial 3.5 was released today (following Mercurial's time-based
-schedule of releasing a new version every 3 months).</p>
-<p>There were roughly 1000 commits between 3.4 and 3.5, making this a
-busy version. Although, 1000 commits per release has become the new
-norm, as development on Mercurial has accelerated in the past few
-years.</p>
-<p>In my mind, the major highlight of Mercurial 3.5 is that the new
-<em>bundle2</em> wire protocol for transferring data during <em>hg push</em>
-and <em>hg pull</em> is now enabled by default on the client. Previously,
-it was enabled by default only on the server.
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a> is running Mercurial 3.4,
-so clients that upgrade to 3.5 today will be speaking to it using
-the new wire protocol.</p>
-<p>The <em>bundle2</em> wire protocol succeeds the existing protocol
-(which has been in place for years) and corrects many of its
-deficiencies. Before bundle2, pull and push operations were not
-atomic because Mercurial was performing a separate API call for
-each piece of data. It would start by transferring changeset data
-and then have subsequent transfers of metadata like bookmarks
-and phases. As you can imagine, there were race conditions and
-scenarios where pushes could be incomplete (not atomic). bundle2
-transfers all this data in one large chunk, so there are much
-stronger guarantees for data consistency and for atomic operations.</p>
-<p>Another benefit of bundle2 is it is a fully extensible data exchange
-format. Peers can add additional <em>parts</em> to the payload. For
-extensions that wish to transfer additional metadata (like
-Mozilla's <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/pushlog.html">pushlog</a>
-data), they can simply add this directly into the data
-stream without requiring additional requests over the wire protocol.
-This translates to fewer network round trips and faster push and pull
-operations.</p>
-<p>The <em>progress</em> extension has been merged into Mercurial's core and
-is enabled by default. It is now safe to remove the
-<em>extensions.progress</em> config option from your hgrc.</p>
-<p>Mercurial 3.5 also (finally) drops support for Python 2.4 and 2.5.
-Hopefully nobody reading this is still running these ancient and
-unsupported versions of Python. This is a win for Mercurial developers,
-as we were constantly having to work around deficiencies with these old
-Python releases. There were dozens of commits removing hacks and
-workarounds for Python 2.4 and 2.5. Dropping 2.4 and 2.5 also
-means Python 3 porting can begin in earnest. However, this isn't a high
-priority for anyone, so don't hold your breath.</p>
-<p>There were a number of performance improvements in 3.5:</p>
-<ul>
-<li>operations involving obsolescence markers are faster (for users of
-  changeset evolution)</li>
-<li>various revsets were optimized</li>
-<li>parts of phases calculation are now performed in C. The <em>not public()</em>
-  revset should be much faster.</li>
-<li><em>hg status</em> and things walking the filesystem are faster (Mozillians
-  should be using <em>hgwatchman</em> to make <em>hg status</em> insanely fast)</li>
-</ul>
-<p>A <em>ui.allowemptycommit</em> config option was introduced to control whether
-empty commits are allowed. Mozillians manually creating <em>trychooser</em>
-commits may run into problems creating empty commits without this
-option (a better solution is to use <em>mach push-to-try</em>).</p>
-<p>Work is progressing on per-directory manifests. Currently, Mercurial
-stores the mapping of files to content in a giant list called the
-manifest. For repositories with tens or hundreds of thousands of
-files, decoding and reading large manifests is very CPU intensive.
-Work is being done to enable Mercurial to split manifests by directory.
-So instead of a single manifest, there are several. This is a prequisite
-to <em>narrow clone</em>, which is the ability to clone history for a subset
-of files (like how Subversion works). This work will eventually enable
-repositories with millions of files to exist without significant
-performance loss. It will also allow
-<a href="/blog/2014/09/09/on-monolithic-repositories/">monolithic repositories</a>
-to exist without the common critique that they are too unwieldy to
-use because they are so large.</p>
-<p><em>hgignore</em> files now have an <em>include:</em> and <em>subinclude:</em> syntax that
-can be used to include other files containing ignore rules. This
-feature is useful for a number of reasons. First, it makes sense for
-ignore rules to live in the directory hierarchy next to paths they
-impact. Second, for people working with monolithic repositories, it
-means you can <em>export</em> a sub-directory of your monorepo (to e.g. a
-Git repository) and its ignore rules - being defined in local
-directories - can still work. (I'm pretty sure Facebook is using this
-approach to make its syncing of directories/projects from its Mercurial
-monorepo to GitHub easier to manage.)</p>
-<p>Significant work has been done on the template parser. If you have
-written custom templates, you may find that Mercurial 3.5 is more
-strict about parsing certain syntax.</p>
-<p>Revsets with chained <em>or</em> no longer result in stack exhaustion. Before,
-programmatically generated revsets like <em>1 or 2 or 3 or 4 or 5 or 6...</em>
-would likely fail.</p>
-<p>Interactions with servers over SSH should now display server output in
-real time. Before, server output was buffered and only displayed at the
-end of the operation. (You may not see this on hg.mozilla.org until
-the server is upgraded to 3.5, which is planned for early September.)</p>
-<p>There are now static analysis checks in place to ensure that Mercurial
-config options have corresponding documentation in <em>hg help config</em>.
-As a result, a lot of formerly undocumented options are now documented.</p>
-<p>I contributed
-<a href="/blog/2015/07/31/my-contributions-to-mercurial-3.5/">various improvements</a>.
-These include:</p>
-<ul>
-<li>auto sharing repository data during clone</li>
-<li>clone and pull performance improvements</li>
-<li><em>hg help scripting</em></li>
-</ul>
-<p>There were tons of other changes, of course. See the
-<a href="https://mercurial.selenic.com/wiki/WhatsNew#Mercurial_3.5_.282015-07-31.29">official release notes</a>
-and the
-<a href="https://mercurial.selenic.com/wiki/UpgradeNotes#A3.5:_no_more_support_for_Python_2.4_or_2.5">upgrade notes</a>
-for more.</p>
-<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mercurial for Mozillians Installing Mercurial</a>
-article provides a Mozilla tailored yet generally applicable guide for
-installing or upgrading Mercurial to 3.5. As always, conservative
-software users may want to wait until September 1 for the 3.5.1 point
-release to fix any issues or regressions from 3.5.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

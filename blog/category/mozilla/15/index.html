@@ -51,6 +51,80 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="update-bugzilla-automatically-on-push"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/06/30/update-bugzilla-automatically-on-push" rel="bookmark" title="Permanent Link to Update Bugzilla Automatically on Push">Update Bugzilla Automatically on Push</a></h2>
+  <small>June 30, 2014 at 11:15 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Do you manually create Bugzilla comments when you push changes to a
+Firefox source repository? Yeah, I do too.</p>
+<p>That's always annoyed me.</p>
+<p>It is screaming to be automated.</p>
+<p>So I automated it.</p>
+<p>You can too. From a Firefox source checkout:</p>
+<p>$ ./mach mercurial-setup</p>
+<p>That should clone the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/">version-control-tools</a>
+repository into <em>~/.mozbuild/version-control-tools</em>.</p>
+<p>Then, add the following to your <em>~/.hgrc</em> file:</p>
+<div class="pygments_murphy"><pre><span></span><span class="k">[extensions]</span>
+<span class="na">bzpost</span> <span class="o">=</span> <span class="s">~/.mozbuild/version-control-tools/hgext/bzpost</span>
+
+<span class="k">[bugzilla]</span>
+<span class="na">username</span> <span class="o">=</span> <span class="s">me@example.com</span>
+<span class="na">password</span> <span class="o">=</span> <span class="s">password</span>
+</pre></div>
+
+<p>Now, when you <em>hg push</em> to a Firefox repository, the commit URLs will
+get posted to referenced bugs automatically.</p>
+<p>Please note that pushing to <em>release</em> trees such as mozilla-central is
+not yet supported. In due time.</p>
+<p>Please let me know if you run into any issues.</p>
+<h2>Estimated Cost Savings</h2>
+<p>Assuming the following:</p>
+<ul>
+<li>It costs Mozilla $200,000 per year per full-time engineer working on
+  Firefox (a general rule of thumb for non-senior positions is that your
+  true employee cost is 2x your base salary).</li>
+<li>Each full-time engineer works 40 hours per week for 46 weeks out of
+  the year.</li>
+<li>It takes 15 seconds to manually update Bugzilla for each push.</li>
+<li>There are 20,000 pushes requiring Bugzilla attention per year.</li>
+</ul>
+<p>We arrive at the following:</p>
+<ul>
+<li>Cost per employee per hour worked: $108.70</li>
+<li>Total person-time to manually update Bugzilla: ~83 hours</li>
+<li>Total cost to manually update Bugzilla after push: $9,058.</li>
+</ul>
+<p>I was intentionally conservative with all the inputs except time
+worked (I think many of us work more than 40 hour weeks).
+My estimates also don't take into account the lost productivity
+associated with getting mentally derailed by interacting with Bugzilla.
+With this in mind, I could very easily justify a total cost at
+least 2x-3x higher.</p>
+<p>It took me maybe 3 hours to crank this out. I could spend another few
+weeks on it full time and Mozilla would still save money (assuming
+100% adoption).</p>
+<p>I encourage people to run their own cost calculations on other tasks
+that can be automated. Inefficiencies multiplied by millions of dollars
+(your collective employee cost) result in large piles of money. Not
+having tools (even simple ones like this) is equivalent to setting
+loads of cash on fire.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/06/30/update-bugzilla-automatically-on-push#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="track-firefox-repositories-with-local-only-mercurial-tags"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags" rel="bookmark" title="Permanent Link to Track Firefox Repositories with Local-Only Mercurial Tags">Track Firefox Repositories with Local-Only Mercurial Tags</a></h2>
   <small>June 30, 2014 at 10:25 AM | categories: 
@@ -1034,65 +1108,6 @@ down on development time and complete projects faster.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/03/30/how-promises-and-tasks-are-improving-tests#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="new-repository-for-mozilla-version-control-tools"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools" rel="bookmark" title="Permanent Link to New Repository for Mozilla Version Control Tools">New Repository for Mozilla Version Control Tools</a></h2>
-  <small>February 05, 2014 at 07:15 PM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Version control systems can be highly useful tools.</p>
-<p>At Mozilla, we've made numerous improvements and customizations to our
-version control tools. We have <a href="https://hg.mozilla.org/hgcustom/hghooks/">custom hooks</a>
-that run on the server. We have a <a href="https://hg.mozilla.org/hgcustom/hg_templates/">custom skin</a>
-for Mercurial's web interface. Mozillians have written a handful of
-Mercurial extensions to aid with common developer tasks, such as
-<a href="https://bitbucket.org/sfink/trychooser">pushing to try</a>,
-<a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">interacting with Bugzilla</a>,
-<a href="https://bitbucket.org/sfink/mqext">making mq more useful</a>, and more.</p>
-<p>These have all come into existence in an organic manner, one after the
-other. Individuals have seen an itch and scratched it. Good for them.
-Good for Mozilla.</p>
-<p>Unfortunately, the collection of amassed tools has become quite large.
-They have become difficult to discover and keep up to date. The
-consistency in quality and style between the tools varies. Each tool has
-separate processes for updating and changing.</p>
-<p>I contacted the maintainers of the popular version control tools at
-Mozilla with a simple proposal: let's maintain all our tools under one
-repo. This would allow us to increase cohesion, share code, maintain a
-high quality bar, share best practices, etc. There were no major
-objections, so we now have a <a href="https://hg.mozilla.org/hgcustom/version-control-tools/">unified repository</a>
-containing our version control tools!</p>
-<p>Currently, we only have a few Mercurial extensions in there. A goal is
-to accumulate as much of the existing Mercurial infrastructure into
-that repository as possible. Client code. Server code. All of the code.
-I want developers to be able to install the same hooks on their clients
-as what's running on the server: why should your local repo let you
-commit something that the server will reject? I want developers to be
-able to reasonably reproduce Mozilla's canonical version control server
-configuration locally. That way, you can test things locally with a high
-confidence that your changes will work the same way on production. This
-allows deployments to move faster and with less friction.</p>
-<p>The immediate emphasis will be on moving extensions into this repo and
-deprecating the old homes on user repositories. Over time, we'll move
-into consolidating server code and getting hg.mozilla.org and
-git.mozilla.org to use this repository. But that's a lower priority: the
-most important goal right now is to make it easier and friendlier for
-people to run productivity-enhancing tools.</p>
-<p>So, if you see your Mercurial extensions alerting you that they've been
-moved to a new repository, now you know what's going on.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/02/05/new-repository-for-mozilla-version-control-tools#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/14">« Previous Page</a>
   --  
