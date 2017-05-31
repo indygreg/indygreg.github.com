@@ -52,7 +52,7 @@ href="/blog/feed/atom" />
 
 <h1>Body of Work</h1>
 
-<i>Last updated April 2014</i>
+<i>Last updated May 2017</i>
 
 <p>This page contains information on my technical history. You can think of it
 as a very descriptive resume.</p>
@@ -653,7 +653,7 @@ we were spending on machines was being wasted. It turned some heads. I also
 wrote a tool</a> that aggregated and allowed analysis of bulk automation
 data.</p>
 
-<h3>Version Control Geek</h3>
+<h3>Version Control Geek and Maintainer</h3>
 
 <p>Somehow I became a version control geek during my time at Mozilla.
 It likely started with my
@@ -670,6 +670,59 @@ now, pretty much the only reasons I'd use Git are for GitHub and because
 most everyone seems to know Git these days. Those are big reasons. But
 when it comes down to your version control system as a tool, Mercurial
 wins hands down.</p>
+
+<p>My casual interest in version control somehow culminated with me becoming
+the maintainer of hg.mozilla.org and a lot of code and services at Mozilla
+that interact with version control.</p>
+
+<p>Before I became involved in Mercurial development and server operations,
+Mozilla largely functioned as a downstream consumer of Mercurial. There
+wasn't a lot of communication from Mozilla to upstream Mercurial. I changed
+that, becoming a liaison of sorts between the two. I started identifying
+pain points at Mozilla and started contributing changes upstream to mitigate
+them. I helped communicate the needs and challenges of Mozilla to Mercurial
+so they could be considered as part of product development. It is now common
+for patches impacting Mercurial performance to use the Firefox repository
+for measurements.</p>
+
+<p>As part of maintaining hg.mozilla.org, I established automated tests
+for the infrastructure, something that was lacking before. We not only have
+lower-level unit tests, but also have a container-based environment for
+running integration tests. We spawn a cluster of containers using the same
+Ansible playbooks for provisioning production servers and run tests against
+them. Tests hit actual SSH servers and other services rather than mocked
+endpoints. Many have commented that it is one of the most comprehensive
+test environments they've seen and are in awe that you can do all that
+without deploying to remote servers.</p>
+
+<p>Before a robust testing infrastructure was in place, there was a culture
+of FUD around deploying updates to hg.mozilla.org. We updated Mercurial
+rarely (maybe once a year) because we thought things may break. We were
+scared to touch such critical infrastructure. We are now capable of
+deploying multiple times a day and minutes after a change lands.</p>
+
+<p>As part of improving the robustness of hg.mozilla.org, I implemented a
+version control replication system built on top of Apache Kafka. This
+solved a lot of pain points related to slow pushes, out-of-sync mirrors,
+notification of changes, etc. This gave us much more flexibility for
+our server architecture, such as allowing us to incur individual
+machine downtime with confidence that things will automatically re-sync.
+The aforementioned testing infrastructure runs a Kafka cluster in containers,
+allowing us to test failure scenarios. Distributed systems are complex beasts
+and this testing is invaluable.</p>
+
+<p>I've also spent a lot of time overhauling how processes interact with
+version control. There are scaling problems for repositories of Firefox's
+size. Simple interaction strategies that just clone all the time just don't
+work because they are wasteful. Our automation infrastructure has intelligent
+use patterns and caching to facilitate optimal version control interaction
+so work completes sooner.</p>
+
+<p>Another considerable set of projects have revolved around syncing
+commits between version control repositories. The Firefox repository
+acts as a monorepo and has numerous sub-projects and vendored projects
+that are developed externally from core Firefox. There are various
+systems to keep these projects in sync.</p>
 
 <h3>Learning Python</h3>
 
@@ -749,6 +802,55 @@ service that receives values.)</p>
 allow you to consume the Clang C API (libclang) using pure Python (via
 ctypes).
 
+<h3>Mercurial Contributions</h3>
+
+<p>I am a significant contributor to the Mecurial open source version control
+system.</p>
+
+<p>I serve on the Mercurial Steering Committee, which is the governance group
+for the Mercurial Project. I also have reviewing privileges, allowing me
+to accept incoming patches for incorporation in the project.</p>
+
+<p>My Mercurial contributions are too numerous to enumerate. A
+<a href="https://www.mercurial-scm.org/repo/hg/log?rev=author(szorc)&revcount=10000">
+full list</a> can be viewed. Significant contributions include:</p>
+
+<ul>
+<li>Support for seeding clones from pre-generated bundles (saves Mozilla
+  ~1 PB/day in server-originated data and is also used by Bitbucket)</li>
+<li>Zstandard compression support</li>
+<li>JSON API support on HTTP server</li>
+<li>Various performance improvements for multiple facets of operation</li>
+<li>Python 3 porting</li>
+<li>Rewriting and updating security code so Mercurial is more secure by
+  default</li>
+</ul>
+
+<p>The <a href="https://gregoryszorc.com/blog/category/mercurial/">Mercurial
+category</a> on my blog also draws attention to work I've done.</p>
+
+<h3>Python Zstandard Bindings</h3>
+
+<p><a href="https://github.com/indygreg/python-zstandard">python-zstandard</a>
+is a Python package providing high-quality, high-performance, and
+fully-featured bindings to the Zstandard compression library.</p>
+
+<p>I started the project a few days after Zstandard 1.0 was released. This
+followed interest in Zstandard stemming from conversation with engineers
+at Facebook who were extolling its virtues for months leading up to the
+release. I wrote more about Zstandard in my
+<a href="/blog/2017/03/07/better-compression-with-zstandard/">Better
+Compression with Zstandard</p> post, which made the rounds and racked up
+50,000+ views.</p>
+
+<p>python-zstandard was the first time I seriously dabbled in Python C
+extensions and <a href="https://pypi.python.org/pypi/cffi">CFFI</a>. Needless
+to say, I learned a lot, including a deeper understanding of CPython's
+internals, which I've found quite valuable in enabling me to become a
+better Python programmer.</p>
+
+<p>python-zstandard is bundled with Mercurial. It is also used at production
+in a few companies, including Facebook.</p>
               </div>
           </div>
         </div>
