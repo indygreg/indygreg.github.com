@@ -51,6 +51,88 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="good-riddance-to-aufs"></a>
+  <h2 class="blog_post_title"><a href="/blog/2017/12/08/good-riddance-to-aufs" rel="bookmark" title="Permanent Link to Good Riddance to AUFS">Good Riddance to AUFS</a></h2>
+  <small>December 08, 2017 at 03:00 PM | categories: 
+
+<a href='/blog/category/docker'>Docker</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>For over a year, AUFS - a layering filesystem for Linux - has been
+giving me fits.</p>
+<p>As
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1291940">I initially measured last year</a>,
+AUFS has... suboptimal performance characteristics. The crux of the problem is
+that AUFS obtains a <strong>global</strong> lock in the Linux kernel (at least version 3.13)
+for various I/O operations, including <em>stat()</em>. If you have more than a couple
+of active CPU cores, the overhead from excessive kernel locking inside
+<em>_raw_spin_lock()</em> can add more overhead than extra CPU cores add capacity.
+That's right: under certain workloads, adding more CPU cores actually slows
+down execution due to cores being starved waiting for a global lock in the
+kernel!</p>
+<p>If that weren't enough, AUFS can also violate POSIX filesystem guarantees
+under load. It appears that AUFS sometimes forgets about created files or
+has race conditions that prevent created files from being visible to
+readers until many seconds later! I <em>think</em> this issue only occurs when
+there are concurrent threads creating files.</p>
+<p>These two characteristics of AUFS have inflicted a lot of hardship on
+Firefox's continuous integration. Large parts of Firefox's CI execute in
+Docker. And the host environment for Docker has historically used Ubuntu
+14.04 with Linux 3.13 and Docker using AUFS. AUFS was/is the default
+storage driver for many versions of Docker. When this storage driver is
+used, all files inside Docker containers are backed by AUFS unless a
+Docker <em>volume</em> (a directory bind mounted from the host filesystem - EXT4
+in our case) is in play.</p>
+<p>When we started using EC2 instances with more CPU cores, we weren't
+getting a linear speedup for CPU bound operations. Instead, CPU cycles
+were being spent inside the kernel. Stack profiling showed AUFS as the
+culprit. We were thus unable to leverage more powerful EC2 instances
+because adding more cores would only provide marginal to negative gains
+against significant cost expenditure.</p>
+<p>We worked around this problem by making heavy use of Docker <em>volumes</em>
+for tasks incurring significant I/O. This included version control clones
+and checkouts.</p>
+<p>Somewhere along the line, we discovered that AUFS volumes were also the
+cause of several random <em>file not found</em> errors throughout automation.
+Initially, we thought many of these errors were due to bugs in the
+underlying tools (Mercurial and Firefox's build system were common
+victims because they do lots of concurrent I/O). When the bugs
+mysteriously went away after ensuring certain operations were performed
+on EXT4 volumes, we were able to blame AUFS for the myriad of filesystem
+consistency problems.</p>
+<p>Earlier today, we pushed out a change to upgrade Firefox's CI to Linux
+4.4 and switched Docker from AUFS to overlayfs (using the <em>overlay2</em> storage
+driver). The improvements exceeded my expectations.</p>
+<p>Linux build times have decreased by ~4 minutes, from ~750s to ~510s.</p>
+<p>Linux Rust test times have decreased by ~4 minutes, from ~615s to ~380s.</p>
+<p>Linux PGO build times have decreased by ~5 minutes, from ~2130s to ~1820s.</p>
+<p>And this is just the build side of the world. I don't have numbers
+off hand, but I suspect many tests also got a nice speedup from this
+change.</p>
+<p>Multiplied by thousands of tasks per day and factoring in the cost
+to operate these machines, the elimination of AUFS has substantially
+increased the efficiency (and reliability) of Firefox CI and easily
+saved Mozilla tens of thousands of dollars per year. And that's just
+factoring in the savings in the AWS bill. Time is money and people
+are a lot more expensive than AWS instances (you can run over 3,000
+c5.large EC2 instances at spot pricing for what it costs to employ me
+when I'm <em>on the clock</em>). So the real win here comes from Firefox
+developers being able to move faster because their builds and tests
+complete several minutes faster.</p>
+<p>In conclusion, if you care about performance or filesystem correctness,
+avoid AUFS. Use overlayfs instead.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="from-__past__-import-bytes_literals"></a>
   <h2 class="blog_post_title"><a href="/blog/2017/03/13/from-__past__-import-bytes_literals" rel="bookmark" title="Permanent Link to from __past__ import bytes_literals">from __past__ import bytes_literals</a></h2>
   <small>March 13, 2017 at 09:55 AM | categories: 
@@ -1062,112 +1144,6 @@ request mapping mechanism!</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="making-mozreview-faster-by-disregarding-restful-design"></a>
-  <h2 class="blog_post_title"><a href="/blog/2016/01/13/making-mozreview-faster-by-disregarding-restful-design" rel="bookmark" title="Permanent Link to Making MozReview Faster by Disregarding RESTful Design">Making MozReview Faster by Disregarding RESTful Design</a></h2>
-  <small>January 13, 2016 at 03:25 PM | categories: 
-
-<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2016/01/13/making-mozreview-faster-by-disregarding-restful-design#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>When I first started writing web services, I was a huge RESTful fan
-boy. The architectural properties - especially the parts related to
-caching and scalability - really jived with me. But as I've grown
-older and gained experienced, I've realized that RESTful design,
-like many aspects of software engineering, is more of a guideline
-or ideal than a panacea. This post is about one of those experiences.</p>
-<p><a href="https://www.reviewboard.org/docs/manual/2.5/webapi/">Review Board's Web API</a>
-is RESTful. It's actually one of the better examples of a RESTful API
-I've seen. There is a very clear separation between <em>resources</em>. And
-everything - and I mean everything - is a resource. <em>Hyperlinks</em> are
-used for the purposes described in Roy T. Fielding's dissertation.
-I can tell the people who authored this web API understood RESTful
-design and they succeeded in transferring that knowledge to a web API.</p>
-<p>Mozilla's <a href="https://reviewboard.mozilla.org">MozReview code review tool</a>
-is built on top of Review Board. We've made a number of customizations.
-The most significant is the ability to submit a series of commits
-as one logical review series. This occurs as a side-effect of a
-<em>hg push</em> to the code review repository. Once your changesets
-are pushed to the remote repository, that server issues a number of
-Review Board Web API HTTP requests to reviewboard.mozilla.org to
-create the review requests, assign reviewers, etc. This is mostly all
-built on the built-in web API endpoints offered by Review Board.</p>
-<p>Because Review Board's Web API adheres to RESTful design principles
-so well, turning a series of commits into a series of review requests
-takes a lot of HTTP requests. For each commit, we have to perform
-something like 5 HTTP requests to define the server state. For
-series of say 10 commits (which aren't uncommon since we try to
-encourage the use of microcommits), this can add up to dozens of
-HTTP requests! And that's just counting the HTTP requests to
-Review Board: because we've integrated Review Board with Bugzilla,
-events like publishing result in additional RESTful HTTP requests from
-Review Board to bugzilla.mozilla.org.</p>
-<p>At the end of the day, submitting and publishing a series of 10
-commits consumes somewhere between 75 and 100 HTTP requests! While
-the servers are all in close physical proximity (read: low network
-latencies), we are reusing TCP connections, and each HTTP request
-completes fairly quickly, the overhead adds up. <strong>It's not uncommon
-for publishing commit series to take over 30s.</strong> This is unacceptable
-to developers. We want them to publish commits for review as quickly
-as possible so they can get on with their next task. Humans should not
-have to wait on machines.</p>
-<p>Over in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1229468">bug 1220468</a>,
-I implemented a new batch submit web API for Review Board and converted
-the Mercurial server to call it instead of the classic, RESTful Review
-Board web APIs. <strong>In other words, I threw away the RESTful properties
-of the web API and implemented a monolith API doing exactly what we
-need.</strong> The result is a drastic reduction in net HTTP requests. In our
-tests, submitting a series of 20 commits for review reduced the HTTP
-request count by 104! Furthermore, the new API endpoint performs
-all modifications in a single database transaction. Before, each HTTP
-request was independent and we had bugs where failures in the middle of
-a HTTP request series left the server in inconsistent and unexpected
-state. The new API is significantly faster and more atomic as a bonus.
-The main reason the new implementation isn't yet nearly instantaneous
-is because we're still performing several RESTful HTTP requests to
-Bugzilla from Review Board. But there are plans for Bugzilla to
-implement the batch APIs we need as well, so stay tuned.</p>
-<p>(I don't want to blame the Review Board or Bugzilla maintainers for
-their RESTful web APIs that are giving MozReview a bit of scaling pain.
-MozReview is definitely abusing them almost certainly in ways that
-weren't imagined when they were conceived. To their credit, the
-maintainers of both products have recognized the limitations in their
-APIs and are working to address them.)</p>
-<p>As much as I still love the properties of RESTful design, there are
-practical limitations and consequences such as what I described
-above. The older and more experienced I get, the less patience I have
-for tolerating architecturally pure implementations that sacrifice
-important properties, such as ease of use and performance.</p>
-<p>It's worth noting that many of the properties of RESTful design are
-applicable to <em>microservices</em> as well. When you create a new service
-in a microservices architecture, you are creating more overhead for
-clients that need to speak to multiple services, making changes less
-transactional and atomic, and making it difficult to consolidate
-multiple related requests into a higher-level, simpler, and performant
-API. I recommend
-<a href="http://martinfowler.com/articles/microservice-trade-offs.html">Microservice Trade-Offs</a>
-for more on this subject.</p>
-<p>There is a place in the world for RESTful and microservice
-architectures. And as someone who does a lot of server-side engineering,
-I sympathize with wanting scalable, fault-tolerant architectures. But
-like most complex problems, you need to be cognizant of trade-offs. It is
-also important to not get too caught up with architectural purity if
-it is getting in the way of delivering a simple, intuitive, and fast
-product for your users. So, please, follow me down from the ivory tower.
-The air was cleaner up there - but that was only because it was so
-distant from the swamp at the base of the tower that surrounds every
-software project.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2016/01/13/making-mozreview-faster-by-disregarding-restful-design#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 
