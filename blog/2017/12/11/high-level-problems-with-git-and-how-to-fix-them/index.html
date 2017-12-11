@@ -19,6 +19,7 @@ Released   : 20101114
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     
   <title>Gregory Szorc's Digital Home
+  | High-level Problems with Git and How to Fix Them
 </title>
 <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
 <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
@@ -49,7 +50,7 @@ href="/blog/feed/atom" />
           <div id="page-bgbtm">
               <div id="content">
                 
-  
+
 <div class="blog_post">
   <a name="high-level-problems-with-git-and-how-to-fix-them"></a>
   <h2 class="blog_post_title"><a href="/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them" rel="bookmark" title="Permanent Link to High-level Problems with Git and How to Fix Them">High-level Problems with Git and How to Fix Them</a></h2>
@@ -766,90 +767,12 @@ be a good place to start.</p>
 
 
 
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="good-riddance-to-aufs"></a>
-  <h2 class="blog_post_title"><a href="/blog/2017/12/08/good-riddance-to-aufs" rel="bookmark" title="Permanent Link to Good Riddance to AUFS">Good Riddance to AUFS</a></h2>
-  <small>December 08, 2017 at 03:00 PM | categories: 
-
-<a href='/blog/category/docker'>Docker</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>For over a year, AUFS - a layering filesystem for Linux - has been
-giving me fits.</p>
-<p>As
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1291940">I initially measured last year</a>,
-AUFS has... suboptimal performance characteristics. The crux of the problem is
-that AUFS obtains a <strong>global</strong> lock in the Linux kernel (at least version 3.13)
-for various I/O operations, including <em>stat()</em>. If you have more than a couple
-of active CPU cores, the overhead from excessive kernel locking inside
-<em>_raw_spin_lock()</em> can add more overhead than extra CPU cores add capacity.
-That's right: under certain workloads, adding more CPU cores actually slows
-down execution due to cores being starved waiting for a global lock in the
-kernel!</p>
-<p>If that weren't enough, AUFS can also violate POSIX filesystem guarantees
-under load. It appears that AUFS sometimes forgets about created files or
-has race conditions that prevent created files from being visible to
-readers until many seconds later! I <em>think</em> this issue only occurs when
-there are concurrent threads creating files.</p>
-<p>These two characteristics of AUFS have inflicted a lot of hardship on
-Firefox's continuous integration. Large parts of Firefox's CI execute in
-Docker. And the host environment for Docker has historically used Ubuntu
-14.04 with Linux 3.13 and Docker using AUFS. AUFS was/is the default
-storage driver for many versions of Docker. When this storage driver is
-used, all files inside Docker containers are backed by AUFS unless a
-Docker <em>volume</em> (a directory bind mounted from the host filesystem - EXT4
-in our case) is in play.</p>
-<p>When we started using EC2 instances with more CPU cores, we weren't
-getting a linear speedup for CPU bound operations. Instead, CPU cycles
-were being spent inside the kernel. Stack profiling showed AUFS as the
-culprit. We were thus unable to leverage more powerful EC2 instances
-because adding more cores would only provide marginal to negative gains
-against significant cost expenditure.</p>
-<p>We worked around this problem by making heavy use of Docker <em>volumes</em>
-for tasks incurring significant I/O. This included version control clones
-and checkouts.</p>
-<p>Somewhere along the line, we discovered that AUFS volumes were also the
-cause of several random <em>file not found</em> errors throughout automation.
-Initially, we thought many of these errors were due to bugs in the
-underlying tools (Mercurial and Firefox's build system were common
-victims because they do lots of concurrent I/O). When the bugs
-mysteriously went away after ensuring certain operations were performed
-on EXT4 volumes, we were able to blame AUFS for the myriad of filesystem
-consistency problems.</p>
-<p>Earlier today, we pushed out a change to upgrade Firefox's CI to Linux
-4.4 and switched Docker from AUFS to overlayfs (using the <em>overlay2</em> storage
-driver). The improvements exceeded my expectations.</p>
-<p>Linux build times have decreased by ~4 minutes, from ~750s to ~510s.</p>
-<p>Linux Rust test times have decreased by ~4 minutes, from ~615s to ~380s.</p>
-<p>Linux PGO build times have decreased by ~5 minutes, from ~2130s to ~1820s.</p>
-<p>And this is just the build side of the world. I don't have numbers
-off hand, but I suspect many tests also got a nice speedup from this
-change.</p>
-<p>Multiplied by thousands of tasks per day and factoring in the cost
-to operate these machines, the elimination of AUFS has substantially
-increased the efficiency (and reliability) of Firefox CI and easily
-saved Mozilla tens of thousands of dollars per year. And that's just
-factoring in the savings in the AWS bill. Time is money and people
-are a lot more expensive than AWS instances (you can run over 3,000
-c5.large EC2 instances at spot pricing for what it costs to employ me
-when I'm <em>on the clock</em>). So the real win here comes from Firefox
-developers being able to move faster because their builds and tests
-complete several minutes faster.</p>
-<p>In conclusion, if you care about performance or filesystem correctness,
-avoid AUFS. Use overlayfs instead.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_url = "http://gregoryszorc.com/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them";
+</script>
+<script type="text/javascript" src="http://disqus.com/forums/gregoryszorc/embed.js"></script>
+<noscript><a href="http://gregoryszorc.disqus.com/?url=ref">View the discussion thread.</a></noscript><a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
 
               </div>
               

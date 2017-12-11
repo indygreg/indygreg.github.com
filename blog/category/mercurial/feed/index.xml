@@ -10,10 +10,720 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Fri, 08 Dec 2017 22:57:32 GMT</pubDate>
+    <pubDate>Mon, 11 Dec 2017 18:31:07 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>High-level Problems with Git and How to Fix Them</title>
+      <link>http://gregoryszorc.com/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them</link>
+      <pubDate>Mon, 11 Dec 2017 10:30:00 PST</pubDate>
+      <category><![CDATA[Git]]></category>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them</guid>
+      <description>High-level Problems with Git and How to Fix Them</description>
+      <content:encoded><![CDATA[<p>I have a... complicated relationship with Git.</p>
+<p>When Git first came onto the scene in the mid 2000's, I was initially
+skeptical because of its horrible user interface. But once I learned
+it, I appreciated its speed and features - especially the ease at which
+you could create feature branches, merge, and even create commits
+offline (which was a big deal in the era when Subversion was the
+dominant version control tool in open source and you needed to speak with
+a server in order to commit code). When I started using Git day-to-day,
+it was such an obvious improvement over what I was using before (mainly
+Subversion and even CVS).</p>
+<p>When I started working for Mozilla in 2011, I was exposed to the
+Mercurial version control, which then - and still today - hosts the
+canonical repository for Firefox. I didn't like Mercurial initially.
+Actually, I despised it. I thought it was slow and its features lacking.
+And I frequently encountered repository corruption.</p>
+<p>My first experience learning the <em>internals</em> of both Git and Mercurial
+came when I found myself hacking on
+<a href="http://hg-git.github.io/]">hg-git</a> - a tool that allows you to convert
+Git and Mercurial repositories to/from each other. I was hacking on hg-git
+so I could improve the performance of converting Mercurial repositories
+to Git repositories. And I was doing that because I wanted to use Git -
+not Mercurial - to hack on Firefox. I was trying to enable an unofficial
+Git mirror of the Firefox repository to synchronize faster so it would
+be more usable. The ulterior motive was to demonstrate that Git is a
+superior version control tool and that Firefox should switch its canonical
+version control tool from Mercurial to Git.</p>
+<p>In what is a textbook definition of <em>irony</em>, what happened instead was
+I actually learned how Mercurial worked, interacted with the Mercurial
+Community, realized that Mozilla's documentation and developer practices
+were... lacking, and that Mercurial was actually a much, much more
+pleasant tool to use than Git. It's an old post, but I
+<a href="/blog/2013/05/12/thoughts-on-mercurial-(and-git)/">summarized my conversion</a>
+four and a half years ago. This started a chain of events that somehow
+resulted in me contributing a ton of patches to Mercurial, taking
+stewardship of <em>hg.mozilla.org</em>, and becoming a member of the Mercurial
+Steering Committee - the governance group for the Mercurial Project.</p>
+<p>I've been an advocate of Mercurial over the years. Some would probably say
+I'm a Mercurial fanboy. I reject that characterization because <em>fanboy</em> has
+connotations that imply I'm ignorant of realities. I'm well aware of
+Mercurial's faults and weaknesses. I'm well aware of Mercurial's relative
+lack of popularity, I'm well aware that this lack of popularity almost
+certainly turns away contributors to Firefox and other Mozilla projects
+because people don't want to have to learn a new tool. I'm well aware that
+there are changes underway to enable Git to scale to <em>very large
+repositories</em> and that these changes could threaten Mercurial's scalability
+advantages over Git, making choices to use Mercurial even harder to defend.
+(As an aside, the party most responsible for pushing Git to adopt
+architectural changes to enable it to scale these days is Microsoft.
+Could anyone have foreseen that?!)</p>
+<p>I've achieved mastery in both Git and Mercurial. I know their internals
+and their command line interfaces extremely well. I understand the
+architecture and principles upon which both are built. I'm also exposed
+to some very experienced and knowledgeable people in the Mercurial
+Community. People who have been around version control for much, much
+longer than me and have knowledge of random version control tools you've
+probably never heard of. This knowledge and exposure allows me to make
+connections and see opportunities for version control that quite frankly
+most do not. </p>
+<p>In this post, I'll be talking about some high-level, high-impact problems
+with Git and possible solutions for them. My primary goal of this post is
+to foster positive change in Git and the services around it. While I
+personally prefer Mercurial, improving Git is good for everyone. Put
+another way, I want my knowledge and perspective from being part of
+a version control community to be put to good wherever it can.</p>
+<p>Speaking of Mercurial, as I said, I'm a heavy contributor and am somewhat
+influential in the Mercurial Community. I want to be clear that my opinions
+in this post are my own and I'm not speaking on behalf of the Mercurial
+Project or the larger Mercurial Community. I also don't intend to claim
+that Mercurial is <em>holier-than-thou</em>. Mercurial has tons of user interface
+failings and deficiencies. And I'll even admit to being frustrated that some
+systemic failings in Mercurial have gone unaddressed for as long as they
+have. But that's for another post. This post is about Git. Let's get started.</p>
+<h2>The Staging Area</h2>
+<p>The staging area is a feature that should not be enabled in the default
+Git configuration.</p>
+<p>Most people see version control as an obstacle standing in the way of
+accomplishing some other task. They just want to save their progress
+towards some goal. In other words, they want version control to be a
+<em>save file</em> feature in their workflow.</p>
+<p>Unfortunately, modern version control tools don't work that way. For
+starters, they require people to specify a <em>commit message</em> every time
+they save. This in of itself can be annoying. But we generally accept
+that as the price you pay for version control: that <em>commit message</em> has
+value to others (or even your future self). So you must record it.</p>
+<p>Most people want the barrier to saving changes to be effortless. A commit
+message is already too annoying for many users! The Git staging area
+establishes a <em>higher</em> barrier to saving. Instead of just saving your
+changes, you must first <em>stage</em> your changes to be saved.</p>
+<p>If you requested <em>save</em> in your favorite GUI application, text editor,
+etc and it popped open a <em>select the changes you would like to
+save dialog</em>, you would rightly think <em>just save all my changes already,
+dammit.</em> But this is exactly what Git does with its staging area! Git
+is saying <em>I know all the changes you made: now tell me which changes
+you'd like to save.</em> To the average user, this is infuriating because
+it works in contrast to how the <em>save</em> feature works in almost every
+other application.</p>
+<p>There is a counterargument to be made here. You could say that the
+editor/application/etc is complex - that it has multiple <em>contexts</em>
+(files) - that each context is independent - and that the user should
+have full control over which contexts (files) - and even changes within
+those contexts - to save. I agree: this is a compelling feature. However,
+it isn't an appropriate <em>default</em> feature. The ability to pick which
+changes to save is a power-user feature. Most users just want to save all
+the changes all the time. So that should be the default behavior. And
+the Git staging area should be an opt-in feature.</p>
+<p>If intrinsic workflow warts aren't enough, the Git staging area has a
+horrible user interface. It is often referred to as the <em>cache</em>
+<a href="https://stackoverflow.com/questions/6716355/why-staging-directory-is-also-called-index-git-index/6718135#6718135">for historical reasons</a>.
+<em>Cache</em> of course means something to anyone who knows anything about
+computers or programming. And Git's use of <em>cache</em> doesn't at all align
+with that common definition. Yet the the terminology in Git persists.
+You have to run commands like <code>git diff --cached</code> to examine the state
+of the <em>staging area</em>. Huh?!</p>
+<p>But Git also refers to the <em>staging area</em> as the <em>index</em>. And this
+terminology also appears in Git commands! <code>git help commit</code> has numerous
+references to the <em>index</em>. Let's see what <code>git help glossary</code> has to say::</p>
+<pre><code>index
+    A collection of files with stat information, whose contents are
+    stored as objects. The index is a stored version of your working tree.
+    Truth be told, it can also contain a second, and even a third
+    version of a working tree, which are used when merging.
+
+index entry
+    The information regarding a particular file, stored in the index.
+    An index entry can be unmerged, if a merge was started, but not
+    yet finished (i.e. if the index contains multiple versions of that
+    file).
+</code></pre>
+<p>In terms of end-user documentation, this is a train wreck. It tells the
+lay user absolutely nothing about what the <em>index</em> actually is. Instead,
+it casually throws out references to <em>stat information</em> (requires the user
+know what the <code>stat()</code> function call and struct are) and <em>objects</em> (a Git
+term for a piece of data stored by Git). It even undermines its own credibility
+with that <em>truth be told</em> sentence. This definition is so bad that it
+would probably improve user understanding if it were deleted!</p>
+<p>Of course, <code>git help index</code> says <em>No manual entry for gitindex</em>. So
+there is literally no hope for you to get a concise, understandable
+definition of the <em>index</em>. Instead, it is one of those concepts that you
+think you learn from interacting with it all the time. <em>Oh, when I
+<code>git add</code> something it gets into this state where <code>git commit</code> will
+actually save it.</em></p>
+<p>And even if you know what the Git staging area/index/cached is, it can
+still confound you. Do you know the interaction between uncommitted
+changes in the staging area and working directory when you <code>git rebase</code>?
+What about <code>git checkout</code>? What about the various <code>git reset</code> invocations?
+I have a confession: I can't remember all the edge cases either. To play
+it safe, I try to make sure all my outstanding changes are committed
+before I run something like <code>git rebase</code> because I <em>know</em> that will be
+safe.</p>
+<p>The Git staging area doesn't have to be this complicated. A <em>re-branding</em>
+away from <em>index</em> to <em>staging area</em> would go a long way. Adding an alias
+from <code>git diff --staged</code> to <code>git diff --cached</code> and removing references
+to the <em>cache</em> from common user commands would make a lot of sense and
+reduce end-user confusion.</p>
+<p>Of course, the Git staging area doesn't really need to exist at all!
+The staging area is essentially a <em>soft commit</em>. It performs the
+<em>save progress</em> role - the basic requirement of a version control tool.
+And in some aspects it is actually a better <em>save progress</em> implementation
+than a <em>commit</em> because it doesn't require you to type a commit message!
+Because the <em>staging area</em> is a soft commit, all workflows using it can
+be modeled as if it were a real commit and the <em>staging area</em> didn't
+exist at all! For example, instead of <code>git add --interactive</code> +
+<code>git commit</code>, you can run <code>git commit --interactive</code>. Or if you wish
+to incrementally add new changes to an in-progress commit, you can
+run <code>git commit --amend</code> or <code>git commit --amend --interactive</code> or
+<code>git commit --amend --all</code>. If you actually understand the various modes
+of <code>git reset</code>, you can use those to <em>uncommit</em>. Of course, the user
+interface to performing these actions in Git today is a bit convoluted.
+But if the <em>staging area</em> didn't exist, new high-level commands like
+<code>git amend</code> and <code>git uncommit</code> could certainly be invented. </p>
+<p>To the average user, the <em>staging area</em> is a complicated concept. I'm
+a power user. I understand its purpose and how to harness its power. Yet
+when I use Mercurial (which doesn't have a <em>staging area</em>), I don't miss
+the <em>staging area</em> at all. Instead, I learn that all operations involving
+the <em>staging area</em> can be modeled as other fundamental primitives (like
+<em>commit amend</em>) that you are likely to encounter anyway. The <em>staging
+area</em> therefore constitutes an unnecessary burden and cognitive load on
+users. While powerful, its complexity and incurred confusion does not
+justify its existence in the default Git configuration. The <em>staging
+area</em> is a power-user feature and should be opt-in by default. </p>
+<h2>Branches and Remotes Management is Complex and Time-Consuming</h2>
+<p>When I first used Git (coming from CVS and Subversion), I thought
+branches and remotes were incredible because they enabled new workflows
+that allowed you to easily track multiple lines of work across many
+repositories. And ~10 years later, I still believe the workflows they
+enable are important. However, having amassed a broader perspective, I
+also believe their implementation is poor and this unnecessarily confuses
+many users and wastes the time of <em>all</em> users.</p>
+<p>My initial <em>zen moment</em> with Git - the time when Git finally clicked for me -
+was when I understood Git's object model: that Git is just a
+content indexed key-value store consisting of a different object types
+(blobs, trees, and commits) that have a particular relationship with
+each other. <em>Refs</em> are symbolic names pointing to Git commit objects. And
+Git <em>branches</em> - both local and remote - are just <em>refs</em> having a
+well-defined naming convention (<code>refs/heads/&lt;name&gt;</code> for local branches and
+<code>refs/remotes/&lt;remote&gt;/&lt;name&gt;</code> for remote branches). Even <em>tags</em> and
+<em>notes</em> are defined via <em>refs</em>.</p>
+<p><em>Refs</em> are a necessary primitive in Git because the Git storage model is
+to throw all <em>objects</em> into a single, key-value namespace. Since the store
+is content indexed and the key name is a cryptographic hash of the object's
+content (which for all intents and purposes is random gibberish to
+end-users), the Git store by itself is unable to locate objects. If all you
+had was the key-value store and you wanted to <em>find all commits</em>, you would
+need to walk every object in the store and read it to see if it is a commit
+object. You'd then need to buffer metadata about those objects in memory so
+you could reassemble them into say a DAG to facilitate looking at commit
+history. This approach obviously doesn't scale. <em>Refs</em> short-circuit this
+process by providing pointers to objects of importance. It may help to
+think of the set of <em>refs</em> as an <em>index</em> into the Git store.  </p>
+<p><em>Refs</em> also serve another role: as guards against garbage collection.
+I won't go into details about loose objects and packfiles, but it's worth
+noting that Git's key-value store also behaves in ways similar to
+a generational garbage collector like you would find in programming languages
+such as Java and Python. The important thing to know is that Git will
+garbage collect (read: delete) objects that are unused. And the mechanism
+it uses to determine which objects are unused is to iterate through <em>refs</em>
+and walk all transitive references from that initial pointer. If there is
+an object in the store that can't be traced back to a <em>ref</em>, it is
+<em>unreachable</em> and can be deleted.</p>
+<p><em>Reflogs</em> maintain the history of a value for a <em>ref</em>: for each <em>ref</em> they
+contain a log of what <em>commit</em> it was pointing to, when that pointer
+was established, who established it, etc. <em>Reflogs</em> serve two purposes:
+facilitating <em>undoing</em> a previous action and holding a reference to <em>old</em>
+data to prevent it from being garbage collected. The two use cases are
+related: if you don't care about undo, you don't need the old reference
+to prevent garbage collection.</p>
+<p>This design of Git's store is actually quite sensible. It's not perfect
+(nothing is). But it is a solid foundation to build a version control tool
+(or even other data storage applications) on top of.</p>
+<p>The title of this section has to do with sub-optimal branches and
+remotes management. But I've hardly said anything about branches or remotes!
+And this leads me to my main complaint about Git's branches and remotes:
+that they are very thin veneer over <em>refs</em>. The properties of Git's
+underlying key-value store unnecessarily bleed into user-facing concepts
+(like branches and remotes) and therefore dictate sub-optimal practices.
+This is what's referred to as a <em>leaky abstraction</em>.</p>
+<p>I'll give some examples.</p>
+<p>As I stated above, many users treat version control as a <em>save file</em>
+step in their workflow. I believe that any step that interferes with users
+saving their work is user hostile. This even includes writing a commit
+message! I already argued that the <em>staging area</em> significantly interferes
+with this critical task. Git <em>branches</em> do as well.</p>
+<p>If we were designing a version control tool from scratch (or if you were
+a new user to version control), you would probably think that a sane
+feature/requirement would be to update to <em>any</em> revision and start making
+changes. In Git speak, this would be something like
+<code>git checkout b201e96f</code>, make some file changes, <code>git commit</code>. I think
+that's a pretty basic workflow requirement for a version control tool.
+And the workflow I suggested is pretty intuitive: choose the thing to
+start working on, make some changes, then save those changes.</p>
+<p>Let's see what happens when we actually do this:</p>
+<pre><code>$ git checkout b201e96f
+Note: checking out 'b201e96f'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by performing another checkout.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -b with the checkout command again. Example:
+
+  git checkout -b &lt;new-branch-name&gt;
+
+HEAD is now at b201e96f94... Merge branch 'rs/config-write-section-fix' into maint
+
+$ echo 'my change' &gt;&gt; README.md
+$ git commit -a -m 'my change'
+[detached HEAD aeb0c997ff] my change
+ 1 file changed, 1 insertion(+)
+
+$ git push indygreg
+fatal: You are not currently on a branch.
+To push the history leading to the current (detached HEAD)
+state now, use
+
+    git push indygreg HEAD:&lt;name-of-remote-branch&gt;
+
+$ git checkout master
+Warning: you are leaving 1 commit behind, not connected to
+any of your branches:
+
+  aeb0c997ff my change
+
+If you want to keep it by creating a new branch, this may be a good time
+to do so with:
+
+ git branch &lt;new-branch-name&gt; aeb0c997ff
+
+Switched to branch 'master'
+Your branch is up to date with 'origin/master'.
+</code></pre>
+<p>I know what all these messages mean because I've mastered Git. But if
+you were a newcomer (or even a seasoned user), you might be very confused.
+Just so we're on the same page, here is what's happening (along with
+some commentary).</p>
+<p>When I run <code>git checkout b201e96f</code>, Git is trying to tell me that I'm
+potentially doing something that could result in the loss of my data. A
+golden rule of version control tools is <em>don't lose the user's data</em>. When
+I run <code>git checkout</code>, Git should be stating the risk for data loss very
+clearly. But instead, the <em>If you want to create a new branch</em> sentence is
+hiding this fact by instead phrasing things around <em>retaining commits you
+create</em> rather than the possible loss of data. It's up to the user
+to make the connection that <em>retaining commits you create</em> actually means
+<em>don't eat my data</em>. Preventing data loss is critical and Git should not
+mince words here!</p>
+<p>The <code>git commit</code> seems to work like normal. However, since we're in a
+<em>detached HEAD</em> state (a phrase that is likely gibberish to most users),
+that commit isn't referred to by any <em>ref</em>, so it can be <em>lost</em> easily.
+Git <em>should</em> be telling me that I just committed something it may not
+be able to find in the future. But it doesn't. Again, Git isn't being
+as protective of my data as it needs to be.</p>
+<p>The failure in the <code>git push</code> command is essentially telling me I need
+to give things a name in order to <em>push</em>. <em>Pushing</em> is effectively <em>remote
+save</em>. And I'm going to apply my reasoning about version control tools
+not interfering with <em>save</em> to <em>pushing</em> as well: Git is adding an
+extra barrier to <em>remote save</em> by refusing to push commits without a
+<em>branch</em> attached and by doing so is being user hostile.</p>
+<p>Finally, we <code>git checkout master</code> to move to another commit. Here, Git
+is actually doing something halfway reasonable. It is telling me I'm
+leaving commits behind, which commits those are, and the command to
+use to <em>keep</em> those commits. The warning is good but not great. I think
+it needs to be stronger to reflect the risk around data loss if that
+suggested Git commit isn't executed. (Of course, the <em>reflog</em> for <code>HEAD</code>
+will ensure that data isn't immediately deleted. But users shouldn't
+need to involve <em>reflogs</em> to not lose data that wasn't rewritten.)</p>
+<p>The point I want to make is that Git doesn't allow you to just <em>update
+and save</em>. Because its <em>dumb</em> store requires pointers to relevant commits
+(<em>refs</em>) and because that requirement isn't abstracted away or paved over
+by user-friendly features in the frontend, Git is effectively requiring
+end-users to define names (<em>branches</em>) for all commits. If you fail to
+define a name, it gets a lot harder to find your commits, exchange them,
+and Git may delete your data. While it is technically possible to not
+create branches, the version control tool is essentially unusable without
+them.</p>
+<p>When local branches are exchanged, they appear as <em>remote branches</em> to
+others. Essentially, you give each instance of the repository a name
+(the <em>remote</em>). And branches/refs fetched from a named <em>remote</em> appear
+as a <em>ref</em> in the <em>ref namespace</em> for that <em>remote</em>. e.g.
+<em>refs/remotes/origin</em> holds <em>refs</em> for the <em>origin</em> <em>remote</em>. (Git allows
+you to not have to specify the <em>refs/remotes</em> part, so you can refer
+to e.g. <em>refs/remotes/origin/master</em> as <em>origin/master</em>.)</p>
+<p>Again, if you were designing a version control tool from scratch or you
+were a new Git user, you'd probably think <em>remote refs</em> would make
+good starting points for work. For example, if you know you should be
+saving new work on top of the <em>master</em> branch, you might be inclined
+to begin that work by running <code>git checkout origin/master</code>. But like
+our specific-commit checkout above:</p>
+<pre><code>$ git checkout origin/master
+Note: checking out 'origin/master'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by performing another checkout.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -b with the checkout command again. Example:
+
+  git checkout -b &lt;new-branch-name&gt;
+
+HEAD is now at 95ec6b1b33... RelNotes: the eighth batch
+</code></pre>
+<p>This is the same message we got for a direct checkout. But we did
+supply a <em>ref</em>/<em>remote branch</em> name. What gives? Essentially, Git tries
+to enforce that the <em>refs/remotes/</em> namespace is read-only and only
+updated by operations that exchange data with a remote, namely <code>git fetch</code>,
+<code>git pull</code>, and <code>git push</code>.</p>
+<p>For this to work correctly, you need to create a new <em>local branch</em>
+(which initially points to the commit that <code>refs/remotes/origin/master</code>
+points to) and then switch/activate that <em>local branch</em>.</p>
+<p>I could go on talking about all the subtle nuances of how Git branches
+are managed. But I won't.</p>
+<p>If you've used Git, you know you need to use branches. You may or may
+not recognize just how frequently you have to type a branch name into
+a <code>git</code> command. I guarantee that if you are familiar with version control
+tools and workflows that aren't based on having to manage <em>refs</em> to
+track data, you will find Git's forced usage of <em>refs</em> and <em>branches</em>
+a bit absurd. I half jokingly refer to Git as <em>Game of Refs</em>. I say that
+because coming from Mercurial (which doesn't require you to name things),
+Git workflows feel to me like all I'm doing is typing the names of branches
+and <em>refs</em> into <code>git</code> commands. I feel like I'm wasting my precious
+time telling Git the names of things only because this is necessary to
+placate the leaky abstraction of Git's storage layer which requires
+references to relevant commits.</p>
+<p>Git and version control doesn't have to be this way.</p>
+<p>As I said, my Mercurial workflow doesn't rely on naming things. Unlike
+Git, Mercurial's store has an explicit (not shared) storage location
+for commits (<em>changesets</em> in Mercurial parlance). And this data structure
+is ordered, meaning a changeset <em>later</em>  always occurs after its
+parent/predecessor. This means that Mercurial can open a single
+file/index to quickly find all <em>changesets</em>. Because Mercurial doesn't
+need pointers to commits of relevance, names aren't required.</p>
+<p>My <em>Zen of Mercurial</em> moment came when I realized you didn't have
+to name things in Mercurial. Having used Git before Mercurial, I
+was conditioned to always be naming things. This is the Git way
+after all. And, truth be told, it is common to name things in Mercurial
+as well. Mercurial's <em>named branches</em> were the way to do <em>feature
+branches</em> in Mercurial for years. Some used the <em>MQ</em> extension (essentially
+a port of <a href="https://en.wikipedia.org/wiki/Quilt_(software)">quilt</a>), which
+also requires naming individual patches. Git users coming to Mercurial
+were missing Git branches and Mercurial's <em>bookmarks</em> were a poor
+<em>port</em> of Git branches.</p>
+<p>But recently, more and more Mercurial users have been coming to the
+realization that names aren't really necessary. If the tool doesn't
+actually require naming things, why force users to name things? As long
+as users can find the commits they need to find, do you actually need
+names?</p>
+<p>As a demonstration, my Mercurial workflow leans heavily on the <code>hg show work</code>
+and <code>hg show stack</code> commands. You will need to enable the <em>show</em> extension
+by putting the following in your hgrc config file to use them:</p>
+<pre><code>[extensions]
+show =
+</code></pre>
+<p>Running <code>hg show work</code> (I have also set the config
+<code>commands.show.aliasprefix=s</code>to enable me to type <code>hg swork</code>) finds all
+in-progress changesets and other likely-relevant changesets (those
+with names and DAG heads). It prints a concise DAG of those changesets:</p>
+<p><img alt="hg show work output" src="/images/hg-show-work.png" /></p>
+<p>And <code>hg show stack</code> shows just the current line of work and its
+relationship to other important heads:</p>
+<p><img alt="hg show stack output" src="/images/hg-show-stack.png" /></p>
+<p>Aside from the <code>@</code> bookmark/name set on that top-most changeset, there are
+no names! (That <code>@</code> comes from the remote repository, which has set that name.)</p>
+<p>Outside of code archeology workflows, <code>hg show work</code> shows the changesets I
+care about 95% of the time. With all I care about (my in-progress work and
+possible rebase targets) rendered concisely, I don't have to name things
+because I can just find whatever I'm looking for by running <code>hg show work</code>!
+Yes, you need to run <code>hg show work</code>, visually scan for what you are looking
+for, and copy a (random) hash fragment into a number of commands. This
+sounds like a lot of work. But I believe it is far less work than naming
+things. Only when you practice this workflow do you realize just how much
+time you actually spend finding and then typing names in to <code>hg</code> and -
+especailly - <code>git</code> commands! The ability to just <code>hg update</code> to a changeset
+and commit without having to name things is just so liberating. It feels
+like my version control tool is putting up fewer barriers and letting me
+work quickly.</p>
+<p>Another benefit of <code>hg show work</code> and <code>hg show stack</code> are that they present
+a concise DAG visualization to users. This helps educate users about the
+underlying <em>shape</em> of repository data. When you see connected nodes on a
+graph and how they change over time, it makes it a lot easier to understand
+concepts like <em>merge</em> and <em>rebase</em>. </p>
+<p>This <em>nameless</em> workflow may sound radical. But that's because we're all
+conditioned to naming things. I initially thought it was crazy as well. But
+once you have a mechanism that gives you rapid access to data you care
+about (<code>hg show work</code> in Mercurial's case), names become very optional. Now,
+a pure <em>nameless</em> workflow isn't without its limitations. You want names
+to identify the main <em>targets</em> for work (e.g. the <em>master</em> branch). And when
+you exchange work with others, names are easier to work with, especially
+since names survive rewriting. But in my experience, most of my commits
+are only exchanged with me (synchronizing my in-progress commits across
+devices) and with code review tools (which don't really need names and
+can operate against raw commits). My most frequent use of names comes
+when I'm in <em>repository maintainer mode</em> and I need to ensure commits
+have names for others to reference.</p>
+<p>Could Git support <em>nameless</em> workflows? In theory it can.</p>
+<p>Git needs <em>refs</em> to find relevant commits in its store. And the wire
+protocol uses <em>refs</em> to exchange data. So <em>refs</em> have to exist for Git
+to function (assuming Git doesn't radically change its storage and
+exchange mechanisms to mitigate the need for <em>refs</em>, but that would be
+a massive change and I don't see this happening).</p>
+<p>While there is a fundamental requirement for <em>refs</em> to exist, this
+doesn't necessarily mean that user-facing names must exist. The reason
+that we need <em>branches</em> today is because <em>branches</em> are little more than
+a <em>ref</em> with special behavior. It is theoretically possible to invent a
+mechanism that transparently maps <em>nameless</em> commits onto <em>refs</em>. For
+example, you could create a <em>refs/nameless/</em> namespace that was
+automatically populated with DAG heads that didn't have names attached.
+And Git could exchange these <em>refs</em> just like it can <em>branches</em> today.
+It would be a lot of work to think through all the implications and to
+design and implement support for <em>nameless</em> development in Git. But I
+think it is possible.</p>
+<p>I encourage the Git community to investigate supporting <em>nameless</em> workflows.
+Having adopted this workflow in Mercurial, Git's workflow around naming
+branches feels heavyweight and restrictive to me. Put another way, <em>nameless</em>
+commits are actually lighter-weight branches than Git branches! To the
+common user who just wants version control to be a <em>save</em> feature,
+requiring names establishes a barrier towards that goal. So removing the
+naming requirement would make Git simpler and more approachable to new
+users.</p>
+<h2>Forks aren't the Model You are Looking For</h2>
+<p>This section is more about hosted Git services (like GitHub, Bitbucket, and
+GitLab) than Git itself. But since hosted Git services are synonymous
+with <em>Git</em> and interaction with a hosted Git services is a regular
+part of a common Git user's workflow, I feel like I need to cover it.
+(For what it's worth, my experience at Mozilla tells me that a large
+percentage of people who say <em>I prefer Git</em> or <em>we should use Git</em>
+actually mean <em>I like GitHub</em>. Git and GitHub/Bitbucket/GitLab are
+effectively the same thing in the minds of many and anyone finding
+themselves discussing version control needs to keep this in mind because
+<em>Git</em> is more than just the command line tool: it is an ecosystem.)</p>
+<p>I'll come right out and say it: I think <em>forks</em> are a relatively poor
+model for collaborating. They are light years better than what
+existed before. But they are still so far from the turn-key experience
+that should be possible. The <em>fork</em> hasn't really changed much since
+the current implementation of it was made popular by GitHub many years
+ago. And I view this as a general failure of hosted services to
+innovate.</p>
+<p>So we have a shared understanding, a <em>fork</em> (as implemented on GitHub,
+Bitbucket, GitLab, etc) is essentially a complete copy of a repository
+(a <code>git clone</code> if using Git) and a fresh workspace for additional
+value-added services the hosting provider offers (pull requests, issues,
+wikis, project tracking, release tracking, etc). If you open the main
+web page for a <em>fork</em> on these services, it looks just like the main
+project's. You know it is a fork because there are cosmetics somewhere
+(typically next to the project/repository name) saying <em>forked from</em>.</p>
+<p>Before service providers adopted the <em>fork</em> terminology, <em>fork</em> was
+used in open source to refer to a splintering of a project. If
+someone or a group of people didn't like the direction a project was
+taking, wanted to take over ownership of a project because of
+stagnation, etc, they would <em>fork it</em>. The <em>fork</em> was based on the
+original (and there may even be active collaboration between the
+fork and original), but the intent of the <em>fork</em> was to create
+distance between the original project and its new incantation. A
+new entity that was sufficiently independent of the original.</p>
+<p><em>Forks</em> on service providers mostly retain this <em>old school</em> <em>fork</em>
+model. The <em>fork</em> gets a new copy of issues, wikis, etc. And anyone
+who <em>forks</em> establishes what looks like an independent incantation
+of a project. It's worth noting that the execution varies by service
+provider. For example, GitHub won't enable <em>Issues</em> for a fork by
+default, thereby encouraging people to file issues against the
+<em>upstream</em> project it was forked from. (This is good default behavior.)</p>
+<p>And I know why service providers (initially) implemented things this
+way: it was easy. If you are building a product, it's simpler to just
+say <em>a user's version of this project is a <code>git clone</code> and they get
+a fresh database</em>. On a technical level, this meets the traditional
+definition of <em>fork</em>. And rather than introduce a new term into the
+vernacular, they just re-purposed <em>fork</em> (albeit with <em>softer</em>
+connotations, since the traditional <em>fork</em> commonly implied there
+was some form of strife precipitating a <em>fork</em>).</p>
+<p>To help differentiate flavors of <em>forks</em>, I'm going to define the
+terms <em>soft fork</em> and <em>hard fork</em>. A <em>soft fork</em> is a <em>fork</em> that
+exists for purposes of collaboration. The differentiating feature
+between a <em>soft fork</em> and <em>hard fork</em> is whether the <em>fork</em> is
+intended to be used as its own project. If it is, it is a
+<em>hard fork</em>. If not - if all changes are intended to be <em>merged</em>
+into the <em>upstream</em> project and be consumed from there - it is a
+<em>soft fork</em>.</p>
+<p>I don't have concrete numbers, but I'm willing to wager that the vast
+majority of <em>forks</em> on Git service providers which have changes are
+<em>soft forks</em> rather than <em>hard forks</em>. In other words, these <em>forks</em>
+exist purely as a conduit to collaborate with the canonical/upstream
+project (or to facilitate a short-lived one-off change).</p>
+<p>The current implementation of <em>fork</em> - which borrows a lot from its
+predecessor of the same name - is a good - but not great - way to
+facilitate collaboration. It isn't great because it technically
+resembles what you'd expect to see for <em>hard fork</em> use cases even
+though it is used predominantly with <em>soft forks</em>. This mismatch
+creates problems.</p>
+<p>If you were to take a step back and invent your own version control
+hosted service and weren't tainted by exposure to existing services
+and were willing to think a bit beyond making it a glorified frontend
+for the <code>git</code> command line interface, you might realize that the problem
+you are solving - the product you are selling - is collaboration as
+a service, not a Git hosting service. And if your product is
+collaboration, then implementing your collaboration model around the
+<em>hard fork</em> model with strong barriers between the original project and
+its <em>forks</em> is counterproductive and undermines your own product.
+But this is how GitHub, Bitbucket, GitLab, and others have implemented
+their product!</p>
+<p>To improve collaboration on version control hosted services, the concept
+of a <em>fork</em> needs to significantly curtailed. Replacing it should be
+a UI and workflow that revolves around the central, canonical repository.</p>
+<p>You shouldn't need to create your own <em>clone</em> or <em>fork</em> of a repository
+in order to contribute. Instead, you should be able to clone the
+canonical repository. When you create commits, those commits should
+be stored and/or more tightly affiliated with the original project - not
+inside a <em>fork</em>.</p>
+<p>One potential implementation is doable today. I'm going to call it
+<em>workspaces</em>. Here's how it would work.</p>
+<p>There would exist a namespace for <em>refs</em> that can be controlled by
+the user. For example, on GitHub (where my username is <em>indygreg</em>),
+if I wanted to contribute to some random project, I would <code>git push</code>
+my refs somewhere under <code>refs/users/indygreg/</code> directly to that
+project's. No <em>forking</em> necessary. If I wanted to contribute to a
+project, I would just clone its repo then push to my <em>workspace</em> under
+it. You could do this today by configuring your Git <em>refspec</em> properly.
+For pushes, it would look something like
+<code>refs/heads/*:refs/users/indygreg/*</code> (that tells Git to map local <em>refs</em>
+under <code>refs/heads/</code> to <code>refs/users/indygreg/</code> on that <em>remote</em> repository).
+If this became a popular feature, presumably the Git wire protocol could
+be taught to advertise this feature such that Git clients automatically
+configured themselves to push to user-specific <em>workspaces</em> attached to
+the original repository.</p>
+<p>There are several advantages to such a <em>workspace</em> model. Many of them
+revolve around eliminating <em>forks</em>.</p>
+<p>At initial contribution time, no server-side <em>fork</em> is necessary in order
+to contribute. You would be able to <em>clone and contribute</em> without waiting
+for or configuring a <em>fork</em>. Or if you can create commits from the web
+interface, the clone wouldn't even be necessary! Lowering the barrier to
+contribution is a good thing, especially if collaboration is the product
+you are selling.</p>
+<p>In the web UI, <em>workspaces</em> would also revolve around the source project
+and not be off in their own world like <em>forks</em> are today. People could
+more easily see what others are up to. And fetching their work would
+require typing in their username as opposed to configuring a whole new
+remote. This would bring communities closer and hopefully lead to better
+collaboration.</p>
+<p>Not requiring <em>forks</em> also eliminates the need to synchronize your <em>fork</em>
+with the upstream repository. I don't know about you, but one of the things
+that bothers me about the <em>Game of Refs</em> that Git imposes is that I have
+to keep my <em>refs</em> in sync with the upstream <em>refs</em>. When I fetch from
+<em>origin</em> and pull down a new <em>master</em> branch, I need to <code>git merge</code>
+that branch into my local <em>master</em> branch. Then I need to push that new
+<em>master</em> branch to my fork. This is quite tedious. And it is easy to merge
+the wrong branches and get your <em>branch</em> state out of whack. There are
+better ways to map remote <em>refs</em> into your local names to make this far
+less confusing.</p>
+<p>Another win here is not having to push and store data multiple times.
+When working on a <em>fork</em> (which is a separate repository), after you
+<code>git fetch</code> changes from upstream, you need to eventually <code>git push</code> those
+into your <em>fork</em>. If you've ever worked on a large repository and didn't
+have a super fast Internet connection, you may have been stymied by
+having to <code>git push</code> large amounts of data to your <em>fork</em>. This is quite
+annoying, especially for people with slow Internet connections. Wouldn't
+it be nice if that <code>git push</code> only pushed the data that was truly new and
+didn't already exist somewhere else on the server? A <em>workspace</em> model
+where development all occurs in the original repository would fix this.
+As a bonus, it would make the storage problem on servers easier because
+you would eliminate thousands of forks and you probably wouldn't have to
+care as much about data duplication across repos/clones because the
+version control tool solves a lot of this problem for you, courtesy of
+having all data live alongside or in the original repository instead of
+in a <em>fork</em>.</p>
+<p>Another win from <em>workspace</em>-centric development would be the potential to
+do more user-friendly things after <em>pull/merge requests</em> are incorporated
+in the official project. For example, the <em>ref</em> in your workspace could
+be deleted automatically. This would ease the burden on users to clean up
+after their submissions are accepted. Again, instead of mashing keys to
+play the <em>Game of Refs</em>, this would all be taken care of for you
+automatically. (Yes, I know there are scripts and shell aliases to
+make this more turn-key. But user-friendly behavior shouldn't have to
+be opt-in: it should be the default.)</p>
+<p>But <em>workspaces</em> aren't all rainbows and unicorns. There are access
+control concerns. You probably don't want users able to mutate the
+<em>workspaces</em> of other users. Or do you? You can make a compelling
+case that project <em>administrators</em> should have that ability. And what if
+someone pushes bad or illegal content to a workspace and you receive
+a cease and desist? Can you take down just the offending workspace while
+complying with the order? And what happens if the original project is
+deleted? Do all its workspaces die with it? These are not trivial
+concerns. But they don't feel impossible to tackle either.</p>
+<p><em>Workspaces</em> are only one potential alternative to <em>forks</em>. And I can
+come up with multiple implementations of the <em>workspace</em> concept. Although
+many of them are constrained by current features in the Git wire protocol.
+But Git is (finally) getting a more extensible wire protocol, so hopefully
+this will enable <em>nice things</em>.</p>
+<p>I challenge Git service providers like GitHub, Bitbucket, and GitLab to
+think outside the box and implement something better than how <em>forks</em>
+are implemented today. It will be a large shift. But I think users will
+appreciate it in the long run.</p>
+<h2>Conclusion</h2>
+<p>Git is an ubiquitous version control tool. But it is
+<a href="http://stevelosh.com/blog/2013/04/git-koans/">frequently lampooned</a> for
+its <a href="https://stevebennett.me/2012/02/24/10-things-i-hate-about-git/">poor usability</a>
+and <a href="https://git-man-page-generator.lokaltog.net/">documentation</a>.
+We even have
+<a href="https://spderosso.github.io/onward13.pdf">research</a>
+<a href="https://spderosso.github.io/oopsla16.pdf">papers</a> telling us which parts
+are bad. Nobody I know has had a pleasant initial experience with Git.
+And it is clear that few people actually understand Git: most just know
+the command incantations they need to know to accomplish a small set of
+common activities. (If you are such a person, there is nothing to be
+ashamed about: Git is a <em>hard</em> tool.)</p>
+<p>Popular Git-based hosting and collaboration services (such as GitHub,
+Bitbucket, and GitLab) exist. While they've made strides to make it
+easier to commit data to a Git repository (I purposefully avoid saying
+<em>use Git</em> because the most usable tools seem to avoid the <code>git</code> command
+line interface as much as possible), they are often a thin veneer over
+Git itself (see <em>forks</em>). And Git is a thin veneer over a content
+indexed key-value store (see forced usage of bookmarks).</p>
+<p>As an industry, we should be concerned about the lousy usability of Git
+and the tools and services that surround it. Some may say that Git -
+with its near monopoly over version control mindset - is a success. I
+have a different view: I think it is a failure that a tool with a user
+experience this bad has achieved the success it has.</p>
+<p>The cost to Git's poor usability can be measured in tens if not hundreds
+of millions of dollars in time people have wasted because they couldn't
+figure out how to use Git. Git should be viewed as a source of
+embarrassment, not a success story.</p>
+<p>What's really concerning is that the usability problems of Git have been
+known for years. Yet it is as popular as ever and there have been few
+substantial usability improvements. We do have some
+<a href="http://gitless.com/">alternative frontends</a> floating around. But these
+haven't caught on.</p>
+<p>I'm at a loss to understand how an open source tool as popular as Git
+has remained so mediocre for so long. The source code is out there.
+Anybody can submit a patch to fix it. Why is it that so many people get
+tripped up by the same poor usability issues years after Git became
+the common version control tool? It certainly appears that as an
+industry we have been unable or unwilling to address systemic deficiencies
+in a critical tool. Why this is, I'm not sure.</p>
+<p>Despite my pessimism about Git's usability and its poor track record of
+being attentive to the needs of people who aren't power users, I'm
+optimistic that the future will be brighter. While the ~7000 words in this
+post pale in comparison to the aggregate word count that has been
+written about Git, hopefully this post strikes a nerve and causes
+positive change. Just because one generation has toiled with the
+usability problems of Git doesn't mean the next generation has to
+suffer through the same. Git can be improved and I encourage that change
+to happen. The three issues above and their possible solutions would
+be a good place to start.</p>]]></content:encoded>
+    </item>
     <item>
       <title>from __past__ import bytes_literals</title>
       <link>http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals</link>
@@ -1312,55 +2022,6 @@ into the mix, which will make the execution environment as
 or more secure than the Firefox content process sandbox, depending
 on how it is implemented. The rabbit holes we find ourselves in to
 implement proper security...</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>hg.mozilla.org Operational Workings Now Open Sourced</title>
-      <link>http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced</link>
-      <pubDate>Tue, 04 Aug 2015 14:30:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced</guid>
-      <description>hg.mozilla.org Operational Workings Now Open Sourced</description>
-      <content:encoded><![CDATA[<p>Just a few minutes ago, hg.mozilla.org reached an important milestone:
-deployments are now performed via Ansible from our open source
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository instead of via Puppet from Mozilla's private <em>sysadmins</em>
-repository. This is important for a few reasons.</p>
-<p>First, the code behind the operation of hg.mozilla.org is now open source
-and available for the public to see and change. I strive for my work at
-Mozilla to be open by default. With hg.mozilla.org's private Puppet
-repository, people weren't able to see what was going on under the
-covers. Nor were they empowered to change anything. This may come as a
-shock, but even I don't have commit privileges to the internal Puppet
-repository that was previously powering hg.mozilla.org! I did have read
-access. But any change I wanted to make involved me proxying it through
-one of two people. It was tedious, made me feel uncomfortable for having to
-nag people to do my work, and slowed everyone down. We no longer have this
-problem, thankfully.</p>
-<p>Second, having the Ansible code in version-control-tools enables us to
-use the same operational configuration in production as we do in our
-Docker test environment. I can now spin up a cluster of Docker
-containers that behave very similarly to the production servers (which
-aren't running Docker). This enables us to write end-to-end tests of
-complex systems running across multiple Docker containers and have
-relatively high confidence that our production and testing environments
-behave very similarly. In other words, I can test complex interactions
-between multiple systems all from my local machine - even from a plane!
-For example, we can and do test that SSH connections to a simulated
-production environment running in Docker behave as expected, complete
-with an OpenSSH server speaking to an OpenLDAP server for SSH public
-key lookup. While we still have many tests to write, we had no such
-tests a year ago and every production deployment was a
-cross-your-fingers type moment. Having comprehensive tests gives us
-confidence to move fast and not break things.</p>
-<p>One year ago, hg.mozilla.org's infrastructure was opaque, didn't have
-automated tests, and was deployed too seldomly. There was the often
-correct perception that changing this critical-to-Mozilla service was
-difficult and slow. Today, things couldn't be more different. <strong>The
-hg.mozilla.org infrastructure is open, we have tests, and we can and
-do deploy multiple times per day without forward notice and without
-breaking things.</strong> I love this brave new world of open infrastructure
-and moving fast.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
