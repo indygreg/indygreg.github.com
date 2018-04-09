@@ -51,6 +51,224 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="release-of-python-zstandard-0.9"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/04/09/release-of-python-zstandard-0.9" rel="bookmark" title="Permanent Link to Release of python-zstandard 0.9">Release of python-zstandard 0.9</a></h2>
+  <small>April 09, 2018 at 09:30 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2018/04/09/release-of-python-zstandard-0.9#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I have just released
+<a href="https://pypi.python.org/pypi/zstandard/0.9.0">python-zstandard 0.9.0</a>. You can
+install the latest release by running <code>pip install zstandard==0.9.0</code>.</p>
+<p><a href="http://facebook.github.io/zstd/">Zstandard</a> is a highly tunable and therefore
+flexible compression algorithm with support for modern features such as
+multi-threaded compression and <em>dictionaries</em>. Its performance is remarkable
+and if you use it as a drop-in replacement for zlib, bzip2, or other common
+algorithms, you'll frequently see more than a doubling in performance.</p>
+<p>python-zstandard provides rich bindings to the zstandard C library without
+sacrificing performance, safety, features, or a Pythonic feel. The bindings
+run on Python 2.7, 3.4, 3.5, 3.6, 3.7 using either a C extension or CFFI
+bindings, so it works with CPython and PyPy.</p>
+<p>I can make a compelling argument that python-zstandard is one of the
+richest compression packages available to Python programmers. Using it, you
+will be able to leverage compression in ways you couldn't with other packages
+(especially those in the standard library) all while achieving ridiculous
+performance. Due to my focus on performance, python-zstandard is able to
+outperform Python bindings to other compression libraries that <em>should</em> be
+faster. This is because python-zstandard is very diligent about minimizing
+memory allocations and copying, minimizing Python object creation, reusing
+state, etc.</p>
+<p>While python-zstandard is formally marked as a beta-level project and hasn't
+yet reached a 1.0 release, it is suitable for production usage.
+python-zstandard 0.8 shipped with Mercurial and is in active production
+use there. I'm also aware of other consumers using it in production, including
+at Facebook and Mozilla.</p>
+<p>The sections below document some of the new features of python-zstandard 0.9.</p>
+<h2>File Object Interface for Reading</h2>
+<p>The 0.9 release contains a <code>stream_reader()</code> API on the compressor and
+decompressor objects that allows you to treat those objects as readable file
+objects. This means that you can pass a <code>ZstdCompressor</code> or <code>ZstdDecompressor</code>
+around to things that accept file objects and things generally <em>just work</em>.
+e.g.:</p>
+<div class="pygments_murphy"><pre><span></span>   <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">compressed_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ifh</span><span class="p">:</span>
+       <span class="n">cctx</span> <span class="o">=</span> <span class="n">zstd</span><span class="o">.</span><span class="n">ZstdDecompressor</span><span class="p">()</span>
+       <span class="k">with</span> <span class="n">cctx</span><span class="o">.</span><span class="n">stream_reader</span><span class="p">(</span><span class="n">ifh</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+           <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+               <span class="n">chunk</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">32768</span><span class="p">)</span>
+               <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="p">:</span>
+                   <span class="k">break</span>
+</pre></div>
+
+<p>This is probably the most requested python-zstandard feature.</p>
+<p>While the feature is usable, it isn't complete. Support for <code>readline()</code>,
+<code>readinto()</code>, and a few other APIs is not yet implemented. In addition,
+you can't use these <em>reader</em> objects for opening zstandard compressed
+tarball files because Python's <code>tarfile</code> package insists on doing
+backward seeks when reading. The current implementation doesn't support
+backwards seeking because that requires buffering decompressed output and that
+is not trivial to implement. I recognize that all these features are useful
+and I will try to work them into a subsequent release of 0.9.</p>
+<h2>Negative Compression Levels</h2>
+<p>The 1.3.4 release of zstandard (which python-zstandard 0.9 bundles) supports
+negative compression levels. I won't go into details, but negative compression
+levels disable extra compression features and allow you to trade compression
+ratio for more speed.</p>
+<p>When compressing a 6,472,921,921 byte uncompressed bundle of the Firefox
+Mercurial repository, the previous fastest we could go with level 1 was
+~510 MB/s (measured on the input side) yielding a 1,675,227,803 file (25.88%
+of original).</p>
+<p>With level <code>-1</code>, we compress to 1,934,253,955 (29.88% of original) at
+~590 MB/s. With level <code>-5</code>, we compress to 2,339,110,873 bytes (36.14% of
+original) at ~720 MB/s.</p>
+<p>On the decompress side, level 1 decompresses at ~1,150 MB/s (measured at
+the output side), -1 at ~1,320 MB/s, and -5 at ~1,350 MB/s (generally speaking,
+zstandard's decompression speeds are relatively similar - and fast - across
+compression levels).</p>
+<p>And that's just with a single thread. zstandard supports using multiple
+threads to compress a single input and python-zstandard makes this feature
+easy to use. Using 8 threads on my 4+4 core i7-6700K, level 1 compresses
+at ~2,000 MB/s (3.9x speedup), -1 at ~2,300 MB/s (3.9x speedup), and -5
+at ~2,700 MB/s (3.75x speedup).</p>
+<p>That's with a large input. What about small inputs?</p>
+<p>If we take 456,599 Mercurial commit objects spanning 298,609,254 bytes from
+the Firefox repository and compress them individually, at level 1 we yield
+a total of 133,457,198 bytes (44.7% of original) at ~112 MB/s. At level -1,
+we compress to 161,241,797 bytes (54.0% of original) at ~215 MB/s. And at
+level -5, we compress to 185,885,545 bytes (62.3% of original) at ~395 MB/s.</p>
+<p>On the decompression side, level 1 decompresses at ~260 MB/s, -1 at
+~1,000 MB/s, and -5 at ~1,150 MB/s.</p>
+<p>Again, that's 456,599 operations on a single thread with Python.</p>
+<p>python-zstandard has an <em>experimental</em> API where you can pass in a collection
+of inputs and it batch compresses or decompresses them in a single operation.
+It releases and GIL and uses multiple threads. It puts the results in shared
+buffers in order to minimize the overhead of memory allocations and Python
+object creation and garbage collection. Using this mode with 8 threads on
+my 4+4 core i7-6700K, level 1 compresses at ~525 MB/s, -1 at ~1,070 MB/s,
+and -5 at ~1,930 MB/s. On the decompression side, level 1 is ~1,320 MB/s,
+-1 at ~3,800 MB/s, and -5 at ~4,430 MB/s.</p>
+<p>So, my consumer grade desktop i7-6700K is capable of emitting decompressed
+data at over 4 GB/s with Python. That's pretty good if you ask me. (Full
+disclosure: the timings were taken just around the compression operation
+itself: overhead of loading data into memory was not taken into account. See
+the <code>bench.py</code> script in the
+<a href="https://github.com/indygreg/python-zstandard">source repository</a> for more.</p>
+<h2>Long Distance Matching Mode</h2>
+<p>Negative compression levels take zstandard into performance territory that
+has historically been reserved for compression formats like lz4 that are
+optimized for that domain. <em>Long distance matching</em> takes zstandard in the
+other direction, towards compression formats that aim to achieve optimal
+compression ratios at the expense of time and memory usage.</p>
+<p>python-zstandard 0.9 supports long distance matching and all the configurable
+parameters exposed by the zstandard API.</p>
+<p>I'm not going to capture many performance numbers here because python-zstandard
+performs about the same as the C implementation because <em>LDM</em> mode spends
+most of its time in zstandard C code. If you are interested in numbers, I
+recommend reading the zstandard
+<a href="https://github.com/facebook/zstd/releases/tag/v1.3.2">1.3.2</a>
+and <a href="https://github.com/facebook/zstd/releases/tag/v1.3.4">1.3.4</a> release notes.</p>
+<p>I will, however, underscore that zstandard can achieve close to lzma's
+compression ratios (what the <code>xz</code> utility uses) while completely smoking
+lzma on decompression speed. For a bundle of the Firefox Mercurial repository,
+zstandard level 19 with a long distance window size of 512 MB using 8 threads
+compresses to 1,033,633,309 bytes (16.0%) in ~260s wall, 1,730s CPU.
+<code>xz -T8 -8</code> compresses to 1,009,233,160 (15.6%) in ~367s wall, ~2,790s CPU.</p>
+<p>On the decompression side, zstandard takes ~4.8s and runs at ~1,350 MB/s as
+measured on the output side while <code>xz</code> takes ~54s and runs at ~114 MB/s.
+Zstandard, however, does use a lot more memory than <code>xz</code> for decompression,
+so that performance comes with a cost (512 MB versus 32 MB for this
+configuration).</p>
+<h2>Other Notable Changes</h2>
+<p>python-zstandard now uses the <em>advanced</em> compression and decompression APIs
+everywhere. All tunable compression and decompression parameters are available
+to python-zstandard. This includes support for disabling magic headers in frames
+(saves 4 bytes per frame - this can matter for very small inputs, especially when
+using dictionary compression).</p>
+<p>The full dictionary training API is exposed. Dictionary training can now use
+multiple threads.</p>
+<p>There are a handful of utility functions for inspecting zstandard frames,
+querying the state of compressors, etc.</p>
+<p>Lots of work has gone into shoring up the code base. We now build with warnings
+as errors in CI. I performed a number of focused auditing passes to fix
+various classes of deficiencies in the C code. This includes use of the
+<em>buffer protocol</em>: python-zstandard is now able to accept <em>any</em> Python
+object that provides a view into its underlying raw data.</p>
+<p>Decompression contexts can now be constructed with a max memory threshold
+so attempts to decompress something that would require more memory will
+result in error.</p>
+<p>See the
+<a href="https://github.com/indygreg/python-zstandard/releases/tag/0.9.0">full release notes</a>
+for more.</p>
+<h2>Conclusion</h2>
+<p>Since I last released a major version of python-zstandard, a lot has changed in
+the zstandard world. As I
+<a href="/blog/2017/03/07/better-compression-with-zstandard/">blogged last year</a>,
+zstandard circa early 2017 was a very compelling compression format: it already
+outperformed popular compression formats like zlib and bzip2 across the board.
+As a <em>general purpose</em> compression format, it made a compelling case for itself.
+In my mind, <em>snappy</em> was its only real challenger.</p>
+<p>As I wrote then, zstandard isn't perfect. (Nothing is.) But a year later, it
+is refreshing to see advancements.</p>
+<p>A criticism one year ago was zstandard was pretty good as a general purpose
+compression format but it wasn't great if you live at the fringes. If you were
+a speed freak, you'd probably use lz4. If you cared about compression ratios,
+you'd probably use lzma. But recent releases of zstandard have made huge strides
+into the territory of these niche formats. Negative compression levels allow
+zstandard to flirt with lz4's performance. Long distance matching allows
+zstandard to achieve close to lzma's compression ratios. <strong>This is a big friggin
+deal because it makes it much, much harder to justify a domain-specific compression
+format over zstandard.</strong> I think lzma still has a significant edge for ultra
+compression ratios when memory utilization is a concern. But for many consumers,
+memory is readily available and it is easy to justify trading potentially hundreds
+of megabytes of memory to achieve a 10x speedup for decompression. Even if you
+aren't willing to sacrifice more memory, the ability to tweak compression
+parameters is huge. You can do things like store multiple versions of a
+compressed document and conditionally serve the one most appropriate for the
+client, all while running the same zstandard-only code on the client. That's
+huge.</p>
+<p>A year later, zstandard continues to impress me for its set of features and its
+versatility. The library is continuing to evolve - all while maintaining
+backwards compatibility on the decoding side. (That's a sign of a good
+format design if you ask me.) I was honestly shocked to see that zstandard
+was able to change its compression settings in a way that allowed it to compete
+with lz4 and lzma without requiring a format change.</p>
+<p>Snappy is another promising modern compression format. However, the project
+appears to have died off. There are only
+<a href="https://github.com/google/snappy/commits/master">5 commits so far in 2018</a>.
+(zstandard has 357.) Competition is good and I was hoping Google/snappy would
+provide some <em>competitive</em> pressure for Facebook/zstandard. But who knows
+what's happening on the snappy side of the world. Zstandard continues to make
+meaningful improvements, so I can't complain about its pace of progress.</p>
+<p>The more I use zstandard, the more I think that <em>everyone should use this</em> and
+that popular compression formats just aren't cut out for modern computing any
+more. Every time I download a zlib/gz or bzip2 compressed archive, I'm thinking
+<em>if only they used zstandard this archive would be smaller, it would have
+decompressed already, and I wouldn't be thinking about how annoying it is
+to wait for compression operations to complete</em>. In my mind, zstandard is such
+an obvious advancement over the status quo and is such a versatile format -
+now covering the gamut of super fast compression to ultra ratios - that it is
+bordering on negligent to not use zstandard. With the removal of the controversial
+patent rights grant license clause in zstandard 1.3.1, that justifiable
+resistance to widespread adoption of zstandard has been eliminated. Zstandard
+is objectively superior for many workloads and I heavily encourage its use. I
+believe python-zstandard provides a high-quality interface to zstandard and
+I encourage you to give it and zstandard a try the next time you compress data.</p>
+<p>If you run into any problems or want to get involved with development,
+python-zstandard lives at
+<a href="https://github.com/indygreg/python-zstandard">indygreg/python-zstandard</a> on
+GitHub.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/04/09/release-of-python-zstandard-0.9#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="high-level-problems-with-git-and-how-to-fix-them"></a>
   <h2 class="blog_post_title"><a href="/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them" rel="bookmark" title="Permanent Link to High-level Problems with Git and How to Fix Them">High-level Problems with Git and How to Fix Them</a></h2>
   <small>December 11, 2017 at 10:30 AM | categories: 
@@ -1609,181 +1827,6 @@ supplemental license in the <code>PATENTS</code> file.)</em></p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/03/07/better-compression-with-zstandard#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial,-sha-1,-and-trusting-version-control"></a>
-  <h2 class="blog_post_title"><a href="/blog/2017/02/28/mercurial,-sha-1,-and-trusting-version-control" rel="bookmark" title="Permanent Link to Mercurial, SHA-1, and Trusting Version Control">Mercurial, SHA-1, and Trusting Version Control</a></h2>
-  <small>February 28, 2017 at 12:40 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2017/02/28/mercurial,-sha-1,-and-trusting-version-control#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The Internet went crazy on Thursday when Google
-<a href="https://security.googleblog.com/2017/02/announcing-first-sha1-collision.html">announced a SHA-1 collision</a>.
-This has spawned a lot of talk about the impact of SHA-1 in version
-control. Linus Torvalds (the creator of Git) weighed in on the
-<a href="http://marc.info/?l=git&amp;m=148787047422954">Git mailing list</a> and on
-<a href="https://plus.google.com/+LinusTorvalds/posts/7tp2gYWQugL">Google+</a>.
-There are also posts like
-<a href="http://www.metzdowd.com/pipermail/cryptography/2017-February/031623.html">SHA1 collisions make Git vulnerable to attakcs by third-parties, not just repo maintainers</a>
-outlining the history of Git and SHA-1. On the Mercurial side,
-Matt Mackall (the creator of Mercurial) authored a
-<a href="https://www.mercurial-scm.org/wiki/mpm/SHA1">SHA-1 and Mercurial security article</a>.
-(If you haven't read Matt's article, please do so now before
-continuing.)</p>
-<p>I'd like to contribute my own take on the problem with a slant towards
-Mercurial and while also comparing Mercurial's exposure to SHA-1
-collisions to Git's. Since this is a security topic, I'd like to
-explicitly state that I'm not a cryptographer. However, I've worked on
-a number of software components that do security/cryptography (like
-Firefox Sync) and I'm pretty confident saying that my grasp on
-cryptographic primitives and security techniques is better than the
-average developer's.</p>
-<p>Let's talk about Mercurial's exposure to SHA-1 collisions on a technical
-level.</p>
-<p>Mercurial, like Git, is <em>vulnerable</em> to SHA-1 collisions. Mercurial is
-vulnerable because its logical storage mechanism (like Git's) indexes
-tracked content by SHA-1. If two objects with differing content have the
-same SHA-1, content under version control could be changed and detecting
-that would be difficult or impossible. That's obviously bad.</p>
-<p>But, Mercurial's exposure to SHA-1 collisions isn't as severe as Git's.
-To understand why, we have to understand how each stores data.</p>
-<p>Git's logical storage model is a content-addressable key-value store.
-Values (<em>objects</em> in Git parlance) consist of a header identifying the
-object type (commit, tree, blob, or tag), the size of the data (as a
-string), and the raw content of the thing being stored. Common content
-types are file content (blob), a list of files (tree), and a description
-of a commit (commit). Keys in this blob store are SHA-1 hashes of objects.
-All Git objects go into a single <em>namespace</em> in the Git repository's
-<em>store</em>. A beneficial side-effect of this is data de-duplication: if the
-same file is added to a Git repository, it's <em>blob</em> object will be
-identical and it will only be stored once by Git. A detrimental
-side-effect is that hash collisions are possible between any two objects,
-irregardless of their type or location in the repository.</p>
-<p>Mercurial's logical storage model is also content-addressable. However,
-it is significantly different from Git's approach. Mercurial's logical
-storage model allocates a separate sub-store for each tracked <em>path</em>.
-If you run <code>find .hg/store -name '*.i'</code> inside a Mercurial repository,
-you'll see these files. There is a separate file for each path
-that has committed data. If you <code>hg add foo.txt</code> and <code>hg commit</code>, there
-will be a <code>data/foo.txt.i</code> file holding data for <code>foo.txt</code>.
-There are also special files <code>00changelog.i</code> and <code>00manifest.i</code> holding
-data for commits/changesets and file lists, respectively. Each of these
-<code>.i</code> files - a <a href="https://www.mercurial-scm.org/repo/hg/file/a185b903bda3/mercurial/help/internals/revlogs.txt">revlog</a> -
-is roughly equivalent to an ordered collection of Git objects for a
-specific tracked path. This means that Mercurial's store consists of
-N discrete and independent namespaces for data. Contrast with Git's
-single namespace.</p>
-<p>The benefits and drawbacks are the opposite of those pointed out for
-Git above: Mercurial doesn't have automatic content-based de-duplication
-but it does provide some defense against hash collisions. Because each
-logical path is independent of all others, a Mercurial repository will
-happily commit two files with different content but same hashes. This
-is more robust than Git because a hash collision is isolated to a single
-logical path / revlog. In other words, a random file added to the
-repository in directory <code>X</code> that has a hash collision with a file in
-directory <code>Y</code> won't cause problems.</p>
-<p>Mercurial also differs significantly from Git in terms of how the hash
-is obtained. Git's hash is computed from raw content preceded by a header
-derived directly from the object's role and size. (Takeaway: the header is
-static and can be derived trivially.) Mercurial's hash is computed from
-raw content preceded by a header. But that header consists of the 20 byte
-SHA-1 hash(es) of the parent revisions in the revlog to which the content
-is being added. This <em>chaining</em> of hashes means that the header is not
-always static nor always trivially derived. This means that the same
-content can be stored in the revlog under multiple hashes. It also means
-that it is possible to store differing content having a hash collision
-within the same revlog! But only under some conditions - Mercurial will
-still barf in some scenarios if there is a hash collision within content
-tracked by the revlog. This is different from Git's behavior, where the
-same content <em>always</em> results in the same Git object hash. (It's worth
-noting that a SHA-1 collision on data with a Git object header has not
-yet been encountered in the wild.)</p>
-<p>The takeaway from the above paragraphs is Mercurial's storage model
-is slightly more robust against hash collisions than Git's because there
-are multiple, isolated namespaces for storing content and because all
-hashes are chained to previous content. So, when SHA-1 collisions
-are more achievable and someone manages to create a collision for a
-hash used by version control, Mercurial's storage layer will be able
-to cope with that better than Git's.</p>
-<p>But the concern about SHA-1 weakness is more about security than storage
-robustness. The disaster scenario for version control is that an
-attacker could replace content under version control, possibly
-undetected. If one can generate a hash collision, then this is
-possible. Mercurial's chaining of content provides some defense, but
-it isn't sufficient.</p>
-<p>I agree with <a href="https://www.mercurial-scm.org/wiki/mpm/SHA1">Matt Mackall</a>
-that at the present time there are bigger concerns with content
-safety than SHA-1 collisions. Namely, if you are an attacker, it is
-much easier to introduce a subtle bug that contains a security
-vulnerability than to introduce a SHA-1 collision. It is also
-much easier to hack the canonical version control server (or any
-user or automated agent that has permissions to push to the server)
-and add a <em>bad</em> commit. Many projects don't have adequate defenses
-to detect such <em>bad</em> commits. Ask yourself: if a bad actor pushed
-a <em>bad</em> commit to my repository, would it be detected? Keep in mind
-that spoofing author and committer metadata in commits is trivial.
-<strong>The current state of Mercurial and Git rely primarily on trust -
-not SHA-1 hashes - as their primary defense against malicious
-actors.</strong></p>
-<p>The desire to move away from SHA-1 has been on the radar of the
-Mercurial project for years. For 10+ years, the <em>revlog</em> data
-structure has allocated 32 bytes for hashes while only using 20 bytes
-for SHA-1. And, the topic of SHA-1 weakness and desire to move to
-something stronger has come up at the developer <em>sprints</em> for the
-past several years. However, it has never been pressing enough to act
-on because <em>there are bigger problems</em>. If it were easy to change, then
-Mercurial likely would have done it already. But changing is not easy.
-As soon as you introduce a new hash format in a repository, you've
-potentially locked out all legacy versions of the Mercurial software
-from accessing the repository (unless the repository stores multiple
-hashes and allows legacy clients to access the legacy SHA-1 hashes).
-There are a number of concerns from legacy compatibility (something
-Mercurial cares deeply about) to user experience to even performance
-(SHA-1 hashing even at 1000+MB/s floats to the top of performance
-profiling for some Mercurial operations). I'm sure the topic will be
-discussed heavily at the upcoming developers sprint in a few weeks.</p>
-<p>While Mercurial should (and will eventually) replace SHA-1, I think
-the biggest improvement Mercurial (or Git for that matter) can make
-to repository <em>security</em> is providing a better mechanism for tracking
-and auditing trust. Existing mechanisms for GPG signing every commit
-aren't practical or are a non-starer for many workflows. And, they
-rely on GPG, which has notorious end-user usability problems. (I would
-prefer my version control tool not subject me to toiling with GPG.)
-I've thought about this topic considerably, authoring a
-<a href="https://www.mercurial-scm.org/wiki/CommitSigningPlan">proposal for easier and more flexible commit signing</a>.
-There is also a related proposal to establish a
-<a href="https://www.mercurial-scm.org/wiki/CommitCustodyConcept">cryptographically meaningful chain-of-custody for a patch</a>.
-There are some good ideas there. But, like all user-facing
-cryptography, the devil is in the details. There are some hard
-problems to solve, like how to manage/store public keys that were
-used for signatures. While there is some prior art in version control
-tools (see Monotone), it is far from a solved problem. And at the
-end of the day, you are still left having to trust a set of keys
-used to produce signatures.</p>
-<p>While version control can keep using cryptographically strong hashes
-to mitigate collisions within its storage layer to prevent content
-swapping and can employ cryptographic signatures of tracked data,
-there is still the issue of trust. Version control can give you the
-tools for establishing and auditing trust. Version control can also
-provide tools for managing trust relationships. But at the end of the
-day, the actual act of trusting trust boils down to people making
-decisions (possibly through corporate or project policies). This
-will always be a weak link. Therefore, it's what malicious actors
-will attack. The best your version control tool can do is give its
-users the capability and tools to run a secure and verifiable
-repository so that when bad content is inevitably added you can't
-blame the version control tool for having poor security.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/02/28/mercurial,-sha-1,-and-trusting-version-control#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/page/2">Next Page »</a>
 

@@ -51,6 +51,129 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="reproducing-mozilla's-mercurial-server"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/09/05/reproducing-mozilla's-mercurial-server" rel="bookmark" title="Permanent Link to Reproducing Mozilla's Mercurial Server">Reproducing Mozilla's Mercurial Server</a></h2>
+  <small>September 05, 2014 at 02:50 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Of of my first tasks in my
+<a href="/blog/2014/09/05/new-job-role/">new role</a> as a <em>Developer Productivity
+Engineer</em> is to help make Mozilla's Mercurial server better. Many of the
+awesome things we have planned rely on features in newer versions of
+Mercurial. It's therefore important for us to upgrade our Mercurial
+server to a modern version (we are currently running 2.5.4) and to keep
+our Mercurial server upgraded as time passes.</p>
+<p>There are a few reasons why we haven't historically upgraded our
+Mercurial server. First, as anyone who has maintained high-availability
+systems will tell you, there is the attitude of <em>if it isn't broken,
+don't fix it.</em> In other words, Mercurial 2.5.4 is working fine, so why
+mess with a good thing. This was all fine and dandy - until Mercurial
+started falling over in the last few weeks.</p>
+<p>But the blocker towards upgrading that I want to talk about today is
+systems verification. There has been extreme caution around upgrading
+Mercurial at Mozilla because it is a critical piece of Mozilla's
+infrastructure and if the upgrade were to not go well, the outage
+would be disastrous for developer productivity and could even jeopardize
+an emergency Firefox release.</p>
+<p>As much as I'd like to say that a modern version of Mercurial on the
+server would be a drop-in replacement (Mercurial has a great committment
+to backwards compatibility and has loose coupling between clients and
+servers such that upgrading servers should not impact clients), there is
+always a risk that something will change. And that risk is compounded by
+the amount of custom code we have running on our server.</p>
+<p>The way you protect against unexpected changes is testing. In the ideal
+world, you have a robust test suite that you run against a staging
+instance of a service to validate that any changes have no impact. In
+the absence of testing, you are left with fear, uncertainty, and doubt.
+FUD is an especially horrible philosophy when it comes to managing
+servers.</p>
+<p>Unfortunately, we don't really have a great testing infrastructure for
+Mozilla's Mercurial server. And I want to change that.</p>
+<h2>Reproducing the Server Environment</h2>
+<p>When writing tests, it is important for the thing being tested to be as
+similar as possible to the real thing. This is why so many people have
+an aversion to mocking: every time you alter the test environment, you run
+the risk that those differences from reality will mask changes seen in
+the real environment.</p>
+<p>So, it makes sense that a good first goal for creating a test suite against
+our Mercurial server should be to reproduce the production server and
+environment as closely as possible.</p>
+<p>I'm currently working on a Vagrant environment that attempts to
+reproduce the official environment as closely as possible. It starts
+one virtual machine for the SSH/master server. It starts a separate
+virtual machine for the hgweb/slave servers. The virtual machines are
+booting CentOS. This is different than production, where we run RHEL.
+But they are similar enough (and can share the same packages) that the
+differences shouldn't matter too much, at least for now.</p>
+<h2>Using Puppet</h2>
+<p>In production, Mozilla is using Puppet to manage the Mercurial servers.
+Unfortunately, the actual Puppet configs that Mozilla is running are
+behind a firewall, mainly for security reasons. This is potentially
+a huge setback for my reproducibility effort, as I'd like to have
+my virtual machines use the same exact Puppet configs as whats used
+in production so the environments match as closely as possible. This
+would also save me a lot of work from having to reinvent the wheel.</p>
+<p>Fortunately, Ben Kero has extracted the Mercurial-relevant Puppet
+config files into a
+<a href="https://github.com/bkero/puppet-module-hg">standalone repository</a>.
+Apparently that repository gets rolled into the production Puppet
+configs periodically. So, my virtual machines and production can share
+the same Mercurial Puppet files. Nice!</p>
+<p>It wasn't long after starting to use the standalone Puppet configs that
+I realized this would be a rabbit hole. This first manifests in the
+standalone Puppet code referencing things that exist in the hidden
+Mozilla Puppet files. So the liberation was only partially successful.
+Sad panda.</p>
+<p>So, I'm now in the process of creating a <em>fake Mozilla</em> Puppet
+environment that mimics the base Mozilla environment (from the closed
+repo) and am modifying the shared Puppet Mercurial code to work with
+both versions. This is a royal pain, but it needs to be done if we want
+to reproduce production and maintain peace of mind that test results
+reflect reality.</p>
+<p>Because reproducing runtime environments is important for reproducing
+and solving bugs and for testing, <strong>I call on the maintainers of
+Mozilla's closed Puppet repository to liberate it from behind its
+firewall</strong>. I'd like to see a public Puppet configuration tree available
+for all to use so that anyone anywhere can reproduce the state of a
+server or service operated by Mozilla to within reasonable
+approximation. Had this already been done, it would have saved me hours
+of work. As it stands, I'm reverse engineering systems and trying to
+cobble together understanding of how the Mozilla Puppet configs
+work and what parts of them can safely be ignored to reproduce an
+approximate testing environment.</p>
+<p>Along that vein, I finally got access to Mozilla's internal Puppet
+repository. This took a few meetings and apparently a lot of
+backroom chatter was generated - "developer's don't normally get access,
+oh my!" All I wanted was to see how systems are configured so I can
+help improve them. Instead, getting access felt like pulling teeth.
+This feels like a major roadblock towards productivity, reproducibility,
+and testing.</p>
+<p>Facebook gives its developers access to most production machines and
+trusts them to not be stupid. I know we (Mozilla) like to hold
+ourselves to a high standard of security and privacy. But not giving
+developers access to the configurations for the systems their code
+runs on feels like a very silly policy. I hope Mozilla invests in
+opening up this important code and data, if not to the world, at least
+to its trusted employees.</p>
+<p>Anyway, hopefully I'll soon have a Vagrant environment that allows
+people to build a standalone instance of Mozilla's Mercurial server.
+And once that's in place, I can start writing tests that basic services
+and workflows (including repository syncing) work as expected. Stay
+tuned.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="new-job-role"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/09/05/new-job-role" rel="bookmark" title="Permanent Link to New Job Role">New Job Role</a></h2>
   <small>September 05, 2014 at 11:30 AM | categories: 
@@ -202,140 +325,6 @@ be surprised if we add a notification to mach to remind you to do this.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/25/please-run-mach-mercurial-setup#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="repository-centric-development"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/07/24/repository-centric-development" rel="bookmark" title="Permanent Link to Repository-Centric Development">Repository-Centric Development</a></h2>
-  <small>July 24, 2014 at 08:23 PM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I was editing a wiki page yesterday and I think I coined a new term
-which I'd like to enter the common nomenclature: <em>repository-centric
-development</em>. The term refers to development/version control
-workflows that place repositories - not patches - first.</p>
-<p>When collaborating on version controlled code with modern tools like
-Git and Mercurial, you essentially have two choices on how to
-share version control data: patches or repositories.</p>
-<p>Patches have been around since the dawn of version control. Everyone
-knows how they work: your version control system has a copy of
-the canonical data and it can export a view of a specific change
-into what's called a patch. A patch is essentially a diff with
-extra metadata.</p>
-<p>When distributed version control systems came along, they brought
-with them an alternative to patch-centric development:
-repository-centric development. You could still exchange patches if you
-wanted, but distributed version control allowed you to <em>pull</em> changes
-directly from multiple <em>repositories</em>. You weren't limited to a single
-master server (that's what the <em>distributed</em> in <em>distributed version
-control</em> means). You also didn't have to go through an intermediate
-transport such as email to exchange patches: you communicate directly
-with a peer repository instance.</p>
-<p>Repository-centric development eliminates the <em>middle man</em> required
-for patch exchange: instead of exchanging derived data, you exchange
-the actual data, speaking the repository's native language.</p>
-<p>One advantage of repository-centric development is it eliminates the
-problem of patch non-uniformity. Patches come in many different flavors.
-You have plain diffs. You have diffs with metadata. You have Git style
-metadata. You have Mercurial style metadata. You can produce patches
-with various lines of context in the diff. There are different methods
-for handling binary content. There are different ways to express
-file adds, removals, and renames. It's all a hot mess. Any system
-that consumes patches needs to deal with the non-uniformity. Do you
-think this isn't a problem in the real world? Think again. If you are
-involved with an open source project that collects patches via email
-or by uploading patches to a bug tracker, have you ever seen someone
-accidentally upload a patch in the wrong format? That's patch
-non-uniformity. New contributors to Firefox do this all the time. I
-also see it in the Mercurial project. With repository-centric
-development, patches never enter the picture, so patch non-uniformity
-is a non-issue. (Don't confuse the superficial formatting of patches
-with the content, such as an incorrect commit message format.)</p>
-<p>Another advantage of repository-centric development is it makes the
-act of exchanging data easier. Just have two repositories talk to
-each other. This used to be difficult, but hosting services like
-GitHub and Bitbucket make this easy. Contrast with patches, which
-require hooking your version control tool up to wherever those patches
-are located. The Linux Kernel, like so many other projects,
-<a href="https://www.kernel.org/doc/Documentation/SubmittingPatches">uses email for contributing changes</a>.
-So now Git, Mercurial, etc all fulfill Zawinski's law. This means your
-version control tool is talking to your inbox to send and receive code.
-Firefox development uses Bugzilla to hold patches as attachments. So now your
-version control tool needs to talk to your issue tracker. (Not the worst
-idea in the world I will concede.) While, yes, the tools around using
-email or uploading patches to issue trackers or whatever else you are
-using to exchange patches exist and can work pretty well, the grim
-reality is that these tools are all reinventing the wheel of repository
-exchange and are solving a problem that has already been solved by
-<em>git push</em>, <em>git fetch</em>, <em>hg pull</em>, <em>hg push</em>, etc. Personally, I would
-rather <em>hg push</em> to a remote and have tools like issue trackers and
-mailing lists pull directly from repositories. At least that way they
-have a direct line into the source of truth and are guaranteed a
-consistent output format.</p>
-<p>Another area where direct exchange is huge is multi-patch commits
-(<em>branches</em> in Git parlance) or where commit data is fragmented. When
-pushing patches to email, you need to insert metadata saying which patch
-comes after which. Then the email import tool needs to reassemble things
-in the proper order (remember that the typical convention is one email
-per patch and email can be delivered out of order). Not the most
-difficult problem in the world to solve. But seriously, it's been
-solved already by <em>git fetch</em> and <em>hg pull</em>! Things are worse for
-Bugzilla. There is no bullet-proof way to order patches there. The
-convention at Mozilla is to add <em>Part N</em> strings to
-commit messages and have the Bugzilla import tool do a sort (I assume it
-does that). But what if you have a logical commit series spread across
-multiple bugs? How do you reassemble everything into a linear series of
-commits? You don't, sadly. Just today I wanted to apply a somewhat
-complicated series of patches to the Firefox build system I was asked to
-review so I could jump into a debugger and see what was going on so I
-could conduct a more thorough review. There were 4 or 5 patches spread
-over 3 or 4 bugs. Bugzilla and its patch-centric workflow prevented me
-from importing the patches. Fortunately, this patch series was pushed to
-Mozilla's Try server, so I could pull from there. But I haven't always
-been so fortunate. This limitation means developers have to make
-sacrifices such as writing fewer, larger patches (this makes code review
-harder) or involving unrelated parties in the same bug and/or review.
-In other words, deficient tools are imposing limited workflows. No bueno.</p>
-<p>It is a fair criticism to say that not everyone can host a server or
-that permissions and authorization are hard. Although I think concerns
-about impact are overblown. If you are a small project, just create a
-GitHub or Bitbucket account. If you are a larger project, realize that
-people time is one of your largest expenses and invest in tools like
-proper and efficient repository hosting (often this can be GitHub) to
-reduce this waste and keep your developers happier and more efficient.</p>
-<p>One of the clearest examples of repository-centric development is
-GitHub. There are no patches in GitHub. Instead, you <em>git push</em>
-and <em>git fetch</em>. Want to apply someone else's work? Just add a remote
-and <em>git fetch</em>! Contrast with first locating patches, hooking up
-Git to consume them (this part was always confusing to me - do you
-need to retroactively have them sent to your email inbox so you can
-import them from there), and finally actually importing them. Just
-give me a URL to a repository already. But the benefits of
-repository-centric development with GitHub don't stop at pushing and
-pulling. GitHub has built code review functionality into pushes. They
-call these <em>pull requests</em>. While I have significant issues with
-GitHub's implemention of pull requests (I need to blog about those some
-day), I can't deny the utility of the repository-centric workflow and
-all the benefits around it. Once you switch to GitHub and its
-repository-centric workflow, you more clearly see how lacking
-patch-centric development is and quickly lose your desire to go back
-to the 1990's state-of-the-art methods for software development.</p>
-<p>I hope you now know what repository-centric development is and will join
-me in championing it over patch-based development.</p>
-<p>Mozillians reading this will be very happy to learn that work is under
-way to shift Firefox's development workflow to a more repository-centric
-world. Stay tuned.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../13">« Previous Page</a>
   --  
