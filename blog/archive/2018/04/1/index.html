@@ -208,7 +208,7 @@ the zstandard world. As I
 zstandard circa early 2017 was a very compelling compression format: it already
 outperformed popular compression formats like zlib and bzip2 across the board.
 As a <em>general purpose</em> compression format, it made a compelling case for itself.
-In my mind, <em>snappy</em> was its only real challenger.</p>
+In my mind, <em>brotli</em> was its only real challenger.</p>
 <p>As I wrote then, zstandard isn't perfect. (Nothing is.) But a year later, it
 is refreshing to see advancements.</p>
 <p>A criticism one year ago was zstandard was pretty good as a general purpose
@@ -234,13 +234,6 @@ backwards compatibility on the decoding side. (That's a sign of a good
 format design if you ask me.) I was honestly shocked to see that zstandard
 was able to change its compression settings in a way that allowed it to compete
 with lz4 and lzma without requiring a format change.</p>
-<p>Snappy is another promising modern compression format. However, the project
-appears to have died off. There are only
-<a href="https://github.com/google/snappy/commits/master">5 commits so far in 2018</a>.
-(zstandard has 357.) Competition is good and I was hoping Google/snappy would
-provide some <em>competitive</em> pressure for Facebook/zstandard. But who knows
-what's happening on the snappy side of the world. Zstandard continues to make
-meaningful improvements, so I can't complain about its pace of progress.</p>
 <p>The more I use zstandard, the more I think that <em>everyone should use this</em> and
 that popular compression formats just aren't cut out for modern computing any
 more. Every time I download a zlib/gz or bzip2 compressed archive, I'm thinking
@@ -259,6 +252,9 @@ I encourage you to give it and zstandard a try the next time you compress data.<
 python-zstandard lives at
 <a href="https://github.com/indygreg/python-zstandard">indygreg/python-zstandard</a> on
 GitHub.</p>
+<p>*(I updated the post on 2018-05-16 to remove a paragraph about zstandard
+competition. In the original post, I unfairly compared zstandard to Snappy
+instead of Brotli and made some inaccurate statements around that comparison.)</p>
 
   </div>
 </div>

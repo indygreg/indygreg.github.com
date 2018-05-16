@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2018-04-09T16:43:50Z</updated>
+  <updated>2018-05-16T20:44:17Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -18,10 +18,219 @@
       <name>Gregory Szorc</name>
       <uri>http://gregoryszorc.com/blog</uri>
     </author>
+    <title type="html"><![CDATA[Revisiting Using Docker]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker" />
+    <id>http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker</id>
+    <updated>2018-05-16T13:45:00Z</updated>
+    <published>2018-05-16T13:45:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Docker" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Revisiting Using Docker]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker"><![CDATA[<p>When Docker was taking off like wildfire in 2013, I was caught up in the
+excitement like everyone else. I remember knowing of the existence
+of LXC and container technologies in Linux at the time. But Docker seemed to
+be the first open source tool to actually make that technology usable (a
+terrific example of how user experience matters).</p>
+<p>At Mozilla, Docker was adopted all around me and by me for various utilities.
+<a href="https://docs.taskcluster.net/">Taskcluster</a> - Mozilla's task execution
+framework geared for running complex CI systems - adopted Docker as a
+mechanism to run processes in self-contained images. Various groups in
+Mozilla adopted Docker for running services in production. I adopted Docker
+for
+<a href="/blog/2015/01/24/end-to-end-testing-with-docker/">integration testing of complex systems</a>.</p>
+<p>Having seen various groups use Docker and having spent a lot of time in the
+trenches battling technical problems, my conclusion is <strong>Docker is unsuitable
+as a general purpose container runtime. Instead, Docker has its niche
+for hosting complex network services.</strong> Other uses of Docker should highly
+scrutinized and potentially discouraged.</p>
+<p>When Docker hit first the market, it was arguably the only game in town.
+Using Docker to achieve containerization was defensible because there weren't
+exactly many (any?) practical alternatives. So if you wanted to use containers,
+you used Docker.</p>
+<p>Fast forward a few years. We now have the
+<a href="https://www.opencontainers.org/">Open Container Initiative</a> (OCI). There are
+specifications describing common container formats. So you can produce a
+container once and take it to any number OCI compatible <em>container runtimes</em>
+for execution. And in 2018, there are a <em>ton</em> of players in this space.
+<a href="https://github.com/opencontainers/runc">runc</a>,
+<a href="https://github.com/rkt/rkt">rkt</a>, and
+<a href="https://github.com/google/gvisor">gVisor</a> are just some. So Docker is no
+longer the only viable tool for executing a container. If you are just
+getting started with the container space, you would be wise to research the
+available options and their pros and cons.</p>
+<p>When you look at all the options for running containers in 2018, I think it
+is obvious that Docker - usable though it may be - is not ideal for a
+significant number of container use cases. If you divide use cases into a spectrum
+where one end is <em>run a process in a sandbox</em> and the other is <em>run a complex system
+of orchestrated services in production</em>, Docker appears to be focusing on the
+latter. Take it from <a href="https://www.docker.com/what-docker">Docker themselves</a>:</p>
+<p><em>Docker is the company driving the container movement and the only container
+platform provider to address every application across the hybrid cloud. Today's
+businesses are under pressure to digitally transform but are constrained by
+existing applications and infrastructure while rationalizing an increasingly
+diverse portfolio of clouds, datacenters and application architectures. Docker
+enables true independence between applications and infrastructure and developers
+and IT ops to unlock their potential and creates a model for better
+collaboration and innovation.</em></p>
+<p>That description of Docker (the company) does a pretty good job of
+describing what Docker (the technology) has become: a constellation
+of software components providing the underbelly for managing complex
+applications in complex infrastructures. That's pretty far detached on the
+spectrum from <em>run a process in a sandbox</em>.</p>
+<p>Just because Docker (the company) is focused on a complex space doesn't mean
+they are incapable of exceeding at solving simple problems. However, I believe
+that in this particular case, the complexity of what Docker (the company) is
+focusing on has inhibited its Docker products to adequately address simple
+problems.</p>
+<p>Let's dive into some technical specifics.</p>
+<p>At its most primitive, Docker is a glorified tool to run a process in a
+sandbox. On Linux, this is accomplished by using
+the <a href="http://man7.org/linux/man-pages/man2/clone.2.html">clone(2)</a> function
+with specific flags and combined with various other techniques (filesystem
+remounting, capabilities, cgroups, chroot, seccomp, etc) to <em>sandbox</em> the
+process from the main operating system environment and kernel. There are a host
+of tools living at this not-quite-containers level that make it easy to run
+a sandboxed process. The
+<a href="https://github.com/projectatomic/bubblewrap">bubblewrap</a> tool is one of them.</p>
+<p>Strictly speaking, you don't need anything fancy to create a process
+sandbox: just an executable you want to invoke and an executable that makes
+a set of system calls (like bubblewrap) to run that executable.</p>
+<p>When you install Docker on a machine, it starts a daemon running as root.
+That daemon listens for HTTP requests on a network port and/or UNIX socket.
+When you run <code>docker run</code> from the command line, that command establishes
+a connection to the Docker daemon and sends any number of HTTP requests to
+instruct the daemon to take actions.</p>
+<p>A daemon with a remote control protocol is useful. But it shouldn't be the
+only way to spawn containers with Docker. If all I want to do is spawn a temporary
+container that is destroyed afterwards, I should be able to do that from
+a local command without touching a network service. Something like bubblewrap.
+The daemon adds all kinds of complexity and overhead. Especially if I just want
+to run a simple, short-lived command.</p>
+<p>Docker at this point is already pretty far detached from a tool like bubblewrap.
+And the disparity gets worse.</p>
+<p>Docker adds another abstraction on top of basic process sandboxing in the form
+of storage / filesystem management. Docker insists that processes execute in
+self-contained, chroot()'d filesystem environment and that these environments
+(Docker images) be managed by Docker itself. When Docker images are <em>imported</em>
+into Docker, Docker manages them using one of a handful of
+<a href="https://docs.docker.com/storage/storagedriver/">storage drivers</a>. You can choose
+from devicemapper, overlayfs, zfs, btrfs, and aufs and employ various
+configurations of all these. Docker images are composed of <em>layers</em>, with one
+layer stacked on top of the prior. This allows you to have an immutable base
+layer (that can be shared across containers) where run-time file changes can be
+isolated to a specific container instance.</p>
+<p>Docker's ability to manage storage is pretty cool. And I dare say Docker's killer
+feature in the very beginning of Docker was the ability to easily produce and
+exchange self-contained Docker <em>images</em> across machines.</p>
+<p>But this utility comes at a <em>very</em> steep price. Again, if our use case is
+<em>run a process in a sandbox</em>, do we really care about all this advanced
+storage functionality? Yes, if you are running hundreds of containers on
+a single system, a storage model built on top of copy-on-write is perhaps
+necessary for scaling. But for simple cases where you just want to run a single
+or small number of processes, it is extremely overkill and adds many more
+problems than it solves.</p>
+<p>I cannot stress this enough, but <strong>I have spent hours debugging and working
+around problems due to how filesystems/storage works in Docker</strong>.</p>
+<p>When Docker was initially released, aufs was widely used. As I
+<a href="/blog/2017/12/08/good-riddance-to-aufs/">previously wrote</a>, aufs has abysmal
+performance as you scale up the number of concurrent I/O operations. We shaved
+<strong>minutes</strong> off tasks in Firefox CI by ditching aufs for overlayfs.</p>
+<p>But overlayfs is far from a panacea. File metadata-only updates are
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/63f19cfacc5c">apparently very slow in overlayfs</a>.
+We're talking ~100ms to call <code>fchownat()</code> or <code>utimensat()</code>. If you perform
+an <code>rsync -a</code> or <code>chown -R</code> on a directory with only just a hundred files that
+were defined in a base image layer, you can have delays of seconds.</p>
+<p>The Docker storage drivers backed by <em>real</em> filesystems like zfs and btrfs are
+a bit better. But they have their quirks too. For example, creating layers in
+images is comparatively very slow compared to overlayfs (which are practically
+instantaneous). This matters when you are iterating on a Dockerfile for example
+and want to quickly test changes. Your edit-compile cycle grows frustratingly
+long very quickly.</p>
+<p>And I could opine on a handful of other problems I've encountered over the years.</p>
+<p>Having spent hours of my life debugging and working around issues with
+Docker's storage, my current attitude is <em>enough of this complexity, just let me
+use a directory backed by the local filesystem, dammit</em>.</p>
+<p>For many use cases, <strong>you don't need the storage complexity that Docker forces
+upon you</strong>. Pointing Docker at a directory on a local filesystem to chroot into
+is <em>good enough</em>. I know the behavior and performance properties of common Linux
+filesystems. ext4 isn't going to start making <code>fchownat()</code> or <code>utimensat()</code> calls
+take ~100ms. It isn't going to complain when a hard link spans multiple layers in
+an image. Or slow down to a crawl when multiple threads are performing concurrent
+read I/O. There's not going to be intrinsically complicated algorithms and
+caching to walk N image layers to find the most recent version of a file (or if
+there is, it will be so far down the stack in kernel land that I likely won't
+ever have to deal with it as a normal user). Docker images with their multiple
+layers add complexity and overhead. For many use uses, the pain it inflicts
+offsets the initial convenience it saves.</p>
+<p>Docker's optimized-for-complex-use-cases architecture demonstrates its
+inefficiency in simple benchmarks.</p>
+<p>On my machine, <code>docker run -i --rm debian:stretch /bin/ls /</code> takes ~850ms.
+Almost a second to perform a directory listing (sometimes it does take over
+1 second - I was being generous and quoting a quicker time). This command
+takes ~1ms when run in a local shell. So we're at 2.5-3 magnitudes of overhead.
+The time here does include time to initially create the container and
+destroy it afterwards. We can isolate that overhead by starting a persistent
+container and running <code>docker exec -i &lt;cid&gt; /bin/ls /</code> to spawn a new process
+in an existing container. This takes ~85ms. So, ~2 magnitudes of overhead to
+spawn a process in a Docker container versus spawning it <em>natively</em>. What's
+adding so much overhead, I'm not sure. Yes, there are HTTP requests under
+the hood. But HTTP to a local daemon shouldn't be that slow. I'm not sure
+what's going on.</p>
+<p>If we <code>docker export</code> that image to the local filesystem and use <code>runc state</code>
+to configure so we can run it with <code>runc</code>, <code>runc run</code> takes ~85ms to run
+<code>/bin/ls /</code>. If we <code>runc exec &lt;cid&gt; /bin/ls /</code> to start a process in an
+existing container, that completes in ~10ms. <code>runc</code> appears to be executing
+these simple tasks ~10x faster than Docker.</p>
+<p>But to even get to that point, we had to make a filesystem available to
+spawn the container in. With Docker, you need to load an image into Docker.
+Using <code>docker save</code> to produce a 105,523,712 tar file,
+<code>docker load -i image.tar</code> takes ~1200ms to complete. <code>tar xf image.tar</code>
+takes ~65ms to extract that image to the local filesystem. Granted, Docker
+is computing the SHA-256 of the image as part of import. But SHA-256 runs
+at ~250MB/s on my machine and on that ~105MB input takes ~400ms. Where is
+that extra ~750ms of overhead in Docker coming from?</p>
+<p>The Docker image loading overhead is still present on large images. With
+a 4,336,605,184 image, <code>docker load</code> was taking ~32s and <code>tar x</code> was
+taking ~2s. Obviously the filesystem was buffering writes in the <code>tar</code>
+case. And the ~2s is ignoring the ~17s to obtain the SHA-256 of the
+entire input. But there's still a substantial disparity here. (I suspect
+a lot of it is overlayfs not being as optimal as ext4.)</p>
+<p>Several years ago there weren't many good choices for tools to execute containers.
+But today, there are good tools readily available. And thanks to OCI standards,
+you can often swap in alternate container runtimes. Docker (the tool) has an
+architecture that is optimized for solving complex use cases (coincidentally use
+cases that Docker the company makes money from). Because of this, my conclusion -
+drawn from using Docker for several years - is that Docker is unsuitable for
+many common use cases. <strong>If you care about low container startup/teardown
+overhead, low latency when interacting with containers (including spawning
+processes from outside of them), and for workloads where Docker's storage model
+interferes with understanding or performance, I think Docker should be avoided.</strong>
+A simpler tool (such as <code>runc</code> or even <code>bubblewrap</code>) should be used instead.</p>
+<p>Call me a curmudgeon, but having seen all the problems that Docker's complexity
+causes, I'd rather see my containers resemble a tarball that can easily be
+chroot()'d into. <strong>I will likely be revisiting projects that use Docker and
+replacing Docker with something lighter weight and architecturally simpler.</strong> As
+for the use of Docker in the more complex environments it seems to be designed
+for, I don't have a meaningful opinion as I've never really used it in that
+capacity. But given my negative experiences with Docker over the years, I am
+definitely biased against Docker and will lean towards simpler products, especially
+if their storage/filesystem management model is simpler. Docker introduced
+containers to the masses and they should be commended for that. But for my
+day-to-day use cases for containers, Docker is simply not the right tool for
+the job.</p>
+<p>I'm not sure exactly what I'll replace Docker with for my simpler use cases.
+If you have experiences you'd like to share, sharing them in the comments
+will be greatly appreciated.</p>]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
     <title type="html"><![CDATA[Release of python-zstandard 0.9]]></title>
     <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2018/04/09/release-of-python-zstandard-0.9" />
     <id>http://gregoryszorc.com/blog/2018/04/09/release-of-python-zstandard-0.9</id>
-    <updated>2018-04-09T09:30:00Z</updated>
+    <updated>2018-05-16T09:45:00Z</updated>
     <published>2018-04-09T09:30:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="Python" />
     <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
@@ -174,7 +383,7 @@ the zstandard world. As I
 zstandard circa early 2017 was a very compelling compression format: it already
 outperformed popular compression formats like zlib and bzip2 across the board.
 As a <em>general purpose</em> compression format, it made a compelling case for itself.
-In my mind, <em>snappy</em> was its only real challenger.</p>
+In my mind, <em>brotli</em> was its only real challenger.</p>
 <p>As I wrote then, zstandard isn't perfect. (Nothing is.) But a year later, it
 is refreshing to see advancements.</p>
 <p>A criticism one year ago was zstandard was pretty good as a general purpose
@@ -200,13 +409,6 @@ backwards compatibility on the decoding side. (That's a sign of a good
 format design if you ask me.) I was honestly shocked to see that zstandard
 was able to change its compression settings in a way that allowed it to compete
 with lz4 and lzma without requiring a format change.</p>
-<p>Snappy is another promising modern compression format. However, the project
-appears to have died off. There are only
-<a href="https://github.com/google/snappy/commits/master">5 commits so far in 2018</a>.
-(zstandard has 357.) Competition is good and I was hoping Google/snappy would
-provide some <em>competitive</em> pressure for Facebook/zstandard. But who knows
-what's happening on the snappy side of the world. Zstandard continues to make
-meaningful improvements, so I can't complain about its pace of progress.</p>
 <p>The more I use zstandard, the more I think that <em>everyone should use this</em> and
 that popular compression formats just aren't cut out for modern computing any
 more. Every time I download a zlib/gz or bzip2 compressed archive, I'm thinking
@@ -224,7 +426,10 @@ I encourage you to give it and zstandard a try the next time you compress data.<
 <p>If you run into any problems or want to get involved with development,
 python-zstandard lives at
 <a href="https://github.com/indygreg/python-zstandard">indygreg/python-zstandard</a> on
-GitHub.</p>]]></content>
+GitHub.</p>
+<p>*(I updated the post on 2018-05-16 to remove a paragraph about zstandard
+competition. In the original post, I unfairly compared zstandard to Snappy
+instead of Brotli and made some inaccurate statements around that comparison.)</p>]]></content>
   </entry>
   <entry>
     <author>
@@ -2170,52 +2375,5 @@ been under-loved and therefore have more potential for impact.</p>
 2016 will be a watershed year for the Firefox build system and the
 improvements will have a drastic positive impact on developer
 productivity.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[hg.mozilla.org replication updates]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates" />
-    <id>http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates</id>
-    <updated>2016-01-05T15:00:00Z</updated>
-    <published>2016-01-05T15:00:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[hg.mozilla.org replication updates]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2016/01/05/hg.mozilla.org-replication-updates"><![CDATA[<p>A few minutes ago, I formally enabled a new replication system
-for <a href="https://hg.mozilla.org/">hg.mozilla.org</a>. For the curious,
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/replication.html">technical details</a>
-are available.</p>
-<p>This impacts you because pushes to hg.mozilla.org should now be
-significantly faster. For example, pushes to mozilla-inbound
-that used to take 15s now take 2s. Pushes to Try that used to
-take 45s now take 10s. (Yes, the old replication system really
-added a lot of overhead.) Pushes to hg.mozilla.org are still not
-as fast as they could be due to us running the service on 5 year
-old hardware (we plan to buy new servers this year) and due to the
-use of NFS on the server. However, I believe push latency is now
-reasonable for every repo except Try.</p>
-<p>The new replication system opens the door to a number of future
-improvements. We'd like to stand up mirrors in multiple data
-centers - perhaps even offices - so clients have the fastest
-connectivity and so we have a better disaster recovery story.
-The new replication system facilitates this.</p>
-<p>The new replication log is effectively a unified pushlog -
-something people have wanted for years. While there is not yet
-a public API for it, one could potentially be exposed, perhaps
-indirectly via Pulse.</p>
-<p>It is now trivial for us to stand up new consumers of the
-replication log that react to repository events merely milliseconds
-after they occur. This should eventually result in downstream
-systems like build automation and conversion to Git repos starting
-and thus completing faster.</p>
-<p>Finally, the new replication system has been running unofficially for
-a few weeks, so you likely won't notice anything different today
-(other than removal of some printed messages when you push). What
-changed today is the new system is enabled by default and we have
-no plans to continue supporting or operating the legacy system.
-Good riddance.</p>]]></content>
   </entry>
 </feed>
