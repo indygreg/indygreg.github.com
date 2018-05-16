@@ -51,6 +51,151 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="from-__past__-import-bytes_literals"></a>
+  <h2 class="blog_post_title"><a href="/blog/2017/03/13/from-__past__-import-bytes_literals" rel="bookmark" title="Permanent Link to from __past__ import bytes_literals">from __past__ import bytes_literals</a></h2>
+  <small>March 13, 2017 at 09:55 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Last year, I simultaneously committed one of the ugliest and
+impressive hacks of my programming <em>career</em>. I haven't had time
+to write about it. Until now.</p>
+<p>In summary, the hack is a
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1c22400db72d">source-transforming module loader</a>
+for Python. It can be used by Python 3 to import a Python 2 source
+file while translating certain primitives to their Python 3 equivalents.
+It is kind of like <a href="https://docs.python.org/3.6/library/2to3.html">2to3</a>
+except it executes at run-time during <code>import</code>. The main goal of the
+hack was to facilitate porting Mercurial to Python 3 while deferring
+having to make the most invasive - and therefore most annoying -
+elements of the port in the canonical source code representation.</p>
+<p>For the technically curious, it works as follows.</p>
+<p>The <code>hg</code> Python executable registers a custom
+<a href="https://docs.python.org/3.6/library/sys.html#sys.meta_path">meta path finder</a>
+instance. This entity is invoked during <code>import</code> statements to try
+to find the module being imported. It tells a later phase of the
+import mechanism how to <em>load</em> that module from wherever it is
+(usually a <code>.py</code> or <code>.pyc</code> file on disk) to a Python module object.
+The custom finder only responds to requests for modules known
+to be managed by the Mercurial project. For these modules, it tells
+the next stage of the import mechanism to invoke a custom
+<a href="https://docs.python.org/3.6/library/importlib.html#importlib.abc.SourceLoader">SourceLoader</a>
+instance. Here's where the real magic is: when the custom <em>loader</em>
+is invoked, it tokenizes the Python source code using the
+<a href="https://docs.python.org/3.6/library/tokenize.html">tokenize</a> module,
+iterates over the token stream, finds specific patterns, and
+rewrites them to something <em>more appropriate</em>. It then <em>untokenizes</em>
+back to Python source code then falls back to the built-in loader
+which does the heavy lifting of compiling the source to Python code
+objects. So, we have Python 2 source files on disk that magically get
+transformed to be Python compatible when they are loaded by Python 3.
+Oh, and there is no performance penalty for the token transformation
+on subsequence loads because the transformed bytecode is cached in
+the <code>.pyc</code> file (using a custom header so we know it was transformed
+and can be invalidated when the transformation logic changes).</p>
+<p>At the time I wrote it, the token stream manipulation converted most
+string literals (<code>''</code>) to bytes literals (<code>b''</code>). In other words, it
+restored the Python 2 behavior of string literals being <code>bytes</code> and
+not <code>unicode</code>. We jokingly call it
+<code>from __past__ import bytes_literals</code> (a play on Python 2's
+<code>from __future__ import unicode_literals</code> special syntax which
+changes string literals from Python 2's <code>str</code>/<code>bytes</code> type to
+<code>unicode</code> to match Python 3's behavior).</p>
+<p>Since I implemented the first version, others have implemented:</p>
+<ul>
+<li><a href="https://www.mercurial-scm.org/repo/hg/rev/178c89e8519a">Automatically inserting</a>
+  a <code>from mercurial.pycompat import ...</code> statement to the top of the
+  source. This statement is the Mercurial equivalent of importing
+  common wrapper types similar to what
+  <a href="https://pythonhosted.org/six/">six</a> provides.</li>
+<li>More robust
+  <a href="https://www.mercurial-scm.org/repo/hg/rev/423377290a3a">function argument parsing support</a>.
+  (Because going from a token stream to a higher-level primitive like a
+  function call is difficult.)</li>
+<li><a href="https://www.mercurial-scm.org/repo/hg/rev/eaaedad68011">Automatically rewriting</a>
+  <code>.iteritems()</code> to <code>.items()</code>.</li>
+</ul>
+<p>As one can expect, when I tweeted a link to this commit, many Python
+developers (including a few CPython core developers) expressed a mix
+of intrigue and horror. But mostly horror.</p>
+<p>I fully concede that what I did here is a gross hack. And, it is the
+intention of the Mercurial project to undo this hack and perform a
+proper port once Python 3 support in Mercurial is more mature. But, I
+want to lay out my defense on why I did this and why the Mercurial
+project is tolerant of this ugly hack.</p>
+<p>Individuals within the Mercurial project have wanted to port to Python
+3 for years. Until recently, it hasn't been a project priority
+because a port was too much work for too little end-user gain. And, on
+the technical front, a port was just not practical until Python 3.5.
+(Two main blockers were no <code>u''</code> literals - restored in Python 3.3 -
+and no <code>%</code> formatting for <code>b''</code> literals - restored in 3.5. And as I
+understand it, senior members of the Mercurial project had to lobby
+Python maintainers pretty hard to get features like <code>%</code> formatting of
+<code>b''</code> literals restored to Python 3.)</p>
+<p>Anyway, after a number of failed attempts to initiate the Python 3
+port over the years, the Mercurial project started making some
+positive steps towards Python 3 compatibility, such as switching
+to <a href="https://www.python.org/dev/peps/pep-0328/">absolute imports</a> and
+addressing syntax issues that allowed modules to be parsed into
+an AST and even compiled and loadable. These may seem like small
+steps, but for a larger project, it was a lot of work.</p>
+<p>The porting effort hit a large wall when it came time to actually
+make the AST-valid Python code run on Python 3. Specifically, we had
+a strings problem.</p>
+<p>When you write software that exchanges data between machines -
+sometimes machines running different operating systems or having
+different encodings - and there is an expectation that things work
+the same and data roundtrips accordingly, trying to force text
+encodings is essentially impossible and inevitably breaks something or
+someone. It is much easier for Mercurial to operate <em>bytes first</em> and
+only take text encoding into consideration when absolutely necessary
+(such as when emitting bytes to the terminal in the wanted encoding
+or when emitting JSON). That's not to say Mercurial ignores the
+existence of encodings. Far from it: Mercurial does attempt to
+normalize some data to Unicode. But it often does so with a special
+Python type that internally stores the raw byte sequence of the
+source so that a consumer can choose to operate at the bytes or
+Unicode level. </p>
+<p>Anyway, this means that practically every string variable in Mercurial
+is a <code>bytes</code> type (or something that acts like a <code>bytes</code> type). And
+since string literals in Python 3 are the <code>str</code> type (which represents
+Unicode), that would mean having to prefix almost every <code>''</code> string
+literal in Mercurial with <code>b''</code> in order to placate Python 3. Having
+to update every occurrence of simple primitives that could be statically
+transformed automatically felt like busy work. <strong>We wanted to spend time
+on the meaningful parts of the Python 3 port so we could find
+interesting problems and challenges, not toil with mechanical
+conversions that add little to no short-term value while simultaneously
+increasing cognitive dissonance and quite possibly increasing the odds
+of introducing a bug in Python 2.</strong> In other words, why should humans
+do the work that machines can do for us? Thus, the source-transforming
+module importer was born.</p>
+<p>While I concede what Mercurial did is a giant hack, I maintain it was
+the correct thing to do. It has allowed the Python 3 port to move
+forward without being blocked on the more tedious and invasive
+transformations that could introduce subtle bugs (including performance
+regressions) in Python 2. Perfect is the enemy of good. People time is
+valuable. The source-transforming module importer allowed us to unblock
+an important project without sinking a lot of people time into it. I'd
+make that trade-off again.</p>
+<p>While I won't encourage others to take this approach to porting to
+Python 3, if you want to, Mercurial's source is available under a GPL
+license and the custom module importer could be adapted to any project
+with minimal modifications. If someone does extract it as reusable code,
+please leave a comment and I'll update the post to link to it.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="better-compression-with-zstandard"></a>
   <h2 class="blog_post_title"><a href="/blog/2017/03/07/better-compression-with-zstandard" rel="bookmark" title="Permanent Link to Better Compression with Zstandard">Better Compression with Zstandard</a></h2>
   <small>March 07, 2017 at 09:55 AM | categories: 
@@ -1023,67 +1168,6 @@ software project.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2016/01/13/making-mozreview-faster-by-disregarding-restful-design#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="investing-in-the-firefox-build-system-in-2016"></a>
-  <h2 class="blog_post_title"><a href="/blog/2016/01/11/investing-in-the-firefox-build-system-in-2016" rel="bookmark" title="Permanent Link to Investing in the Firefox Build System in 2016">Investing in the Firefox Build System in 2016</a></h2>
-  <small>January 11, 2016 at 02:20 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/build-system'>build system</a>
- | <a href="http://gregoryszorc.com/blog/2016/01/11/investing-in-the-firefox-build-system-in-2016#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Most of Mozilla gathered in Orlando in December for an all hands meeting.
-If you attended any of the plenary sessions, you probably heard people
-like David Bryant and Lawrence Mandel make references to improving the
-Firefox build system and related tools. Well, the cat is out of the bag:
-<strong>Mozilla will be investing heavily in the Firefox build system and related
-tooling in 2016!</strong></p>
-<p>In the past 4+ years, the Firefox build system has mostly been held
-together and incrementally improved by a loose coalition of people who
-cared. We had a period in 2013 where a number of people were making
-significant updates (this is when moz.build files happened). But for the
-past 1.5+ years, there hasn't really been a coordinated effort to
-improve the build system - just a lot of one-off tasks and
-(much-appreciated) individual heroics. This is changing.</p>
-<p>Improving the build system is a high priority for Mozilla in 2016.
-And investment has already begun. In Orlando, we had a marathon 3 hour
-meeting planning work for Q1. At least 8 people have committed to
-projects in Q1.</p>
-<p>The focus of work is split between immediate short-term wins and
-longer-term investments. <strong>We also decided to prioritize the Firefox and
-Fennec developer workflows (over Gecko/Platform) as well as the
-development experience on Windows.</strong> This is because these areas have
-been under-loved and therefore have more potential for impact.</p>
-<p>Here are the projects we're focusing on in Q1:</p>
-<ul>
-<li>Turnkey artifact based builds for Firefox and Fennec (download
-  pre-built binaries so you don't have to spend 20 minutes compiling
-  C++)</li>
-<li>Running tests from the source directory (so you don't have to copy
-  tens of thousands of files to the object directory)</li>
-<li>Speed up configure / prototype a replacement</li>
-<li>Telemetry for mach and the build system</li>
-<li>NSPR, NSS, and (maybe) ICU build system rewrites</li>
-<li><em>mach build faster</em> improvements</li>
-<li>Improvements to build rules used for building binaries (enables
-  non-make build backends)</li>
-<li>mach command for analyzing C++ dependencies</li>
-<li>Deploy automated testing for <em>mach bootstrap</em> on TaskCluster</li>
-</ul>
-<p>Work has already started on a number of these projects. I'm optimistic
-2016 will be a watershed year for the Firefox build system and the
-improvements will have a drastic positive impact on developer
-productivity.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2016/01/11/investing-in-the-firefox-build-system-in-2016#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/1">« Previous Page</a>
   --  
