@@ -1,0 +1,174 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+  
+<div class="blog_post">
+  <a name="deterministic-firefox-builds"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/06/20/deterministic-firefox-builds" rel="bookmark" title="Permanent Link to Deterministic Firefox Builds">Deterministic Firefox Builds</a></h2>
+  <small>June 20, 2018 at 11:10 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2018/06/20/deterministic-firefox-builds#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>As of Firefox 60, the build environment for official Firefox Linux builds
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1399679">switched</a> from CentOS
+to Debian.</p>
+<p>As part of the transition, we overhauled how the build environment for
+Firefox is constructed. We now populate the environment from deterministic
+package snapshots and are much more stringent about dependencies and operations
+being deterministic and reproducible. The end result is that the build
+environment for Firefox is deterministic enough to enable Firefox itself
+to be built deterministically.</p>
+<p>Changing the underlying operating system environment used for builds was
+a risky change. Differences in the resulting build could result in new
+bugs or some users not being able to run the official builds. We figured
+a good way to mitigate that risk was to make the old and new builds as
+bit-identical as possible. After all, if the environments produce the same
+bits, then nothing has effectively changed and there should be no new risk
+for end-users.</p>
+<p>Employing the <em>diffoscope</em> tool, we identified areas where Firefox builds
+weren't deterministic in the same environment and where there was variance
+across build environments. We iterated on differences and changed systems
+so variance would no longer occur. By the end of the process, we had
+bit-identical Firefox builds across environments.</p>
+<p>So, as of Firefox 60, Firefox builds on Linux are deterministic in our
+official build environment!</p>
+<p>That being said, the builds we ship to users are using PGO. And an
+end-to-end build involving PGO is intrinsically not deterministic because
+it relies on timing data that varies from one run to the next. And we don't
+yet have continuous automated end-to-end testing that determinism holds.
+But the underlying infrastructure to support deterministic and reproducible
+Firefox builds is there and is not going away. I think that's a milestone
+worth celebrating.</p>
+<p>This milestone required the effort of many people, often working indirectly
+toward it. Debian's <a href="https://wiki.debian.org/ReproducibleBuilds">reproducible builds</a>
+effort gave us an operating system that provided deterministic and
+reproducible guarantees. Switching Firefox CI to Taskcluster enabled us
+to switch to Debian relatively easily. Many were involved with
+non-determinism fixes in Firefox over the years. But Mike Hommey drove the
+transition of the build environment to Debian and he deserves recognition for
+his individual contribution. Thanks to all these efforts - and especially Mike
+Hommey's - we can now say <em>Firefox builds deterministically</em>!</p>
+<p>The
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=885777">fx-reproducible-build</a> bug
+tracks ongoing efforts to further improve the reproducibility story of
+Firefox. (~300 bugs in its dependency tree have already been resolved!)</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/06/20/deterministic-firefox-builds#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozreview">MozReview</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2017 Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

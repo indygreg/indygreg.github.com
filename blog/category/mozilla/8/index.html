@@ -51,6 +51,71 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-3.4-released"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/05/04/mercurial-3.4-released" rel="bookmark" title="Permanent Link to Mercurial 3.4 Released">Mercurial 3.4 Released</a></h2>
+  <small>May 04, 2015 at 12:40 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial 3.4 was released on May 1 (following Mercurial's time-based
+schedule of releasing a new version every 3 months).</p>
+<p>3.4 is a significant release for a few reasons.</p>
+<p>First, the next version of the wire protocol (<em>bundle2</em>) has been
+marked as non-experimental on servers. This version of the protocol
+paves over a number of deficiencies in the classic protocol. I won't
+go into low-level details. But I will say that the protocol enables
+some rich end-user experiences, such as having the server hand out URLs
+for pre-generated bundles (e.g. offload clones to S3), atomic push
+operations, and advanced workflows, such as having the server rebase
+automatically on push. Of course, you'll need a server running 3.4
+to realize the benefits of the new protocol. hg.mozilla.org won't be
+updated until at least June 1.</p>
+<p>Second, Mercurial 3.4 contains improvements to the tags cache to make
+performance concerns a thing of the past. Due to the structure of the
+Firefox repositories, the previous implementation of the tags cache
+could result in pauses of dozens of seconds during certain workflows.
+The problem should go away with Mercurial 3.4. <strong>Please note that on
+first use of Mercurial 3.4, your repository may perform a one-time
+upgrade of the tags cache. This will spin a full CPU core and will
+take up to a few minutes to complete on Firefox repos. Let it run to
+completion and performance should not be an issue again.</strong> I wrote the
+patches to change the tags cache (with lots of help from Pierre-Yves
+David, a Mercurial core contributor). So if you find anything wrong,
+I'm the one to complain to.</p>
+<p>Third, the HTTP interface to Mercurial (hgweb) now has JSON output
+for nearly every endpoint. The implementation isn't yet complete,
+but it is better than nothing. But, it should be good enough for
+services to start consuming it. Again, this won't be available on
+hg.mozilla.org until the server is upgraded on June 1 at the earliest.
+This is a feature I added to core Mercurial. If you have feature
+requests, send them my way.</p>
+<p>Fourth, a number of performance regressions introduced in Mercurial
+3.3 were addressed. These performance issues frequently manifested
+during <em>hg blame</em> operations. Many Mozillians noticed them on
+hg.mozilla.org when looking at blame through the web interface.</p>
+<p>For a more comprehensive list of changes, see
+<a href="https://groups.google.com/d/msg/mozilla.dev.version-control/z4aWvBoAGYw/d0hUGKJU_psJ">my post about the 3.4 RC</a>
+and the
+<a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_3.4_.282015-05-01.29">official release notes</a>.</p>
+<p>3.4 was a significant release. There are compelling reasons to upgrade.
+That being said, there were a lot of changes in 3.4. If you want to wait
+until 3.4.1 is released (scheduled for June 1) so you don't run into
+any regressions, nobody can fault you for that.</p>
+<p>If you want to upgrade, I recommend reading the
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mercurial for Mozillians Installation Page</a>.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="automatically-redirecting-mercurial-pushes"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/04/30/automatically-redirecting-mercurial-pushes" rel="bookmark" title="Permanent Link to Automatically Redirecting Mercurial Pushes">Automatically Redirecting Mercurial Pushes</a></h2>
   <small>April 30, 2015 at 12:30 PM | categories: 
@@ -476,74 +541,6 @@ for the current configuration of hg.mozilla.org. Cause and effect.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/19/new-high-scores-for-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="network-events"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/03/18/network-events" rel="bookmark" title="Permanent Link to Network Events">Network Events</a></h2>
-  <small>March 18, 2015 at 02:25 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/03/18/network-events#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The Firefox source repositories and automation have been closed the past
-few days due to a couple of outages.</p>
-<p>Yesterday, aggregate CPU usage on many of the machines in the hg.mozilla.org
-cluster hit 100%. Previously, whenever hg.mozilla.org was under high load,
-we'd run out of network bandwidth before we ran out of CPU on the machines.
-In other words, Mercurial was generating data faster than the network could
-accept it.</p>
-<p>When this happened, the service started issuing HTTP 503 Service Not
-Available responses. This is the universal server signal for <em>I'm down, go
-away</em>. Unfortunately, not all clients did this.</p>
-<p>Parts of Firefox's release automation retried failing requests
-immediately, or with insufficient jitter in their backoff interval.
-Actively retrying requests against a server that's experiencing load
-issues only makes the problem worse. This effectively prolonged the
-outage.</p>
-<p>Today, we had a similar but different network issue. The load balancer
-fronting hg.mozilla.org can only handle so much bandwidth. Today, we hit
-that limit. The load balancer started throttling connections. Load on
-hg.mozilla.org skyrocketed and request latency increased. From the
-perspective of clients, the service grinded to a halt.</p>
-<p>hg.mozilla.org was partially sharing a load balancer with
-ftp.mozilla.org. That meant if one of the services experienced very high
-load, the other service could effectively be <em>locked out</em> of bandwidth.
-We saw this happening this morning. ftp.mozilla.org load was high (it
-looks like downloads of Firefox Developer Edition are a major
-contributor - these don't go through the CDN for reasons unknown to me)
-and there wasn't enough bandwidth to go around.</p>
-<p>Separately today, hg.mozilla.org again hit 100% CPU. At that time, it
-also set a new record for network throughput: ~3 Gbps. It normally
-consumes between 200 and 500 Mbps, with periodic spikes to 750 Mbps.
-(Yesterday's event saw a spike to around ~2 Gbps.)</p>
-<p>Going back through the hg.mozilla.org server logs, an offender is
-quite obvious. Before March 9, total outbound transfer for the
-<a href="https://hg.mozilla.org/build/tools/">build/tools</a> repo was around
-1 tebibyte per day. Starting on March 9, it increased to 3 tebibytes per
-day! This is quite remarkable, as a clone of this repo is only about
-20 MiB. This means the repo was getting cloned about 150,000 times per
-day! (Note: I think all these numbers may be low by ~20% - stay tuned
-for the final analysis.)</p>
-<p>2 TiB/day is statistically significant because we transfer less than 10
-TiB/day across all of hg.mozilla.org. And, 1 TiB/day is close to 100
-Mbps, assuming requests are evenly spread out (which of course they
-aren't).</p>
-<p>Multiple things went wrong. If only one or two happened, we'd likely be
-fine. Maybe there would have been a short blip. But not the major event
-we've been firefighting the last ~24 hours.</p>
-<p>This post is only a summary of what went wrong. I'm sure there will be a
-post-mortem and that it will contain lots of details for those who want
-to know more.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/03/18/network-events#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/7">« Previous Page</a>
   --  

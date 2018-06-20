@@ -51,6 +51,68 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="deterministic-firefox-builds"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/06/20/deterministic-firefox-builds" rel="bookmark" title="Permanent Link to Deterministic Firefox Builds">Deterministic Firefox Builds</a></h2>
+  <small>June 20, 2018 at 11:10 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2018/06/20/deterministic-firefox-builds#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>As of Firefox 60, the build environment for official Firefox Linux builds
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1399679">switched</a> from CentOS
+to Debian.</p>
+<p>As part of the transition, we overhauled how the build environment for
+Firefox is constructed. We now populate the environment from deterministic
+package snapshots and are much more stringent about dependencies and operations
+being deterministic and reproducible. The end result is that the build
+environment for Firefox is deterministic enough to enable Firefox itself
+to be built deterministically.</p>
+<p>Changing the underlying operating system environment used for builds was
+a risky change. Differences in the resulting build could result in new
+bugs or some users not being able to run the official builds. We figured
+a good way to mitigate that risk was to make the old and new builds as
+bit-identical as possible. After all, if the environments produce the same
+bits, then nothing has effectively changed and there should be no new risk
+for end-users.</p>
+<p>Employing the <em>diffoscope</em> tool, we identified areas where Firefox builds
+weren't deterministic in the same environment and where there was variance
+across build environments. We iterated on differences and changed systems
+so variance would no longer occur. By the end of the process, we had
+bit-identical Firefox builds across environments.</p>
+<p>So, as of Firefox 60, Firefox builds on Linux are deterministic in our
+official build environment!</p>
+<p>That being said, the builds we ship to users are using PGO. And an
+end-to-end build involving PGO is intrinsically not deterministic because
+it relies on timing data that varies from one run to the next. And we don't
+yet have continuous automated end-to-end testing that determinism holds.
+But the underlying infrastructure to support deterministic and reproducible
+Firefox builds is there and is not going away. I think that's a milestone
+worth celebrating.</p>
+<p>This milestone required the effort of many people, often working indirectly
+toward it. Debian's <a href="https://wiki.debian.org/ReproducibleBuilds">reproducible builds</a>
+effort gave us an operating system that provided deterministic and
+reproducible guarantees. Switching Firefox CI to Taskcluster enabled us
+to switch to Debian relatively easily. Many were involved with
+non-determinism fixes in Firefox over the years. But Mike Hommey drove the
+transition of the build environment to Debian and he deserves recognition for
+his individual contribution. Thanks to all these efforts - and especially Mike
+Hommey's - we can now say <em>Firefox builds deterministically</em>!</p>
+<p>The
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=885777">fx-reproducible-build</a> bug
+tracks ongoing efforts to further improve the reproducibility story of
+Firefox. (~300 bugs in its dependency tree have already been resolved!)</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/06/20/deterministic-firefox-builds#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="scaling-firefox-development-workflows"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/05/16/scaling-firefox-development-workflows" rel="bookmark" title="Permanent Link to Scaling Firefox Development Workflows">Scaling Firefox Development Workflows</a></h2>
   <small>May 16, 2018 at 04:10 PM | categories: 
@@ -1411,88 +1473,6 @@ be a good place to start.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="good-riddance-to-aufs"></a>
-  <h2 class="blog_post_title"><a href="/blog/2017/12/08/good-riddance-to-aufs" rel="bookmark" title="Permanent Link to Good Riddance to AUFS">Good Riddance to AUFS</a></h2>
-  <small>December 08, 2017 at 03:00 PM | categories: 
-
-<a href='/blog/category/docker'>Docker</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>For over a year, AUFS - a layering filesystem for Linux - has been
-giving me fits.</p>
-<p>As
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1291940">I initially measured last year</a>,
-AUFS has... suboptimal performance characteristics. The crux of the problem is
-that AUFS obtains a <strong>global</strong> lock in the Linux kernel (at least version 3.13)
-for various I/O operations, including <em>stat()</em>. If you have more than a couple
-of active CPU cores, the overhead from excessive kernel locking inside
-<em>_raw_spin_lock()</em> can add more overhead than extra CPU cores add capacity.
-That's right: under certain workloads, adding more CPU cores actually slows
-down execution due to cores being starved waiting for a global lock in the
-kernel!</p>
-<p>If that weren't enough, AUFS can also violate POSIX filesystem guarantees
-under load. It appears that AUFS sometimes forgets about created files or
-has race conditions that prevent created files from being visible to
-readers until many seconds later! I <em>think</em> this issue only occurs when
-there are concurrent threads creating files.</p>
-<p>These two characteristics of AUFS have inflicted a lot of hardship on
-Firefox's continuous integration. Large parts of Firefox's CI execute in
-Docker. And the host environment for Docker has historically used Ubuntu
-14.04 with Linux 3.13 and Docker using AUFS. AUFS was/is the default
-storage driver for many versions of Docker. When this storage driver is
-used, all files inside Docker containers are backed by AUFS unless a
-Docker <em>volume</em> (a directory bind mounted from the host filesystem - EXT4
-in our case) is in play.</p>
-<p>When we started using EC2 instances with more CPU cores, we weren't
-getting a linear speedup for CPU bound operations. Instead, CPU cycles
-were being spent inside the kernel. Stack profiling showed AUFS as the
-culprit. We were thus unable to leverage more powerful EC2 instances
-because adding more cores would only provide marginal to negative gains
-against significant cost expenditure.</p>
-<p>We worked around this problem by making heavy use of Docker <em>volumes</em>
-for tasks incurring significant I/O. This included version control clones
-and checkouts.</p>
-<p>Somewhere along the line, we discovered that AUFS volumes were also the
-cause of several random <em>file not found</em> errors throughout automation.
-Initially, we thought many of these errors were due to bugs in the
-underlying tools (Mercurial and Firefox's build system were common
-victims because they do lots of concurrent I/O). When the bugs
-mysteriously went away after ensuring certain operations were performed
-on EXT4 volumes, we were able to blame AUFS for the myriad of filesystem
-consistency problems.</p>
-<p>Earlier today, we pushed out a change to upgrade Firefox's CI to Linux
-4.4 and switched Docker from AUFS to overlayfs (using the <em>overlay2</em> storage
-driver). The improvements exceeded my expectations.</p>
-<p>Linux build times have decreased by ~4 minutes, from ~750s to ~510s.</p>
-<p>Linux Rust test times have decreased by ~4 minutes, from ~615s to ~380s.</p>
-<p>Linux PGO build times have decreased by ~5 minutes, from ~2130s to ~1820s.</p>
-<p>And this is just the build side of the world. I don't have numbers
-off hand, but I suspect many tests also got a nice speedup from this
-change.</p>
-<p>Multiplied by thousands of tasks per day and factoring in the cost
-to operate these machines, the elimination of AUFS has substantially
-increased the efficiency (and reliability) of Firefox CI and easily
-saved Mozilla tens of thousands of dollars per year. And that's just
-factoring in the savings in the AWS bill. Time is money and people
-are a lot more expensive than AWS instances (you can run over 3,000
-c5.large EC2 instances at spot pricing for what it costs to employ me
-when I'm <em>on the clock</em>). So the real win here comes from Firefox
-developers being able to move faster because their builds and tests
-complete several minutes faster.</p>
-<p>In conclusion, if you care about performance or filesystem correctness,
-avoid AUFS. Use overlayfs instead.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mozilla/2">Next Page »</a>
 
