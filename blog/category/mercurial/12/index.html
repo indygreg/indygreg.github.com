@@ -51,6 +51,64 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="track-pushes-and-train-riding-with-mercurial"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial" rel="bookmark" title="Permanent Link to Track pushes and train riding with Mercurial">Track pushes and train riding with Mercurial</a></h2>
+  <small>July 25, 2013 at 01:10 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>My <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext">Mercurial extension for Firefox development</a>
+now has an initial implementation of pushlog aggregation and searching.</p>
+<p>You first start by synchronizing the pushlog data on Mozilla's servers
+with the local client:</p>
+<pre><code>hg pushlogsync
+</code></pre>
+<p>This takes a while the first time you run it because it has to download
+all the data. On subsequent runs, it only downloads new data, so it
+should be much faster.</p>
+<p>Then, you can search for the push history of a changeset:</p>
+<div class="pygments_murphy"><pre><span></span>$ hg changesetpushes -a b968708558b9
+133967:b968708558b9 Bug 839809:  Make counter-increments and list counting that would go past our internal (int32_t) limit keep the counter at its current value rather than wrapping.  r=dholbert
+
+Per CSS WG resolution regarding counter-styles-3, afternoon of 2013-02-05:
+http://krijnhoetmer.nl/irc-logs/css/20130205#l-1590
+http://lists.w3.org/Archives/Public/www-style/2013Feb/0392.html
+
+Note that this patch depends on signed integer overflow behavior in C++,
+which I believe is portable despite being unspecified.
+Tree      Date                Username              Build Info
+inbound   2013-02-21T18:12:57 dbaron@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Inbound&amp;rev=85b91048c1cd
+central   2013-02-22T09:43:12 ryanvm@gmail.com      https://tbpl.mozilla.org/?tree=Mozilla-Central&amp;rev=3a7d4085787e
+build     2013-02-22T14:31:42 gszorc@mozilla.com    https://tbpl.mozilla.org/?tree=Build-System&amp;rev=3a7d4085787e
+fx-team   2013-02-25T01:04:44 ttaubert@mozilla.com  https://tbpl.mozilla.org/?tree=Fx-Team&amp;rev=31466fd86eb7
+graphics  2013-02-25T20:02:57 mwoodrow@mozilla.com  https://tbpl.mozilla.org/?tree=Graphics&amp;rev=dcf53b7140cd
+ash       2013-02-26T13:50:41 armenzg@mozilla.com   https://tbpl.mozilla.org/?tree=Ash&amp;rev=201b64ad48d8
+services  2013-02-28T09:42:45 Ms2ger@gmail.com      https://tbpl.mozilla.org/?tree=Services-Central&amp;rev=31466fd86eb7
+aurora    2013-04-01T13:50:56 bbajaj@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Aurora&amp;rev=60a3f369ccf0
+beta      2013-05-13T09:59:38 lsblakk@mozilla.com   https://tbpl.mozilla.org/?tree=Mozilla-Beta&amp;rev=60a3f369ccf0
+release   2013-06-17T15:53:19 akeybl@mozilla.com    https://tbpl.mozilla.org/?tree=Mozilla-Release&amp;rev=c54e3363712e
+</pre></div>
+
+<p>(The <em>-a</em> argument prints all trees instead of just the release trees).</p>
+<p>I'd like to integrate bug tracking into the mix to facilitate
+answering questions like <em>when did bug 123456 ride the trains</em>.</p>
+<p>I'd also like to integrate release versions and build IDs into the mix.
+For example, when I look up a changeset, I want to know the first build
+on the Nightly, Aurora, Beta, and Release channels that change was
+included in.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mercurial-extension-for-gecko-development"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/07/22/mercurial-extension-for-gecko-development" rel="bookmark" title="Permanent Link to Mercurial Extension for Gecko Development">Mercurial Extension for Gecko Development</a></h2>
   <small>July 22, 2013 at 10:27 AM | categories: 

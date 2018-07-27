@@ -10,10 +10,104 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Wed, 20 Jun 2018 18:11:09 GMT</pubDate>
+    <pubDate>Fri, 27 Jul 2018 22:46:31 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Benefits of Clone Offload on Version Control Hosting</title>
+      <link>http://gregoryszorc.com/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting</link>
+      <pubDate>Fri, 27 Jul 2018 15:48:00 PDT</pubDate>
+      <category><![CDATA[Mercurial]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting</guid>
+      <description>Benefits of Clone Offload on Version Control Hosting</description>
+      <content:encoded><![CDATA[<p>Back in 2015, I implemented a feature in Mercurial 3.6 that allows
+servers to advertise URLs of pre-generated <em>bundle</em> files. When a
+compatible client performs a <code>hg clone</code> against a repository leveraging
+this feature, it downloads and applies the bundle from a URL then goes
+back to the server and performs the equivalent of an <code>hg pull</code> to obtain
+the changes to the repository made after the bundle was generated.</p>
+<p>On <a href="https://hg.mozilla.org/">hg.mozilla.org</a>, we've been using this
+feature since 2015. We host bundles in Amazon S3 and make them available
+via the CloudFront CDN. We perform
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/99f7164339ed/hgext/hgmo/__init__.py#l1022">IP filtering on the server</a>
+so clients connecting from AWS IPs are served S3 URLs corresponding to
+the closest region / S3 bucket where bundles are hosted. Most
+Firefox build and test automation is run out of EC2 and automatically
+clones high-volume repositories from an S3 bucket hosted in the same
+AWS region. (Doing an intra-region transfer is very fast and clones
+can run at &gt;50 MB/s.) Everyone else clones from a CDN. See our
+<a href="https://mozilla-version-control-tools.readthedocs.io/en/latest/hgmo/bundleclone.html">official docs</a>
+for more.</p>
+<p>I <a href="/blog/2015/10/22/cloning-improvements-in-mercurial-3.6/">last reported</a>
+on this feature in October 2015. Since then, Bitbucket also
+<a href="https://developer.atlassian.com/blog/2017/02/bitbucket-CDN-cloning/">deployed this feature</a>
+in early 2017.</p>
+<p>I was reminded of this <em>clone bundles</em> feature this week when
+kernel.org posted
+<a href="https://www.kernel.org/best-way-to-do-linux-clones-for-your-ci.html">Best way to do linux clones for your CI</a>
+and that post was making the rounds in my version control circles.
+tl;dr git.kernel.org apparently suffers high load due to high
+clone volume against the Linux Git repository and since Git doesn't
+have an equivalent feature to clone bundles built in to Git itself,
+they are asking people to perform equivalent functionality to mitigate
+server load.</p>
+<p>(A <em>clone bundles</em> feature has been discussed on the Git mailing list
+before. I remember finding old discussions when I was doing research
+for Mercurial's feature in 2015. I'm sure the topic has come up since.)</p>
+<p>Anyway, I thought I'd provide an update on just how valuable the
+<em>clone bundles</em> feature is to Mozilla. In doing so, I hope maintainers
+of other version control tools see the obvious benefits and consider
+adopting the feature sooner.</p>
+<p>In a typical week, hg.mozilla.org is currently serving ~135 TB of
+data. The overwhelming majority of this data is related to the Mercurial
+wire protocol (i.e. not HTML / JSON served from the web interface).
+Of that ~135 TB, ~5 TB is served from the CDN, ~126 TB is served from
+S3, and ~4 TB is served from the Mercurial servers themselves. In other
+words, <strong>we're offloading ~97% of bytes served from the Mercurial servers
+to S3 and the CDN</strong>.</p>
+<p>If we assume this offloaded ~131 TB is equally distributed throughout
+the week, this comes out to ~1,732 Mbps on average. In reality, we do
+most of our load from California's Sunday evenings to early Friday
+evenings. And load is typically concentrated in the 12 hours when
+the sun is over Europe and North America (where most of Mozilla's
+employees are based). So the typical throughput we are offloading is
+more than 2 Gbps. And at a lower level, automation tends to perform
+clones soon after a push is made. So load fluctuates significantly
+throughout the day, corresponding to when pushes are made.</p>
+<p>By volume, most of the data being offloaded is for the
+<a href="https://hg.mozilla.org/mozilla-unified">mozilla-unified</a> Firefox
+repository. Without clone bundles and without the special <em>stream
+clone</em> Mercurial feature (which we also leverage via clone bundles), the
+servers would be generating and sending ~1,588 MB of zstandard level 3
+compressed data for each clone of that repository. Each clone would
+consume ~280s of CPU time on the server. And at ~195,000 clones per
+month, that would come out to ~309 TB/mo or ~72 TB/week. In CPU time,
+that would be ~54.6 million CPU-seconds, or ~21 CPU-months. I will
+leave it as an exercise to the reader to attach a dollar cost to how
+much it would take to operate this service without clone bundles. But
+I will say the total AWS bill for our S3 and CDN hosting for this
+service is under $50 per month. (It is worth noting that intra-region
+data transfer from S3 to other AWS services is free. And we are
+definitely taking advantage of that.)</p>
+<p>Despite a significant increase in the size of the Firefox repository and
+clone volume of it since 2015, our servers are still performing less
+work (in terms of bytes transferred and CPU seconds consumed) than they
+were in 2015. The ~97% of bytes and millions of CPU seconds offloaded
+in any given week have given us a lot of breathing room and have
+saved Mozilla several thousand dollars in hosting costs. The feature
+has likely helped us avoid many operational incidents due to high server
+load. It has made Firefox automation faster and more reliable.</p>
+<p>Succinctly, Mercurial's <em>clone bundles</em> feature has successfully and
+largely effortlessly offloaded a ton of load from the hg.mozilla.org
+Mercurial servers. Other version control tools should implement this
+feature because it is a game changer for server operators <strong>and</strong>
+results in a better client-side experience (eliminates server-side CPU
+bottleneck and may eliminate network bottleneck due to a geo-local CDN
+typically being as fast as your Internet pipe). It's a win-win. And a
+massive win if you are operating at scale.</p>]]></content:encoded>
+    </item>
     <item>
       <title>High-level Problems with Git and How to Fix Them</title>
       <link>http://gregoryszorc.com/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them</link>
@@ -1990,38 +2084,6 @@ and I'll see what I can do.</p>
 <p>Thanks go to Steven MacLeod for
 <a href="https://reviewboard.mozilla.org/r/15617/">reviewing</a> the rather large
 series it took to make this happen.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>moz.build metadata on hg.mozilla.org</title>
-      <link>http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org</link>
-      <pubDate>Tue, 04 Aug 2015 19:55:00 PDT</pubDate>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org</guid>
-      <description>moz.build metadata on hg.mozilla.org</description>
-      <content:encoded><![CDATA[<p>Sometime last week we enabled a new API on hg.mozilla.org:
-<em>json-mozbuildinfo</em>. This endpoint will return JSON describing
-moz.build-derived metadata about the files that changed in a commit.</p>
-<p><a href="https://hg.mozilla.org/mozilla-central/json-mozbuildinfo/1164ec236273">Example</a>.
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/mozbuildinfo.html">Docs</a>.</p>
-<p>We plan to eventually leverage this API to do cool things like
-have MozReview automatically file bugs in the appropriate component and
-assign appropriate reviewers given the set of changed files in a commit.</p>
-<p>The API is currently only available on mozilla-central. And, we have
-very conservative resource limits in place. So large commits may cause
-it to error out. As such, the API is considered experimental. Also,
-performance is not as optimal as it could be. You have to start
-somewhere.</p>
-<p>I'd like to thank Guillaume Destuynder (kang) for his help with the
-security side of things. When I started on this project, I didn't think
-I'd be writing
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/02e353037996/testing/docker/builder-hgweb-chroot/mozbuild-eval.c">C code for spawning secure processes</a>,
-but here we are. In the not so distant future, I'll likely be adding
-<a href="http://man7.org/linux/man-pages/man2/seccomp.2.html">seccomp(2)</a>
-into the mix, which will make the execution environment as
-or more secure than the Firefox content process sandbox, depending
-on how it is implemented. The rabbit holes we find ourselves in to
-implement proper security...</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

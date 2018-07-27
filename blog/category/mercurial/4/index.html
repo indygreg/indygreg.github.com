@@ -51,6 +51,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="cloning-from-s3"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/07/08/cloning-from-s3" rel="bookmark" title="Permanent Link to Cloning From S3">Cloning From S3</a></h2>
+  <small>July 08, 2015 at 11:40 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A month ago, I <a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">blogged about faster cloning from hg.mozilla.org using
+bundle files</a>.
+But deploying the feature on the servers was only the tip of the
+iceberg.</p>
+<p>At the end of last week, Firefox release automation rolled out the
+<em>bundleclone</em> extension to their Linux and OS X machines. Essentially,
+clones are bootstrapped from Amazon S3 automatically once this extension
+is installed.</p>
+<p>In just a few days of deployment, we've already seen a drastic shift in
+traffic. On UTC day 2015-07-07, S3 served 1,563,014,396,236 bytes of
+repository data! The hg.mozilla.org servers themselves served a total of
+1,976,057,201,583 bytes.</p>
+<p>But we're not done. The <em>bundleclone</em> extension
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181597">isn't yet deployed on Windows</a>. Nor is it always used on TaskCluster. In addition, there are
+still some high-use repositories that don't have bundles being
+generated. Yesterday, I crunched the data and
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1181373">enabled bundles on more repositories</a>. It's too early to have conclusive data, but this should
+move an additional several hundred gigabytes of traffic to S3.</p>
+<p>At Whistler, I said that reducing traffic on hg.mozilla.org by 90% is
+within the realm of possibility. Between a partial rollout of S3
+clone offload that is already serving 44% of traffic and a
+<a href="https://selenic.com/pipermail/mercurial-devel/2015-July/071777.html">feature I'm working on in core Mercurial to enable auto sharing of repository data</a>,
+I'd say we're well on track.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="changeset-metadata-on-hg.mozilla.org"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to Changeset Metadata on hg.mozilla.org">Changeset Metadata on hg.mozilla.org</a></h2>
   <small>June 04, 2015 at 01:55 PM | categories: 
@@ -479,40 +521,6 @@ don't want to maintain forever. Prefer to send upstream.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/12/notes-from-git-merge-2015#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="dropping-explicit-support-for-mercurial-3.0"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0" rel="bookmark" title="Permanent Link to Dropping Explicit Support for Mercurial 3.0">Dropping Explicit Support for Mercurial 3.0</a></h2>
-  <small>May 07, 2015 at 04:05 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
-for all the Mercurial code in the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository. File issues in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
-<p>Code may still work against Mercurial 3.0. But it isn't supported and
-could break hard at any time.</p>
-<p>Supporting multiple versions of <em>any</em> software carries
-with it some cost. The people writing tooling around Mercurial are busy.
-It is a waste of our time to bend over backwards to support old versions
-of software that <strong>all</strong> users should have upgraded from months ago.
-Still using older Mercurial versions means you aren't getting the best
-performance and may encounter bugs that have since been fixed.</p>
-<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
-for info on how to upgrade to the latest/greatest Mercurial version.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/3">« Previous Page</a>
   --  

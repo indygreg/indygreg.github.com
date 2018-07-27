@@ -7,12 +7,111 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2018-06-20T18:11:09Z</updated>
+  <updated>2018-07-27T22:46:31Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Benefits of Clone Offload on Version Control Hosting]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting" />
+    <id>http://gregoryszorc.com/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting</id>
+    <updated>2018-07-27T15:48:00Z</updated>
+    <published>2018-07-27T15:48:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
+    <summary type="html"><![CDATA[Benefits of Clone Offload on Version Control Hosting]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting"><![CDATA[<p>Back in 2015, I implemented a feature in Mercurial 3.6 that allows
+servers to advertise URLs of pre-generated <em>bundle</em> files. When a
+compatible client performs a <code>hg clone</code> against a repository leveraging
+this feature, it downloads and applies the bundle from a URL then goes
+back to the server and performs the equivalent of an <code>hg pull</code> to obtain
+the changes to the repository made after the bundle was generated.</p>
+<p>On <a href="https://hg.mozilla.org/">hg.mozilla.org</a>, we've been using this
+feature since 2015. We host bundles in Amazon S3 and make them available
+via the CloudFront CDN. We perform
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/99f7164339ed/hgext/hgmo/__init__.py#l1022">IP filtering on the server</a>
+so clients connecting from AWS IPs are served S3 URLs corresponding to
+the closest region / S3 bucket where bundles are hosted. Most
+Firefox build and test automation is run out of EC2 and automatically
+clones high-volume repositories from an S3 bucket hosted in the same
+AWS region. (Doing an intra-region transfer is very fast and clones
+can run at &gt;50 MB/s.) Everyone else clones from a CDN. See our
+<a href="https://mozilla-version-control-tools.readthedocs.io/en/latest/hgmo/bundleclone.html">official docs</a>
+for more.</p>
+<p>I <a href="/blog/2015/10/22/cloning-improvements-in-mercurial-3.6/">last reported</a>
+on this feature in October 2015. Since then, Bitbucket also
+<a href="https://developer.atlassian.com/blog/2017/02/bitbucket-CDN-cloning/">deployed this feature</a>
+in early 2017.</p>
+<p>I was reminded of this <em>clone bundles</em> feature this week when
+kernel.org posted
+<a href="https://www.kernel.org/best-way-to-do-linux-clones-for-your-ci.html">Best way to do linux clones for your CI</a>
+and that post was making the rounds in my version control circles.
+tl;dr git.kernel.org apparently suffers high load due to high
+clone volume against the Linux Git repository and since Git doesn't
+have an equivalent feature to clone bundles built in to Git itself,
+they are asking people to perform equivalent functionality to mitigate
+server load.</p>
+<p>(A <em>clone bundles</em> feature has been discussed on the Git mailing list
+before. I remember finding old discussions when I was doing research
+for Mercurial's feature in 2015. I'm sure the topic has come up since.)</p>
+<p>Anyway, I thought I'd provide an update on just how valuable the
+<em>clone bundles</em> feature is to Mozilla. In doing so, I hope maintainers
+of other version control tools see the obvious benefits and consider
+adopting the feature sooner.</p>
+<p>In a typical week, hg.mozilla.org is currently serving ~135 TB of
+data. The overwhelming majority of this data is related to the Mercurial
+wire protocol (i.e. not HTML / JSON served from the web interface).
+Of that ~135 TB, ~5 TB is served from the CDN, ~126 TB is served from
+S3, and ~4 TB is served from the Mercurial servers themselves. In other
+words, <strong>we're offloading ~97% of bytes served from the Mercurial servers
+to S3 and the CDN</strong>.</p>
+<p>If we assume this offloaded ~131 TB is equally distributed throughout
+the week, this comes out to ~1,732 Mbps on average. In reality, we do
+most of our load from California's Sunday evenings to early Friday
+evenings. And load is typically concentrated in the 12 hours when
+the sun is over Europe and North America (where most of Mozilla's
+employees are based). So the typical throughput we are offloading is
+more than 2 Gbps. And at a lower level, automation tends to perform
+clones soon after a push is made. So load fluctuates significantly
+throughout the day, corresponding to when pushes are made.</p>
+<p>By volume, most of the data being offloaded is for the
+<a href="https://hg.mozilla.org/mozilla-unified">mozilla-unified</a> Firefox
+repository. Without clone bundles and without the special <em>stream
+clone</em> Mercurial feature (which we also leverage via clone bundles), the
+servers would be generating and sending ~1,588 MB of zstandard level 3
+compressed data for each clone of that repository. Each clone would
+consume ~280s of CPU time on the server. And at ~195,000 clones per
+month, that would come out to ~309 TB/mo or ~72 TB/week. In CPU time,
+that would be ~54.6 million CPU-seconds, or ~21 CPU-months. I will
+leave it as an exercise to the reader to attach a dollar cost to how
+much it would take to operate this service without clone bundles. But
+I will say the total AWS bill for our S3 and CDN hosting for this
+service is under $50 per month. (It is worth noting that intra-region
+data transfer from S3 to other AWS services is free. And we are
+definitely taking advantage of that.)</p>
+<p>Despite a significant increase in the size of the Firefox repository and
+clone volume of it since 2015, our servers are still performing less
+work (in terms of bytes transferred and CPU seconds consumed) than they
+were in 2015. The ~97% of bytes and millions of CPU seconds offloaded
+in any given week have given us a lot of breathing room and have
+saved Mozilla several thousand dollars in hosting costs. The feature
+has likely helped us avoid many operational incidents due to high server
+load. It has made Firefox automation faster and more reliable.</p>
+<p>Succinctly, Mercurial's <em>clone bundles</em> feature has successfully and
+largely effortlessly offloaded a ton of load from the hg.mozilla.org
+Mercurial servers. Other version control tools should implement this
+feature because it is a game changer for server operators <strong>and</strong>
+results in a better client-side experience (eliminates server-side CPU
+bottleneck and may eliminate network bottleneck due to a geo-local CDN
+typically being as fast as your Internet pipe). It's a win-win. And a
+massive win if you are operating at scale.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -2410,79 +2509,5 @@ will attack. The best your version control tool can do is give its
 users the capability and tools to run a secure and verifiable
 repository so that when bad content is inevitably added you can't
 blame the version control tool for having poor security.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[MozReview Git Support and Improved Commit Mapping]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping" />
-    <id>http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping</id>
-    <updated>2016-02-08T11:05:00Z</updated>
-    <published>2016-02-08T11:05:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="MozReview" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[MozReview Git Support and Improved Commit Mapping]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping"><![CDATA[<p>MozReview - Mozilla's Review Board based code review tool - now
-supports ingestion from Git. Previously, it only supported Mercurial.</p>
-<p><a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install-git.html">Instructions</a>
-for configuring Git with MozReview are available. Because blog posts
-are not an appropriate medium for documenting systems and processes, I
-will not say anything more here on how to use Git with MozReview.</p>
-<p>Somewhat related to the introduction of Git support is an improved
-mechanism for mapping commits to existing review requests.</p>
-<p>When you submit commits to MozReview, MozReview has to decide how
-to <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/commits.html#understanding-how-commits-are-mapped-to-review-requests">map</a>
-those commits to review requests in Review Board. It has to choose
-whether to recycle an existing review request or create a new one.
-When recycling, is has to pick an appropriate one. If it chooses
-incorrectly, wonky things can happen. For example, a review request
-could switch to tracking a new and completely unrelated commit. That's
-bad.</p>
-<p>Up until today, our commit mapping algorithm was extremely simple. Yet
-it seemed to work 90% of the time. However, a number of people
-found the cracks and complained. With Git support coming online,
-I had a feeling that Git users would find these cracks with higher
-frequency than Mercurial users due to what I perceive to be
-variations in the commit workflows of Git versus Mercurial. So,
-I decided to proactively improve the commit mapping before the Git
-users had time to complain.</p>
-<p><strong>Both the Git and Mercurial MozReview client-side extensions now insert
-a <em>MozReview-Commit-ID</em> metadata line in commit messages.</strong> This line
-effectively defines a (likely) unique ID that identifies the commit
-across rewrites. When MozReview maps commits to review requests,
-it uses this identifier to find matches. What this means is that
-history rewriting (such as reordering commits) should be handled
-well by MozReview and should not confuse the commit mapping
-mechanism.</p>
-<p>I'm not claiming the commit mapping mechanism is perfect. In fact,
-I know of areas where it can still fall apart. But it is much
-better than it was before. If you think you found a bug in the
-commit mapping, don't hesitate to
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=MozReview">file a bug</a>.
-Please have it block <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1243483">bug 1243483</a>.</p>
-<p>A side-effect of introducing this improved commit mapping is that
-commit messages will have a <em>MozReview-Commit-ID</em> line in them. This
-may startle some. Some may complain about the <em>spam</em>. Unfortunately,
-there's no better alternative. Both Mercurial and Git do support a
-hidden key-value dictionary for each commit object. In fact, the
-MozReview Mercurial extension has been storing the very commit IDs
-that now appear in the commit message in this dictionary for months!
-Unfortunately, actually using this hidden dictionary for metadata
-storage is riddled with problems. For example, some Mercurial
-commands don't preserve all the metadata. And accessing or setting
-this data from Git is painful. While I wish this metadata (which
-provides little value to humans) were not located in the commit
-message where humans could be bothered by it, it's really the only
-practical place to put it. If people find it super annoying, we
-could modify Autoland to strip it before landing. Although, I think
-I like having it preserved because it will enable some useful
-scenarios down the road, such as better workflows for uplift
-requests. It's also worth noting that there is precedent for storing
-unique IDs in commit messages for purposes of commit mapping in the
-code review tool: <a href="https://gerrit-documentation.storage.googleapis.com/Documentation/2.11.5/user-changeid.html">Gerrit uses Change-ID lines</a>.</p>
-<p>I hope you enjoy the Git support and the more robust commit to review
-request mapping mechanism!</p>]]></content>
   </entry>
 </feed>
