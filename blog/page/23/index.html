@@ -51,6 +51,231 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="the-importance-of-time-on-automated-machine-configuration"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration" rel="bookmark" title="Permanent Link to The Importance of Time on Automated Machine Configuration">The Importance of Time on Automated Machine Configuration</a></h2>
+  <small>June 24, 2013 at 09:00 PM | categories: 
+
+<a href='/blog/category/sysadmin'>sysadmin</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/puppet'>Puppet</a>
+ | <a href="http://gregoryszorc.com/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Usage of machine configuration management software like Puppet
+and Chef has taken off in recent years. And rightly so - these
+pieces of software make the lives of countless system
+administrators much better (in theory).</p>
+<p>In their default (and common) configuration, these pieces of
+software do a terrific job of ensuring a machine is provisioned with
+<em>today's</em> configuration. However, for many server provisioning
+scenarios, we actually care about <em>yesterday's</em> configuration.</p>
+<p>In this post, I will talk about the importance of time when configuring
+machines.</p>
+<h2>Describing the problem</h2>
+<p>If you've worked on any kind of server application, chances are
+you've had to deal with a rollback. Some new version of a package
+or web application is rolled out to production. However, due to
+unforeseen problems, it needed to be rolled back.</p>
+<p>Or, perhaps you operate a farm of machines that continuously build
+or compile software from version control. It's desirable to be able
+to reproduce the output from a previous build (ideally bit
+identical).</p>
+<p>In these scenarios, the wall time plays a crucial rule when dealing
+with a central, master configuration server (such as a Puppet
+master).</p>
+<p>Since a client will always pull the latest revision of its
+configuration from the server, it's very easy to define your
+configurations such that the result of machine provisioning
+today is different from yesterday (or last week or last month).</p>
+<p>For example, let's say you are running Puppet to manage a machine
+that sits in a continuous integration farm and recompiles a source
+tree over and over. In your Puppet manifest you have:</p>
+<pre><code>package {
+    "gcc":
+        ensure =&gt; latest
+}
+</code></pre>
+<p>If you run Puppet today, you may pull down GCC 4.7 from the remote
+package repository because 4.7 is the latest version available. But
+if you run Puppet tomorrow, you may pull down GCC 4.8 because the
+package repository has been updated! If for some reason you need
+to rebuild one of today's builds tomorrow (perhaps you want to
+rebuild that revision plus a minor patch), they'll use different
+compiler versions (or any package for that matter) and the output
+may not be consistent - it may not even work at all! So much for
+repeatability.</p>
+<p>File templates are another example. In Puppet, file templates are
+evaluated on the server and the results are sent to the client. So,
+the output of file template execution today might be different from
+the output tomorrow. If you needed to roll back your server to an
+old version, you may not be able to do that because the template
+on the server isn't backwards compatible! This can be worked around,
+sure (commonly by copying the template and branching differences),
+but over time these hacks accumulate in a giant pile of complexity.</p>
+<p>The common issue here is that time has an impact on the outcome of
+machine configuration. I refer to this issue as <strong>time-dependent
+idempotency</strong>. In other words, does time play a role in the
+supposedly idempotent configuration process? If the output is
+consistent no matter <em>when</em> you run the configuration, it is
+time-independent and truly idempotent. If it varies depending on
+when configuration is performed, it is time-dependent and thus
+not truly idempotent.</p>
+<h2>Solving the problem</h2>
+<p>My attitude towards machine configuration and automation is that
+it should be as time independent as possible. If I need to revert
+to yesterday's state or want to reproduce something that happened
+months ago, I want strong guarantees that it will be similar, if not
+identical. Now, this is just my opinion. I've worked in environments
+where we had these strong guarantees. And having had this luxury,
+I abhore the alternative where so many pieces of configuration vary
+over time as the central configuration moves forward without the
+ability to turn back the clock. As always, your needs may be
+different and this post may not apply to you!</p>
+<p>I said <em>as possible</em> a few times in the previous paragraph.
+While you could likely make all parts of your configuration time
+independent, it's not a good idea. In the real world, things
+change over time and making all configuration data static regardless
+of time will produce a broken or bad configuration.</p>
+<p>User access is one such piece of configuration. Employees come and
+go. Passwords and SSH keys change. You don't want to revert user
+access to the way it was two months ago, restoring access to a
+disgruntled former employee or allowing access via a compromised
+password. Network configuration is another. Say the network topology
+changed and the firewall rules need updating. If you reverted the
+networking configuration, the machine likely wouldn't work on the
+network!</p>
+<p>This highlights an important fact: <strong>if making your machine
+configuration time independent is a goal, you will need to
+bifurcate configuration by time dependency and solve for both.</strong>
+You'll need to identify every piece of configuration and
+ask <em>do I put this in the bucket that is constant over time or
+the bucket that changes over time?</em></p>
+<p>Machine configuration software can do a terrific job of ensuring
+an applied configuration is idempotent. The problem is it typically
+can't manage both time-dependent and time-independent attributes
+at the same time. Solving this requires a little brain power, but
+is achievable if there is will. In the next section, I'll describe
+how.</p>
+<h3>Technical implementation</h3>
+<p>Time-dependent machine configuration is a solved problem. Deploy
+Puppet master (or similar) and you are good to go.</p>
+<p>Time-independent configuration is a bit more complicated.</p>
+<p>As I mentioned above, the first step is to isolate all of the
+configuration you want to be time independent. Next, you need to
+ensure time dependency doesn't creep into that configuration. You
+need to identify things that can change over time and take
+measures to ensure those changes won't affect the configuration.
+I encourage you to employ the <em>external system
+test</em>: <em>does this aspect of configuration depend on an external
+system or entity? If so how will I prevent changes in it over
+time from affecting us?</em></p>
+<p>Package repositories are one such external system. New package
+versions are released all the time. Old packages are deleted.
+If your configuration says to install the <em>latest</em> package, there's
+no guarantee the package version won't change unless the package
+repository doesn't change. If you simply pin a package to a specific
+version, that version may disappear from the server. The solution:
+pin packages to specific versions <strong>and</strong> run your own package
+mirror that doesn't delete or modify existing packages.</p>
+<p>Does your configuration fetch a file from a remote server or use
+a file as a template? Cache that file locally (in case it
+disappears) and put it under version control. Have the configuration
+reference the version control revision of that file. As long as the
+repository is accessible, the exact version of the file can be
+retrieved at any time without variation.</p>
+<p>In my professional career, I've used two separate systems for
+managing time-independent configuration data. Both relied heavily
+on version control. Essentially, all the time-independent
+configuration data is collected into a single repository - an
+independent repository from all the time-dependent data
+(although that's technically an implementation detail). For Puppet,
+this would include all the manifests, modules, and files used
+directly by Puppet. When you want to <em>activate</em> a machine with
+a configuration, you simply say <em>check out revision X of this
+repository and apply its configuration.</em> Since <em>revision X</em> of
+the repository is constant over time, the set of configuration
+data being used to configure the machine is constant. And, if
+you've done things correctly, the output is idempotent over time.</p>
+<p>In one of these systems, we actually had two versions of Puppet
+running on a machine. First, we had the daemon communicating with a
+central Puppet master. It was continually applying time-dependent
+configuration (user accounts, passwords, networking, etc). We
+supplemented this was a manually executed standalone Puppet
+instance. When you ran a script, it asked the Puppet master for its
+configuration. Part of that configuration was the revision of the
+time-independent Git repository containing the Puppet configuration
+files the client should use. It then pulled the Git repo, checked
+out the specified revision, merged Puppet master's settings for the
+node with that config (not the manifests, just some variables),
+then ran Puppet locally to apply the configuration. While a
+machine's configuration typically referenced a SHA-1 of a specific
+Git commit to use, we could use anything <em>git checkout</em> understood.
+We had some machines running <em>master</em> or other branches if we didn't
+care about time-independent idempotency for that machine at that
+time. What this all meant was that if you wanted to roll back
+a machine's configuration, you simply specified an earlier Git
+commit SHA-1 and then re-ran local Puppet.</p>
+<p>We were largely satisfied with this model. We felt like we got
+the best of both worlds. And, since we were using the same
+technology (Puppet) for time-dependent and time-independent
+configuration, it was a pretty simple-to-understand system.
+A downside was there were two Puppet instances instead of one.
+With a little effort, someone could probably devise a way for
+the Puppet master to <em>merge</em> the two configuration trees. I'll
+leave that as an exercise for the reader. Perhaps someone has
+done this already! If you know of someone, please leave a comment!</p>
+<h3>Challenges</h3>
+<p>The solution I describe does not come without its challenges.</p>
+<p>First, deciding whether a piece of configuration is time dependent
+or time independent can be quiet complicated. For example,
+should a package update for a critical security fix be time
+dependent or time independent? It depends! What's the risk of
+the machine not receiving that update? How often is that machine
+rolled back? Is that package important to the operation/role
+of that machine (if so, I'd lean more towards time independent).</p>
+<p>Second, minimizing exposure to external entities is hard. While
+I recommend putting as much as possible under version control in a
+single repository and pinning versions everywhere when you interface
+with an external system, this isn't always feasible. It's probably
+a silly idea to have your 200 GB Apt repository under version
+control and distributed locally to every machine in your network.
+So, you end up introducing specialized one-off systems as necessary.
+For our package repository, we just ran an internal HTTP server that
+only allowed inserts (no deletes or mutates). If we were creative, we
+could have likely devised a way for the client to pass a <em>revision</em> with
+the request and have the server dynamically serve from that revision
+of an underlying repository. Although, that may not work for every
+server type due to limited control over client behavior.</p>
+<p>Third, ensuring compatibility between the time-dependent configuration
+and time-independent configuration is hard. This is a consequence of
+separating those configurations. Will a time-independent configuration
+from a revision two years ago work with the time-dependent
+configuration of today? This issue can be mitigated by first
+having as much configuration as possible be time independent and
+second not relying on wide support windows. If it's good enough
+to only support compatibility for time-independent configurations
+less than a month old, then it's good enough! With this issue, I feel
+you are trading long-term future incompatibility for well-defined
+and understood behavior in the short to medium term. That's
+a trade-off I'm willing to make.</p>
+<h2>Conclusion</h2>
+<p>Many machine configuration management systems only care about
+idempotency <em>today</em>. However, with a little effort, it's possible
+to achieve consistent state over time. This requires a little extra
+effort and brain power, but it's certainly doable.</p>
+<p>The next time you are programming your system configuration tool, I
+hope you take the time to consider the effects time will have and that
+you will take the necessary steps to ensure consistency over time
+(assuming you want that, of course).</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/06/24/the-importance-of-time-on-automated-machine-configuration#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="using-docker-to-build-firefox"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/05/19/using-docker-to-build-firefox" rel="bookmark" title="Permanent Link to Using Docker to Build Firefox">Using Docker to Build Firefox</a></h2>
   <small>May 19, 2013 at 01:45 PM | categories: 
@@ -739,267 +964,6 @@ will tell if we as a community have the will to address these issues.</p>
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/13/the-state-of-mercurial-at-mozilla#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="thoughts-on-mercurial-(and-git)"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/05/12/thoughts-on-mercurial-(and-git)" rel="bookmark" title="Permanent Link to Thoughts on Mercurial (and Git)">Thoughts on Mercurial (and Git)</a></h2>
-  <small>May 12, 2013 at 12:00 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/git'>Git</a>
- | <a href="http://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-(and-git)#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>My first experience with Mercurial (Firefox development)
-was very unpleasant. Coming from Git, I thought Mercurial was slow
-and perhaps even more awkward to use than Git. I frequently
-encountered repository corruption that required me to reclone. I thought
-the concept of a patch queue was silly compared to Git branches. It
-was all extremely frustrating and I dare say a hinderance to my
-productivity. It didn't help that I was surrounded by a bunch of people
-who had previous experience with Git and opined about every minute
-difference.</p>
-<p>Two years later and I'm on much better terms with Mercurial. I initially
-thought it might be Stockholm Syndrome, but after reflection I can point
-at specific changes and enlightenments that have reshaped my opinions.</p>
-<h2>Newer versions of Mercurial are much better</h2>
-<p>I first started using Mercurial in the 1.8 days and thought it was
-horrible. However, modern releases are much, much better. I've noticed
-a steady improvement in the quality and speed of Mercurial in the last
-few years.</p>
-<p><strong>If you aren't running 2.5 or later (Mercurial 2.6 was released earlier
-this month), you should take the time to upgrade today.</strong> When you upgrade,
-you should of course read the
-<a href="http://mercurial.selenic.com/wiki/WhatsNew">changelog</a> and
-<a href="http://mercurial.selenic.com/wiki/UpgradeNotes">upgrade notes</a> so you
-can make the most of the new features.</p>
-<h2>Proper configuration is key</h2>
-<p>For <em>my</em> workflow, the default configuration of Mercurial out of the box
-is... far from optimal. There are a number of basic changes that need to
-be made to satisfy <em>my</em> expectations for a version control tool.</p>
-<p>I used to think this was a shortcoming with Mercurial: why not ship a
-powerful and useful environment out of the box? But, after talking to a
-Mercurial core contributor, this is mostly by design. Apparently a
-principle of the Mercurial project is that the CLI tool (<em>hg</em>) should be
-simple by default and should minimize foot guns. They view actions like
-rebasing and patch queues as advanced and thus don't have them enabled
-by default. Seasoned developers may scoff at this. But, I see where
-Mercurial is coming from. I only need to refer everyone to her first
-experience with Git as an example of what happens when you don't aim for
-simplicity. (I've never met a Git user who didn't think it overly
-complicated at first.)</p>
-<p>Anyway, to get the most out of Mercurial, it is essential to configure
-it to your liking, much like you install plugins or extensions in your
-code editor.</p>
-<p><strong>Every person running Mercurial should go to
-<a href="http://mercurial.selenic.com/wiki/UsingExtensions">http://mercurial.selenic.com/wiki/UsingExtensions</a>
-and take the time to find extensions that will make your life better</strong>.
-You should also run <em>hg help hgrc</em> to view all the configuration
-options. There is a mountain of productivity wins waiting to be realized.</p>
-<p>For reference, my <a href="https://gist.github.com/indygreg/5511712">~/.hgrc</a>.
-Worth noting are some of the built-in externsions I've enabled:</p>
-<ul>
-<li>color - Colorize terminal output. Clear UX win.</li>
-<li>histedit - Provides  <em>git rebase --interactive</em> behavior.</li>
-<li>pager - Feed command output into a pager (like <em>less</em>). Clear UX win.</li>
-<li>progress - Draw progress bars on long-running operations. Clear UX
-  win.</li>
-<li>rebase - Ability to easily rebase patches on top of other heads.
-  This is a basic feature of patch management.</li>
-<li>transplant - Easily move patches between repositories, branches, etc.</li>
-</ul>
-<p>If I were on Linux, I'd also use the <em>inotify</em> extension, which installs
-filesystem watchers so operations like <em>hg status</em> are instantaneous.</p>
-<p>In addition to the built-in extensions, there are a number of 3rd party
-extensions that improve my Mozilla workflow:</p>
-<ul>
-<li><a href="https://bitbucket.org/sfink/mqext">mqext</a> - Automatically commit to
-  your patch queue when you qref, etc. This is a lifesaver. If that's
-  not enough, it suggests reviewers for your patch, suggests a bug
-  component, and let's you find bugs touching the files you are
-  touching.</li>
-<li><a href="https://github.com/pbiggar/trychooser">trychooser</a> - Easily push
-  changes to Mozilla's Try infrastructure.</li>
-<li><a href="https://hg.mozilla.org/users/robarnold_cmu.edu/qimportbz">qimportbz</a> -
-  Easily import patches from Bugzilla.</li>
-<li><a href="https://hg.mozilla.org/users/tmielczarek_mozilla.com/bzexport">bzexport</a> -
-  Easily export patches to Bugzilla.</li>
-</ul>
-<p>I'm amazed more developers don't use these simple productivity wins.
-Could it be that people simply don't realize they are available?</p>
-<p>Mozilla has a <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=794580">bug</a>
-tracking easier configuration of the user's Mercurial environment. My
-hope is one day people simply run a single command and get a
-Mozilla-optimized Mercurial environment that <em>just works</em>. Along the same
-vein, if your extensions are out of date, it prompts you to update them.
-This is one of the benefits of a unified developer tool like mach: you
-can put these checks in one place and everyone can reap the benefits
-easily.</p>
-<h2>Mercurial is extensible</h2>
-<p>The major differentiator from almost every other version control system
-(especially Git) is the ease and degree to which Mercurial can be
-extended and contorted. <strong>If you take anything away from this
-post it should be that Mercurial is a flexible and agile tool.</strong></p>
-<p>If you want to change the behavior of a built-in command, you can write
-an extension that monkeypatches that command. If you want to write a new
-command, you can of course do that easily. You can have extensions
-interact with one another - all natively. You can even override the wire
-protocol to provide new <em>capabilities</em> to extend how peers communicate
-with one another. You can leverage this to transfer additional metadata
-or data types. This has nearly infinite potential. If that's not enough,
-it's possible to create a new branching/development primitive through
-just an extension alone! If you want to invent Git-style branches with
-Mercurial, you could do that! It may require client and server support,
-but it's possible.</p>
-<p>Mercurial accomplishes this by being written (mostly) in Python (as
-opposed to C) and by having a clear API on which extensions can be
-built. Writing extensions in Python is huge. You can easily drop into
-the debugger to learn the API and your write-test loop is much smaller.</p>
-<p>By contrast, most other version control systems (including Git) require
-you to parse output of commands (this is the UNIX piping principle).
-Mercurial supports this too, but the native Python API is so much more
-powerful. Instead of parsing output, you can just read the raw values
-from a Python data structure. Yes please.</p>
-<p>Since I imagine a lot of people at Mozilla will be reading this, here
-are some ways Mozilla could leverage the extensibility of Mercurial:</p>
-<ul>
-<li>Command to create try pushes (it exists - see above).</li>
-<li>Record who pushed what when (we have this - it's called the pushlog).</li>
-<li>Command to land patches. If inbound1 is closed,
-  automatically rebase on inbound2. etc. This could even be
-  monkeypatched into <em>hg push</em> so pushes to inbound are automatically
-  intercepted and magic ensues.</li>
-<li>Record the automation success/fail status against individual
-  revisions and integrate with commands (e.g. only pull up to the most
-  recent stable changeset).</li>
-<li>Command to create a review request for a patch or patch queue.</li>
-<li>Command to assist with reviews. Perhaps a reviewer wants to make minor
-  changes. Mercurial could download and apply the patch(es), wait for
-  your changes, then reupload to Bugzilla (or the review tool)
-  automatically.</li>
-<li>Annotating commits or pushes with automation info (which jobs to
-  run, etc).</li>
-<li>Find Bugzilla component for patch (it exists - see above).</li>
-<li>Expose custom protocol for configuring automation settings for a
-  repository or a head. e.g. clients (with access) could reconfigure
-  PGO scheduling, coalescing, etc without having to involve RelEng -
-  useful for twigs and lesser used repositories.</li>
-<li>So much more.</li>
-</ul>
-<p>Essentially, Mercurial itself could become the CLI tool code development
-centers around. Whether that is a good idea is up for
-debate. But, it can. And that says a lot about the flexibility of
-Mercurial.</p>
-<h2>Future potential of Mercurial</h2>
-<p>When you consider the previous three points, you arrive at a new one:
-Mercurial has a ton of future potential. The fact that extensions can
-evolve vanilla Mercurial into something that resembles Mercurial in
-name only is a testament to this.</p>
-<p>When I sat down with a Mercurial core contributor, they reinforced this.
-To them, Mercurial is a core library with a limited set of user-facing
-commands forming the stable API. Since core features (like storage) are
-internal APIs (not public commands - like Git), this means they aren't
-bound to backwards compatibility and can refactor internals as needed
-and evolve over time without breaking the world. That is a terrific
-luxury.</p>
-<p>An example of this future potential is
-<a href="http://mercurial.selenic.com/wiki/ChangesetEvolution">changeset evolution</a>.
-If you don't know what that is, you should because it's awesome. One of
-the things they figured out is how to propagate rebasing between
-clones!</p>
-<h2>Comparing to Git</h2>
-<p>Two years ago I would have said I would never opt to use Mercurial over
-Git. I cannot say that today.</p>
-<p>I do believe Git still has the advantage over Mercurial in a few areas:</p>
-<ul>
-<li>Branch management. Mercurial branches are a non-starter for
-  light-weigh work. Mercurial bookmarks are kinda-sorta like Git
-  branches, but not quite. I <em>really</em> like aspects of Git branches.
-  Hopefully changeset evolution will cover the remaining gaps and more.</li>
-<li>Patch conflict management. Git seems to do a better job of resolving
-  patch conflicts. But, I think this is mostly due to Mercurial's patch
-  queue extension not using the same merge code as built-in commands
-  (this is a fixable problem).</li>
-<li>Developer mind share and GitHub. The GitHub ecosystem makes up for
-  many of Git's shortcomings. Bitbucket isn't the same.</li>
-</ul>
-<p>However, I believe Mercurial has the upper hand for:</p>
-<ul>
-<li>Command line friendliness. Git's command line syntax is notoriously
-  awful and the concepts can be difficult to master.</li>
-<li>Extensibility. It's so easy to program custom workflows and commands
-  with Mercurial. If you want to hack your version control system,
-  Mercurial wins hands down. Where Mercurial embraces extensibility, I
-  couldn't even find a page listing all the useful Git <em>extensions</em>!</li>
-<li>Open source culture. Every time I've popped into the Mercurial IRC
-  channel I've had a good experience. I get a response quickly and
-  without snark. Git by contrast, well, let's just say I'd rather be
-  affiliated with the Mercurial crowd.</li>
-<li>Future potential. Git is a content addressable key-value store with a
-  version control system bolted on top. Mercurial is designed to be a
-  version control system. Furthermore, Mercurial's code base is much
-  easier to hack on than Git's. While Git has largely maintained feature
-  parity in the last few years, Mercurial has grown new features. I see
-  Mercurial evolving faster than Git and in ways Git cannot.</li>
-</ul>
-<p>It's worth calling out the major detractors for each.</p>
-<p>I think Git's major weakness is its lack of extensibility and inability
-to evolve (at least currently). Git will need to grow a better
-extensibility model with better abstractions to compete with Mercurial
-on new features. Or, the Git community will need to be receptive to
-experimental features living in the core. All of this will require
-some major API breakage. Unfortunately, I see little evidence this will
-occur. I'm unable to find a <em>vision</em> document for the future of Git, a
-branch with major new features, or interesting threads on the mailing
-list. I tried to ask in their IRC channel and got crickets.</p>
-<p>I think Mercurial's greatest weakness is lack of developer mindshare.
-Git and GitHub are where it's at. This is huge, especially for projects
-wanting collaboration.</p>
-<p>Of all those points, I want to stress the extensibility and future
-potential of Mercurial. If hacking your tools to maximize potential
-and awesomeness is your game, Mercurial wins. End of debate. However,
-if you don't want to harness these advantages, then I think Git and
-Mercurial are mostly on equal footing. But given the rate of
-development in the Mercurial project and relative stagnation of Git
-(I can't name a major new Git feature in years), I wouldn't be
-surprised if Mercurial's feature set obviously overtakes Git's in
-the next year or two. Mind share will of course take longer and will
-likely depend on what hosting sites like GitHub and Bitbucket do
-(I wouldn't be surprised if GitHub rebranded as <em>CodeHub</em> or
-something some day). Time will tell.</p>
-<h2>Extending case study</h2>
-<p><em>I have removed the case study that appeared in the original article
-because as Mike Hommey observed in the comments, it wasn't a totally
-accurate comparison. I don't believe the case study significantly added
-much to the post, so I likely won't write a new one.</em></p>
-<h2>Conclusion</h2>
-<p>From where I started with Mercurial, I never thought I'd say this. But
-here it goes: I like Mercurial.</p>
-<p>I started warming up when it became faster and more robust in recent
-versions in the last few years. When I learned about its flexibility and
-the fundamentals of the project and thus its future potential, I became
-a true fan.</p>
-<p>It's easy to not like Mercurial if you are a new user coming
-from Git and are forced to use a new tool. But, once you take the time to
-properly configure it and appreciate it for what it is and what it
-can be, Mercurial is easy to like.</p>
-<p>I think Mercurial and Git are both fine version control systems. I would
-happily use either one for a new project. If the social aspects of
-development (including encouraging new contributors) were important to
-me, I would likely select Git and GitHub. But, if I wanted something
-just for me or I was a large project looking for a system that scales
-and is flexible or was looking to the future, I'd go with Mercurial.</p>
-<p>Mercurial is a rising star in the version control world. It's getting
-faster and better and enabling others to more easily innovate through
-powerful extensions. The future is bright for this tool.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-(and-git)#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
  <a href="../22">« Previous Page</a>
   --  
  <a href="../24">Next Page »</a>
@@ -1011,6 +975,7 @@ powerful extensions. The future is bright for this tool.</p>
             <li>
               <h2>Categories</h2>
               <ul>
+                <li><a href="/blog/category/apple">Apple</a></li>
                 <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
                 <li><a href="/blog/category/clang">Clang</a></li>
                 <li><a href="/blog/category/docker">Docker</a></li>

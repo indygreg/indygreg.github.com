@@ -51,6 +51,58 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="changeset-metadata-on-hg.mozilla.org"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to Changeset Metadata on hg.mozilla.org">Changeset Metadata on hg.mozilla.org</a></h2>
+  <small>June 04, 2015 at 01:55 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Just a few minutes ago, I deployed some updates to
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a> to display more
+metadata on changeset pages. See
+<a href="https://hg.mozilla.org/mozilla-central/rev/4b69a62d1905">4b69a62d1905</a>,
+<a href="https://hg.mozilla.org/mozilla-central/rev/dc4023d54436">dc4023d54436</a>,
+and <a href="https://hg.mozilla.org/mozilla-central/rev/b617a57d6bf1">b617a57d6bf1</a>
+for examples of what's shown.</p>
+<p>We currently display:</p>
+<ul>
+<li>More detailed pushlog info. (Before you had to load another page to
+  see things like the date of the push.)</li>
+<li>The list of reviewers, each being a link that searches for other
+  changesets they've reviewed.</li>
+<li>A concise list of bugs referenced in the commit message.</li>
+<li>Links to changesets that were backed out by this changeset.</li>
+<li>On changesets that were backed out, we <em>may</em> also display a message
+  that the changeset was backed out.</li>
+<li>For Firefox repos, we also display the application <em>milestone</em>. This
+  is the Gecko/app version recorded in the <em>config/milestone.txt</em> file
+  in that changeset. The value can be used to quickly answer the
+  question <em>What versions of Firefox have this changeset.</em></li>
+</ul>
+<p>If you notice any issues or have requests for new features, please
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>.</p>
+<p>This work is built on top of a feature I added to Mercurial 3.4 to make
+it easier to inject extra data into Mercurial's web templates. We just
+deployed Mercurial 3.4.1 to hg.mozilla.org yesterday. It's worth noting
+that this deployment happened in the middle of the day with no
+user-perceived downtime. This is a far cry from where we were a year
+ago, when any server change required a maintenance window. We've
+invested a lot of work into a test suite for this service so we can
+continuously deploy without fear of breaking things. Moving fast feels
+so good.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="important-changes-to-mozreview"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/29/important-changes-to-mozreview" rel="bookmark" title="Permanent Link to Important Changes to MozReview">Important Changes to MozReview</a></h2>
   <small>May 29, 2015 at 04:20 PM | categories: 
@@ -538,40 +590,6 @@ don't want to maintain forever. Prefer to send upstream.</p>
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/12/notes-from-git-merge-2015#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="dropping-explicit-support-for-mercurial-3.0"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0" rel="bookmark" title="Permanent Link to Dropping Explicit Support for Mercurial 3.0">Dropping Explicit Support for Mercurial 3.0</a></h2>
-  <small>May 07, 2015 at 04:05 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>As of a few minutes ago, we explicitly dropped support for Mercurial 3.0
-for all the Mercurial code in the
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
-repository. File issues in
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1162304">bug 1162304</a>.</p>
-<p>Code may still work against Mercurial 3.0. But it isn't supported and
-could break hard at any time.</p>
-<p>Supporting multiple versions of <em>any</em> software carries
-with it some cost. The people writing tooling around Mercurial are busy.
-It is a waste of our time to bend over backwards to support old versions
-of software that <strong>all</strong> users should have upgraded from months ago.
-Still using older Mercurial versions means you aren't getting the best
-performance and may encounter bugs that have since been fixed.</p>
-<p>See the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mozilla tailored Mercurial installation instructions</a>
-for info on how to upgrade to the latest/greatest Mercurial version.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
  <a href="../6">« Previous Page</a>
   --  
  <a href="../8">Next Page »</a>
@@ -583,6 +601,7 @@ for info on how to upgrade to the latest/greatest Mercurial version.</p>
             <li>
               <h2>Categories</h2>
               <ul>
+                <li><a href="/blog/category/apple">Apple</a></li>
                 <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
                 <li><a href="/blog/category/clang">Clang</a></li>
                 <li><a href="/blog/category/docker">Docker</a></li>

@@ -51,6 +51,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="omnipresent-mach"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/03/03/omnipresent-mach" rel="bookmark" title="Permanent Link to Omnipresent mach">Omnipresent mach</a></h2>
+  <small>March 03, 2013 at 12:30 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>, <a href='/blog/category/mach'>mach</a>
+ | <a href="http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Matt Brubeck recently landed an awesome patch for mach in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=840588">bug 840588</a>:
+it allows mach to be used by any directory. I'm calling it
+<em>omnipresent mach</em>.</p>
+<p>Essentially, Matt changed the <em>mach</em> driver (the script in the root
+directory of mozilla-central) so instead of having it look in hard-coded
+relative paths for all its code, it walks up the directory tree and
+looks for signs of the source tree or the object directory.</p>
+<p>What this all means is that if you have the <em>mach</em> script installed in
+your $PATH and you just type <em>mach</em> in your shell from within any source
+directory or object directory, <em>mach</em> should just work. So, no more
+typing <em>./mach</em>: just copy <em>mach</em> to <em>~/bin</em>, <em>/usr/local/bin</em> or some
+other directory on your $PATH and you should just be able to type
+<em>mach</em>.</p>
+<p>Unfortunately, there are bound to be bugs here. Since <em>mach</em>
+traditionally was only executed with the current working directory as
+the top source directory, some commands are not prepared to handle a
+variable current working directory. Some commands will likely get
+confused when it comes resolving relative paths, etc. If you find
+an issue, please report it! A temporary workaround is to just invoke
+mach from the top source directory like you've always been doing.</p>
+<p>If you enjoy the feature, thank Matt: this was completely his idea and
+he saw it through from conception to implementation.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/03/03/omnipresent-mach#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="moz.build-files-and-the-firefox-build-system"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/02/28/moz.build-files-and-the-firefox-build-system" rel="bookmark" title="Permanent Link to moz.build Files and the Firefox Build System">moz.build Files and the Firefox Build System</a></h2>
   <small>February 28, 2013 at 07:45 PM | categories: 
@@ -662,180 +704,6 @@ they don't work everywhere.</p>
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/11/30/firefox-build-system-presentation#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mach-has-landed"></a>
-  <h2 class="blog_post_title"><a href="/blog/2012/09/26/mach-has-landed" rel="bookmark" title="Permanent Link to Mach Has Landed">Mach Has Landed</a></h2>
-  <small>September 26, 2012 at 05:30 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
- | <a href="http://gregoryszorc.com/blog/2012/09/26/mach-has-landed#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Hacking on Firefox is <em>hard</em>. Compiling the source tree for the first
-time is a daunting experience. If you manage to do that, you still need
-to figure out how to submit patches, write and run tests, etc. There is
-no shortage of points where people can get confused, make mistakes, or
-just give up because the barrier is too high.</p>
-<p>I have strong convictions about making the overall developer experience
-better (developers are users too, after all). The easier you make the
-developer experience, the greater the chances of retaining developers.
-And retaining developers means more contributions: more features and
-fewer bugs. This translates to a better state for the Mozilla Project.
-This makes the world a better place.</p>
-<p>Since practically my first day working at Mozilla, I've been
-experimenting with ways to make contributing to Firefox easier by
-improving the build system or interaction with it.</p>
-<p>With a lot of help, I've finally succeeded in landing something into the
-Firefox source tree that I think will ultimately lead to a much better
-developer experience.</p>
-<p>It's called <strong>mach</strong> (German for <em>do</em>) and if you pull the latest
-version of <a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
-(Firefox's main source code repository), you can run mach today.</p>
-<h2>Running Mach</h2>
-<p>You can run Mach by simply executing it from the root directory in the
-repository:</p>
-<pre><code>$ ./mach
-</code></pre>
-<p>Ideally, I shouldn't have to tell you anything else: mach's output
-should provide you all the instruction you need to use it. If it
-doesn't, that is a bug and it should be fixed.</p>
-<p>Realistically, mach is still in early development and its user
-experience still leaves a lot to be desired.</p>
-<p>Because technical usage docs belong in a medium that is easily
-discoverable and where the community can improve on them (not a
-post on a personal blog), you can find additional usage information in
-the
-<a href="https://developer.mozilla.org/En/Developer_Guide/mach">mach article</a> on
-MDN. The
-<a href="https://hg.mozilla.org/mozilla-central/file/default/python/mach/README.rst">mach README</a>
-holds more technical information for people wanting to poke at the inner
-workings.</p>
-<p>Mach does require Python 2.7. The build system will likely soon require
-Python 2.7 as well. So, if you don't have Python 2.7, you should upgrade
-now before you lose the ability to build the tree. Conveniently, the
-tree now has a
-<a href="http://gregoryszorc.com/blog/2012/09/18/bootstrap-your-system-to-build-firefox">bootstrap script</a>
-which covers the installation of Python. So, Python 2.7 should just be a
-simple command away.</p>
-<h2>Features</h2>
-<p>Why would you use mach? Good question! Compared to the existing
-out-of-the-box experience, mach adds:</p>
-<ul>
-<li>Ability to run xpcshell and mochitest tests from the source directory.
-  This means you can tab-complete test filenames in your shell and it
-  <em>just works</em>.</li>
-<li>Parsing of compiler warnings (currently supports Clang 3.1 and MSVC
-  formats) into a unified warnings database (actually a JSON file).
-  After builds you can run <em>./mach warnings-list</em> or <em>./mach
-  warnings-summary</em> to get a concise list without having to look at
-  build logs.</li>
-<li>A single command-line interface where you can easily discover new
-  functionality. Just run <em>./mach help</em> (try doing that with make!).</li>
-</ul>
-<p>Naysayers will say this is a paltry list. They are correct. I have
-bigger plans. But, you have to start somewhere.</p>
-<h2>Goals and Future Ideas</h2>
-<p>The overall goal of mach is to improve the developer experience of
-developing Firefox and other Gecko applications. It does this by
-providing a convenient, central command in the root directory of
-the repository that acts as both an oracle to discover new commands
-and functionality (<em>./mach help</em>) as well as a proxy to execute them.
-You don't need to worry about environment variables, working directories,
-or finding some random script hidden in the bowells of the source tree.
-You just run a single command and the world is brought to you. No build
-documentation. No outdated wikis. No copying commands into your shell.
-No having to scour random blogs for useful tools. You just clone the
-repository, run a command, see what you can do, and get stuff done. Your
-shell-literate grandmother could do it.</p>
-<p>Mach should be your springboard to in-tree developer tools and increased
-productivity. You shouldn't need anything except a copy of the source
-tree and mach.</p>
-<p>Like Git and Mercurial, mach is powered by the concept of
-sub-commands/actions. So, one simply needs to register a new sub-command
-with the mach driver. This involves writing a Python class. Once you do
-that, people can discover and use that functionality. All batteries are
-included with a copy of mozilla-central.</p>
-<p>As stated above, the current set of commands is rather small. But, the
-sky is the limit. Here are some of my ideas:</p>
-<ul>
-<li>Ability to upload, download, and apply patches from Bugzilla (Burak
-  Yiğit Kaya, Jeff Hammel, Clint Talbert and I have already talked about
-  this -- progress tracked in
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774141">bug 774141</a>).</li>
-<li>Automatically configure Mercurial with optimal settings (ensure user
-  info is set, proper lines of diff context, enable mqext, etc). Tracked
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=794580">bug 794580</a>.</li>
-<li>Submit Try builds. The <a href="https://github.com/pbiggar/trychooser">trychooser</a>
-  Mercurial extension could easily live as a mach subcommand! Tracked in
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774137">bug 774137</a>.</li>
-<li>Identify Bugzilla components and/or reviewers from files touched by
-  patch. It's all in the history of the touched files and the history of
-  the old bugs referenced by those commits!
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774145">Bug 774145</a>.</li>
-<li>Interaction with the <em>self-serve</em> build API. That thing on TBPL to
-  control individual builds - we could make a CLI interface for it.
-  (Steve Fink and/or Jeff Hammel already have
-  <a href="https://hg.mozilla.org/users/josh_joshmatthews.net/self-serve-tools">code</a>
-  for this - it just needs to be integrated).
-  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=774147">Bug 774147</a>.</li>
-</ul>
-<p>If you have an idea for a feature, please
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">file a bug</a>.
-Please note there are many features on file already. However, some
-obvious ones such as integration with missing test suites have yet to be
-filed (at least at the time I wrote this post).</p>
-<p>If you wrote an awesome developer tool and would like others to use it
-(without having to rely on people discovering it by reading a corner of the
-Internet), add it to mach! Use mach as a wedge to get more exposure and
-users. File a bug. I will happily r+ patches that add useful developer
-functionality to the tree.</p>
-<h2>What this Means / Longer Term Future</h2>
-<p>While there is no timetable, mach will eventually replace <em>client.mk</em>.
-client.mk, like mach, is essentially a CLI driver for the build
-system. Having the driver implemented in Python rather than make has many
-compelling advantages. I could probably write a whole post on it, but
-I'll spare the world from my ranting.</p>
-<p>Anyway, this all means that you may want to start re-training your
-muscle memory now. Stop typing <em>make</em> and start typing <em>mach</em>. If you
-need to type <em>make</em> because mach does not provide a feature, this is a
-missing feature from mach.
-<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&amp;component=mach">File a bug</a>
-and request a new mach feature!</p>
-<p>I want to condition people to stop typing <em>make</em>, especially in the object
-directory. There are drastic changes to the build system in the works
-(<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=784841">bug 784841</a> is
-the tip of the iceburg). These changes will require the build system to
-be treated as a black box. So, things like invoking make from the object
-directory will eventually break. You'll need to go through an
-intelligent tool to invoke the build system. Mach will be that tool.</p>
-<h2>Thanks</h2>
-<p>I would like to single out the following individuals for helping to land
-mach:</p>
-<ul>
-<li>Jeff Hammel for doing the bulk of the reviewing. He shares my vision
-  for mach and how it will make the overall developer experience much
-  more pleasant and how this will translate to better things for The
-  Project. In my mind, Jeff deserves as much credit for landing mach as
-  I do.</li>
-<li>Mike Hommey and Ms2ger for review help. Mike Hommey helped identify a
-  lot of issues with build system integration. Ms2ger provided lots of
-  general feedback on Python issues and API design.</li>
-<li>Mike Connor (my manager) for allowing me to work on this. It's not
-  related to my job description in any way so he <em>could</em> say I shouldn't
-  be spending time on this. But, he realizes the positive impact this can
-  have and has been supportive of it.</li>
-</ul>
-<p>I hope you find mach useful!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2012/09/26/mach-has-landed#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
  <a href="../24">« Previous Page</a>
   --  
  <a href="../26">Next Page »</a>
@@ -847,6 +715,7 @@ mach:</p>
             <li>
               <h2>Categories</h2>
               <ul>
+                <li><a href="/blog/category/apple">Apple</a></li>
                 <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
                 <li><a href="/blog/category/clang">Clang</a></li>
                 <li><a href="/blog/category/docker">Docker</a></li>
