@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 29 Oct 2018 21:17:57 GMT</pubDate>
+    <pubDate>Mon, 29 Oct 2018 21:28:41 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -234,7 +234,7 @@ keep producing faster and faster storage and their marketing teams will keep
 convincing us that we need to buy it. But until software catches up, chances are
 most of us won't come close to realizing the true potential of modern storage
 hardware. And that's even true for specialized applications that do employ tricks
-taking hundreds of thousands of person hours to implement in order to eek out every
+taking hundreds or thousands of person hours to implement in order to eek out every
 iota of performance potential. The average software developer and application
 using filesystems as they were designed to be used has little to no chance of
 coming close to utilizing the performance potential of modern storage devices.
