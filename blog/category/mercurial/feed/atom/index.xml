@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2018-11-05T17:22:40Z</updated>
+  <updated>2018-11-05T17:40:16Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -323,6 +323,15 @@ assumes there is no conflict, and offers to <em>absorb</em> the change. So not o
 is <code>hg absorb</code> significantly simpler than today's <code>hg histedit</code> or
 <code>git rebase -i</code> workflows in terms of VCS command interactions, but it can
 also avoid time-consuming merge conflict resolution as well!</p>
+<p>Another feature of <code>hg absorb</code> is that all the rewriting occurs in memory
+and the working directory is not touched when running the command. This means
+that the operation is fast (working directory updates often account for a lot
+of the execution time of <code>hg histedit</code> or <code>git rebase</code> commands). It also means
+that tools looking at the last modified time of files (e.g. build systems
+like GNU Make) won't rebuild extra (unrelated) files that were touched
+as part of updating the working directory to an old commit in order to apply
+changes. This makes <code>hg absorb</code> more friendly to edit-compile-test-commit
+loops and allows developers to be more productive.</p>
 <p>And that's <code>hg absorb</code> in a nutshell.</p>
 <p>When I first saw a demo of <code>hg absorb</code> at a Mercurial developer meetup, my
 jaw - along with those all over the room - hit the figurative floor. I thought
