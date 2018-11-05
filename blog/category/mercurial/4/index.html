@@ -51,6 +51,88 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="my-contributions-to-mercurial-3.5"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/07/31/my-contributions-to-mercurial-3.5" rel="bookmark" title="Permanent Link to My Contributions to Mercurial 3.5">My Contributions to Mercurial 3.5</a></h2>
+  <small>July 31, 2015 at 10:55 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial 3.5 was released today. I contributed some small
+improvements to this version that I thought I'd share with the world.</p>
+<p>The feature I'm most proud of adding to Mercurial 3.5 is what I'm
+referring to as <em>auto share</em>. The existing <em>hg share</em> extension/command
+enables multiple checkouts of a repository to share the same backing
+repository store. Essentially the <em>.hg/store</em> directory is a symlink
+to shared directory. This feature has existed in Mercurial for years
+and is essentially identical to the <em>git worktree</em> feature just
+recently added in Git 2.5.</p>
+<p>My addition to the <em>share</em> extension is the ability for Mercurial to
+automatically perform an <em>hg clone</em> + <em>hg share</em> in the same operation.
+If the <em>share.pool</em> config option is defined, <em>hg clone</em>
+will automatically clone or pull the repository data somewhere inside
+the directory pointed to by <em>share.pool</em> then create a new working copy
+from that shared location. But here's the magic: <strong>Mercurial can
+automatically deduce that different remotes are the same logical
+repository (by looking at the root changeset) and automatically have
+them share storage</strong>. So if you first <em>hg clone</em> the <em>canonical</em>
+repository then later do a <em>hg clone</em> of a <em>fork</em>, Mercurial will
+pull down the changesets unique to the fork into the previously
+created shared directory and perform a checkout from that. Contrast
+with performing a full clone of the fork. <strong>If you are cloning multiple
+repositories that are logically derived from the same original one,
+this can result in a significant reduction of disk space and network
+usage.</strong> I wrote this feature with automated consumers in mind,
+particularly continuous integration systems. However, there is also
+mode more suitable for humans where repositories are pooled not by their
+root changeset but by their URL. For more info, see <em>hg help -e share</em>.</p>
+<p>For Mercurial 3.4, I contributed changes that refactored how Mercurial's
+tags cache works. This cache was a source of performance problems at
+Mozilla's scale for many years. Since upgrading to Mercurial 3.4,
+Mozilla has not encountered any significant performance problems with
+the cache on either client or server as far as I know.</p>
+<p>Building on this work, Mercurial 3.5 supports transferring tags cache
+entries from server to client when clients clone/pull. Before, clients
+would have to recompute tags cache entries for pulled changesets. On
+repositories that are very large in terms of number of files (over 50,000)
+or heads (hudreds or more), this could take several dozen seconds or
+even minutes. This would manifest as a delay either during or after
+initial clone. In Mercurial 3.5 - assuming both client and server
+support the new <em>bundle2</em> wire protocol - the cache entries are
+transferred from server to client and no extra computation needs to
+occur. The client does pay a very small price for transferring this
+additional data over the wire, but the payout is almost always worth it.
+<strong>For large repositories, this feature means clones are usable sooner.</strong></p>
+<p>A few weeks ago, a coworker told me that connections to a Mercurial
+server were timing out mid clone. We investigated and discovered a
+potential for a long CPU-intensive pause during clones where Mercurial
+would not touch the network. On this person's under-powered EC2
+instance, the pause was so long that the server's inactivity timeout
+was triggered and it dropped the client's TCP connection. I refactored
+Mercurial's cloning code so there is no longer a pause. There should
+be no overall change in clone time, but there is no longer a perceivable
+delay between applying changesets and manifests where the network could
+remain idle. This investigation also revealed some potential follow-up
+work for Mercurial to be a bit smarter about how it interacts with
+networks.</p>
+<p>Finally, I contributed <em>hg help scripting</em> to Mercurial's help database.
+This help topic covers how to use Mercurial from scripting and other
+automated environments. It reflects knowledge I've learned from seeing
+Mercurial used in automation at Mozilla.</p>
+<p>Of course, there are plenty of other changes in Mercurial 3.5. Stay
+tuned for another blog post.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/31/my-contributions-to-mercurial-3.5#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="prompting-to-run-mach-mercurial-setup"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/07/17/prompting-to-run-mach-mercurial-setup" rel="bookmark" title="Permanent Link to Prompting to Run mach mercurial-setup">Prompting to Run mach mercurial-setup</a></h2>
   <small>July 17, 2015 at 11:35 AM | categories: 
@@ -359,73 +441,6 @@ for server-assisted bundle-based clones.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="firefox-mercurial-repository-with-cvs-history"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history" rel="bookmark" title="Permanent Link to Firefox Mercurial Repository with CVS History">Firefox Mercurial Repository with CVS History</a></h2>
-  <small>May 18, 2015 at 08:40 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>When Firefox made the switch from CVS to Mercurial in March 2007, the
-CVS history wasn't imported into Mercurial. There were good reasons for
-this at the time. But it's a decision that continues to have
-side-effects. I am surprised how often I hear of engineers wanting to
-access blame and commit info from commits now more than 9 years old!</p>
-<p>When individuals created a Git mirror of the Firefox repository a few
-years ago, they correctly decided that importing CVS history would be
-a good idea. They also correctly decided to combine the logically same
-but physically separate <em>release</em> and <em>integration</em> repositories into a
-unified Git repository. These are things we can't easily do to the
-canonical Mercurial repository because it would break SHA-1 hashes,
-breaking many systems, and it would require significant changes in
-process, among other reasons.</p>
-<p>While Firefox developers do have access to a single Firefox repository
-with full CVS history (the Git mirror), they still aren't satisfied.</p>
-<p>Running <em>git blame</em> (or <em>hg blame</em> for that matter) can be very
-expensive. For this reason, the blame interface is disabled on many
-web-based source viewers by default. On GitHub, some blame URLs for
-the Firefox repository time out and cause GitHub to display an error
-message. No matter how hard you try, you can't easily get blame results
-(running a local Git HTTP/HTML interface is still difficult compared to
-<em>hg serve</em>).</p>
-<p>Another reason developers aren't satisfied with the Git mirror is that
-Git's querying tools pale in comparison to Mercurial's. I've said it
-before and I'll say it again: Mercurial's revision sets and templates
-are incredibly useful features that enable advanced repository querying
-and reporting. Git's offerings come nowhere close. (I <em>really</em> wish Git
-would steal these awesome features from Mercurial.)</p>
-<p>Anyway, enough people were complaining about the lack of a Mercurial
-Firefox repository with full CVS history that I decided to create one.
-If you point your browsers or Mercurial clients to
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full">https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-full</a>,
-you'll be able to access it.</p>
-<p>The process used for the conversion was the simplest possible: I used
-hg-git to convert the Git mirror back to Mercurial.</p>
-<p>Unlike the Git mirror, I didn't include all heads in this new
-repository. Instead, there is only mozilla-central's head (the current
-development tip). If I were doing this properly, I'd include all heads,
-like
-<a href="https://hg.mozilla.org/users/gszorc_mozilla.com/gecko-aggregate">gecko-aggregate</a>.</p>
-<p>I'm well aware there are oddities in the Git mirror and they now
-exist in this new repository as well. My goal for this conversion was to
-deliver something: it wasn't a goal to deliver the most correct result
-possible.</p>
-<p>At this time, this repository should be considered an unstable science
-experiment. <strong>By no means should you rely on this repository.</strong> But if
-you find it useful, I'd appreciate hearing about it. If enough people
-ask, we could probably make this more official.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/3">« Previous Page</a>
   --  

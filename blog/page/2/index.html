@@ -51,6 +51,220 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="revisiting-using-docker"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/05/16/revisiting-using-docker" rel="bookmark" title="Permanent Link to Revisiting Using Docker">Revisiting Using Docker</a></h2>
+  <small>May 16, 2018 at 01:45 PM | categories: 
+
+<a href='/blog/category/docker'>Docker</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>When Docker was taking off like wildfire in 2013, I was caught up in the
+excitement like everyone else. I remember knowing of the existence
+of LXC and container technologies in Linux at the time. But Docker seemed to
+be the first open source tool to actually make that technology usable (a
+terrific example of how user experience matters).</p>
+<p>At Mozilla, Docker was adopted all around me and by me for various utilities.
+<a href="https://docs.taskcluster.net/">Taskcluster</a> - Mozilla's task execution
+framework geared for running complex CI systems - adopted Docker as a
+mechanism to run processes in self-contained images. Various groups in
+Mozilla adopted Docker for running services in production. I adopted Docker
+for
+<a href="/blog/2015/01/24/end-to-end-testing-with-docker/">integration testing of complex systems</a>.</p>
+<p>Having seen various groups use Docker and having spent a lot of time in the
+trenches battling technical problems, my conclusion is <strong>Docker is unsuitable
+as a general purpose container runtime. Instead, Docker has its niche
+for hosting complex network services.</strong> Other uses of Docker should be highly
+scrutinized and potentially discouraged.</p>
+<p>When Docker hit first the market, it was arguably the only game in town.
+Using Docker to achieve containerization was defensible because there weren't
+exactly many (any?) practical alternatives. So if you wanted to use containers,
+you used Docker.</p>
+<p>Fast forward a few years. We now have the
+<a href="https://www.opencontainers.org/">Open Container Initiative</a> (OCI). There are
+specifications describing common container formats. So you can produce a
+container once and take it to any number OCI compatible <em>container runtimes</em>
+for execution. And in 2018, there are a <em>ton</em> of players in this space.
+<a href="https://github.com/opencontainers/runc">runc</a>,
+<a href="https://github.com/rkt/rkt">rkt</a>, and
+<a href="https://github.com/google/gvisor">gVisor</a> are just some. So Docker is no
+longer the only viable tool for executing a container. If you are just
+getting started with the container space, you would be wise to research the
+available options and their pros and cons.</p>
+<p>When you look at all the options for running containers in 2018, I think it
+is obvious that Docker - usable though it may be - is not ideal for a
+significant number of container use cases. If you divide use cases into a spectrum
+where one end is <em>run a process in a sandbox</em> and the other is <em>run a complex system
+of orchestrated services in production</em>, Docker appears to be focusing on the
+latter. Take it from <a href="https://www.docker.com/what-docker">Docker themselves</a>:</p>
+<p><em>Docker is the company driving the container movement and the only container
+platform provider to address every application across the hybrid cloud. Today's
+businesses are under pressure to digitally transform but are constrained by
+existing applications and infrastructure while rationalizing an increasingly
+diverse portfolio of clouds, datacenters and application architectures. Docker
+enables true independence between applications and infrastructure and developers
+and IT ops to unlock their potential and creates a model for better
+collaboration and innovation.</em></p>
+<p>That description of Docker (the company) does a pretty good job of
+describing what Docker (the technology) has become: a constellation
+of software components providing the underbelly for managing complex
+applications in complex infrastructures. That's pretty far detached on the
+spectrum from <em>run a process in a sandbox</em>.</p>
+<p>Just because Docker (the company) is focused on a complex space doesn't mean
+they are incapable of exceeding at solving simple problems. However, I believe
+that in this particular case, the complexity of what Docker (the company) is
+focusing on has inhibited its Docker products to adequately address simple
+problems.</p>
+<p>Let's dive into some technical specifics.</p>
+<p>At its most primitive, Docker is a glorified tool to run a process in a
+sandbox. On Linux, this is accomplished by using
+the <a href="http://man7.org/linux/man-pages/man2/clone.2.html">clone(2)</a> function
+with specific flags and combined with various other techniques (filesystem
+remounting, capabilities, cgroups, chroot, seccomp, etc) to <em>sandbox</em> the
+process from the main operating system environment and kernel. There are a host
+of tools living at this not-quite-containers level that make it easy to run
+a sandboxed process. The
+<a href="https://github.com/projectatomic/bubblewrap">bubblewrap</a> tool is one of them.</p>
+<p>Strictly speaking, you don't need anything fancy to create a process
+sandbox: just an executable you want to invoke and an executable that makes
+a set of system calls (like bubblewrap) to run that executable.</p>
+<p>When you install Docker on a machine, it starts a daemon running as root.
+That daemon listens for HTTP requests on a network port and/or UNIX socket.
+When you run <code>docker run</code> from the command line, that command establishes
+a connection to the Docker daemon and sends any number of HTTP requests to
+instruct the daemon to take actions.</p>
+<p>A daemon with a remote control protocol is useful. But it shouldn't be the
+only way to spawn containers with Docker. If all I want to do is spawn a temporary
+container that is destroyed afterwards, I should be able to do that from
+a local command without touching a network service. Something like bubblewrap.
+The daemon adds all kinds of complexity and overhead. Especially if I just want
+to run a simple, short-lived command.</p>
+<p>Docker at this point is already pretty far detached from a tool like bubblewrap.
+And the disparity gets worse.</p>
+<p>Docker adds another abstraction on top of basic process sandboxing in the form
+of storage / filesystem management. Docker insists that processes execute in
+self-contained, chroot()'d filesystem environment and that these environments
+(Docker images) be managed by Docker itself. When Docker images are <em>imported</em>
+into Docker, Docker manages them using one of a handful of
+<a href="https://docs.docker.com/storage/storagedriver/">storage drivers</a>. You can choose
+from devicemapper, overlayfs, zfs, btrfs, and aufs and employ various
+configurations of all these. Docker images are composed of <em>layers</em>, with one
+layer stacked on top of the prior. This allows you to have an immutable base
+layer (that can be shared across containers) where run-time file changes can be
+isolated to a specific container instance.</p>
+<p>Docker's ability to manage storage is pretty cool. And I dare say Docker's killer
+feature in the very beginning of Docker was the ability to easily produce and
+exchange self-contained Docker <em>images</em> across machines.</p>
+<p>But this utility comes at a <em>very</em> steep price. Again, if our use case is
+<em>run a process in a sandbox</em>, do we really care about all this advanced
+storage functionality? Yes, if you are running hundreds of containers on
+a single system, a storage model built on top of copy-on-write is perhaps
+necessary for scaling. But for simple cases where you just want to run a single
+or small number of processes, it is extremely overkill and adds many more
+problems than it solves.</p>
+<p>I cannot stress this enough, but <strong>I have spent hours debugging and working
+around problems due to how filesystems/storage works in Docker</strong>.</p>
+<p>When Docker was initially released, aufs was widely used. As I
+<a href="/blog/2017/12/08/good-riddance-to-aufs/">previously wrote</a>, aufs has abysmal
+performance as you scale up the number of concurrent I/O operations. We shaved
+<strong>minutes</strong> off tasks in Firefox CI by ditching aufs for overlayfs.</p>
+<p>But overlayfs is far from a panacea. File metadata-only updates are
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/63f19cfacc5c">apparently very slow in overlayfs</a>.
+We're talking ~100ms to call <code>fchownat()</code> or <code>utimensat()</code>. If you perform
+an <code>rsync -a</code> or <code>chown -R</code> on a directory with only just a hundred files that
+were defined in a base image layer, you can have delays of seconds.</p>
+<p>The Docker storage drivers backed by <em>real</em> filesystems like zfs and btrfs are
+a bit better. But they have their quirks too. For example, creating layers in
+images is comparatively very slow compared to overlayfs (which are practically
+instantaneous). This matters when you are iterating on a Dockerfile for example
+and want to quickly test changes. Your edit-compile cycle grows frustratingly
+long very quickly.</p>
+<p>And I could opine on a handful of other problems I've encountered over the years.</p>
+<p>Having spent hours of my life debugging and working around issues with
+Docker's storage, my current attitude is <em>enough of this complexity, just let me
+use a directory backed by the local filesystem, dammit</em>.</p>
+<p>For many use cases, <strong>you don't need the storage complexity that Docker forces
+upon you</strong>. Pointing Docker at a directory on a local filesystem to chroot into
+is <em>good enough</em>. I know the behavior and performance properties of common Linux
+filesystems. ext4 isn't going to start making <code>fchownat()</code> or <code>utimensat()</code> calls
+take ~100ms. It isn't going to complain when a hard link spans multiple layers in
+an image. Or slow down to a crawl when multiple threads are performing concurrent
+read I/O. There's not going to be intrinsically complicated algorithms and
+caching to walk N image layers to find the most recent version of a file (or if
+there is, it will be so far down the stack in kernel land that I likely won't
+ever have to deal with it as a normal user). Docker images with their multiple
+layers add complexity and overhead. For many use uses, the pain it inflicts
+offsets the initial convenience it saves.</p>
+<p>Docker's optimized-for-complex-use-cases architecture demonstrates its
+inefficiency in simple benchmarks.</p>
+<p>On my machine, <code>docker run -i --rm debian:stretch /bin/ls /</code> takes ~850ms.
+Almost a second to perform a directory listing (sometimes it does take over
+1 second - I was being generous and quoting a quicker time). This command
+takes ~1ms when run in a local shell. So we're at 2.5-3 magnitudes of overhead.
+The time here does include time to initially create the container and
+destroy it afterwards. We can isolate that overhead by starting a persistent
+container and running <code>docker exec -i &lt;cid&gt; /bin/ls /</code> to spawn a new process
+in an existing container. This takes ~85ms. So, ~2 magnitudes of overhead to
+spawn a process in a Docker container versus spawning it <em>natively</em>. What's
+adding so much overhead, I'm not sure. Yes, there are HTTP requests under
+the hood. But HTTP to a local daemon shouldn't be that slow. I'm not sure
+what's going on.</p>
+<p>If we <code>docker export</code> that image to the local filesystem and use <code>runc state</code>
+to configure so we can run it with <code>runc</code>, <code>runc run</code> takes ~85ms to run
+<code>/bin/ls /</code>. If we <code>runc exec &lt;cid&gt; /bin/ls /</code> to start a process in an
+existing container, that completes in ~10ms. <code>runc</code> appears to be executing
+these simple tasks ~10x faster than Docker.</p>
+<p>But to even get to that point, we had to make a filesystem available to
+spawn the container in. With Docker, you need to load an image into Docker.
+Using <code>docker save</code> to produce a 105,523,712 tar file,
+<code>docker load -i image.tar</code> takes ~1200ms to complete. <code>tar xf image.tar</code>
+takes ~65ms to extract that image to the local filesystem. Granted, Docker
+is computing the SHA-256 of the image as part of import. But SHA-256 runs
+at ~250MB/s on my machine and on that ~105MB input takes ~400ms. Where is
+that extra ~750ms of overhead in Docker coming from?</p>
+<p>The Docker image loading overhead is still present on large images. With
+a 4,336,605,184 image, <code>docker load</code> was taking ~32s and <code>tar x</code> was
+taking ~2s. Obviously the filesystem was buffering writes in the <code>tar</code>
+case. And the ~2s is ignoring the ~17s to obtain the SHA-256 of the
+entire input. But there's still a substantial disparity here. (I suspect
+a lot of it is overlayfs not being as optimal as ext4.)</p>
+<p>Several years ago there weren't many good choices for tools to execute containers.
+But today, there are good tools readily available. And thanks to OCI standards,
+you can often swap in alternate container runtimes. Docker (the tool) has an
+architecture that is optimized for solving complex use cases (coincidentally use
+cases that Docker the company makes money from). Because of this, my conclusion -
+drawn from using Docker for several years - is that Docker is unsuitable for
+many common use cases. <strong>If you care about low container startup/teardown
+overhead, low latency when interacting with containers (including spawning
+processes from outside of them), and for workloads where Docker's storage model
+interferes with understanding or performance, I think Docker should be avoided.</strong>
+A simpler tool (such as <code>runc</code> or even <code>bubblewrap</code>) should be used instead.</p>
+<p>Call me a curmudgeon, but having seen all the problems that Docker's complexity
+causes, I'd rather see my containers resemble a tarball that can easily be
+chroot()'d into. <strong>I will likely be revisiting projects that use Docker and
+replacing Docker with something lighter weight and architecturally simpler.</strong> As
+for the use of Docker in the more complex environments it seems to be designed
+for, I don't have a meaningful opinion as I've never really used it in that
+capacity. But given my negative experiences with Docker over the years, I am
+definitely biased against Docker and will lean towards simpler products, especially
+if their storage/filesystem management model is simpler. Docker introduced
+containers to the masses and they should be commended for that. But for my
+day-to-day use cases for containers, Docker is simply not the right tool for
+the job.</p>
+<p>I'm not sure exactly what I'll replace Docker with for my simpler use cases.
+If you have experiences you'd like to share, sharing them in the comments
+will be greatly appreciated.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="release-of-python-zstandard-0.9"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/04/09/release-of-python-zstandard-0.9" rel="bookmark" title="Permanent Link to Release of python-zstandard 0.9">Release of python-zstandard 0.9</a></h2>
   <small>April 09, 2018 at 09:30 AM | categories: 
@@ -1208,621 +1422,6 @@ please leave a comment and I'll update the post to link to it.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="better-compression-with-zstandard"></a>
-  <h2 class="blog_post_title"><a href="/blog/2017/03/07/better-compression-with-zstandard" rel="bookmark" title="Permanent Link to Better Compression with Zstandard">Better Compression with Zstandard</a></h2>
-  <small>March 07, 2017 at 09:55 AM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2017/03/07/better-compression-with-zstandard#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I think I first heard about the <a href="http://facebook.github.io/zstd/">Zstandard</a>
-compression algorithm at a Mercurial developer sprint in 2015.
-At one end of a large table a few people were uttering expletives out
-of sheer excitement. At developer gatherings, that's the universal signal
-for <em>something is awesome</em>. Long story short, a Facebook engineer shared
-a link to the
-<a href="http://fastcompression.blogspot.com/">RealTime Data Compression blog</a>
-operated by Yann Collet (then known as the author of LZ4 - a compression
-algorithm known for its insane speeds) and people were completely
-nerding out over the excellent articles and the data within showing the
-beginnings of a new general purpose lossless compression algorithm named
-Zstandard. It promised better-than-deflate/zlib compression ratios <strong>and</strong>
-performance on both compression and decompression. This being a Mercurial
-meeting, many of us were intrigued because zlib is used by Mercurial
-for various functionality (including on-disk storage and compression over
-the wire protocol) and zlib operations frequently appear as performance hot
-spots.</p>
-<p>Before I continue, if you are interested in low-level performance and
-software optimization, I highly recommend perusing the
-<a href="http://fastcompression.blogspot.com/">RealTime Data Compression blog</a>.
-There are some absolute nuggets of info in there.</p>
-<p>Anyway, over the months, the news about Zstandard (zstd) kept getting
-better and more promising. As the 1.0 release neared, the Facebook
-engineers I interact with (Yann Collet - Zstandard's author - is now
-employed by Facebook) were absolutely ecstatic about Zstandard and its
-potential. I was toying around with pre-release versions and was
-absolutely blown away by the performance and features. I believed
-the hype.</p>
-<p>Zstandard 1.0 was
-<a href="https://code.facebook.com/posts/1658392934479273/smaller-and-faster-data-compression-with-zstandard">released on August 31, 2016</a>.
-A few days later, I started the
-<a href="https://github.com/indygreg/python-zstandard">python-zstandard</a> project to
-provide a fully-featured and Pythonic interface to the underlying zstd C
-API while not sacrificing safety or performance. The ulterior motive was
-to leverage those bindings in Mercurial so Zstandard could be a first class
-citizen in Mercurial, possibly replacing zlib as the default compression
-algorithm for all operations.</p>
-<p>Fast forward six months and I've achieved many of those goals.
-python-zstandard has a nearly complete interface to the zstd C API.
-It even exposes some primitives not in the C API, such as batch
-compression operations that leverage multiple threads and use minimal
-memory allocations to facilitate insanely fast execution. (Expect a
-dedicated post on python-zstandard from me soon.)</p>
-<p>Mercurial 4.1 ships with the python-zstandard bindings. Two Mercurial
-4.1 peers talking to each other will exchange Zstandard compressed
-data instead of zlib. For a Firefox repository clone, transfer size is
-reduced from ~1184 MB (zlib level 6) to ~1052 MB (zstd level 3) in the
-default Mercurial configuration while using ~60% of the CPU that zlib
-required on the compressor end. When cloning from hg.mozilla.org, the
-pre-generated zstd <em>clone bundle</em> hosted on a CDN using maximum
-compression is ~707 MB - ~60% the size of zlib! And, work is ongoing
-for Mercurial to support Zstandard for on-disk storage, which should
-bring considerable performance wins over zlib for local operations.</p>
-<p>I've learned a lot working on python-zstandard and integrating Zstandard
-into Mercurial. My primary takeaway is <strong>Zstandard is awesome</strong>.</p>
-<p>In this post, I'm going to extol the virtues of Zstandard and provide
-reasons why I think you should use it.</p>
-<h2>Why Zstandard</h2>
-<p>The main objective of lossless compression is to spend one resource
-(CPU) so that you may reduce another (I/O). This trade-off is usually
-made because data - either at rest in storage or in motion over a
-network or even through a machine via software and memory - is a
-limiting factor for performance. So if compression is needed for your
-use case to mitigate I/O being the limiting resource and you can swap
-in a different compression algorithm that magically reduces both CPU
-and I/O requirements, that's pretty exciting. At scale, better
-and more efficient compression can translate to substantial cost
-savings in infrastructure. It can also lead to improved application
-performance, translating to better end-user engagement, sales,
-productivity, etc. This is why companies like Facebook (Zstandard),
-Google (brotli, snappy, zopfli), and
-<a href="https://www.crunchbase.com/organization/pied-piper">Pied Piper</a>
-(middle-out) invest in compression.</p>
-<p>Today, the most widely used compression algorithm in the world is
-likely <a href="https://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a>. And, software
-most often interacts with DEFLATE via what is likely the most widely
-used software library in the world, <a href="http://www.zlib.net/">zlib</a>.</p>
-<p>Being at least 27 years old, DEFLATE is getting a bit long in the
-tooth. Computers are completely different today than they were in 1990.
-The Pentium microprocessor debuted in 1993. If memory serves (pun
-intended), it used PC66 DRAM, which had a transfer rate of 533 MB/s.
-For comparison, a modern NVMe M.2 SSD (like the Samsung 960 PRO)
-can read at 3000+ MB/s and write at 2000+ MB/s. In other words,
-persistent storage today is faster than the RAM from the era when
-DEFLATE was invented. And of course CPU and network speeds have
-increased as well. We also have completely different instruction
-sets on CPUs for well-designed algorithms and software to take
-advantage of. What I'm trying to say is the market is ripe for
-DEFLATE and zlib to be dethroned by algorithms and software that
-take into account the realities of modern computers.</p>
-<p>(For the remainder of this post I'll use <em>zlib</em> as a stand-in for
-<em>DEFLATE</em> because it is simpler.)</p>
-<p>Zstandard initially piqued my attention by promising better-than-zlib
-compression and performance in both the compression and decompression
-directions. That's impressive. But it isn't unique. Brotli achieves
-the same, for example. But what kept my attention was Zstandard's rich
-feature set, tuning abilities, and therefore versatility.</p>
-<p>In the sections below, I'll describe some of the benefits of Zstandard
-in more detail.</p>
-<p>Before I do, I need to throw in an obligatory disclaimer about data
-and numbers that I use. Benchmarking is hard. Benchmarks should not
-be trusted. There are so many variables that can influence performance
-and benchmarks. (A recent example that surprised me is the
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1323106">CPU frequency/power ramping properties of Xeon versus non-Xeon Intel CPUs</a>.
-tl;dr a Xeon won't hit max CPU frequency if only a core or two
-is busy, meaning that any single or low-threaded benchmark is
-likely misleading on Xeons unless you change power settings to
-mitigate its conservative power ramping defaults. And if you change
-power settings, does that reflect real-life usage?)</p>
-<p>Reporting useful and accurate performance numbers for compression is
-hard because there are so many variables to care about. For example:</p>
-<ul>
-<li>Every corpus is different. Text, JSON, C++, photos, numerical data,
-  etc all exhibit different properties when fed into compression and
-  could cause compression ratios or speeds to vary significantly.</li>
-<li>Few large inputs versus many smaller inputs (some algorithms work
-  better on large inputs; some libraries have high per-operation
-  overhead).</li>
-<li>Memory allocation and use strategy. Performance can vary
-  significantly depending on how a compression library allocates,
-  manages, and uses memory. This can be an implementation specific
-  detail as opposed to a core property of the compression algorithm.</li>
-</ul>
-<p>Since Mercurial is the driver for my work in Zstandard, the data and
-numbers I report in this post are mostly Mercurial data. Specifically,
-I'll be referring to data in the
-<a href="https://hg.mozilla.org/mozilla-unified">mozilla-unified Firefox repository</a>.
-This repository contains over 300,000 commits spanning almost 10 years.
-The data within is a good mix of text (mostly C++, JavaScript, Python,
-HTML, and CSS source code and other free-form text) and binary (like
-PNGs). The Mercurial layer adds some binary structures to e.g. represent
-metadata for deltas, diffs, and patching. There are two Mercurial-specific
-pieces of data I will use. One is a Mercurial <em>bundle</em>. This is essentially
-a representation of all data in a repository. It stores a mix of raw,
-fulltext data and deltas on that data. For the mozilla-unified repo, an
-uncompressed bundle (produced via <code>hg bundle -t none-v2 -a</code>) is ~4457 MB.
-The other piece of data is <em>revlog chunks</em>. This is a mix of fulltext
-and delta data for a specific item tracked in version control. I
-frequently use the <em>changelog</em> corpus, which is the fulltext data
-describing changesets or commits to Firefox. The numbers quoted and
-used for charts in this post
-<a href="https://docs.google.com/spreadsheets/d/1PHhGxsQR3zDE-2Eeu5Hn2t-UKw4oGV-7LQTMGEdBh9U/edit?usp=sharing">are available in a Google Sheet</a>.</p>
-<p>All performance data was obtained on an i7-6700K running Ubuntu 16.10
-(Linux 4.8.0) with a mostly stock config. Benchmarks were performed in
-memory to mitigate storage I/O or filesystem interference. Memory used
-is DDR4-2133 with a cycle time of 35 clocks.</p>
-<p>While I'm pretty positive about Zstandard, it isn't perfect. There are
-corpora for which Zstandard performs worse than other algorithms, even
-ones I compare it directly to in this post. So, your mileage may vary.
-Please enlighten me with your counterexamples by leaving a comment.</p>
-<p>With that (rather large) disclaimer out of the way, let's talk about
-what makes Zstandard awesome.</p>
-<h2>Flexibility for Speed Versus Size Trade-offs</h2>
-<p>Compression algorithms typically contain parameters to control how
-much work to do. You can choose to spend more CPU to (hopefully)
-achieve better compression or you can spend less CPU to sacrifice
-compression. (OK, fine, there are other factors like memory usage at
-play too. I'm simplifying.) This is commonly exposed to
-end-users as a compression <em>level</em>. (In reality there are often
-multiple parameters that can be tuned. But I'll just use <em>level</em>
-as a stand-in to represent the concept.)</p>
-<p>But even with adjustable compression levels, the performance of many
-compression algorithms and libraries tend to fall within a relatively
-narrow window. In other words, many compression algorithms focus on
-niche markets. For example, LZ4 is super fast but doesn't yield great
-compression ratios. LZMA yields terrific compression ratios but is
-extremely slow.</p>
-<p>This can be visualized in the following chart showing results when
-compressing a mozilla-unified Mercurial bundle:</p>
-<p><img alt="bundle compression with common algorithms" src="/images/compression-bundle-common.png" /></p>
-<p>This chart plots the logarithmic compression speed in megabytes per
-second against achieved compression ratio. The further right a data
-point is, the better the compression and the smaller the output.
-The higher up a point is, the faster compression is.</p>
-<p>The ideal compression algorithm lives in the top right, which means
-it compresses well and is fast. But the powers of mathematics push
-compression algorithms away from the top right.</p>
-<p>On to the observations.</p>
-<p>LZ4 is highly vertical, which means its compression ratios are
-limited in variance but it is extremely flexible in speed. So for
-this data, you might as well stick to a lower compression level
-because higher values don't buy you much.</p>
-<p>Bzip2 is the opposite: a horizontal line. That means it is consistently
-the same speed while yielding different compression ratios. In other
-words, you might as well crank bzip2 up to maximum compression because
-it doesn't have a significant adverse impact on speed.</p>
-<p>LZMA and zlib are more interesting because they exhibit more variance
-in both the compression ratio and speed dimensions. But let's be frank,
-they are still pretty narrow. LZMA looks pretty good from a shape
-perspective, but its top speed is just too slow - only ~26 MB/s!</p>
-<p>This small window of flexibility means that you often have to choose
-a compression algorithm based on the speed versus size trade-off you are
-willing to make at that time. That choice often gets baked into
-software. And as time passes and your software or data gains popularity,
-changing the software to swap in or support a new compression algorithm
-becomes harder because of the cost and disruption it will cause. That's
-technical debt.</p>
-<p>What we really want is a single compression algorithm that occupies
-lots of <em>space</em> in both dimensions of our chart - a curve that has
-high variance in both compression speed and ratio. Such an algorithm
-would allow you to make an easy decision choosing a compression
-algorithm without locking you into a narrow behavior profile. It would
-allow you make a completely different size versus speed trade-off in
-the future by only adjusting a config knob or two in your application -
-no swapping of compression algorithms needed!</p>
-<p>As you can guess, Zstandard fulfills this role. This can clearly be seen
-in the following chart (which also adds brotli for comparison).</p>
-<p><img alt="bundle compression with modern algorithms" src="/images/compression-bundle-modern.png" /></p>
-<p>The advantages of Zstandard (and brotli) are obvious. Zstandard's
-compression speeds go from ~338 MB/s at level 1 to ~2.6 MB/s at
-level 22 while covering compression ratios from 3.72 to 6.05. On one
-end, <strong>zstd level 1 is ~3.4x faster than zlib level 1 while achieving
-better compression than zlib level 9!</strong> That fastest speed is only 2x
-slower than LZ4 level 1. On the other end of the spectrum, zstd
-level 22 runs ~1 MB/s slower than LZMA at level 9 and produces a
-file that is only 2.3% larger.</p>
-<p>It's worth noting that zstd's C API exposes several knobs for tweaking
-the compression algorithm. Each compression level maps to a pre-defined
-set of values for these knobs. It is possible to set these values beyond
-the ranges exposed by the default compression levels 1 through 22. I've
-done some basic experimentation with this and have made compression even
-faster (while sacrificing ratio, of course). This covers the gap between
-Zstandard and brotli on this end of the tuning curve.</p>
-<p>The wide span of compression speeds and ratios is a game changer
-for compression. Unless you have special requirements such as
-lightning fast operations (which LZ4 can provide) or special
-corpora that Zstandard can't handle well, Zstandard is a very safe and
-flexible choice for general purpose compression.</p>
-<h2>Multi-threaded Compression</h2>
-<p>Zstd 1.1.3 contains a multi-threaded compression API that allows a
-compression operation to leverage multiple threads. The output from
-this API is compatible with the Zstandard frame format and doesn't require
-any special handling on the decompression side. <strong>In other words, a
-compressor can switch to the multi-threaded API and decompressors won't
-care.</strong></p>
-<p>This is a big deal for a few reasons. First, today's advancements in
-computer processors tend to yield more capacity from more cores not
-from faster clocks and better cycle efficiency (although many cases
-do benefit greatly from modern instruction sets like AVX and therefore
-better cycle efficiency). Second, so many compression libraries are
-only single-threaded and require consumers to invent their own framing
-formats or storage models to facilitate multi-threading. (See
-<a href="http://blosc.org/">Blosc</a> for such a library.) Lack of a
-multi-threaded API in the compression library means trusting another
-piece of software or writing your own multi-threaded code.</p>
-<p>The following chart adds a plot of Zstandard multi-threaded compression
-with 4 threads.</p>
-<p><img alt="multi-threaded compression" src="/images/compression-bundle-multithreaded.png" /></p>
-<p>The existing curve for Zstandard basically shifted straight up. Nice!</p>
-<p>The ~338 MB/s speed for single-threaded compression on zstd level 1
-increases to ~1,376 MB/s with 4 threads. That's ~4.06x faster. And,
-it is ~2.26x faster than the previous fastest entry, LZ4 at level 1!
-The output size only increased by ~4 MB or ~0.3% over single-threaded
-compression.</p>
-<p>The scaling properties for multi-threaded compression on this input
-are terrific: all 4 cores are saturated and the output size barely
-changed.</p>
-<p>Because Zstandard's multi-threaded compression API produces data compatible
-with any Zstandard decompressor, it can logically be considered an extension
-of <em>compression levels</em>. This means that the already extremely flexible
-speed vs ratio curve becomes even wider in the speed axis. Zstandard
-was already a justifiable choice with its extreme versatility. But when
-you throw in native multi-threaded compression API support, the
-flexibility for tuning compression performance is just absurd. With
-enough cores, you are likely to run into I/O limits long before you
-exhaust the CPU, at which point you can crank up the compression
-level and sacrifice as much CPU as you are willing to burn. That's
-a good position to be in.</p>
-<h2>Decompression Speed</h2>
-<p>Compression speed and ratios only tell half the story about a compression
-algorithm. Except for archiving scenarios where you write once and
-read rarely, you probably care about decompression performance.</p>
-<p>Popular compression algorithms like zlib and bzip2 have less than stellar
-decompression speeds. On my i7-6700K, zlib decompression can deliver many
-decompressed data sets at the output end at 200+ MB/s. However, on the
-input/compressed end, it frequently fails to reach 100 MB/s or even
-80 MB/s. This is significant because if your application is reading data
-over a 1 Gbps network or from a local disk (modern SSDs can read at several
-hundred MB/s or more), then your application has a CPU bottleneck at
-decoding the data - and that's before you actually do anything useful
-with the data in the application layer! (Remember: the idea behind
-compression is to spend CPU to mitigate an I/O bottleneck. So if
-compression makes you CPU bound, you've undermined the point of
-compression!) And if my Skylake CPU running at 4.0 GHz is CPU -
-not I/O - bound, A Xeon in a data center will be even slower and
-even more CPU bound (Xeons tend to run at much lower clock speeds -
-the laws of thermodynamics require that in order to run more cores in
-the package). In short, <strong>if you are using zlib for high throughput
-scenarios, there's a good chance it is a bottleneck and slowing down
-your application</strong>.</p>
-<p>We again measure the speed of algorithms using a Firefox Mercurial
-bundle. The following charts plot decompression speed versus ratio
-for this file. The first chart measures decompression speed on the
-input end of the decompressor. The second measures speed at the
-output end.</p>
-<p><img alt="decompression input" src="/images/decompression-bundle-input.png" /></p>
-<p><img alt="decompression output" src="/images/decompression-bundle-output.png" /></p>
-<p>Zstandard matches its great compression speed with great decompression
-speed. Zstandard can deliver decompressed output at 1000+ MB/s while
-consuming input at 200-275MB/s. Furthermore, decompression speed is
-mostly independent of the compression level. (Although higher
-compression levels require more memory in the decompressor.) So, <strong>if
-you want to throw more CPU at re-compression later so data at rest takes
-less space, you can do that without sacrificing read performance.</strong>
-I haven't done the math, but there is probably a break-even point
-where having dedicated machines re-compress terabytes or petabytes
-of data at rest offsets the costs of those machine through reduced
-storage costs.</p>
-<p>While Zstandard is not as fast decompressing as LZ4 (which can consume
-compressed input at 500+ MB/s), its performance is often ~4x faster
-than zlib. On many CPUs, this puts it well above 1 Gbps, which is
-often desirable to avoid a bottleneck at the network layer.</p>
-<p>It's also worth noting that while Zstandard and brotli were comparable
-on the compression half of this data, Zstandard has a clear advantage
-doing decompression.</p>
-<p>Finally, you don't appear to pay a price for multi-threaded Zstandard
-compression on the decompression side (<code>zstdmt</code> in the chart).</p>
-<h2>Dictionary Support</h2>
-<p>The examples so far in this post have used a single 4,457 MB piece of
-input data to measure behavior. Large data can behave completely
-differently from small data. This is because so much of what
-compression algorithms do is find patterns that came before so incoming
-data can be <em>referenced</em> to old data instead of uniquely stored. And if
-data is small, there isn't much of it that came before to reference!</p>
-<p>This is often why many small, independent chunks of input compress
-poorly compared to a single large chunk. This can be demonstrated by
-comparing the widely-used <em>zip</em> and <em>tar</em> archive formats. On the
-surface, both do the same thing: they are a container of files. But
-they employ compression at different phases. A <em>zip</em> file will zlib
-compress each entry independently. However, a <em>tar</em> file doesn't use
-compression internally. Instead, the tar file itself is fed into a
-compression algorithm and compressed as a whole.</p>
-<p>We can observe the difference on real world data. Firefox
-ships with a file named <code>omni.ja</code>. Despite the weird extension, this
-is a <em>zip</em> file. The file contains most of the assets for non-compiled
-code used by Firefox. This includes the JavaScript, HTML, CSS, and
-images that power many parts of the Firefox frontend. The file weighs
-in at 9,783,749 bytes for the 64-bit Windows Firefox Nightly from
-2017-03-06. (Or 9,965,793 bytes when using <code>zip -9</code> - the code for
-generating <code>omni.ja</code> is smarter than <code>zip</code> and creates smaller
-files.) But a zlib level 9 compressed <code>tar.gz</code> file of that directory
-is 8,627,155 bytes. That 1,156KB / 13% size difference is significant
-when you are talking about delivering bits to end users! (In this
-case, the content within the archive needs to be individually
-addressable to facilitate fast access to any item without having
-to decompress the entire archive: this matters for performance.)</p>
-<p>A more extreme example of the differences between <em>zip</em> and <em>tar</em>
-is the files in the Firefox source checkout. On revision
-a08ec245fa24 of the Firefox Mercurial repository, a <em>zip</em> file of
-all files in version control is 430,446,549 bytes versus
-322,916,403 bytes for a <em>tar.gz</em> file (1,177,430,383 bytes uncompressed
-spanning 180,912 files). Using Zstandard, compressing each file
-discretely at compression level 3 yields 391,387,299 bytes of
-compressed data versus 294,926,418 as a single stream (without the
-<em>tar</em> container). Same compression algorithm. Different application
-method. Drastically different results. That's the impact of input
-size on compression performance.</p>
-<p>While the compression ratio and speed of a single large stream is
-often better than multiple smaller chunks, there are still
-use cases that either don't have enough data or prefer independent
-access to each piece of input (like Firefox's <code>omni.ja</code> file). So
-a robust compression algorithm should handle small inputs as well
-as it does large inputs.</p>
-<p>Zstandard helps offset the inherent inefficiencies of small inputs
-by supporting <em>dictionary compression</em>. A <em>dictionary</em> is
-essentially data used to seed the compressor's state. If the
-compressor sees data that exists in the dictionary, it references
-the dictionary instead of storing new data in the compressed output
-stream. This results in smaller output sizes and better compression
-ratios. One drawback to this is the dictionary has to be used to
-decompress data, which means you need to figure out how to
-distribute the dictionary and ensure it remains in sync with all
-data producers and consumers. This isn't always trivial.</p>
-<p>Dictionary compression only works if there is enough repeated data
-and patterns in the inputs that can be extracted to yield a
-useful dictionary. Examples of this include markup languages, source
-code, or pieces of similar data (such as JSON payloads from HTTP API
-requests or telemetry data), which often have many repeated keywords
-and patterns.</p>
-<p>Dictionaries are typically produced by <em>training</em> them on existing
-data. Essentially, you feed a bunch of samples into an algorithm
-that spits out a meaningful and useful dictionary. The more coherency
-in the data that will be compressed, the better the dictionary and
-the better the compression ratios.</p>
-<p>Dictionaries can have a significant effect on compression ratios and
-speed.</p>
-<p>Let's go back to Firefox's <code>omni.ja</code> file. Compressing each file
-discretely at zstd level 12 yields 9,177,410 bytes of data. But if
-we produce a 131,072 byte dictionary by training it on all files
-within <code>omni.ja</code>, the total size of each file compressed discretely
-is 7,942,886 bytes. Including the dictionary, the total size is
-8,073,958 bytes, 1,103,452 bytes smaller than non-dictionary
-compression! (The zlib-based <code>omni.ja</code> is 9,783,749 bytes.) So
-Zstandard plus dictionary compression would likely yield a
-meaningful ~1.5 MB size reduction to the <code>omni.ja</code> file. This would
-make the Firefox distribution smaller and <em>may</em> improve startup
-time (since many files inside <code>omni.ja</code> are accessed at
-startup), which would make a number of people very happy. (Of
-course, Firefox doesn't yet contain the zstd C library. And adding
-it just for this use case may not make sense. But Firefox does ship
-with the brotli library and brotli supports dictionary compression
-and has similar performance characteristics as Zstandard, so, uh,
-someone may want to look into transitioning <code>omni.jar</code> to
-<em>not zlib</em>.)</p>
-<p>But the benefits of dictionary compression don't end at compression
-ratios: operations with dictionaries can be faster as well!</p>
-<p>The following chart shows performance when compressing Mercurial
-<em>changeset</em> data (describes a Mercurial commit) for the Firefox
-repository. There are 382,530 discrete inputs spanning 221,429,458
-bytes (mean: 579 bytes, median: 306 bytes). (Note: measurements were
-conducted in Python and therefore may introduce some overhead.)</p>
-<p><img alt="dictionary compression performance" src="/images/decompression-dictionary-changeset.png" /></p>
-<p>Aside from zstd level 3 dictionary compression, Zstandard is faster
-than zlib level 6 across the board (I suspect this one-off is an
-oddity with the zstd compression parameters at this level and this
-corpus because zstd level 4 is faster than level 3, which is weird).</p>
-<p>It's also worth noting that non-dictionary zstandard compression
-has similar compression ratios to zlib. Again, this demonstrates
-the intrinsic difficulties of compressing small inputs.</p>
-<p>But the real takeaway from this data are the speed differences with
-dictionary compression enabled. Dictionary decompression is
-2.2-2.4x <em>faster</em> than non-dictionary decompression. Already
-respectable ~240 MB/s decompression speed (measured at the output
-end) becomes ~530 MB/s. Zlib level 6 was ~140 MB/s, so swapping
-in dictionary compression makes things ~3.8x faster. It takes ~1.5s
-of CPU time to zlib decompress this corpus. So if Mercurial can
-be taught to use Zstandard dictionary compression for changelog data,
-certain operations on this corpus will complete ~1.1s faster. That's
-significant.</p>
-<p>It's worth stating that Zstandard isn't the only compression algorithm
-or library to support dictionary compression. Brotli and zlib do as
-well, for example. But, Zstandard's support for dictionary compression
-seems to be more polished than other libraries I've seen. It has multiple
-APIs for training dictionaries from sample data. (Brotli has none nor
-does brotli's documentation say how to generate dictionaries as far as
-I can tell.)</p>
-<p>Dictionary compression is definitely an advanced feature, applicable
-only to certain use cases (lots of small, similar data). But there's
-no denying that if you can take advantage of dictionary compression,
-you may be rewarded with significant performance wins.</p>
-<h2>A Versatile C API</h2>
-<p>I spend a lot of my time these days in higher-level programming
-languages like Python and JavaScript. By the time you interact with
-compression in high-level languages, the low-level compression APIs
-provided by the compression library are most likely hidden from you
-and bundled in a nice, friendly abstraction, suitable for a
-higher-level language. And more often than not, many features of
-that low-level API are not exposed for you to call. So, you don't
-get an appreciation for how good (or bad) or feature rich (or
-lacking) the low-level API is.</p>
-<p>As part of writing
-<a href="https://github.com/indygreg/python-zstandard">python-zstandard</a>, I've
-spent a lot of time interfacing with the zstd C API. And, as part
-of evaluating other compression libraries for use in Mercurial, I've
-been looking at C APIs for other libraries and the Python bindings to
-them. A takeaway from this is an appreciation for the quality of
-zstd's C API.</p>
-<p>Many compression library APIs are either too simple or too complex.
-Zstandard's is in the Goldilocks zone. Aside from a few minor missing
-features, its C API was more than adequate in its 1.0 release.</p>
-<p>What I really appreciate about the zstd C API is that it provides
-high, medium, and low-level APIs. From the highest level, you throw
-it pointers to input and output buffers and it does an operation.
-From the medium level, you use a reusable <em>context</em> holding state
-and other parameters and it does an operation. From the low-level,
-you are calling multiple functions and shuffling bytes around,
-maintaining your own state and potentially bypassing the Zstandard
-<em>framing</em> format in the process. The different levels give you
-almost total control over everything. This is critical for performance
-optimization and when writing bindings for higher-level languages that
-may have different expectations on the behavior of software. The
-performance I've achieved in python-zstandard just isn't (easily)
-possible with other compression libraries because of their lacking
-API design.</p>
-<p>Oftentimes when interacting with a C library I think <em>if only there
-were a function to let me do X my life would be much easier</em>. I
-rarely have this experience with Zstandard. The C API is well thought out,
-has almost all the features I want/need, and is pretty easy to use.
-While most won't notice this difference, it should be a significant
-advantage for Zstandard in the long run, as more bindings are
-written and more people have a high-quality experience with it
-because the C API allows them to.</p>
-<h2>Zstandard Isn't Perfect</h2>
-<p>I've been pretty positive about Zstandard so far in this post.
-In fear of sounding like a fanboy who is so blinded by admiration
-that he can't see faults and because nothing is perfect, I need to
-point out some negatives about Zstandard. (Aside: put little faith
-in the words uttered by someone who can't find a fault in something
-they praise.)</p>
-<p>First, the <a href="https://github.com/facebook/zstd/blob/3bee41a70eaf343fbcae3637b3f6edbe52f35ed8/doc/zstd_compression_format.md#zstandard-frames">framing format</a>
-is a bit heavyweight in some scenarios. The frame header is at <em>least</em>
-6 bytes. For input of 256-65791 bytes, recording the original source
-size and its checksum will result in a 12 byte frame. Zlib, by contrast,
-is only 6 bytes for this scenario. When storing tens of thousands of
-compressed records (this is a use case in Mercurial), the frame overhead
-can matter and this can make it difficult for compressed Zstandard
-data to be as small as zlib for very small inputs. (It's worth noting
-that zlib doesn't store the decompressed size in its header. There are
-pros and cons to this, which I'll discuss in my eventual post about
-python-zstandard and how it achieves optimal performance.) If the frame
-overhead matters to you, the zstd C API does expose a <em>block</em> API that
-operates at a level below the framing format, allowing you to roll your
-own framing protocol. I also
-<a href="https://github.com/facebook/zstd/issues/591">filed a GitHub issue</a> to
-make the 4 byte magic number optional, which would go a long way to
-cutting down on frame overhead.</p>
-<p>Second, the C API is not yet fully stabilized. There are a number of
-functions marked as <em>experimental</em> that aren't exported from the shared
-library and are only available via static linking. There's a ton of
-useful functionality in there, including low-level compression parameter
-adjustment, digested dictionaries (for reusing computed dictionaries
-across multiple <em>contexts</em>), and the multi-threaded compression API.
-python-zstandard makes heavy use of these <em>experimental</em> APIs. This
-requires bundling zstd with python-zstandard and statically linking
-with this known version because functionality could change at any time.
-This is a bit annoying, especially for distro packagers.</p>
-<p>Third, the low-level compression parameters are under-documented. I
-think I understand what a lot of them do. But it isn't obvious when
-I should consider adjusting what. The default compression levels
-seem to work pretty well and map to reasonable compression parameters.
-But a few times I've noticed that tweaking things slightly can result
-in desirable improvements. I wish there were a guide of sorts to
-help you tune these parameters.</p>
-<p>Fourth, dictionary compression is still a bit too complicated and
-hand-wavy for my liking. I can measure obvious benefits when using it
-largely out of the box with some corpora. But it isn't always a win
-and the cost for training dictionaries is too high to justify using
-it outside of scenarios where you are pretty sure it will be beneficial.
-When I do use it, I'm not sure which compression levels it works best
-with, how many samples need to be fed into the dictionary trainer,
-which training algorithm to use, etc. If that isn't enough, there is
-also the concept of <em>content-only dictionaries</em> where you use a
-fulltext as the dictionary. This can be useful for delta-encoding
-schemes (where compression effectively acts like a diff/delta
-generator instead of using something like Myers diff). If this topic
-interests you, there is a
-<a href="https://www.mercurial-scm.org/pipermail/mercurial-devel/2017-January/092186.html">thread on the Mercurial developers list</a>
-where Yann Collet and I discuss this.</p>
-<p>Fifth, the patent rights grant. There is some
-<a href="https://github.com/facebook/zstd/blob/4ded9e591cbed57c54fc8f7a50412af5980e23a7/PATENTS#L14">wording in the PATENTS file</a>
-in the Zstandard project that may... concern lawyers. While Zstandard
-is covered by the standard BSD 3-Clause license, that supplemental
-<code>PATENTS</code> file may scare some lawyers enough that you won't be able
-to use Zstandard. You may want to talk to a lawyer before using
-Zstandard, especially if you or your company likes initiating patent
-lawsuits against companies (or wishes to reserve that right - as many
-companies do), as that is the condition upon which the license
-terminates. Note that there is a long history between Facebook and
-consumers of its open source software regarding this language in the
-<code>PATENTS</code> file. Do a search for <code>React patent grant</code> to read more.</p>
-<p>Sixth and finally, Zstandard is still relatively new. I can totally
-relate to holding off until something new and shiny proves itself.
-That being said, the Zstandard framing protocol has some escape
-hatches for future needs. And, the project proved during its pre-1.0
-days that it knows how to handle backwards and future compatibility
-issues. And considering Facebook and others are using Zstandard in
-production, I wouldn't be too worried. I think the biggest risk is
-to people (like me) who are writing code against the <em>experimental</em>
-C APIs. But even then, the changes to the experimental APIs in the
-past several months have been minor. I'm not losing sleep over it.</p>
-<p>That may seem like a long and concerning list. Most of the issues are
-relatively minor. The language in the <code>PATENTS</code> file may be a
-showstopper to some. From my perspective, the biggest thing Zstandard has
-going against it is its youth. But that will only improve with age.
-While I'm usually pretty conservative about adopting new technology
-(I've gotten burned enough times that I prefer the neophytes do the
-field testing for me), the upside to using Zstandard is potentially
-drastic performance and efficiency gains. And that can translate to
-success versus failure or millions of dollars in saved infrastructure
-costs and productivity gains. I'm willing to take my chances.</p>
-<h2>Conclusion</h2>
-<p>For the corpora I've thrown at it, Zstandard handily outperforms zlib
-in almost every dimension. And, it even manages to best other <em>modern</em>
-compression algorithms like brotli in many tests.</p>
-<p>The underlying algorithm and techniques used by Zstandard are highly
-parameterized, lending themselves to a variety of use cases from embedded
-hardware to massive data crunching machines with hundreds of gigabytes
-of memory and dozens of CPU cores.</p>
-<p>The C API is well-designed and facilitates high performance and
-adaptability to numerous use cases. It is <em>batteries included</em>,
-providing functions to train dictionaries and perform multi-threaded
-compression.</p>
-<p>Zstandard is backed by Facebook and seems to have a healthy open source
-culture <a href="https://github.com/facebook/zstd">on Github</a>. My interactions
-with Yann Collet have been positive and he seems to be a great
-project maintainer.</p>
-<p>Zstandard is an exciting advancement for data compression and therefore
-for the entire computing field. As someone who has lived in the world
-of zlib for years, was a casual user of compression, and thought zlib
-was <em>good enough</em> for most use cases, I can attest that Zstandard is
-game changing. After being enlightened to all the advantages of
-Zstandard, I'll never casually use zlib again: it's just too slow and
-inflexible for the needs of modern computing. If you use compression,
-I highly recommend investigating Zstandard.</p>
-<p><em>(I updated the post on 2017-03-08 to include a paragraph about the
-supplemental license in the <code>PATENTS</code> file.)</em></p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/03/07/better-compression-with-zstandard#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../1">« Previous Page</a>
   --  

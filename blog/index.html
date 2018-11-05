@@ -51,6 +51,353 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="absorbing-commit-changes-in-mercurial-4.8"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/11/05/absorbing-commit-changes-in-mercurial-4.8" rel="bookmark" title="Permanent Link to Absorbing Commit Changes in Mercurial 4.8">Absorbing Commit Changes in Mercurial 4.8</a></h2>
+  <small>November 05, 2018 at 09:25 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2018/11/05/absorbing-commit-changes-in-mercurial-4.8#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Every so often a tool you use introduces a feature that is so useful
+that you can't imagine how things were before that feature existed.
+The recent 4.8 release of the
+<a href="https://www.mercurial-scm.org/">Mercurial version control tool</a> introduces
+such a feature: the <code>hg absorb</code> command.</p>
+<p><code>hg absorb</code> is a mechanism to automatically and intelligently incorporate
+uncommitted changes into prior commits. Think of it as <em><code>hg histedit</code> or
+<code>git rebase -i</code> with auto squashing</em>.</p>
+<p>Imagine you have a set of changes to prior commits in your working
+directory. <code>hg absorb</code> figures out which changes map to which commits
+and <em>absorbs</em> each of those changes into the appropriate commit. Using
+<code>hg absorb</code>, you can replace cumbersome and often merge conflict ridden
+history editing workflows with a single command that often <em>just works</em>.
+Read on for more details and examples.</p>
+<p>Modern version control workflows often entail having multiple <em>unlanded</em>
+commits in flight. What this looks like varies heavily by the version
+control tool, standards and review workflows employed by the specific
+project/repository, and personal preferences.</p>
+<p>A workflow practiced by a lot of projects is to author your commits
+into a sequence of standalone commits, with each commit representing
+a discrete, logical unit of work. Each commit is then
+reviewed/evaluated/tested on its own as part of a larger series.
+(This workflow is practiced by Firefox, the Git and Mercurial projects,
+and the Linux Kernel to name a few.)</p>
+<p>A common task that arises when working with such a workflow is the need
+to incorporate changes into an old commit. For example, let's say we have
+a stack of the following commits:</p>
+<pre><code>$ hg show stack
+  @  1c114a ansible/hg-web: serve static files as immutable content
+  o  d2cf48 ansible/hg-web: synchronize templates earlier
+  o  c29f28 ansible/hg-web: convert hgrc to a template
+  o  166549 ansible/hg-web: tell hgweb that static files are in /static/
+  o  d46d6a ansible/hg-web: serve static template files from httpd
+  o  37fdad testing: only print when in verbose mode
+ /   (stack base)
+o  e44c2e (@) testing: install Mercurial 4.8 final
+</code></pre>
+<p>Contained within this stack are 5 commits changing the way that static
+files are served by hg.mozilla.org (but that's not important).</p>
+<p>Let's say I submit this stack of commits for review. The reviewer spots
+a problem with the second commit (<em>serve static template files from httpd</em>)
+and wants me to make a change.</p>
+<p>How do you go about making that change?</p>
+<p>Again, this depends on the exact tool and workflow you are using.</p>
+<p>A common workflow is to not rewrite the existing commits at all: you simply
+create a new <em>fixup</em> commit on top of the stack, leaving the existing commits
+as-is. e.g.:</p>
+<pre><code>$ hg show stack
+  o  deadad fix typo in httpd config
+  o  1c114a ansible/hg-web: serve static files as immutable content
+  o  d2cf48 ansible/hg-web: synchronize templates earlier
+  o  c29f28 ansible/hg-web: convert hgrc to a template
+  o  166549 ansible/hg-web: tell hgweb that static files are in /static/
+  o  d46d6a ansible/hg-web: serve static template files from httpd
+  o  37fdad testing: only print when in verbose mode
+ /   (stack base)
+o  e44c2e (@) testing: install Mercurial 4.8 final
+</code></pre>
+<p>When the entire series of commits is incorporated into the repository,
+the end state of the files is the same, so all is well. But this strategy
+of using <em>fixup commits</em> (while popular - especially with Git-based tooling
+like GitHub that puts a larger emphasis on the end state of changes rather
+than the individual commits) isn't practiced by all projects.
+<strong><code>hg absorb</code> will not help you if this is your workflow.</strong></p>
+<p>A popular variation of this <em>fixup commit</em> workflow is to author a new commit
+then <em>incorporate</em> this commit into a prior commit. This typically involves
+the following actions:</p>
+<pre><code>&lt;save changes to a file&gt;
+
+$ hg commit
+&lt;type commit message&gt;
+
+$ hg histedit
+&lt;manually choose what actions to perform to what commits&gt;
+
+OR
+
+&lt;save changes to a file&gt;
+
+$ git add &lt;file&gt;
+$ git commit
+&lt;type commit message&gt;
+
+$ git rebase --interactive
+&lt;manually choose what actions to perform to what commits&gt;
+</code></pre>
+<p>Essentially, you produce a new commit. Then you run a history editing command.
+You then tell that history editing command what to do (e.g. to <em>squash</em> or
+<em>fold</em> one commit into another), that command performs work and produces a set
+of rewritten commits.</p>
+<p>In simple cases, you may make a simple change to a single file. Things are
+pretty straightforward. You need to know which two commits to <em>squash</em> together.
+This is often trivial. Although it can be cumbersome if there are several
+commits and it isn't clear which one should be receiving the new changes.</p>
+<p>In more complex cases, you may make multiple modifications to multiple files.
+You may even want to <em>squash</em> your <em>fixups</em> into separate commits. And for some
+code reviews, this <em>complex</em> case can be quite common. It isn't uncommon for me
+to be incorporating dozens of reviewer-suggested changes across several commits!</p>
+<p>These complex use cases are where things can get really complicated for version
+control tool interactions. Let's say we want to make multiple changes to a file
+and then incorporate those changes into multiple commits. To keep it simple,
+let's assume 2 modifications in a single file <em>squashing</em> into 2 commits:</p>
+<pre><code>&lt;save changes to file&gt;
+
+$ hg commit --interactive
+&lt;select changes to commit&gt;
+&lt;type commit message&gt;
+
+$ hg commit
+&lt;type commit message&gt;
+
+$ hg histedit
+&lt;manually choose what actions to perform to what commits&gt;
+
+OR
+
+&lt;save changes to file&gt;
+
+$ git add &lt;file&gt;
+$ git add --interactive
+&lt;select changes to stage&gt;
+
+$ git commit
+&lt;type commit message&gt;
+
+$ git add &lt;file&gt;
+$ git commit
+&lt;type commit message&gt;
+
+$ git rebase --interactive
+&lt;manually choose which actions to perform to what commits&gt;
+</code></pre>
+<p>We can see that the number of actions required by users has already increased
+substantially. Not captured by the number of lines is the effort that must go
+into the interactive commands like <code>hg commit --interactive</code>,
+<code>git add --interactive</code>, <code>hg histedit</code>, and <code>git rebase --interactive</code>. For
+these commands, users must tell the VCS tool exactly what actions to take.
+This takes time and requires some cognitive load. This ultimately distracts
+the user from the task at hand, which is bad for concentration and productivity.
+The user just wants to <em>amend</em> old commits: telling the VCS tool what actions
+to take is an obstacle in their way. (A compelling argument can be made that
+the work required with these workflows to produce a <em>clean</em> history is too much
+effort and it is easier to make the trade-off favoring simpler workflows
+versus cleaner history.)</p>
+<p><strong>These kinds of <em>squash fixup</em> workflows are what <code>hg absorb</code> is designed to
+make easier.</strong> When using <code>hg absorb</code>, the above workflow can be reduced to:</p>
+<pre><code>&lt;save changes to file&gt;
+
+$ hg absorb
+&lt;hit y to accept changes&gt;
+
+OR
+
+&lt;save changes to file&gt;
+
+$ hg absorb --apply-changes
+</code></pre>
+<p>Let's assume the following changes are made in the working directory:</p>
+<pre><code>$ hg diff
+diff --git a/ansible/roles/hg-web/templates/vhost.conf.j2 b/ansible/roles/hg-web/templates/vhost.conf.j2
+--- a/ansible/roles/hg-web/templates/vhost.conf.j2
++++ b/ansible/roles/hg-web/templates/vhost.conf.j2
+@@ -76,7 +76,7 @@ LimitRequestFields 1000
+      # Serve static files straight from disk.
+      &lt;Directory /repo/hg/htdocs/static/&gt;
+          Options FollowSymLinks
+ -        AllowOverride NoneTypo
+ +        AllowOverride None
+          Require all granted
+      &lt;/Directory&gt;
+
+@@ -86,7 +86,7 @@ LimitRequestFields 1000
+      # and URLs are versioned by the v-c-t revision, they are immutable
+      # and can be served with aggressive caching settings.
+      &lt;Location /static/&gt;
+ -        Header set Cache-Control "max-age=31536000, immutable, bad"
+ +        Header set Cache-Control "max-age=31536000, immutable"
+      &lt;/Location&gt;
+
+      #LogLevel debug
+</code></pre>
+<p>That is, we have 2 separate uncommitted changes to
+<code>ansible/roles/hg-web/templates/vhost.conf.j2</code>.</p>
+<p>Here is what happens when we run <code>hg absorb</code>:</p>
+<pre><code>$ hg absorb
+showing changes for ansible/roles/hg-web/templates/vhost.conf.j2
+        @@ -78,1 +78,1 @@
+d46d6a7 -        AllowOverride NoneTypo
+d46d6a7 +        AllowOverride None
+        @@ -88,1 +88,1 @@
+1c114a3 -        Header set Cache-Control "max-age=31536000, immutable, bad"
+1c114a3 +        Header set Cache-Control "max-age=31536000, immutable"
+
+2 changesets affected
+1c114a3 ansible/hg-web: serve static files as immutable content
+d46d6a7 ansible/hg-web: serve static template files from httpd
+apply changes (yn)?
+&lt;press "y"&gt;
+2 of 2 chunk(s) applied
+</code></pre>
+<p><code>hg absorb</code> automatically figured out that the 2 separate uncommitted changes
+<em>mapped</em> to 2 different changesets (Mercurial's term for <em>commit</em>). It
+print a summary of what lines would be changed in what changesets and
+prompted me to accept its <em>plan</em> for how to proceed. The human effort involved
+is a quick review of the proposed changes and answering a prompt.</p>
+<p>At a technical level, <code>hg absorb</code> finds all uncommitted changes and
+attempts to map each changed line to an unambiguous prior commit. For
+every change that can be mapped cleanly, the uncommitted changes are
+<em>absorbed</em> into the appropriate prior commit. Commits impacted by the
+operation are rebased automatically. If a change cannot be mapped to an
+unambiguous prior commit, it is left uncommitted and users can fall back
+to an existing workflow (e.g. using <code>hg histedit</code>).</p>
+<p>But wait - there's more!</p>
+<p>The automatic rewriting logic of <code>hg absorb</code> is implemented by following
+the history of lines. This is fundamentally different from the approach
+taken by <code>hg histedit</code> or <code>git rebase</code>, which tend to rely on <em>merge
+strategies</em> based on the
+<a href="https://stackoverflow.com/questions/4129049/why-is-a-3-way-merge-advantageous-over-a-2-way-merge">3-way merge</a>
+to derive a new version of a file given multiple input versions. This
+approach combined with the fact that <code>hg absorb</code> skips over changes with
+an ambiguous application commit means that <strong><code>hg absorb</code> will never
+encounter merge conflicts</strong>! Now, you may be thinking <em>if you ignore
+lines with ambiguous application targets, the patch would always apply
+cleanly using a classical 3-way merge</em>. This statement logically sounds
+correct. But it isn't: <code>hg absorb</code> can avoid merge conflicts when the
+merging performed by <code>hg histedit</code> or <code>git rebase -i</code> would fail.</p>
+<p>The above example attempts to exercise such a use case. Focusing on the
+initial change:</p>
+<pre><code>diff --git a/ansible/roles/hg-web/templates/vhost.conf.j2 b/ansible/roles/hg-web/templates/vhost.conf.j2
+--- a/ansible/roles/hg-web/templates/vhost.conf.j2
++++ b/ansible/roles/hg-web/templates/vhost.conf.j2
+@@ -76,7 +76,7 @@ LimitRequestFields 1000
+     # Serve static files straight from disk.
+     &lt;Directory /repo/hg/htdocs/static/&gt;
+         Options FollowSymLinks
+-        AllowOverride NoneTypo
++        AllowOverride None
+         Require all granted
+     &lt;/Directory&gt;
+</code></pre>
+<p>This patch needs to be applied against the commit which introduced it. That
+commit had the following diff:</p>
+<pre><code>diff --git a/ansible/roles/hg-web/templates/vhost.conf.j2 b/ansible/roles/hg-web/templates/vhost.conf.j2
+--- a/ansible/roles/hg-web/templates/vhost.conf.j2
++++ b/ansible/roles/hg-web/templates/vhost.conf.j2
+@@ -73,6 +73,15 @@ LimitRequestFields 1000
+         {% endfor %}
+     &lt;/Location&gt;
+
++    # Serve static files from templates directory straight from disk.
++    &lt;Directory /repo/hg/hg_templates/static/&gt;
++        Options None
++        AllowOverride NoneTypo
++        Require all granted
++    &lt;/Directory&gt;
++
++    Alias /static/ /repo/hg/hg_templates/static/
++
+     #LogLevel debug
+     LogFormat "%h %v %u %t \"%r\" %&gt;s %b %D \"%{Referer}i\" \"%{User-Agent}i\" \"%{Cookie}i\""
+     ErrorLog "/var/log/httpd/hg.mozilla.org/error_log"
+</code></pre>
+<p>But after that commit was another commit with the following change:</p>
+<pre><code>diff --git a/ansible/roles/hg-web/templates/vhost.conf.j2 b/ansible/roles/hg-web/templates/vhost.conf.j2
+--- a/ansible/roles/hg-web/templates/vhost.conf.j2
++++ b/ansible/roles/hg-web/templates/vhost.conf.j2
+@@ -73,14 +73,21 @@ LimitRequestFields 1000
+         {% endfor %}
+     &lt;/Location&gt;
+
+-    # Serve static files from templates directory straight from disk.
+-    &lt;Directory /repo/hg/hg_templates/static/&gt;
+-        Options None
++    # Serve static files straight from disk.
++    &lt;Directory /repo/hg/htdocs/static/&gt;
++        Options FollowSymLinks
+         AllowOverride NoneTypo
+         Require all granted
+     &lt;/Directory&gt;
+
+...
+</code></pre>
+<p>When we use <code>hg histedit</code> or <code>git rebase -i</code> to rewrite this history, the VCS
+would first attempt to re-order commits before squashing 2 commits together.
+When we attempt to reorder the <em>fixup</em> diff immediately after the commit that
+introduces it, there is a good chance your VCS tool would encounter a merge
+conflict. Essentially your VCS is thinking <em>you changed this line but the
+lines around the change in the final version are different from the lines
+in the initial version: I don't know if those other lines matter and therefore
+I don't know what the end state should be, so I'm giving up and letting the
+user choose for me</em>.</p>
+<p>But since <code>hg absorb</code> operates at the line history level, it knows that this
+individual line wasn't actually changed (even though the lines around it did),
+assumes there is no conflict, and offers to <em>absorb</em> the change. So not only
+is <code>hg absorb</code> significantly simpler than today's <code>hg histedit</code> or
+<code>git rebase -i</code> workflows in terms of VCS command interactions, but it can
+also avoid time-consuming merge conflict resolution as well!</p>
+<p>And that's <code>hg absorb</code> in a nutshell.</p>
+<p>When I first saw a demo of <code>hg absorb</code> at a Mercurial developer meetup, my
+jaw - along with those all over the room - hit the figurative floor. I thought
+it was magical and too good to be true. I thought Facebook (the original authors
+of the feature) were trolling us with an impossible demo. But it was all real.
+And now <code>hg absorb</code> is available in the core Mercurial distribution for anyone
+to use.  </p>
+<p>From my experience, <code>hg absorb</code> <em>just works</em> almost all of the time: I run
+the command and it maps all of my uncommitted changes to the appropriate
+commit and there's nothing more for me to do! In a word, it is magical.</p>
+<p>To use <code>hg absorb</code>, you'll need to activate the <code>absorb</code> extension. Simply
+put the following in your <code>hgrc</code> config file:</p>
+<pre><code>[extensions]
+absorb =
+</code></pre>
+<p><code>hg absorb</code> is currently an experimental feature. That means there is
+no commitment to backwards compatibility and some rough edges are
+expected. I also anticipate new features (such as <code>hg absorb --interactive</code>)
+will be added before the experimental label is removed. If you encounter
+problems or want to leave comments, <a href="https://bz.mercurial-scm.org/enter_bug.cgi?product=Mercurial">file a bug</a>,
+make noise in <code>#mercurial</code> on Freenode, or
+<a href="https://www.mercurial-scm.org/wiki/ContributingChanges">submit a patch</a>.
+But don't let the <em>experimental</em> label scare you away from using it:
+<code>hg absorb</code> is being used by some large install bases and also by many
+of the Mercurial core developers. The <em>experimental</em> label is mainly there
+because it is a brand new feature in core Mercurial and the <em>experimental</em>
+label is usually affixed to new features.</p>
+<p>If you practice workflows that frequently require amending old commits, I
+think you'll be shocked at how much easier <code>hg absorb</code> makes these workflows.
+I think you'll find it to be a game changer: once you use <code>hg abosrb</code>, you'll
+soon wonder how you managed to get work done without it.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/11/05/absorbing-commit-changes-in-mercurial-4.8#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="global-kernel-locks-in-apfs"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/10/29/global-kernel-locks-in-apfs" rel="bookmark" title="Permanent Link to Global Kernel Locks in APFS">Global Kernel Locks in APFS</a></h2>
   <small>October 29, 2018 at 02:20 PM | categories: 
@@ -666,220 +1013,6 @@ as a cohesive product.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/05/16/scaling-firefox-development-workflows#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="revisiting-using-docker"></a>
-  <h2 class="blog_post_title"><a href="/blog/2018/05/16/revisiting-using-docker" rel="bookmark" title="Permanent Link to Revisiting Using Docker">Revisiting Using Docker</a></h2>
-  <small>May 16, 2018 at 01:45 PM | categories: 
-
-<a href='/blog/category/docker'>Docker</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>When Docker was taking off like wildfire in 2013, I was caught up in the
-excitement like everyone else. I remember knowing of the existence
-of LXC and container technologies in Linux at the time. But Docker seemed to
-be the first open source tool to actually make that technology usable (a
-terrific example of how user experience matters).</p>
-<p>At Mozilla, Docker was adopted all around me and by me for various utilities.
-<a href="https://docs.taskcluster.net/">Taskcluster</a> - Mozilla's task execution
-framework geared for running complex CI systems - adopted Docker as a
-mechanism to run processes in self-contained images. Various groups in
-Mozilla adopted Docker for running services in production. I adopted Docker
-for
-<a href="/blog/2015/01/24/end-to-end-testing-with-docker/">integration testing of complex systems</a>.</p>
-<p>Having seen various groups use Docker and having spent a lot of time in the
-trenches battling technical problems, my conclusion is <strong>Docker is unsuitable
-as a general purpose container runtime. Instead, Docker has its niche
-for hosting complex network services.</strong> Other uses of Docker should be highly
-scrutinized and potentially discouraged.</p>
-<p>When Docker hit first the market, it was arguably the only game in town.
-Using Docker to achieve containerization was defensible because there weren't
-exactly many (any?) practical alternatives. So if you wanted to use containers,
-you used Docker.</p>
-<p>Fast forward a few years. We now have the
-<a href="https://www.opencontainers.org/">Open Container Initiative</a> (OCI). There are
-specifications describing common container formats. So you can produce a
-container once and take it to any number OCI compatible <em>container runtimes</em>
-for execution. And in 2018, there are a <em>ton</em> of players in this space.
-<a href="https://github.com/opencontainers/runc">runc</a>,
-<a href="https://github.com/rkt/rkt">rkt</a>, and
-<a href="https://github.com/google/gvisor">gVisor</a> are just some. So Docker is no
-longer the only viable tool for executing a container. If you are just
-getting started with the container space, you would be wise to research the
-available options and their pros and cons.</p>
-<p>When you look at all the options for running containers in 2018, I think it
-is obvious that Docker - usable though it may be - is not ideal for a
-significant number of container use cases. If you divide use cases into a spectrum
-where one end is <em>run a process in a sandbox</em> and the other is <em>run a complex system
-of orchestrated services in production</em>, Docker appears to be focusing on the
-latter. Take it from <a href="https://www.docker.com/what-docker">Docker themselves</a>:</p>
-<p><em>Docker is the company driving the container movement and the only container
-platform provider to address every application across the hybrid cloud. Today's
-businesses are under pressure to digitally transform but are constrained by
-existing applications and infrastructure while rationalizing an increasingly
-diverse portfolio of clouds, datacenters and application architectures. Docker
-enables true independence between applications and infrastructure and developers
-and IT ops to unlock their potential and creates a model for better
-collaboration and innovation.</em></p>
-<p>That description of Docker (the company) does a pretty good job of
-describing what Docker (the technology) has become: a constellation
-of software components providing the underbelly for managing complex
-applications in complex infrastructures. That's pretty far detached on the
-spectrum from <em>run a process in a sandbox</em>.</p>
-<p>Just because Docker (the company) is focused on a complex space doesn't mean
-they are incapable of exceeding at solving simple problems. However, I believe
-that in this particular case, the complexity of what Docker (the company) is
-focusing on has inhibited its Docker products to adequately address simple
-problems.</p>
-<p>Let's dive into some technical specifics.</p>
-<p>At its most primitive, Docker is a glorified tool to run a process in a
-sandbox. On Linux, this is accomplished by using
-the <a href="http://man7.org/linux/man-pages/man2/clone.2.html">clone(2)</a> function
-with specific flags and combined with various other techniques (filesystem
-remounting, capabilities, cgroups, chroot, seccomp, etc) to <em>sandbox</em> the
-process from the main operating system environment and kernel. There are a host
-of tools living at this not-quite-containers level that make it easy to run
-a sandboxed process. The
-<a href="https://github.com/projectatomic/bubblewrap">bubblewrap</a> tool is one of them.</p>
-<p>Strictly speaking, you don't need anything fancy to create a process
-sandbox: just an executable you want to invoke and an executable that makes
-a set of system calls (like bubblewrap) to run that executable.</p>
-<p>When you install Docker on a machine, it starts a daemon running as root.
-That daemon listens for HTTP requests on a network port and/or UNIX socket.
-When you run <code>docker run</code> from the command line, that command establishes
-a connection to the Docker daemon and sends any number of HTTP requests to
-instruct the daemon to take actions.</p>
-<p>A daemon with a remote control protocol is useful. But it shouldn't be the
-only way to spawn containers with Docker. If all I want to do is spawn a temporary
-container that is destroyed afterwards, I should be able to do that from
-a local command without touching a network service. Something like bubblewrap.
-The daemon adds all kinds of complexity and overhead. Especially if I just want
-to run a simple, short-lived command.</p>
-<p>Docker at this point is already pretty far detached from a tool like bubblewrap.
-And the disparity gets worse.</p>
-<p>Docker adds another abstraction on top of basic process sandboxing in the form
-of storage / filesystem management. Docker insists that processes execute in
-self-contained, chroot()'d filesystem environment and that these environments
-(Docker images) be managed by Docker itself. When Docker images are <em>imported</em>
-into Docker, Docker manages them using one of a handful of
-<a href="https://docs.docker.com/storage/storagedriver/">storage drivers</a>. You can choose
-from devicemapper, overlayfs, zfs, btrfs, and aufs and employ various
-configurations of all these. Docker images are composed of <em>layers</em>, with one
-layer stacked on top of the prior. This allows you to have an immutable base
-layer (that can be shared across containers) where run-time file changes can be
-isolated to a specific container instance.</p>
-<p>Docker's ability to manage storage is pretty cool. And I dare say Docker's killer
-feature in the very beginning of Docker was the ability to easily produce and
-exchange self-contained Docker <em>images</em> across machines.</p>
-<p>But this utility comes at a <em>very</em> steep price. Again, if our use case is
-<em>run a process in a sandbox</em>, do we really care about all this advanced
-storage functionality? Yes, if you are running hundreds of containers on
-a single system, a storage model built on top of copy-on-write is perhaps
-necessary for scaling. But for simple cases where you just want to run a single
-or small number of processes, it is extremely overkill and adds many more
-problems than it solves.</p>
-<p>I cannot stress this enough, but <strong>I have spent hours debugging and working
-around problems due to how filesystems/storage works in Docker</strong>.</p>
-<p>When Docker was initially released, aufs was widely used. As I
-<a href="/blog/2017/12/08/good-riddance-to-aufs/">previously wrote</a>, aufs has abysmal
-performance as you scale up the number of concurrent I/O operations. We shaved
-<strong>minutes</strong> off tasks in Firefox CI by ditching aufs for overlayfs.</p>
-<p>But overlayfs is far from a panacea. File metadata-only updates are
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/63f19cfacc5c">apparently very slow in overlayfs</a>.
-We're talking ~100ms to call <code>fchownat()</code> or <code>utimensat()</code>. If you perform
-an <code>rsync -a</code> or <code>chown -R</code> on a directory with only just a hundred files that
-were defined in a base image layer, you can have delays of seconds.</p>
-<p>The Docker storage drivers backed by <em>real</em> filesystems like zfs and btrfs are
-a bit better. But they have their quirks too. For example, creating layers in
-images is comparatively very slow compared to overlayfs (which are practically
-instantaneous). This matters when you are iterating on a Dockerfile for example
-and want to quickly test changes. Your edit-compile cycle grows frustratingly
-long very quickly.</p>
-<p>And I could opine on a handful of other problems I've encountered over the years.</p>
-<p>Having spent hours of my life debugging and working around issues with
-Docker's storage, my current attitude is <em>enough of this complexity, just let me
-use a directory backed by the local filesystem, dammit</em>.</p>
-<p>For many use cases, <strong>you don't need the storage complexity that Docker forces
-upon you</strong>. Pointing Docker at a directory on a local filesystem to chroot into
-is <em>good enough</em>. I know the behavior and performance properties of common Linux
-filesystems. ext4 isn't going to start making <code>fchownat()</code> or <code>utimensat()</code> calls
-take ~100ms. It isn't going to complain when a hard link spans multiple layers in
-an image. Or slow down to a crawl when multiple threads are performing concurrent
-read I/O. There's not going to be intrinsically complicated algorithms and
-caching to walk N image layers to find the most recent version of a file (or if
-there is, it will be so far down the stack in kernel land that I likely won't
-ever have to deal with it as a normal user). Docker images with their multiple
-layers add complexity and overhead. For many use uses, the pain it inflicts
-offsets the initial convenience it saves.</p>
-<p>Docker's optimized-for-complex-use-cases architecture demonstrates its
-inefficiency in simple benchmarks.</p>
-<p>On my machine, <code>docker run -i --rm debian:stretch /bin/ls /</code> takes ~850ms.
-Almost a second to perform a directory listing (sometimes it does take over
-1 second - I was being generous and quoting a quicker time). This command
-takes ~1ms when run in a local shell. So we're at 2.5-3 magnitudes of overhead.
-The time here does include time to initially create the container and
-destroy it afterwards. We can isolate that overhead by starting a persistent
-container and running <code>docker exec -i &lt;cid&gt; /bin/ls /</code> to spawn a new process
-in an existing container. This takes ~85ms. So, ~2 magnitudes of overhead to
-spawn a process in a Docker container versus spawning it <em>natively</em>. What's
-adding so much overhead, I'm not sure. Yes, there are HTTP requests under
-the hood. But HTTP to a local daemon shouldn't be that slow. I'm not sure
-what's going on.</p>
-<p>If we <code>docker export</code> that image to the local filesystem and use <code>runc state</code>
-to configure so we can run it with <code>runc</code>, <code>runc run</code> takes ~85ms to run
-<code>/bin/ls /</code>. If we <code>runc exec &lt;cid&gt; /bin/ls /</code> to start a process in an
-existing container, that completes in ~10ms. <code>runc</code> appears to be executing
-these simple tasks ~10x faster than Docker.</p>
-<p>But to even get to that point, we had to make a filesystem available to
-spawn the container in. With Docker, you need to load an image into Docker.
-Using <code>docker save</code> to produce a 105,523,712 tar file,
-<code>docker load -i image.tar</code> takes ~1200ms to complete. <code>tar xf image.tar</code>
-takes ~65ms to extract that image to the local filesystem. Granted, Docker
-is computing the SHA-256 of the image as part of import. But SHA-256 runs
-at ~250MB/s on my machine and on that ~105MB input takes ~400ms. Where is
-that extra ~750ms of overhead in Docker coming from?</p>
-<p>The Docker image loading overhead is still present on large images. With
-a 4,336,605,184 image, <code>docker load</code> was taking ~32s and <code>tar x</code> was
-taking ~2s. Obviously the filesystem was buffering writes in the <code>tar</code>
-case. And the ~2s is ignoring the ~17s to obtain the SHA-256 of the
-entire input. But there's still a substantial disparity here. (I suspect
-a lot of it is overlayfs not being as optimal as ext4.)</p>
-<p>Several years ago there weren't many good choices for tools to execute containers.
-But today, there are good tools readily available. And thanks to OCI standards,
-you can often swap in alternate container runtimes. Docker (the tool) has an
-architecture that is optimized for solving complex use cases (coincidentally use
-cases that Docker the company makes money from). Because of this, my conclusion -
-drawn from using Docker for several years - is that Docker is unsuitable for
-many common use cases. <strong>If you care about low container startup/teardown
-overhead, low latency when interacting with containers (including spawning
-processes from outside of them), and for workloads where Docker's storage model
-interferes with understanding or performance, I think Docker should be avoided.</strong>
-A simpler tool (such as <code>runc</code> or even <code>bubblewrap</code>) should be used instead.</p>
-<p>Call me a curmudgeon, but having seen all the problems that Docker's complexity
-causes, I'd rather see my containers resemble a tarball that can easily be
-chroot()'d into. <strong>I will likely be revisiting projects that use Docker and
-replacing Docker with something lighter weight and architecturally simpler.</strong> As
-for the use of Docker in the more complex environments it seems to be designed
-for, I don't have a meaningful opinion as I've never really used it in that
-capacity. But given my negative experiences with Docker over the years, I am
-definitely biased against Docker and will lean towards simpler products, especially
-if their storage/filesystem management model is simpler. Docker introduced
-containers to the masses and they should be commended for that. But for my
-day-to-day use cases for containers, Docker is simply not the right tool for
-the job.</p>
-<p>I'm not sure exactly what I'll replace Docker with for my simpler use cases.
-If you have experiences you'd like to share, sharing them in the comments
-will be greatly appreciated.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/page/2">Next Page »</a>
 
