@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed
+  xmlns="http://www.w3.org/2005/Atom"
+  xmlns:thr="http://purl.org/syndication/thread/1.0"
+  xml:lang="en"
+   >
+  <title type="text">Gregory Szorc's Digital Home</title>
+  <subtitle type="text">Rambling on</subtitle>
+
+  <updated>2018-12-18T23:37:21Z</updated>
+  <generator uri="http://blogofile.com/">Blogofile</generator>
+
+  <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
+  <id>http://gregoryszorc.com/blog/feed/atom/</id>
+  <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Distributing Standalone Python Applications]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2018/12/18/distributing-standalone-python-applications" />
+    <id>http://gregoryszorc.com/blog/2018/12/18/distributing-standalone-python-applications</id>
+    <updated>2018-12-18T15:35:00Z</updated>
+    <published>2018-12-18T15:35:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Python" />
+    <category scheme="http://gregoryszorc.com/blog" term="Rust" />
+    <summary type="html"><![CDATA[Distributing Standalone Python Applications]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2018/12/18/distributing-standalone-python-applications"><![CDATA[<h2>The Problem</h2>
+<p>Packaging and application distribution is a hard problem on multiple
+dimensions. For Python, large aspects of this problem space are more or
+less solved if you are distributing open source Python libraries and your
+target audience is developers (<em>use pip and PyPI</em>). But if you are distributing
+Python <em>applications</em> - standalone executables that use Python - your
+world can be much more complicated.</p>
+<p>One of the primary reasons why distributing Python applications is difficult
+is because of the complex and often sensitive relationship between a Python
+application and the environment it runs in.</p>
+<p>For starters we have the Python interpreter itself. If your application doesn't
+distribute the Python interpreter, you are at the whims of the Python
+interpreter provided by the host machine. You may want to target Python 3.7
+only. But because Python 3.5 or 3.6 is the most recent version installed by
+many Linux distros, you are forced to support older Python versions and all
+their quirks and lack of features.</p>
+<p>Going down the rabbit hole, even the presence of a supposedly compatible
+version of the Python interpreter isn't a guarantee for success! For example,
+the Python interpreter could have a built-in extension that links against
+an old version of a library. Just last week I was encountering weird SQlite
+bugs in Firefox's automation because Python was using an old version of
+SQLite with known bugs. Installing a modern SQLite fixed the problems. Or
+the interpreter could have modifications or extra installed packages
+interfering with the operation of your application. There are never-ending
+corner cases. And I can tell you from my experience with having to support
+the Firefox build system (which uses Python heavily) that you will encounter
+these corner cases given a broad enough user base.</p>
+<p>And even if the Python interpreter on the target machine is fully compatible,
+getting your code to run on that interpreter could be difficult! Several
+Python applications leverage compiled extensions linking against Python's
+C API. Distributing the precompiled form of the extension can be challenging,
+especially when your code needs to link against 3rd party libraries, which
+may conflict with something on the target system. And, the precompiled
+extensions need to be built in a very delicate manner to ensure they can
+run on as many target machines as possible. But not distributing pre-built
+binaries requires the end-user be able to compile Python extensions. Not
+every user has such an environment and forcing this requirement on them is
+not user friendly.</p>
+<p><strong>From an application developer's point of view, distributing a copy of the
+Python interpreter along with your application is the only reliable way of
+guaranteeing a more uniform end-user experience.</strong> Yes, you will still
+have variability because every machine is different. But you've eliminated
+the the Python interpreter from the set of unknowns and that is a huge win.
+(Unfortunately, distributing a Python interpreter comes with a host of other
+problems such as size bloat, security/patching concerns, poking the OS
+packaging bears, etc. But those problems are for another post.)</p>
+<h2>Existing Solutions</h2>
+<p>There are tons of existing tools for <em>solving</em> the Python application
+distribution problem.</p>
+<p>The approach that tools like <a href="https://shiv.readthedocs.io/en/latest/">Shiv</a>
+and <a href="https://github.com/pantsbuild/pex">PEX</a> take is to leverage Python's
+built-in support for <em>running</em> zip files. Essentially, if there is a zip
+file containing a <code>__main__.py</code> file and you execute <code>python file.zip</code>
+(or have a zip file with a <code>#!/usr/bin/env python</code> shebang), Python
+can load modules in that zip file and execute an application within. Pretty
+cool!</p>
+<p>This approach works great if your execution environment supports shebangs
+(Windows doesn't) and the Python interpreter is suitable. But if you need
+to support Windows or don't have control over the execution environment
+and can't guarantee the Python interpreter is <em>good</em>, this approach isn't
+suitable.</p>
+<p>As stated above, we want to distribute the Python interpreter with our
+application to minimize variability. Let's talk about tools that do that.</p>
+<p><a href="https://github.com/facebookincubator/xar/">XAR</a> is a pretty cool offering
+from Facebook. XAR files are executables that contain
+<a href="https://en.wikipedia.org/wiki/SquashFS">SquashFS</a> filesystems. Upon running
+the executable, SquashFS filesystems are created. For Python applications,
+the XAR contains a copy of the Python interpreter and all your Python modules.
+At run-time, these files are <em>extracted</em> to SquashFS filesystems and the
+Python interpreter is executed. If you squint hard enough, it is kind of
+like a pre-packaged, executable virtualenv which also contains the Python
+interpreter.</p>
+<p>XARs are pretty cool (and aren't limited to Python). However, because XARs
+rely on SquashFS, they have a run-time requirement on the target machine.
+This is great if you only need to support Linux and macOS and your target
+machines support FUSE and SquashFS. But if you need to support Windows or
+a general user population without SquashFS support, XARs won't help you.</p>
+<p>Zip files and XARs are great for enterprises that have tightly controlled
+environments. But for a general end-user population, we need something
+more robust against variance among target machines.</p>
+<p>There are a handful of tools for packaging Python applications along with
+the Python interpreter in more resilient manners.</p>
+<p><a href="http://nuitka.net/pages/overview.html">Nuitka</a> <em>converts</em> Python source
+to C code then compiles and links that C code against libpython. You can
+perform a static link and compile everything down to a single executable.
+If you do the compiling properly, that executable should <em>just work</em> on
+pretty much every target machine. That's pretty cool and is exactly the
+kind of solution application distributors are looking for: you can't get
+much simpler than a self-contained executable! While I'd love to vouch
+for Nuitka and recommend using it, I haven't used it so can't. And I'll
+be honest, the prospect of compiling Python source to C code kind of
+terrifies me. That effectively makes Nuitka a new Python implementation
+and I'm not sure I can (yet) place the level of trust in Nuitka that I
+have for e.g. CPython and PyPy.</p>
+<p>And that leads us to our final category of tools:
+<a href="https://docs.python-guide.org/shipping/freezing/">freezing your code</a>. There
+are a handful of tools like <a href="https://www.pyinstaller.org/">PyInstaller</a>
+which automate the process of building your Python application (often via
+standard <code>setup.py</code> mechanisms), assembling all the requisite bits of
+the Python interpreter, and producing an artifact that can be distributed
+to end users. There are even tools that produce Windows installers, RPMs,
+DEBs, etc that you can sign and distribute.</p>
+<p>These <em>freezing</em> tools are arguably the state of the art for Python
+application distribution to general user populations. On first glance
+it seems like all the needed tools are available here. But there are
+cracks below the surface.</p>
+<h2>Issues with Freezing</h2>
+<p>A common problem with freezing is it often relies on the Python interpreter
+used to build the frozen application. For example, when building a frozen
+application on Linux, it will bundle the system's Python interpreter with
+the frozen application. And that interpreter may link against libraries
+or libc symbol versions not available on all target machines. So, the
+build environment has to be <em>just right</em> in order for the binaries to
+run on as many target systems as possible. This isn't an insurmountable
+problem. But it adds overhead and complexity to application maintainers.</p>
+<p>Another limitation is how these frozen applications handle importing
+Python modules.</p>
+<p>Multiple tools take the approach of embedding an archive (usually a zip file)
+in the executable containing the Python <em>standard library</em> bits not part of
+libpython. This includes C extensions (compiled to <code>.so</code> or <code>.pyd</code> files)
+and Python source (<code>.py</code>) or bytecode (<code>.pyc</code>) files. There is typically
+a step - either at application start time or at module import time - where a
+file is extracted to the filesystem such that Python's filesystem-based
+importer can load it from there.</p>
+<p>For example, PyInstaller <a href="https://pyinstaller.readthedocs.io/en/stable/operating-mode.html#how-the-one-file-program-works">extracts the standard library to a temporary directory
+at application start time</a>
+(at least when running in single file mode). This can add significant overhead
+to the startup time of applications - more than enough to blow through people's
+ability to perceive something as <em>instantaneous</em>. This is acceptable for
+long-running applications. But for applications (like CLI tools or support
+tools for build systems), the overhead can be a non-starter. And, the mere
+fact that you are doing filesystem write I/O establishes a requirement that
+the application have write access to the filesystem and that write I/O can
+perform reasonably well lest application performance suffer. These can be
+difficult pills to swallow!</p>
+<p>Another limitation is that these tools often assume the executable being
+produced is only a Python application. Sometimes Python is <em>part of</em> a
+larger application. It would be useful to produce a library that can
+easily be embedded within a larger application.</p>
+<h2>Improving the State of the Art</h2>
+<p>Existing Python application distribution mechanisms don't tick all the
+requirements boxes for me. We have tools that are suitable for internal
+distribution in well-defined <em>enterprise</em> environments. And we have tools
+that target general user populations, albeit with a burden on application
+maintainers and often come with a performance hit and/or limited flexibility.</p>
+<p>I want something that allows me to produce a standalone, single file executable
+containing a Python interpreter, the Python standard library (or a subset of
+it), and all the custom code and resources my application needs. That
+executable should not require any additional library dependencies beyond what is
+already available on most target machines (e.g. libc). That executable should
+not require any special filesystem providers (e.g. FUSE/SquashFS) nor should
+it require filesystem write access nor perform filesystem write I/O at run-time.
+I should be able to embed a Python interpreter within a larger application,
+without the overhead of starting the Python interpreter if it isn't needed.</p>
+<p>No existing solution ticks all of these boxes.</p>
+<p>So I set out to build one.</p>
+<p>One problem is producing a Python interpreter that is portable and
+fully-featured. You can't punt on this problem because if the core Python
+interpreter isn't produced in just the right way, your application will
+depend on libraries or symbol versions not available in all environments.</p>
+<p>I've created the <a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
+project for automating the process of building Python interpreters suitable
+for use with standalone, distributable Python applications. The project
+produces (and has available for download) binary artifacts including a
+pre-compiled Python interpreter and object files used for compiling that
+interpreter. The Python interpreter is compiled with PGO/LTO using a modern
+Clang, helping to ensure that Python code runs as fast as it can. All of
+Python's dependencies are compiled from source with the modern toolchain and
+everything is aggressively statically linked to avoid external dependencies.
+The toolchain and pre-built distribution are available for downstream
+consumers to compile Python extensions with/against.</p>
+<p>It's worth noting that use of a modern Clang toolchain is likely sufficiently
+different from what you use today. When producing <em>manylinux</em> wheels, it is
+recommended to use the <a href="https://github.com/pypa/manylinux">pypa/manylinux</a>
+Docker images. These Docker images are based on CentOS 5 (for maximum libc
+and other system library compatibility). While they do install a custom
+toolchain, Python and any extensions compiled in that environment are compiled
+with GCC 4.8.2 (as of this writing). That's a GCC from 2013. A lot has
+changed in compilers since 2013 and building Python and extensions with a
+compiler released in 2018 should result in various benefits (faster code,
+better warnings, etc).</p>
+<p>If producing custom CPython builds for standalone distribution interests
+you, you should take a look at how I coerced CPython to statically link
+all extensions. Spoiler: it involves producing a custom-tailored
+<code>Modules/Setup.local</code> file that bypasses <code>setup.py</code>, along with some
+<code>Makefile</code> hacks. Because the build environment is deterministic and isolated
+in a container, we can get away with some ugly hacks.</p>
+<p>A statically linked <code>libpython</code> from which you can produce a standalone
+binary embedding Python is only the first layer in the onion. The next layer
+is how to handle the Python standard library.</p>
+<p><code>libpython</code> only contains the code needed to run the core bits of the Python
+interpreter. If we attempt to run a statically linked <code>python</code> executable
+without the standard library in the filesystem, things fail pretty fast::</p>
+<p>$ rm -rf lib
+   $ bin/python
+   Could not find platform independent libraries <prefix>
+   Could not find platform dependent libraries <exec_prefix>
+   Consider setting $PYTHONHOME to <prefix>[:<exec_prefix>]
+   Fatal Python error: initfsencoding: Unable to get the locale encoding
+   ModuleNotFoundError: No module named 'encodings'</p>
+<p>Current thread 0x00007fe9a3432740 (most recent call first):
+   Aborted (core dumped)</p>
+<p>I'll spare you the details for the moment, but initializing the CPython
+interpreter (via <code>Py_Initialize()</code> <em>requires</em> that parts of the Python
+standard library be available). This means that in order to fulfill our dream
+of a single file executable, we will need custom code that teaches the
+embedded Python interpreter to load the standard library from within the
+binary... somehow.</p>
+<p>As far as I know, efficient embedded standard library handling without run-time
+requirements does not exist in the current Python packaging/distribution
+ecosystem. So, I had to devise something new.</p>
+<p>Enter <a href="https://github.com/indygreg/pyoxidizer">PyOxidizer</a>. PyOxidizer is
+a collection of Rust crates that facilitate building an embeddable Python
+library, which can easily be added to an executable. We need <em>native</em> code
+to interface with the Python C APIs in order to influence Python interpreter
+startup. It is 2018 and Rust is a better C/C++, so I chose Rust for this
+<em>driver</em> functionality instead of C. Plus, Rust's integrated build system
+makes it easier to automate the integration of the custom Python interpreter
+files into binaries.</p>
+<p>The role of PyOxidizer is to take the pre-built Python interpreter files from
+<a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>,
+combine those files with any other Python files needed to run an application,
+and marry them to a Rust crate. This Rust crate can trivially be turned into
+a self-contained executable containing a Python application. Or, it can be
+combined with another Rust project. Or it can be emitted as a library and
+integrated with a non-Rust application. There's a lot of flexibility by design.</p>
+<p>The mechanism I used for embedding the Python standard library into a single
+file executable without incurring explicit filesystem access at run-time is
+(I believe) new, novel, and somewhat crazy. Let me explain how it works.</p>
+<p>First, there are no <code>.so</code>/<code>.pyd</code> shared library compiled Python extensions
+to worry about. This is because all compiled extensions are statically linked
+into the Python interpreter. To the interpreter, they exist as
+<a href="https://docs.python.org/3.7/library/importlib.html#importlib.machinery.BuiltinImporter">built-in modules</a>.
+Typically, a CPython build will have some modules like <code>_abc</code>, <code>_io</code>, and
+<code>sys</code> provided by <em>built-in modules</em>. Modules like <code>_json</code> exist as standalone
+shared libraries that are loaded on demand. <code>python-build-standalone</code>'s
+modifications to CPython's build system converts all these would-be standalone
+shared libraries into <em>built-in modules</em>. (Because we distribute the object
+files that compose the eventual <code>libpython</code>, it is possible to filter out
+unwanted modules to cut down on binary size if you don't want to ship a
+fully-featured Python interpreter.) Because there are no standalone shared
+libraries providing Python modules, we don't have the problem of needing to
+load a shared library to load a module, which would undermine our goal of
+<em>no filesystem access to import modules</em>. And that's a good thing, too,
+because <code>dlopen()</code> requires a path: you can't load a shared library from
+a memory address. (Fun fact: there are hacks like
+<a href="https://sourceware.org/bugzilla/show_bug.cgi?id=11767">dlopen_with_offset()</a>
+that provide an API to load a library from memory, but they require a custom
+libc. Google uses this approach for their internal single-file Python
+application solution.)</p>
+<p>From the <code>python-build-standalone</code> artifacts, PyOxidizer collects all files
+belonging to the Python standard library (notably <code>.py</code> and <code>.pyc</code> files).
+It also collects other source, bytecode, and resource files needed to run
+a custom application.</p>
+<p>The relevant files are assembled and serialized into data structures which
+contain the names of the resources and their raw content. These data structures
+are made available to Rust as <code>&amp;'static [u8]</code> variables (essentially a
+<code>static void*</code> if you don't speak Rust).</p>
+<p>Using the <a href="https://github.com/dgrunwald/rust-cpython">rust-cpython</a> crate,
+PyOxidizer defines a custom Python extension module implemented purely in Rust.
+When loaded, the module parses the data structures containing available
+Python resource names and data into <code>HashMap&lt;&amp;str, &amp;[u8]&gt;</code> instances. In other
+words, it builds a native mapping from resource name to a pointer to its raw
+data. The Rust-implemented module exports to Python an API for accessing that
+data. From the Python side, you do the equivalent of <code>MODULES.get_code('foo')</code>
+to request the bytecode for a named Python module. When called, the Rust code
+will perform the lookup and return a <code>memoryview</code> instance pointing to the
+raw data. (The use of <code>&amp;[u8]</code> and <code>memoryview</code> means that embedded resource
+data is loaded from its static, read-only memory location instead of copied
+into a data structure managed by Python. This zero copy approach translates to
+less overhead for importing modules. Although, the memory needs to be paged
+in by the operating system. So on slow filesystems, reducing I/O and e.g.
+compressing module data might be a worthwhile optimization. This can be a
+future feature.) </p>
+<p>Making data embedded within a binary available to a Python module is relatively
+easy. I'm definitely not the first person to come up with this idea. What is
+hard - and what I <em>might</em> be the first person to actually do - is how you make
+the Python module importing mechanism load <em>all</em> standard library modules via
+such a mechanism.</p>
+<p>With a custom extension module built-in to the binary exposing module data,
+it should <em>just</em> be a matter of registering a custom
+<a href="https://docs.python.org/3.7/library/sys.html#sys.meta_path">sys.meta_path</a>
+importer that knows how to load modules from that custom location. This
+problem turns out to be quite hard!</p>
+<p>The initialization of a CPython interpreter is - as I've learned - a bit
+complex. A CPython interpreter must be initialized via <code>Py_Initialize()</code>
+before any Python code can run. That means in order to modify <code>sys.meta_path</code>,
+<code>Py_Initialize()</code> must finish.</p>
+<p>A lot of activity occurs under the hood during initialization. Applications
+embedding Python have very little control over what happens during
+<code>Py_Initialize()</code>. You can change some superficial things like what
+filesystem paths to use to bootstrap <code>sys.path</code> and what encodings to use
+for stdio descriptors. But you can't really influence the core actions that are
+being performed. And there's no mechanism to directly influence
+<code>sys.meta_path</code> before an <code>import</code> is performed. (Perhaps there should be?)</p>
+<p>During <code>Py_Initialize()</code>, the interpreter needs to configure the encodings
+for the filesystem and the stdio descriptors. Encodings are loaded from
+Python modules provided by the standard library. So, during the course of
+<code>Py_Initialize()</code>, the interpreter needs to import some modules originally
+backed by <code>.py</code> files. This creates a dilemma: if <code>Py_Initialize()</code>
+needs to <code>import</code> modules in the standard library, the standard library
+is backed by memory and isn't available to known importing mechanisms, and
+there's no opportunity to configure a custom <code>sys.meta_path</code> importer
+before <code>Py_Initialize()</code> runs, how do you teach the interpreter about
+your custom module importer and the location of the standard library modules
+needed by <code>Py_Initialize()</code>?</p>
+<p>This is an extremely gnarly problem and it took me some hours and many false
+leads to come up with a solution.</p>
+<p>My first attempt involved the esoteric
+<a href="https://docs.python.org/3/c-api/import.html#c.PyImport_FrozenModules">frozen modules</a>
+feature. (This work predated the use of a custom data structure and module
+containing modules data.) The Python interpreter has a
+<code>const struct _frozen* PyImport_FrozenModules</code> data structure defining an
+array of <em>frozen</em> modules. A <em>frozen</em> module is defined by its module
+name and precompiled bytecode data (roughly equivalent to <code>.pyc</code> file
+content). Partway through <code>Py_Initialize()</code>, the Python interpreter is able
+to import modules. And one of the built-in importers that is automatically
+registered knows how to load modules if they are in <code>PyImport_FrozenModules</code>!</p>
+<p>I attempted to audit Python interpreter startup and find all modules
+that were imported during <code>Py_Initialize()</code>. I then defined a custom
+<code>PyImport_FrozenModules</code> containing these modules. In theory, the import
+of these modules during <code>Py_Initialize()</code> would be handled by the
+<a href="https://docs.python.org/3.7/library/importlib.html#importlib.machinery.FrozenImporter">FrozenImporter</a>
+and everything would <em>just work</em>: if I were able to get <code>Py_Initialize()</code> to
+complete, I'd be able to register a custom <code>sys.meta_path</code> importer
+immediately afterwards and we'd be set.</p>
+<p>Things did not go as planned.</p>
+<p><code>FrozenImporter</code> doesn't fully conform to the
+<a href="https://www.python.org/dev/peps/pep-0451/">PEP 451</a> requirements for
+setting specific attributes on modules. Without these attributes, the
+<code>from . import aliases</code> statement in <code>encodings/__init__.py</code> fails
+because the importer is unable to resolve the relative module name. Derp.
+One would think CPython's built-in importers would comply with PEP 451
+and that all of Python's standard library could be imported as frozen modules.
+But this is not the case! I was able to hack around this particular failure
+by using an absolute import. But I hit another failure and did not want to
+excavate that rabbit hole. Once I realized that <code>FrozenImporter</code> was lacking
+mandated module attributes, I concluded that attempting to use <em>frozen modules</em>
+as a general import-from-memory mechanism was not viable. Furthermore, the
+C code backing <code>FrozenImporter</code> walks the <code>PyImport_FrozenModules</code> array and
+does a string compare on the module name to find matches. While I didn't
+benchmark, I was concerned that un-indexed scanning at import time would
+add considerable overhead when hundreds of modules were in play. (The C code
+backing <code>BuiltinImporter</code> uses the same approach and I do worry CPython's
+imports of built-in extension modules is causing measurable overhead.)</p>
+<p>With <em>frozen modules</em> off the table, I needed to find another way to inject
+a custom module importer that was usable during <code>Py_Initialize()</code>. Because
+we control the source Python interpreter, modifications to the source code
+or even link-time modifications or run-time hacks like trampolines weren't
+off the table. But I <strong>really</strong> wanted things to work out of the box because
+I don't want to be in the business of maintaining patches to Python
+interpreters.</p>
+<p>My foray into <em>frozen modules</em> enlightened me to the craziness that is
+the bootstrapping of Python's importing mechanism.</p>
+<p>I remember hearing that the Python module importing mechanism used to be
+written in C and was rewritten in Python. And I knew that the
+<a href="https://docs.python.org/3.7/library/importlib.html">importlib</a> package
+defined interfaces allowing you to implement your own importers, which
+could be registered on
+<a href="https://docs.python.org/3.7/library/sys.html#sys.meta_path">sys.meta_path</a>.
+But I didn't know how all of this worked at the interpreter level.</p>
+<p>The internal <a href="https://github.com/python/cpython/blob/08c2ba0717089662132af69bf5948d82277a8a69/Python/pylifecycle.c#L178">initimport()</a>
+C function is responsible for initializing the module importing mechanism. It
+does the equivalent of <code>import _frozen_importlib</code>, but using the
+<a href="https://docs.python.org/3/c-api/import.html#c.PyImport_ImportFrozenModuleObject">PyImport_ImportFrozenModule()</a>
+API. It then manipulates some symbols and calls <code>_frozen_importlib.install()</code>
+with references to the <code>sys</code> and <code>imp</code> built-in modules. Later (in
+<code>initexternalimport()</code>), a <code>_frozen_importlib_external</code> module is imported
+and has code within it executed.</p>
+<p>I was initially very confused by this because - while there are references
+to <code>_frozen_importlib</code> and <code>_frozen_importlib_external</code> all over the
+CPython code base, I couldn't figure out where the code for those modules
+actually lived! Some sleuthing of the build directory eventually revealed
+that the files <a href="https://github.com/python/cpython/blob/08c2ba0717089662132af69bf5948d82277a8a69/Lib/importlib/_bootstrap.py">Lib/importlib/_bootstrap.py</a>
+and <a href="https://github.com/python/cpython/blob/08c2ba0717089662132af69bf5948d82277a8a69/Lib/importlib/_bootstrap_external.py">Lib/importlib/_bootstrap_external.py</a>
+were <em>frozen</em> to the module names <code>_frozen_importlib</code> and
+<code>_frozen_importlib_external</code>, respectively.</p>
+<p>Essentially what is happening is the bulk of Python's import <em>machinery</em> is
+implemented in Python (rather than C). But there's a chicken-and-egg
+problem where you can't run just any Python code (including any <code>import</code>
+statement) until the interpreter is partially or fully initialized.</p>
+<p>When building CPython, the Python source code for <code>importlib._bootstrap</code>
+and <code>importlib._bootstrap_external</code> are compiled to bytecode. This
+bytecode is emitted to <code>.h</code> files, where it is exposed as a
+<code>static char *</code>. This bytecode is eventually referenced by the
+default <code>PyImport_FrozenModules</code> array, allowing the modules to be
+imported via the frozen importer's C API, which bypasses the higher-level
+importing mechanism, allowing it to work before the full importing
+mechanism is initialized.</p>
+<p><code>initimport()</code> and <code>initexternalimport()</code> both call Python functions in
+the frozen modules. And we can clearly look at the source of the
+corresponding modules and see the Python code do things like
+<a href="https://github.com/python/cpython/blob/08c2ba0717089662132af69bf5948d82277a8a69/Lib/importlib/_bootstrap.py#L1158">register the default importers on <code>sys.meta_path</code></a>.</p>
+<p>Whew, that was a long journey into the bowels of CPython's internals. How
+does all this help with single file Python executables?</p>
+<p>Well, the predicament that led us down this rabbit hole was there was no
+way to register a custom module importer before <code>Py_Initialize()</code>
+completes and before an <code>import</code> is attempted during said <code>Py_Initialize()</code>.</p>
+<p>It took me a while, but I finally realized the frozen
+<code>importlib._bootstrap_external</code> module provided the window I needed!
+<code>importlib._bootstrap_external</code>/<code>_frozen_importlib_external</code> is <em>always</em>
+executed during <code>Py_Initialize()</code>. So if you can modify this module's code,
+you can run arbitrary code during <code>Py_Initialize()</code> and influence Python
+interpreter configuration. And since <code>_frozen_importlib_external</code> is a frozen
+module and the <code>PyImport_FrozenModules</code> array is writable and can be modified
+before <code>Py_Initialize()</code> is called, all one needs to do is replace the
+<code>_frozen_importlib</code> / <code>_frozen_importlib_external</code> bytecode in
+<code>PyImport_FrozenModules</code> and you can run arbitrary code during Python
+interpreter startup, before <code>Py_Initialize()</code> completes and before any
+standard library imports are performed!</p>
+<p>My solution to this problem is to concatenate some custom Python code to
+<code>importlib/_bootstrap_external.py</code>. This custom code defines a
+<code>sys.meta_path</code> importer that knows how to use our Rust-backed built-in
+extension module to find and load module data. It redefines the <code>_install()</code>
+function so that this custom importer is registered on <code>sys.meta_path</code>
+when the function is called during <code>Py_Initialize()</code>. The <em>new</em> Python
+source is compiled to bytecode and the <code>PyImport_FrozenModules</code> array is
+modified at run-time to point to the modified <code>_frozen_importlib_external</code>
+implementation. When <code>Py_Initialize()</code> executes its first standard library
+import, module data is provided by the custom <code>sys.meta_path</code> importer,
+which grabs it from a Rust extension module, which reads it from a
+read-only data structure in the executable binary, which is converted
+to a Python <code>memoryview</code> instance and sent back to Python for processing.</p>
+<p>There's a bit of <em>magic</em> happening behind the scenes to make all of this
+work. PyOxidizer attempts to hide as much of the gory details as possible.
+From the perspective of an application maintainer, you just need to define
+a minimal config file and it handles most of the low-level details. And there's
+even a higher-level Rust API for configuring the embedded Python interpreter,
+should you need it.</p>
+<p><code>python-build-standalone</code> and <code>PyOxidizer</code> are still in their infancy.
+They are very much alpha quality. I consider them technology previews more
+than usable software at this point. But I think enough is there to demonstrate
+the viability of using Rust as the build system and run-time glue to build
+and distribute standalone applications embedding Python.</p>
+<p>Time will tell if my utopian vision of zero-copy, no explicit filesystem
+I/O for Python module imports will pan out. Others who have ventured into
+this space have warned me that lots of Python modules rely on <code>__file__</code>
+to derive paths to other resources, which are later <code>stat()</code>d and
+<code>open()</code>d. <code>__file__</code> for in-memory modules doesn't exactly make sense
+and can't be operated on like normal paths/files. I'm not sure what the
+inevitable struggles to support these modules will lead to. Maybe we'll have
+to extract things to temporary directories like other standalone Python
+applications. Maybe <code>PyOxidizer</code> will take off and people will start using
+the <a href="https://docs.python.org/3.7/library/importlib.html#importlib.abc.ResourceReader">ResourceReader</a>
+API, which is apparently the proper way to do these things these days.
+(Caveat: <code>PyOxidizer</code> doesn't yet implement this API but support is planned.)
+Time will tell. I'm not opposed to gross hacks or writing more code as
+needed.</p>
+<p>Producing highly distributable and performant Python applications has been far
+too difficult for far too long. My primary goal for PyOxidizer is to lower these
+barriers. By leveraging Rust, I also hope to bring Python and Rust closer
+together. I want to enable applications and libraries to effortlessly harness
+the powers of both of these fantastic programming languages.</p>
+<p>Again, <code>PyOxidizer</code> is still in its infancy. I anticipate a significant amount
+of hacking over the holidays and hope to share updates in the weeks ahead. Until
+then, please leave comments, watch the <a href="https://github.com/indygreg/PyOxidizer">project on GitHub</a>,
+file issues for bugs and feature requests, etc and we'll see where things lead.</p>]]></content>
+  </entry>
+</feed>
