@@ -10,10 +10,179 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 18 Dec 2018 23:45:00 GMT</pubDate>
+    <pubDate>Fri, 28 Dec 2018 19:42:39 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Faster In-Memory Python Module Importing</title>
+      <link>http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing</link>
+      <pubDate>Fri, 28 Dec 2018 12:40:00 PST</pubDate>
+      <category><![CDATA[Python]]></category>
+      <category><![CDATA[Rust]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing</guid>
+      <description>Faster In-Memory Python Module Importing</description>
+      <content:encoded><![CDATA[<p>I <a href="/blog/2018/12/18/distributing-standalone-python-applications/">recently blogged about</a>
+distributing standalone Python applications. In that post, I announced
+<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> - a tool which
+leverages Rust to produce standalone executables embedding Python. One of the
+features of PyOxidizer is the ability to import Python modules embedded
+within the binary using zero-copy.</p>
+<p>I also recently blogged about
+<a href="/blog/2018/10/29/global-kernel-locks-in-apfs/">global kernel locks in APFS</a>,
+which make filesystem operations slower on macOS. This was the latest wrinkle in
+a long battle against Python's slow startup times, which I've posted about
+on the official python-dev mailing list
+<a href="https://mail.python.org/pipermail/python-dev/2014-May/134528.html">over</a>
+<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">the</a>
+<a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">years</a>.</p>
+<p>Since I announced PyOxidizer a few days ago, I've had some productive holiday
+hacking sessions!</p>
+<p>One of the reached milestones is PyOxidizer now supports macOS.</p>
+<p>With that milestone reached, I thought it would be interesting to compare
+the performance of a PyOxidizer executable versus a standard CPython build.</p>
+<p>I produced a <a href="https://gist.github.com/indygreg/be1c229fa41ced5c76d912f7073f9de6">Python script</a>
+that imports almost the entirety of the Python standard library - at least the
+modules implemented in Python. That's 508 <code>import</code> statements. I then
+executed this script using a typical <code>python3.7</code> binary (with the standard
+library on the filesystem) and PyOxidizer-produced standalone executables
+with a module importer that loads Python modules from memory using zero copy.</p>
+<pre><code># Homebrew installed CPython 3.7.2
+
+# Cold disk cache.
+$ sudo purge
+$ time /usr/local/bin/python3.7 &lt; import_stdlib.py
+real   0m0.694s
+user   0m0.354s
+sys    0m0.121s
+
+# Hot disk cache.
+$ time /usr/local/bin/python3.7 &lt; import_stdlib.py
+real   0m0.319s
+user   0m0.263s
+sys    0m0.050s
+
+# PyOxidizer with non-PGO/non-LTO CPython 3.7.2
+$ time target/release/pyapp &lt; import_stdlib.py
+real   0m0.223s
+user   0m0.201s
+sys    0m0.017s
+
+# PyOxidizer with PGO/non-LTO CPython 3.7.2
+$ time target/release/pyapp &lt; import_stdlib.py
+real   0m0.234s
+user   0m0.210s
+sys    0m0.019
+
+# PyOxidizer with PTO+LTO CPython 3.7.2
+$ sudo purge
+$ time target/release/pyapp &lt; import_stdlib.py
+real   0m0.442s
+user   0m0.252s
+sys    0m0.059s
+
+$ time target/release/pyall &lt; import_stdlib.py
+real   0m0.221s
+user   0m0.197s
+sys    0m0.020s
+</code></pre>
+<p>First, the PyOxidizer times are all relatively similar regardless of whether
+PGO or LTO is used to build CPython. That's not too surprising, as I'm
+exercising a very limited subset of CPython (and I suspect the benefits
+of PGO/LTO aren't as pronounced due to the nature of the CPython API).</p>
+<p>But the bigger result is the obvious speedup with PyOxidizer and its
+in-memory importing: <strong>PyOxidizer can import almost the entirety of the
+Python standard library ~100ms faster - or ~70% of original - than a
+typical standalone CPython install</strong> with a hot disk cache! This comes
+out to ~0.19ms per <code>import</code> statement. If we run <code>purge</code> to clear out
+the disk cache, the performance delta increases to 252ms, or ~64% of
+original. All these numbers are on a 2018 6-core 2.9 GHz i9 MacBook Pro,
+which has a pretty decent SSD.</p>
+<p>Using <code>dtruss -c</code> to execute the binaries, the breakdown in system calls
+occurring &gt;10 times is clear:</p>
+<pre><code># CPython standalone
+fstatfs64                                      16
+read_nocancel                                  19
+ioctl                                          20
+getentropy                                     22
+pread                                          26
+fcntl                                          27
+sigaction                                      32
+getdirentries64                                34
+fcntl_nocancel                                106
+mmap                                          114
+close_nocancel                                129
+open_nocancel                                 130
+lseek                                         148
+open                                          168
+close                                         170
+read                                          282
+fstat64                                       403
+stat64                                        833
+
+# PyOxidizer
+lseek                                          10
+read                                           12
+read_nocancel                                  14
+fstat64                                        16
+ioctl                                          22
+munmap                                         31
+stat64                                         33
+sysctl                                         33
+sigaction                                      36
+mmap                                          122
+madvise                                       193
+getentropy                                    315
+</code></pre>
+<p>PyOxidizer avoids hundreds of <code>open()</code>, <code>close()</code>, <code>read()</code>,
+<code>fstat64()</code>, and <code>stat64()</code> calls. And by avoiding these calls,
+PyOxidizer not only avoids the userland-kernel overhead intrinsic to them,
+but also any additional overhead that APFS is imposing via its global
+lock(s).</p>
+<p>(Why the PyOxidizer binary is making hundreds of calls to <code>getentropy()</code>
+I'm not sure. It's definitely coming from Python as a side-effect of a
+module import and it is something I'd like to fix, if possible.)</p>
+<p>With this experiment, we finally have the ability to better isolate the
+impact of filesystem overhead on Python module importing and preliminary
+results indicate that the overhead is not insignificant - at least on macOS
+(I'll get data for Linux and Windows later). While the test is somewhat
+contrived (I don't think many applications import the entirety of the
+Python standard library), some Python applications do import hundreds of
+modules. And as I've
+<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">written before</a>,
+milliseconds matter. This is especially true if you are invoking Python
+processes hundreds or thousands of times in a build system, when running
+a test suite, for scripting, etc. Cumulatively you can be importing tens
+of thousands of modules. So I think shaving even fractions of a
+millisecond from module importing is important.</p>
+<p>It's worth noting that in addition to the system call overhead, CPython's
+path-based importer runs
+<a href="https://github.com/python/cpython/blob/804a5d94b6b7f8cb8546112aee2bc3af362f28f5/Lib/importlib/_bootstrap_external.py">substantially more</a>
+Python code
+<a href="https://github.com/indygreg/PyOxidizer/blob/c50e63338abd08ebac86746a33d750756d622edc/pyrepackager/src/memoryimporter.py">than PyOxidizer</a>
+and this likely contributes several milliseconds of overhead as well. Because
+PyOxidizer applications are static, the importer can remain simple (finding a
+module in PyOxidizer is essentially a Rust <code>HashMap&lt;String, Vec&lt;u8&gt;</code> lookup).
+While it might be useful to isolate the filesystem overhead from Python code
+overhead, the thing that end-users care about is overall execution time: they
+don't care where that overhead is coming from. So I think it is fair to compare
+PyOxidizer - with its intrinsically simpler import model - with what Python
+typically does (scan <code>sys.path</code> entries and looking for modules on the
+filesystem).</p>
+<p>Another difference is that PyOxidizer is almost completely statically linked.
+By contrast, a typical CPython install has compiled extension modules as
+standalone shared libraries and these shared libraries often link against
+other shared libraries (such as libssl). From <code>dtruss</code> timing information,
+I don't believe this difference contributes to significant overhead, however.</p>
+<p>Finally, I haven't yet optimized PyOxidizer. I still have a few tricks up
+my sleeve that can likely shave off more overhead from Python startup. But
+so far the results are looking <em>very</em> promising. I dare say they are looking
+promising enough that Python distributions themselves might want to look
+into the area more thoroughly and consider distribution defaults that rely
+less on the every-Python-module-is-a-separate-file model.</p>
+<p>Stay tuned for more <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a>
+updates in the near future!</p>]]></content:encoded>
+    </item>
     <item>
       <title>Distributing Standalone Python Applications</title>
       <link>http://gregoryszorc.com/blog/2018/12/18/distributing-standalone-python-applications</link>
@@ -1977,46 +2146,6 @@ dropping support for Python 2.6 and below. Python 3 is related
 in that porting Python 2.x to Python 3 is much easier the higher
 the Python 2.x version. This especially holds true when you want
 to write Python that works simultaneously in both 2.x and 3.x.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Python Package Providing Clients for Mozilla Services</title>
-      <link>http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services</link>
-      <pubDate>Mon, 06 Jan 2014 10:45:00 PST</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2014/01/06/python-package-providing-clients-for-mozilla-services</guid>
-      <description>Python Package Providing Clients for Mozilla Services</description>
-      <content:encoded><![CDATA[<p>I have a number of Python projects and tools that interact with
-various Mozilla services. I had authored clients for all these services
-as standalone Python modules so they could be reused across projects.</p>
-<p>I have consolidated all these Python modules into a unified source
-control
-<a href="https://bitbucket.org/indygreg/python-mozautomation">repository</a>
-and have made the project available on
-<a href="https://pypi.python.org/pypi/mozautomation">PyPI</a>. You can install it
-by running:</p>
-<p>$ pip install mozautomation</p>
-<p>Currently included in the Python package are:</p>
-<ul>
-<li>A client for <a href="https://treestatus.mozilla.org/">treestatus.mozilla.org</a></li>
-<li>Module for extracting cookies from Firefox profiles (useful for
-  programmatically getting Bugzilla auth credentials).</li>
-<li>A client for reading and interpretting the
-  <a href="http://builddata.pub.build.mozilla.org/buildjson/">JSON dumps of automation jobs</a></li>
-<li>An interface to a SQLite database to manage associations between
-  Mercurial changesets, bugs, and pushes.</li>
-<li>Rudimentary parsing of commit messages to extract bugs and reviewers.</li>
-<li>A client to obtain information about Firefox releases via the
-  <a href="http://releases-api.mozilla.org/">releases API</a></li>
-<li>A module defining common Firefox source repositories, aliases, logical
-  groups (e.g. twigs and integration trees), and APIs for fetching
-  pushlog data.</li>
-<li>A client for the <a href="https://secure.pub.build.mozilla.org/buildapi/self-serve/">self serve API</a></li>
-</ul>
-<p>Documentation and testing is currently sparse. Things aren't up to my
-regular high quality standard. But something is better than nothing.</p>
-<p>If you are interested in contributing, drop me a line or send pull
-requests my way!</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

@@ -10,10 +10,179 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 18 Dec 2018 23:45:00 GMT</pubDate>
+    <pubDate>Fri, 28 Dec 2018 19:42:39 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Faster In-Memory Python Module Importing</title>
+      <link>http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing</link>
+      <pubDate>Fri, 28 Dec 2018 12:40:00 PST</pubDate>
+      <category><![CDATA[Python]]></category>
+      <category><![CDATA[Rust]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing</guid>
+      <description>Faster In-Memory Python Module Importing</description>
+      <content:encoded><![CDATA[<p>I <a href="/blog/2018/12/18/distributing-standalone-python-applications/">recently blogged about</a>
+distributing standalone Python applications. In that post, I announced
+<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> - a tool which
+leverages Rust to produce standalone executables embedding Python. One of the
+features of PyOxidizer is the ability to import Python modules embedded
+within the binary using zero-copy.</p>
+<p>I also recently blogged about
+<a href="/blog/2018/10/29/global-kernel-locks-in-apfs/">global kernel locks in APFS</a>,
+which make filesystem operations slower on macOS. This was the latest wrinkle in
+a long battle against Python's slow startup times, which I've posted about
+on the official python-dev mailing list
+<a href="https://mail.python.org/pipermail/python-dev/2014-May/134528.html">over</a>
+<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">the</a>
+<a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">years</a>.</p>
+<p>Since I announced PyOxidizer a few days ago, I've had some productive holiday
+hacking sessions!</p>
+<p>One of the reached milestones is PyOxidizer now supports macOS.</p>
+<p>With that milestone reached, I thought it would be interesting to compare
+the performance of a PyOxidizer executable versus a standard CPython build.</p>
+<p>I produced a <a href="https://gist.github.com/indygreg/be1c229fa41ced5c76d912f7073f9de6">Python script</a>
+that imports almost the entirety of the Python standard library - at least the
+modules implemented in Python. That's 508 <code>import</code> statements. I then
+executed this script using a typical <code>python3.7</code> binary (with the standard
+library on the filesystem) and PyOxidizer-produced standalone executables
+with a module importer that loads Python modules from memory using zero copy.</p>
+<pre><code># Homebrew installed CPython 3.7.2
+
+# Cold disk cache.
+$ sudo purge
+$ time /usr/local/bin/python3.7 &lt; import_stdlib.py
+real   0m0.694s
+user   0m0.354s
+sys    0m0.121s
+
+# Hot disk cache.
+$ time /usr/local/bin/python3.7 &lt; import_stdlib.py
+real   0m0.319s
+user   0m0.263s
+sys    0m0.050s
+
+# PyOxidizer with non-PGO/non-LTO CPython 3.7.2
+$ time target/release/pyapp &lt; import_stdlib.py
+real   0m0.223s
+user   0m0.201s
+sys    0m0.017s
+
+# PyOxidizer with PGO/non-LTO CPython 3.7.2
+$ time target/release/pyapp &lt; import_stdlib.py
+real   0m0.234s
+user   0m0.210s
+sys    0m0.019
+
+# PyOxidizer with PTO+LTO CPython 3.7.2
+$ sudo purge
+$ time target/release/pyapp &lt; import_stdlib.py
+real   0m0.442s
+user   0m0.252s
+sys    0m0.059s
+
+$ time target/release/pyall &lt; import_stdlib.py
+real   0m0.221s
+user   0m0.197s
+sys    0m0.020s
+</code></pre>
+<p>First, the PyOxidizer times are all relatively similar regardless of whether
+PGO or LTO is used to build CPython. That's not too surprising, as I'm
+exercising a very limited subset of CPython (and I suspect the benefits
+of PGO/LTO aren't as pronounced due to the nature of the CPython API).</p>
+<p>But the bigger result is the obvious speedup with PyOxidizer and its
+in-memory importing: <strong>PyOxidizer can import almost the entirety of the
+Python standard library ~100ms faster - or ~70% of original - than a
+typical standalone CPython install</strong> with a hot disk cache! This comes
+out to ~0.19ms per <code>import</code> statement. If we run <code>purge</code> to clear out
+the disk cache, the performance delta increases to 252ms, or ~64% of
+original. All these numbers are on a 2018 6-core 2.9 GHz i9 MacBook Pro,
+which has a pretty decent SSD.</p>
+<p>Using <code>dtruss -c</code> to execute the binaries, the breakdown in system calls
+occurring &gt;10 times is clear:</p>
+<pre><code># CPython standalone
+fstatfs64                                      16
+read_nocancel                                  19
+ioctl                                          20
+getentropy                                     22
+pread                                          26
+fcntl                                          27
+sigaction                                      32
+getdirentries64                                34
+fcntl_nocancel                                106
+mmap                                          114
+close_nocancel                                129
+open_nocancel                                 130
+lseek                                         148
+open                                          168
+close                                         170
+read                                          282
+fstat64                                       403
+stat64                                        833
+
+# PyOxidizer
+lseek                                          10
+read                                           12
+read_nocancel                                  14
+fstat64                                        16
+ioctl                                          22
+munmap                                         31
+stat64                                         33
+sysctl                                         33
+sigaction                                      36
+mmap                                          122
+madvise                                       193
+getentropy                                    315
+</code></pre>
+<p>PyOxidizer avoids hundreds of <code>open()</code>, <code>close()</code>, <code>read()</code>,
+<code>fstat64()</code>, and <code>stat64()</code> calls. And by avoiding these calls,
+PyOxidizer not only avoids the userland-kernel overhead intrinsic to them,
+but also any additional overhead that APFS is imposing via its global
+lock(s).</p>
+<p>(Why the PyOxidizer binary is making hundreds of calls to <code>getentropy()</code>
+I'm not sure. It's definitely coming from Python as a side-effect of a
+module import and it is something I'd like to fix, if possible.)</p>
+<p>With this experiment, we finally have the ability to better isolate the
+impact of filesystem overhead on Python module importing and preliminary
+results indicate that the overhead is not insignificant - at least on macOS
+(I'll get data for Linux and Windows later). While the test is somewhat
+contrived (I don't think many applications import the entirety of the
+Python standard library), some Python applications do import hundreds of
+modules. And as I've
+<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">written before</a>,
+milliseconds matter. This is especially true if you are invoking Python
+processes hundreds or thousands of times in a build system, when running
+a test suite, for scripting, etc. Cumulatively you can be importing tens
+of thousands of modules. So I think shaving even fractions of a
+millisecond from module importing is important.</p>
+<p>It's worth noting that in addition to the system call overhead, CPython's
+path-based importer runs
+<a href="https://github.com/python/cpython/blob/804a5d94b6b7f8cb8546112aee2bc3af362f28f5/Lib/importlib/_bootstrap_external.py">substantially more</a>
+Python code
+<a href="https://github.com/indygreg/PyOxidizer/blob/c50e63338abd08ebac86746a33d750756d622edc/pyrepackager/src/memoryimporter.py">than PyOxidizer</a>
+and this likely contributes several milliseconds of overhead as well. Because
+PyOxidizer applications are static, the importer can remain simple (finding a
+module in PyOxidizer is essentially a Rust <code>HashMap&lt;String, Vec&lt;u8&gt;</code> lookup).
+While it might be useful to isolate the filesystem overhead from Python code
+overhead, the thing that end-users care about is overall execution time: they
+don't care where that overhead is coming from. So I think it is fair to compare
+PyOxidizer - with its intrinsically simpler import model - with what Python
+typically does (scan <code>sys.path</code> entries and looking for modules on the
+filesystem).</p>
+<p>Another difference is that PyOxidizer is almost completely statically linked.
+By contrast, a typical CPython install has compiled extension modules as
+standalone shared libraries and these shared libraries often link against
+other shared libraries (such as libssl). From <code>dtruss</code> timing information,
+I don't believe this difference contributes to significant overhead, however.</p>
+<p>Finally, I haven't yet optimized PyOxidizer. I still have a few tricks up
+my sleeve that can likely shave off more overhead from Python startup. But
+so far the results are looking <em>very</em> promising. I dare say they are looking
+promising enough that Python distributions themselves might want to look
+into the area more thoroughly and consider distribution defaults that rely
+less on the every-Python-module-is-a-separate-file model.</p>
+<p>Stay tuned for more <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a>
+updates in the near future!</p>]]></content:encoded>
+    </item>
     <item>
       <title>Distributing Standalone Python Applications</title>
       <link>http://gregoryszorc.com/blog/2018/12/18/distributing-standalone-python-applications</link>
@@ -2522,78 +2691,6 @@ usability problems of Git doesn't mean the next generation has to
 suffer through the same. Git can be improved and I encourage that change
 to happen. The three issues above and their possible solutions would
 be a good place to start.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Good Riddance to AUFS</title>
-      <link>http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs</link>
-      <pubDate>Fri, 08 Dec 2017 15:00:00 PST</pubDate>
-      <category><![CDATA[Docker]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs</guid>
-      <description>Good Riddance to AUFS</description>
-      <content:encoded><![CDATA[<p>For over a year, AUFS - a layering filesystem for Linux - has been
-giving me fits.</p>
-<p>As
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1291940">I initially measured last year</a>,
-AUFS has... suboptimal performance characteristics. The crux of the problem is
-that AUFS obtains a <strong>global</strong> lock in the Linux kernel (at least version 3.13)
-for various I/O operations, including <em>stat()</em>. If you have more than a couple
-of active CPU cores, the overhead from excessive kernel locking inside
-<em>_raw_spin_lock()</em> can add more overhead than extra CPU cores add capacity.
-That's right: under certain workloads, adding more CPU cores actually slows
-down execution due to cores being starved waiting for a global lock in the
-kernel!</p>
-<p>If that weren't enough, AUFS can also violate POSIX filesystem guarantees
-under load. It appears that AUFS sometimes forgets about created files or
-has race conditions that prevent created files from being visible to
-readers until many seconds later! I <em>think</em> this issue only occurs when
-there are concurrent threads creating files.</p>
-<p>These two characteristics of AUFS have inflicted a lot of hardship on
-Firefox's continuous integration. Large parts of Firefox's CI execute in
-Docker. And the host environment for Docker has historically used Ubuntu
-14.04 with Linux 3.13 and Docker using AUFS. AUFS was/is the default
-storage driver for many versions of Docker. When this storage driver is
-used, all files inside Docker containers are backed by AUFS unless a
-Docker <em>volume</em> (a directory bind mounted from the host filesystem - EXT4
-in our case) is in play.</p>
-<p>When we started using EC2 instances with more CPU cores, we weren't
-getting a linear speedup for CPU bound operations. Instead, CPU cycles
-were being spent inside the kernel. Stack profiling showed AUFS as the
-culprit. We were thus unable to leverage more powerful EC2 instances
-because adding more cores would only provide marginal to negative gains
-against significant cost expenditure.</p>
-<p>We worked around this problem by making heavy use of Docker <em>volumes</em>
-for tasks incurring significant I/O. This included version control clones
-and checkouts.</p>
-<p>Somewhere along the line, we discovered that AUFS volumes were also the
-cause of several random <em>file not found</em> errors throughout automation.
-Initially, we thought many of these errors were due to bugs in the
-underlying tools (Mercurial and Firefox's build system were common
-victims because they do lots of concurrent I/O). When the bugs
-mysteriously went away after ensuring certain operations were performed
-on EXT4 volumes, we were able to blame AUFS for the myriad of filesystem
-consistency problems.</p>
-<p>Earlier today, we pushed out a change to upgrade Firefox's CI to Linux
-4.4 and switched Docker from AUFS to overlayfs (using the <em>overlay2</em> storage
-driver). The improvements exceeded my expectations.</p>
-<p>Linux build times have decreased by ~4 minutes, from ~750s to ~510s.</p>
-<p>Linux Rust test times have decreased by ~4 minutes, from ~615s to ~380s.</p>
-<p>Linux PGO build times have decreased by ~5 minutes, from ~2130s to ~1820s.</p>
-<p>And this is just the build side of the world. I don't have numbers
-off hand, but I suspect many tests also got a nice speedup from this
-change.</p>
-<p>Multiplied by thousands of tasks per day and factoring in the cost
-to operate these machines, the elimination of AUFS has substantially
-increased the efficiency (and reliability) of Firefox CI and easily
-saved Mozilla tens of thousands of dollars per year. And that's just
-factoring in the savings in the AWS bill. Time is money and people
-are a lot more expensive than AWS instances (you can run over 3,000
-c5.large EC2 instances at spot pricing for what it costs to employ me
-when I'm <em>on the clock</em>). So the real win here comes from Firefox
-developers being able to move faster because their builds and tests
-complete several minutes faster.</p>
-<p>In conclusion, if you care about performance or filesystem correctness,
-avoid AUFS. Use overlayfs instead.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
