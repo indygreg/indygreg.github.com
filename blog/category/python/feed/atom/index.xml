@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2018-12-28T19:42:39Z</updated>
+  <updated>2018-12-29T16:56:28Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -21,7 +21,7 @@
     <title type="html"><![CDATA[Faster In-Memory Python Module Importing]]></title>
     <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing" />
     <id>http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing</id>
-    <updated>2018-12-28T12:40:00Z</updated>
+    <updated>2018-12-29T09:00:00Z</updated>
     <published>2018-12-28T12:40:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="Python" />
     <category scheme="http://gregoryszorc.com/blog" term="Rust" />
@@ -102,6 +102,39 @@ out to ~0.19ms per <code>import</code> statement. If we run <code>purge</code> t
 the disk cache, the performance delta increases to 252ms, or ~64% of
 original. All these numbers are on a 2018 6-core 2.9 GHz i9 MacBook Pro,
 which has a pretty decent SSD.</p>
+<p>And on Linux on an i7-6700K running in a Hyper-V VM:</p>
+<pre><code># pyenv installed CPython 3.7.2
+
+# Cold disk cache.
+$ time ~/.pyenv/versions/3.7.2/bin/python &lt; import_stdlib.py
+real   0m0.405s
+user   0m0.165s
+sys    0m0.065s
+
+# Hot disk cache.
+$ time ~/.pyenv/versions/3.7.2/bin/python &lt; import_stdlib.py
+real   0m0.193s
+user   0m0.161s
+sys    0m0.032s
+
+# PyOxidizer with PTO CPython 3.7.2
+
+# Cold disk cache.
+$ time target/release/pyapp &lt; import_stdlib.py
+real   0m0.227s
+user   0m0.145s
+sys    0m0.016s
+
+# Hot disk cache.
+$ time target/release/pyapp &lt; import_stdlib.py
+real   0m0.152s
+user   0m0.136s
+sys    0m0.016s
+</code></pre>
+<p>On a hot disk cache, the run-time improvement of PyOxidizer is ~41ms, or
+~78% of original. This comes out to ~0.08ms per <code>import</code> statement. When
+flushing caches by writing <code>3</code> to <code>/proc/sys/vm/drop_caches</code>, the delta
+increases to ~178ms, or ~56% of original.</p>
 <p>Using <code>dtruss -c</code> to execute the binaries, the breakdown in system calls
 occurring &gt;10 times is clear:</p>
 <pre><code># CPython standalone
@@ -148,11 +181,11 @@ I'm not sure. It's definitely coming from Python as a side-effect of a
 module import and it is something I'd like to fix, if possible.)</p>
 <p>With this experiment, we finally have the ability to better isolate the
 impact of filesystem overhead on Python module importing and preliminary
-results indicate that the overhead is not insignificant - at least on macOS
-(I'll get data for Linux and Windows later). While the test is somewhat
-contrived (I don't think many applications import the entirety of the
-Python standard library), some Python applications do import hundreds of
-modules. And as I've
+results indicate that the overhead is not insignificant - at least on the
+tested systems (I'll get data for Windows when PyOxidizer supports it).
+While the test is somewhat contrived (I don't think many applications import
+the entirety of the Python standard library), some Python applications do
+import hundreds of modules. And as I've
 <a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">written before</a>,
 milliseconds matter. This is especially true if you are invoking Python
 processes hundreds or thousands of times in a build system, when running
@@ -185,7 +218,9 @@ promising enough that Python distributions themselves might want to look
 into the area more thoroughly and consider distribution defaults that rely
 less on the every-Python-module-is-a-separate-file model.</p>
 <p>Stay tuned for more <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a>
-updates in the near future!</p>]]></content>
+updates in the near future!</p>
+<p><em>(I updated this post a day after initial publication to add measurements
+for Linux.)</em></p>]]></content>
   </entry>
   <entry>
     <author>
