@@ -51,6 +51,169 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="firefox-source-documentation-versus-mdn"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/12/30/firefox-source-documentation-versus-mdn" rel="bookmark" title="Permanent Link to Firefox Source Documentation Versus MDN">Firefox Source Documentation Versus MDN</a></h2>
+  <small>December 30, 2014 at 12:00 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/12/30/firefox-source-documentation-versus-mdn#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The Firefox source tree has had in-tree documentation powered by
+<a href="https://gecko.readthedocs.org/en/latest/">Sphinx</a> for a while now.
+However, its canonical home has been a
+<a href="https://ci.mozilla.org/job/mozilla-central-docs/Tree_Documentation/index.html">hard-to-find URL on ci.mozilla.org</a>.
+I finally <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1115278">scratched an itch</a>
+and wrote patches to enable the docs to be built easier. So,
+starting today, the docs are now available on Read the Docs at
+<a href="https://gecko.readthedocs.org/en/latest/">https://gecko.readthedocs.org/en/latest/</a>!</p>
+<p>While I was scratching itches, I decided to play around with another
+documentation-related task: automatic API documentation. I have a
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1115452">limited proof-of-concept for automatically generating XPIDL interface
+documentation</a>.
+Essentially, we use the in-tree XPIDL parser to parse <em>.idl</em> files and
+turn the Python object representation into reStructured Text, which Sphinx
+parses and renders into pretty HTML for us. The concept can be applied to any
+source input, such as WebIDL and JavaScript code. I chose XPIDL because a
+parser is readily available and I know Joshua Cranmer has expressed
+interest in automatic XPIDL documentation generation. (As an aside,
+JavaScript tooling that supports the flavor of JavaScript used
+internally by Firefox is very limited. We need to prioritize removing
+Mozilla extensions to JavaScript if we ever want to start using awesome
+tooling that exists in the wild.)</p>
+<p>As I was implementing this proof-of-concept, I was looking at XPIDL
+interface documentation on MDN to see how things are presented today.
+After perusing MDN for a bit and comparing its content against what I
+was able to derive from the source, something became extremely clear:
+MDN has significantly more content than the canonical source code.
+Obviously the <em>.idl</em> files document the interfaces, their attributes,
+their methods, and all the types and names in between: that's the very
+definition of an IDL. But what was generally missing from the source
+code is comments. <em>What does this method do?</em> <em>What is each argument
+used for?</em> Things like example usage are almost non-existent in the
+source code. MDN, by contrast, typically has no shortage of all these
+things.</p>
+<p>As I was grasping the reality that MDN has a lot of out-of-tree
+supplemental content, I started asking myself <em>what's the point
+in automatic API docs? Is manual document curation on MDN good
+enough?</em> <strong>This question has sort of been tearing me apart.</strong> Let me try
+to explain.</p>
+<p>MDN is an amazing site. You can tell a lot of love has gone into making
+the experience and much of its content excellent. However, the content
+around the technical implementation / internals of Gecko/Firefox generally
+sucks. There are some exceptions to the rule. But I find that things like
+internal API documentation to be lackluster on average. It is rare for
+me to find documentation that is up-to-date and useful. It is common to
+find documentation that is partial and incomplete. It is very common to
+find things like JSMs not documented at all. <strong>I think this is a
+problem.</strong> I argue the lack of good documentation raises the barrier to
+contributing. <strong>Furthermore, writing and maintaining excellent
+low-level documentation is too much effort.</strong></p>
+<p><strong>My current thoughts on API and low-level documentation are that I
+question the value of this documentation existing on MDN.</strong>
+Specifically, I think things like JSM API docs
+(like <a href="https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Sqlite.jsm">Sqlite.jsm</a>)
+and XPIDL interface documentation (like
+<a href="https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XPCOM/Reference/Interface/nsIFile">nsIFile</a>)
+don't belong on MDN - at least not in wiki form. <strong>Instead, I believe
+that documentation like this should live in and be derived from source
+code.</strong> Now, if the MDN site wants to expose this as read-only content
+or if MDN wants to enable the content to be annotated in a wiki-like
+manner (like how MSDN and PHP documentation allow user comments), that's
+perfectly fine by me. Here's why.</p>
+<p>First, if I must write separate-from-source-code API documentation on
+MDN (or any other platform for that matter), I must now perform extra
+work or forgo either the source code or external documentation. In other
+words, if I write in-line documentation in the source code, I must spend
+extra effort to essentially copy large parts of that to MDN. And I must
+continue to spend extra effort to keep updates in sync. If I don't
+want to spend that extra effort (I'm as lazy as you), I have to choose
+between documenting the source code or documenting MDN. If I choose the
+source code, people either have to read the source to read the docs
+(because we don't generate documentation from source today) or someone
+else has to duplicate the docs (overall more work). If I choose to
+document on MDN, then people reading the source code (probably because
+they want to change it) are deprived of additional context useful to
+make that process easier. <strong>This is a lose-lose scenario and it is a
+general waste of expensive people time.</strong></p>
+<p>Second, I prefer having API documentation derived from source code
+because I feel it results in more accurate documentation that has the
+higher liklihood of remaining accurate and in sync with reality. Think
+about it: when was the last time you reviewed changes to a JSM and
+searched MDN for content that needed updated? I'm sure there are some
+pockets of people that do this right. But I've written dozens of
+JavaScript patches for Firefox and I'm pretty sure I've been asked to
+update <em>external</em> documentation less than 5% of the time. Inline source
+documentation, however, is another matter entirely. Because the
+documentation is often proximal to code that changed, I frequently a) go
+ahead and make the documentation changes because everything is right there
+and it's low overhead to change as I adjust the source b) am asked to
+update in-line docs when a reviewer sees I forgot to. Generally
+speaking, things tend to stay in sync and fewer bugs form when
+everything is proximally located. By fragmenting documentation between
+source code and external services like MDN, we increase the liklihood
+that things become out of sync. This results in misleading information
+and increases the barriers to contribution and change. In other words,
+developer inefficiency.</p>
+<p>Third, having API documentation derived from source code opens up
+numerous possibilities to further aid developer productivity and improve
+the usefullness of documentation. For example:</p>
+<ul>
+<li>We can parse <em>@param</em> references out of documentation and issue
+  warnings/errors when documentation doesn't match the AST.</li>
+<li>We can issue warnings when code isn't documented.</li>
+<li>We can include in-line examples and execute and verify these as part
+  of builds/tests.</li>
+<li>We can more easily cross-reference APIs because everything is
+  documented consistently. We can also issue warnings when
+  cross-references no longer work.</li>
+<li>We can derive files so editors and IDEs can display in-line API docs
+  as you type or can complete functions as you type, allowing people to
+  code faster.</li>
+</ul>
+<p>While we don't generally do these things today, they are all within the
+realm of possibility. Sphinx supports doing many of these things. Stop
+reading and run <em>mach build-docs</em> right now and look at the warnings
+from malformed documentation. I don't know about you, but I love when my
+tools tell me when I'm creating a burden for others.</p>
+<p>There really is so much more we could be doing with source-derived
+documentation. And I argue managing it would take less overall work and
+would result in higher quality documentation.</p>
+<p>But the world of source-derived documentation isn't all roses. MDN has a
+very important advantage: it's a wiki. Just log in, edit in a WYSIWYG,
+and save. It's so easy. The moment we move to source-derived
+documentation, we introduce the massive Firefox source repository, the
+Firefox code review process, bugs/Bugzilla, version control overhead
+(although versioning documentation is another plus for source-derived
+documentation), landing changes, extra cost to Mozilla for building and
+running those checkins (even if they contain docs-only changes, sadly),
+and the time and cognitive burden associated with each one. That's a
+lot of extra work compared to clicking a few buttons on MDN! <strong>Moving
+documentation editing out of MDN and into the Firefox patch submission
+world would be a step in the wrong direction in terms of fostering
+contributions.</strong> Should someone really have to go through all that just
+to correct a typo? I have no doubt we'd lose contributors if we switched
+the change contribution process. And considering our lackluster track
+record of writing inline documentation in source, I don't feel great
+about losing <em>any</em> person who contributes documentation, no matter how
+small the contribution.</p>
+<p>And this is my dilemma: the existing source-or-MDN solution is sub-par
+for pretty much everything except ease of contribution on MDN and
+deploying nice tools (like Sphinx) to address the suckitude will result
+in more difficulty contributing. Both alternatives suck.</p>
+<p>I intend to continue this train of thought in a subsequent post. Stay
+tuned.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/30/firefox-source-documentation-versus-mdn#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="why-hg.mozilla.org-is-slow"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/12/19/why-hg.mozilla.org-is-slow" rel="bookmark" title="Permanent Link to Why hg.mozilla.org is Slow">Why hg.mozilla.org is Slow</a></h2>
   <small>December 19, 2014 at 02:40 PM | categories: 
@@ -398,80 +561,6 @@ review.</p>
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/04/the-mozlandia-tree-outage-and-code-review#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="test-drive-the-new-headless-try-repository"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/11/20/test-drive-the-new-headless-try-repository" rel="bookmark" title="Permanent Link to Test Drive the New Headless Try Repository">Test Drive the New Headless Try Repository</a></h2>
-  <small>November 20, 2014 at 02:45 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial and Git both experience scaling pains as the number of heads
-in a repository approaches infinity. Operations like push and pull
-slow to a crawl and everyone gets frustrated.</p>
-<p>This is the problem Mozilla's Try repository has been dealing with
-for years. We know the solution doesn't scale. But we've been content
-kicking the can by resetting the repository (blowing away data)
-to make the symptoms temporarily go away.</p>
-<p>One of my official goals is to ship a scalable Try solution by the end
-of 2014.</p>
-<p>Today, I believe I finally have enough code cobbled together to
-produce a working concept. <strong>And I could use your help testing it.</strong></p>
-<p>I would like people to push their Try, code review, and other
-miscellaneous heads to a special repository. To do this:</p>
-<pre><code>$ hg push -r . -f ssh://hg@hg.gregoryszorc.com/gecko-headless
-</code></pre>
-<p>That is:</p>
-<ul>
-<li>Consider the changeset belonging to the working copy</li>
-<li>Allow the creation of new heads</li>
-<li>Send it to the <em>gecko-headless</em> repo on hg.gregoryszorc.com using
-  SSH</li>
-</ul>
-<p>Here's what happening.</p>
-<p>I have deployed a special repository to my personal server that I
-believe will behave very similarly to the final solution.</p>
-<p>When you push to this repository, instead of your changesets being
-applied directly to the repository, it siphons them off to a Mercurial
-bundle. It then saves this bundle somewhere along with some metadata
-describing what is inside.</p>
-<p>When you run <em>hg pull -r <node></em> on that repository and ask for a
-changeset that exists in the bundle, the server does some magic
-and returns data from the bundle file.</p>
-<p>Things this repository doesn't do:</p>
-<ul>
-<li><strong>This repository will not actually send changesets to Try for you.</strong></li>
-<li>You cannot <code>hg pull</code> or <code>hg clone</code> the repository and get all of the
-  commits from bundles. This isn't a goal. It will likely never be
-  supported.</li>
-<li>We do not yet record a pushlog entry for pushes to the repository.</li>
-<li>The hgweb HTML interface does not <strong>yet</strong> handle commits that only
-  exist in bundles. People want this to work. It will eventually work.</li>
-<li>Pulling from the repository over HTTP with a vanilla Mercurial install
-  may not preserve phase data.</li>
-</ul>
-<p>The purpose of this experiment is to expose the repository to some
-actual traffic patterns so I can see what's going on and get a feel
-for real-world performance, variability, bugs, etc. I plan to do all
-of this in the testing environment. But I'd like some real-world
-use on the actual Firefox repository to give me peace of mind.</p>
-<p>Please report any issues directly to me. Leave a comment here. Ping
-me on IRC. Send me an email. etc.</p>
-<p><strong>Update 2014-11-21: People discovered a bug with pushed changesets
-accidentally being advanced to the public phase, despite the repository
-being non-publishing. I have fixed the issue. But you must now push to
-the repository over SSH, not HTTP.</strong></p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/11/20/test-drive-the-new-headless-try-repository#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
  <a href="../12">« Previous Page</a>
   --  
  <a href="../14">Next Page »</a>
@@ -494,6 +583,7 @@ the repository over SSH, not HTTP.</strong></p>
                 <li><a href="/blog/category/mozreview">MozReview</a></li>
                 <li><a href="/blog/category/mozilla">Mozilla</a></li>
                 <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/pyoxidizer">PyOxidizer</a></li>
                 <li><a href="/blog/category/python">Python</a></li>
                 <li><a href="/blog/category/review-board">Review Board</a></li>
                 <li><a href="/blog/category/rust">Rust</a></li>
