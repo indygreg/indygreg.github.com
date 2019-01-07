@@ -10,10 +10,190 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 06 Jan 2019 18:03:38 GMT</pubDate>
+    <pubDate>Mon, 07 Jan 2019 23:43:05 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Seeking Employment</title>
+      <link>http://gregoryszorc.com/blog/2019/01/07/seeking-employment</link>
+      <pubDate>Mon, 07 Jan 2019 15:25:00 PST</pubDate>
+      <category><![CDATA[Personal]]></category>
+      <category><![CDATA[Mozilla]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2019/01/07/seeking-employment</guid>
+      <description>Seeking Employment</description>
+      <content:encoded><![CDATA[<p>After almost seven and a half years as an employee of Mozilla Corporation,
+I'm moving on. I have already worked my final day as an employee.</p>
+<p>This post is the first time that I've publicly acknowledged my departure.
+To any Mozillians reading this, I regret that I did not send out a
+farewell email before I left. But the circumstances of my departure weren't
+conducive to doing so. I've been drafting a proper farewell blog post. But
+it has been very challenging to compose. Furthermore, each passing day
+brings with it new insights into my time at Mozilla and a new wrinkle to
+integrate into the reflective story I want to tell in that post. I vow to
+eventually publish a proper goodbye that serves as the bookend to my
+employment at Mozilla. Until then, just let me say that I'm already missing
+working with many of you. I've connected with several people since I left
+and still owe responses or messages to many more. If you want to get in
+touch, my contact info is in my <a href="/resume.pdf">résumé</a>.</p>
+<p>I left Mozilla without new employment lined up. That leads me to the
+subject line of this post: I'm seeking employment. The remainder of this
+post is thus tailored to potential employers.</p>
+<p>My <a href="/resume.pdf">résumé</a> has been updated. But that two page summary
+only scratches the surface of my experience and set of skills. The
+<a href="/work.html">Body of Work</a> page of my website is a more detailed record
+of the work I've done. But even it is not complete!</p>
+<p>Perusing through my posts on this blog will reveal even more about the
+work I've done and how I go about it. My résumé links to a few posts
+that I think are great examples of the level of understanding and detail
+that I'm capable of harnessing.</p>
+<p>As far as the kind of work I want to do or the type of company I want
+to work for, I'm trying to keep an open mind. But I do have some biases.</p>
+<p>I prefer established companies to early start-ups for various reasons.
+Dan Luu's <a href="https://danluu.com/startup-tradeoffs/">Big companies v. startups</a>
+is aligned pretty well with my thinking.</p>
+<p>One of the reasons I worked for Mozilla was because of my personal
+alignment with the
+<a href="https://www.mozilla.org/en-US/about/manifesto/">Mozilla Manifesto</a>. So
+I gravitate towards employers that share those principles and am
+somewhat turned off by those that counteract them. But I recognize that
+the world is complex and that competing perspectives aren't intrinsically
+evil. In other words, I try to maintain an open mind.</p>
+<p>I'm attracted to employers that align their business with improving the
+well-being of the planet, especially the people on it. The link
+between the business and well-being can be tenuous: a B2B business for
+example is presumably selling something that helps people, and that helping
+is what matters to me. The tighter the link between the business and
+improving the world will increase my attraction to a employer.</p>
+<p>I started my university education as a biomedical engineer because I
+liked the idea of being at the intersection of technology and medicine.
+And part of me really wants to return to this space because there
+are few things more noble than helping a fellow human being in need.</p>
+<p>As for the kind of role or technical work I want to do, I could go in
+any number of directions. I still enjoy doing individual contributor type
+work and believe I could be an asset to an employer doing that work. But
+I also crave working on a team, performing technical mentorship, and being
+a leader of technical components. I enjoy participating in high-level
+planning as well as implementing the low-level aspects. I recognize that
+while my individual output can be substantial (I can provide data showing
+that I was one of the most prolific technical contributors at Mozilla
+during my time there) I can be more valuable to an employer when I
+bestow skills and knowledge unto others through teaching, mentorship,
+setting an example, etc.</p>
+<p>I have what I would consider expertise in a few domains that may be
+attractive to employers.</p>
+<p>I was a technical maintainer of Firefox's build system and initiated a
+transition away from an architecture that had been in place since the
+Netscape days. I definitely geek out way too much on build systems.</p>
+<p>I am a contributor to the Mercurial version control tool. I know way
+too much about the internals of Mercurial, Git, and other version
+control tools. I am intimately aware of scaling problems with these
+tools. Some of the scaling work I did for Mercurial saved Mozilla tens
+of thousands of dollars in direct operational costs and probably
+hundreds of thousands of dollars in saved people time due to fewer
+service disruptions and faster operations.</p>
+<p>I have exposure to both client and server side work and the problems
+encountered within each domain. I've dabbled in lots of technologies,
+operating systems, and tools. I'm not afraid to learn something new.
+Although as my experience increases, so does my skepticism of shiny
+new things (I've been burned by technical fads too many times).</p>
+<p>I have a keen fascination with optimization and scaling, whether it
+be on a technical level or in terms of workflows and human behavior.
+I like to ask <em>and then what</em> so I'm thinking a few steps out and am
+prepared for the next problem or consequence of an immediate action.</p>
+<p>I seem to have a knack for caring about user experience and interfaces.
+(Although my own visual design skills aren't the greatest - see my
+website design for proof.) I'm pretty passionate that tools that people
+use should be simple and usable. Cognitive dissonance, latency, and
+distractions are real and as an industry we don't do a great job
+minimizing these disruptions so focus and productivity can be
+maximized. I'm not saying I would be a good product manager or
+UI designer. But it's something I've though about because not many
+engineers seem to exhibit the passion for good user experience that
+I do and that intersection of skills could be valuable.</p>
+<p>My favorite time at Mozilla was when I was working on a unified
+<em>engineering productivity</em> team. The team controlled most of the tools
+and infrastructure that Firefox developers interacted with in order
+to do their jobs. I absolutely loved taking a whole-world view of
+that problem space and identifying the high-level problems - and
+low-hanging fruit - to improve the overall Firefox development
+experience. I derived a lot of satisfaction from identifying pain
+points, equating them to a dollar cost by extrapolating people time
+wasted due to them, justifying working on them, and finally
+celebrating - along with the overall engineering team - when improvements
+were made. I think I would be a tremendous asset to a company working
+in this space. And if my experience at Mozilla is any indicator, I
+would more than offset my total employment cost by doing this kind
+of work.</p>
+<p>I've been entertaining the idea of contracting for a while before
+I resume full-time employment with a single employer. However, I've
+never contracted before and need to do some homework before I commit
+to that. (Please leave a comment or email me if you have recommendations
+on reading material.)</p>
+<p>My dream contract gig would likely be to finish the Mercurial wire
+protocol and storage work I started last year. I would need to type
+up a formal proposal, but the gist of it is the work I started has the
+potential to leapfrog Git in terms of both client-side and server-side
+performance and scalability. Mercurial would be able to open Git
+repositories on the local filesystem as well as consume them via the
+Git wire protocol. Transparent Git interoperability would enable
+Mercurial to be used as a drop-in replacement for Git, which would
+benefit users who don't have control over the server (such as projects
+that live on GitHub). Mercurial's new wire protocol is designed with
+global scalability and distribution in mind. The goal is to enable
+server operators to deploy scalable VCS servers in a turn-key manner
+by relying on scalable key-value stores and content distribution
+networks as much as possible (Mercurial and Git today require servers
+to perform way too much work and aren't designed with modern distributed
+systems best practices, which is why scaling them is hard). The new
+protocol is being designed such that a <em>Mercurial</em> server could expose
+Git data. It would then be possible to teach a Git client to speak the
+<em>Mercurial</em> wire protocol, which would result in Mercurial being a more
+scalable Git server than Git is today. If my vision is achieved, this
+would make server-side VCS scaling problems go away and would eliminate
+the religious debate between Git and Mercurial (the answer would be
+<em>deploy a Mercurial server, allow data to be exposed to Git, and let
+consumers choose</em>). I conservatively estimate that the benefits to
+industry would be in the millions of dollars. How I would structure
+a contract to deliver aspects of this, I'm not sure. But if you are
+willing to invest six figures towards this bet, let's talk. A good
+foundation of this work is already implemented in Mercurial and the
+Mercurial core development team is already on-board with many aspects
+of the vision, so I'm not spewing vapor.</p>
+<p>Another potential contract opportunity would be funding
+<a href="https://gregoryszorc.com/blog/category/pyoxidizer/">PyOxidizer</a>.
+I started the project a few months back as a side-project as an
+excuse to learn Rust while solving a <em>fun</em> problem that I thought
+needed solving. I was hoping for the project to be useful for
+Mercurial and Mozilla one day. But if social media activity is any
+indication, there seems to be somewhat widespread interest in this
+project. I have no doubt that once complete, companies will be using
+PyOxidizer to ship products that generate revenue and that PyOxidizer
+will save them engineering resources. I'd very much like to recapture
+some of that value into my pockets, if possible. Again, I'm somewhat
+naive about how to write contracts since I've never contracted, but I
+imagine <em>deliver a tool that allows me to ship product X as a
+standalone binary to platforms Y and Z</em> is definitely something that
+could be structured as a contract. </p>
+<p>As for the timeline, I was at Mozilla for what feels like an eternity
+in Silicon Valley. And Mozilla's way of working is substantially
+different from many companies. I need some time to decompress and
+unlearn some Mozilla habits. My future employer will inherit a happier
+and more productive employee by allowing me to take some much-needed
+time off.</p>
+<p>I'm looking to resume full-time work no sooner than March 1. I'd like
+to figure out what the next step in my career is by the end of January.
+Then I can sign some papers, pack up my skies, and become a ski bum
+for the month of February: if I don't use this unemployment opportunity
+to have at least 20 days on the slopes this season and visit some new
+mountains, I will be very disappointed in myself!</p>
+<p>If you want to get in touch, my contact info is in my
+<a href="/resume.pdf">résumé</a>. I tend not to answer incoming calls from
+unknown numbers, so email is preferred. But if you leave a voicemail,
+I'll try to get back to you.</p>
+<p>I look forward to working for a great engineering organization in the
+near future!</p>]]></content:encoded>
+    </item>
     <item>
       <title>PyOxidizer Support for Windows</title>
       <link>http://gregoryszorc.com/blog/2019/01/06/pyoxidizer-support-for-windows</link>
@@ -1884,210 +2064,6 @@ the job.</p>
 <p>I'm not sure exactly what I'll replace Docker with for my simpler use cases.
 If you have experiences you'd like to share, sharing them in the comments
 will be greatly appreciated.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Release of python-zstandard 0.9</title>
-      <link>http://gregoryszorc.com/blog/2018/04/09/release-of-python-zstandard-0.9</link>
-      <pubDate>Mon, 09 Apr 2018 09:30:00 PDT</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2018/04/09/release-of-python-zstandard-0.9</guid>
-      <description>Release of python-zstandard 0.9</description>
-      <content:encoded><![CDATA[<p>I have just released
-<a href="https://pypi.python.org/pypi/zstandard/0.9.0">python-zstandard 0.9.0</a>. You can
-install the latest release by running <code>pip install zstandard==0.9.0</code>.</p>
-<p><a href="http://facebook.github.io/zstd/">Zstandard</a> is a highly tunable and therefore
-flexible compression algorithm with support for modern features such as
-multi-threaded compression and <em>dictionaries</em>. Its performance is remarkable
-and if you use it as a drop-in replacement for zlib, bzip2, or other common
-algorithms, you'll frequently see more than a doubling in performance.</p>
-<p>python-zstandard provides rich bindings to the zstandard C library without
-sacrificing performance, safety, features, or a Pythonic feel. The bindings
-run on Python 2.7, 3.4, 3.5, 3.6, 3.7 using either a C extension or CFFI
-bindings, so it works with CPython and PyPy.</p>
-<p>I can make a compelling argument that python-zstandard is one of the
-richest compression packages available to Python programmers. Using it, you
-will be able to leverage compression in ways you couldn't with other packages
-(especially those in the standard library) all while achieving ridiculous
-performance. Due to my focus on performance, python-zstandard is able to
-outperform Python bindings to other compression libraries that <em>should</em> be
-faster. This is because python-zstandard is very diligent about minimizing
-memory allocations and copying, minimizing Python object creation, reusing
-state, etc.</p>
-<p>While python-zstandard is formally marked as a beta-level project and hasn't
-yet reached a 1.0 release, it is suitable for production usage.
-python-zstandard 0.8 shipped with Mercurial and is in active production
-use there. I'm also aware of other consumers using it in production, including
-at Facebook and Mozilla.</p>
-<p>The sections below document some of the new features of python-zstandard 0.9.</p>
-<h2>File Object Interface for Reading</h2>
-<p>The 0.9 release contains a <code>stream_reader()</code> API on the compressor and
-decompressor objects that allows you to treat those objects as readable file
-objects. This means that you can pass a <code>ZstdCompressor</code> or <code>ZstdDecompressor</code>
-around to things that accept file objects and things generally <em>just work</em>.
-e.g.:</p>
-<div class="pygments_murphy"><pre><span></span>   <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">compressed_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ifh</span><span class="p">:</span>
-       <span class="n">cctx</span> <span class="o">=</span> <span class="n">zstd</span><span class="o">.</span><span class="n">ZstdDecompressor</span><span class="p">()</span>
-       <span class="k">with</span> <span class="n">cctx</span><span class="o">.</span><span class="n">stream_reader</span><span class="p">(</span><span class="n">ifh</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-           <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
-               <span class="n">chunk</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">32768</span><span class="p">)</span>
-               <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="p">:</span>
-                   <span class="k">break</span>
-</pre></div>
-
-<p>This is probably the most requested python-zstandard feature.</p>
-<p>While the feature is usable, it isn't complete. Support for <code>readline()</code>,
-<code>readinto()</code>, and a few other APIs is not yet implemented. In addition,
-you can't use these <em>reader</em> objects for opening zstandard compressed
-tarball files because Python's <code>tarfile</code> package insists on doing
-backward seeks when reading. The current implementation doesn't support
-backwards seeking because that requires buffering decompressed output and that
-is not trivial to implement. I recognize that all these features are useful
-and I will try to work them into a subsequent release of 0.9.</p>
-<h2>Negative Compression Levels</h2>
-<p>The 1.3.4 release of zstandard (which python-zstandard 0.9 bundles) supports
-negative compression levels. I won't go into details, but negative compression
-levels disable extra compression features and allow you to trade compression
-ratio for more speed.</p>
-<p>When compressing a 6,472,921,921 byte uncompressed bundle of the Firefox
-Mercurial repository, the previous fastest we could go with level 1 was
-~510 MB/s (measured on the input side) yielding a 1,675,227,803 file (25.88%
-of original).</p>
-<p>With level <code>-1</code>, we compress to 1,934,253,955 (29.88% of original) at
-~590 MB/s. With level <code>-5</code>, we compress to 2,339,110,873 bytes (36.14% of
-original) at ~720 MB/s.</p>
-<p>On the decompress side, level 1 decompresses at ~1,150 MB/s (measured at
-the output side), -1 at ~1,320 MB/s, and -5 at ~1,350 MB/s (generally speaking,
-zstandard's decompression speeds are relatively similar - and fast - across
-compression levels).</p>
-<p>And that's just with a single thread. zstandard supports using multiple
-threads to compress a single input and python-zstandard makes this feature
-easy to use. Using 8 threads on my 4+4 core i7-6700K, level 1 compresses
-at ~2,000 MB/s (3.9x speedup), -1 at ~2,300 MB/s (3.9x speedup), and -5
-at ~2,700 MB/s (3.75x speedup).</p>
-<p>That's with a large input. What about small inputs?</p>
-<p>If we take 456,599 Mercurial commit objects spanning 298,609,254 bytes from
-the Firefox repository and compress them individually, at level 1 we yield
-a total of 133,457,198 bytes (44.7% of original) at ~112 MB/s. At level -1,
-we compress to 161,241,797 bytes (54.0% of original) at ~215 MB/s. And at
-level -5, we compress to 185,885,545 bytes (62.3% of original) at ~395 MB/s.</p>
-<p>On the decompression side, level 1 decompresses at ~260 MB/s, -1 at
-~1,000 MB/s, and -5 at ~1,150 MB/s.</p>
-<p>Again, that's 456,599 operations on a single thread with Python.</p>
-<p>python-zstandard has an <em>experimental</em> API where you can pass in a collection
-of inputs and it batch compresses or decompresses them in a single operation.
-It releases and GIL and uses multiple threads. It puts the results in shared
-buffers in order to minimize the overhead of memory allocations and Python
-object creation and garbage collection. Using this mode with 8 threads on
-my 4+4 core i7-6700K, level 1 compresses at ~525 MB/s, -1 at ~1,070 MB/s,
-and -5 at ~1,930 MB/s. On the decompression side, level 1 is ~1,320 MB/s,
--1 at ~3,800 MB/s, and -5 at ~4,430 MB/s.</p>
-<p>So, my consumer grade desktop i7-6700K is capable of emitting decompressed
-data at over 4 GB/s with Python. That's pretty good if you ask me. (Full
-disclosure: the timings were taken just around the compression operation
-itself: overhead of loading data into memory was not taken into account. See
-the <code>bench.py</code> script in the
-<a href="https://github.com/indygreg/python-zstandard">source repository</a> for more.</p>
-<h2>Long Distance Matching Mode</h2>
-<p>Negative compression levels take zstandard into performance territory that
-has historically been reserved for compression formats like lz4 that are
-optimized for that domain. <em>Long distance matching</em> takes zstandard in the
-other direction, towards compression formats that aim to achieve optimal
-compression ratios at the expense of time and memory usage.</p>
-<p>python-zstandard 0.9 supports long distance matching and all the configurable
-parameters exposed by the zstandard API.</p>
-<p>I'm not going to capture many performance numbers here because python-zstandard
-performs about the same as the C implementation because <em>LDM</em> mode spends
-most of its time in zstandard C code. If you are interested in numbers, I
-recommend reading the zstandard
-<a href="https://github.com/facebook/zstd/releases/tag/v1.3.2">1.3.2</a>
-and <a href="https://github.com/facebook/zstd/releases/tag/v1.3.4">1.3.4</a> release notes.</p>
-<p>I will, however, underscore that zstandard can achieve close to lzma's
-compression ratios (what the <code>xz</code> utility uses) while completely smoking
-lzma on decompression speed. For a bundle of the Firefox Mercurial repository,
-zstandard level 19 with a long distance window size of 512 MB using 8 threads
-compresses to 1,033,633,309 bytes (16.0%) in ~260s wall, 1,730s CPU.
-<code>xz -T8 -8</code> compresses to 1,009,233,160 (15.6%) in ~367s wall, ~2,790s CPU.</p>
-<p>On the decompression side, zstandard takes ~4.8s and runs at ~1,350 MB/s as
-measured on the output side while <code>xz</code> takes ~54s and runs at ~114 MB/s.
-Zstandard, however, does use a lot more memory than <code>xz</code> for decompression,
-so that performance comes with a cost (512 MB versus 32 MB for this
-configuration).</p>
-<h2>Other Notable Changes</h2>
-<p>python-zstandard now uses the <em>advanced</em> compression and decompression APIs
-everywhere. All tunable compression and decompression parameters are available
-to python-zstandard. This includes support for disabling magic headers in frames
-(saves 4 bytes per frame - this can matter for very small inputs, especially when
-using dictionary compression).</p>
-<p>The full dictionary training API is exposed. Dictionary training can now use
-multiple threads.</p>
-<p>There are a handful of utility functions for inspecting zstandard frames,
-querying the state of compressors, etc.</p>
-<p>Lots of work has gone into shoring up the code base. We now build with warnings
-as errors in CI. I performed a number of focused auditing passes to fix
-various classes of deficiencies in the C code. This includes use of the
-<em>buffer protocol</em>: python-zstandard is now able to accept <em>any</em> Python
-object that provides a view into its underlying raw data.</p>
-<p>Decompression contexts can now be constructed with a max memory threshold
-so attempts to decompress something that would require more memory will
-result in error.</p>
-<p>See the
-<a href="https://github.com/indygreg/python-zstandard/releases/tag/0.9.0">full release notes</a>
-for more.</p>
-<h2>Conclusion</h2>
-<p>Since I last released a major version of python-zstandard, a lot has changed in
-the zstandard world. As I
-<a href="/blog/2017/03/07/better-compression-with-zstandard/">blogged last year</a>,
-zstandard circa early 2017 was a very compelling compression format: it already
-outperformed popular compression formats like zlib and bzip2 across the board.
-As a <em>general purpose</em> compression format, it made a compelling case for itself.
-In my mind, <em>brotli</em> was its only real challenger.</p>
-<p>As I wrote then, zstandard isn't perfect. (Nothing is.) But a year later, it
-is refreshing to see advancements.</p>
-<p>A criticism one year ago was zstandard was pretty good as a general purpose
-compression format but it wasn't great if you live at the fringes. If you were
-a speed freak, you'd probably use lz4. If you cared about compression ratios,
-you'd probably use lzma. But recent releases of zstandard have made huge strides
-into the territory of these niche formats. Negative compression levels allow
-zstandard to flirt with lz4's performance. Long distance matching allows
-zstandard to achieve close to lzma's compression ratios. <strong>This is a big friggin
-deal because it makes it much, much harder to justify a domain-specific compression
-format over zstandard.</strong> I think lzma still has a significant edge for ultra
-compression ratios when memory utilization is a concern. But for many consumers,
-memory is readily available and it is easy to justify trading potentially hundreds
-of megabytes of memory to achieve a 10x speedup for decompression. Even if you
-aren't willing to sacrifice more memory, the ability to tweak compression
-parameters is huge. You can do things like store multiple versions of a
-compressed document and conditionally serve the one most appropriate for the
-client, all while running the same zstandard-only code on the client. That's
-huge.</p>
-<p>A year later, zstandard continues to impress me for its set of features and its
-versatility. The library is continuing to evolve - all while maintaining
-backwards compatibility on the decoding side. (That's a sign of a good
-format design if you ask me.) I was honestly shocked to see that zstandard
-was able to change its compression settings in a way that allowed it to compete
-with lz4 and lzma without requiring a format change.</p>
-<p>The more I use zstandard, the more I think that <em>everyone should use this</em> and
-that popular compression formats just aren't cut out for modern computing any
-more. Every time I download a zlib/gz or bzip2 compressed archive, I'm thinking
-<em>if only they used zstandard this archive would be smaller, it would have
-decompressed already, and I wouldn't be thinking about how annoying it is
-to wait for compression operations to complete</em>. In my mind, zstandard is such
-an obvious advancement over the status quo and is such a versatile format -
-now covering the gamut of super fast compression to ultra ratios - that it is
-bordering on negligent to not use zstandard. With the removal of the controversial
-patent rights grant license clause in zstandard 1.3.1, that justifiable
-resistance to widespread adoption of zstandard has been eliminated. Zstandard
-is objectively superior for many workloads and I heavily encourage its use. I
-believe python-zstandard provides a high-quality interface to zstandard and
-I encourage you to give it and zstandard a try the next time you compress data.</p>
-<p>If you run into any problems or want to get involved with development,
-python-zstandard lives at
-<a href="https://github.com/indygreg/python-zstandard">indygreg/python-zstandard</a> on
-GitHub.</p>
-<p>*(I updated the post on 2018-05-16 to remove a paragraph about zstandard
-competition. In the original post, I unfairly compared zstandard to Snappy
-instead of Brotli and made some inaccurate statements around that comparison.)</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
