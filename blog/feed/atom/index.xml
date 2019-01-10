@@ -7,12 +7,387 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2019-01-09T23:13:51Z</updated>
+  <updated>2019-01-10T22:56:04Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[What I've Learned About Optimizing Python]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2019/01/10/what-i've-learned-about-optimizing-python" />
+    <id>http://gregoryszorc.com/blog/2019/01/10/what-i've-learned-about-optimizing-python</id>
+    <updated>2019-01-10T15:00:00Z</updated>
+    <published>2019-01-10T15:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Python" />
+    <summary type="html"><![CDATA[What I've Learned About Optimizing Python]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2019/01/10/what-i've-learned-about-optimizing-python"><![CDATA[<p>I've used Python more than any other programming language in the past
+4-5 years. Python is the lingua franca for Firefox's build, test, and
+CI tooling. Mercurial is written in mostly Python. Many of my
+side-projects are in Python.</p>
+<p>Along the way, I've accrued a bit of knowledge about Python
+performance and how to optimize Python. This post is about sharing
+that knowledge with the larger community.</p>
+<p>My experience with Python is mostly with the CPython interpreter,
+specifically CPython 2.7. Not all observations apply to all Python
+distributions or have the same characteristics across Python versions.
+I'll try to call this out when relevant. And this post is in no
+way a thorough survey of the Python performance landscape. I mainly
+want to highlight areas that have particularly plagued me.</p>
+<h2>Startup and Module Importing Overhead</h2>
+<p>Starting a Python interpreter and importing Python modules is
+relatively slow if you care about milliseconds.</p>
+<p>If you need to start hundreds or thousands of Python processes
+as part of a workload, this overhead will amount to several seconds
+of overhead.</p>
+<p>If you use Python to provide CLI tools, the overhead can cause
+enough lag to be noticeable by people. If you want <em>instantaneous</em>
+CLI tools, launching a Python interpreter on every invocation will
+make it very difficult to achieve that with a sufficiently complex
+tool.</p>
+<p>I've written about this problem extensively. My
+<a href="https://mail.python.org/pipermail/python-dev/2014-May/134528.html">2014 post on python-dev</a>
+outlines the problem. Posts in
+<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">May 2018</a>
+and <a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">October 2018</a>
+restate and refine it.</p>
+<p>There's not much you can do to alleviate interpreter startup overhead:
+fixing this mostly resides with the maintainers of the Python
+interpreter because they control the code that is taking precious
+milliseconds to complete. About the best you can do is
+<a href="https://docs.python.org/3/using/cmdline.html#id3">disable the site import</a>
+in your shebangs and invocations to avoid some extra Python code
+running at startup. However, many applications rely on functionality
+provided by <code>site.py</code>, so use at your own risk.</p>
+<p>Related to this is the problem of module importing. What good is a
+Python interpreter if it doesn't have code to run! And the way code
+is made available to the interpreter is often through importing
+modules.</p>
+<p>There are multiple steps to importing modules. And there are sources
+of overhead in each one.</p>
+<p>There is overhead in finding modules and reading their data. As
+I've <a href="/blog/2019/01/06/pyoxidizer-support-for-windows/">demonstrated with PyOxidizer</a>,
+replacing the default <em>find and load a module from the filesystem</em>
+with an architecturally simpler solution of <em>read the module data
+from an in-memory data structure</em> makes importing the Python standard
+library take 70-80% of its original time! Having a single module
+per filesystem file introduces filesystem overhead and can slow
+down Python applications in the critical first milliseconds of
+execution. Solutions like PyOxidizer can mitigate this. And hopefully
+the Python community sees the overhead in the current approach
+and considers moving towards module distribution mechanisms that
+don't rely so much on separate files per module.</p>
+<p>Another source of module importing overhead is executing code in
+that module at import time. Some modules have code in the module
+scope outside of functions and classes that runs when the module
+is imported. This code execution can add overhead to importing. A
+mitigation for this is to not run as much code at import time: only
+run code as needed. Python 3.7 supports a module <code>__getattr__</code>
+that will be called when a module attribute is not found. This can
+be used to lazily populate module attributes on first access.</p>
+<p>Another workaround for module importing slowness is lazy module
+importing. Instead of actually loading a module when it is imported,
+you register a custom module importer that returns a <em>stub</em> for
+that module instead. When that stub is first accessed, it will
+load the actual module and mutate itself to be that module.</p>
+<p>By avoiding the filesystem and module running overhead for unused
+modules (modules are typically imported globally and then only
+used by certain functions in a module), you can easily shave
+dozens of milliseconds from applications importing several dozens
+of modules.</p>
+<p>But lazy module importers are a bit fragile. Lots of modules
+have a pattern where they <code>try: import foo; except ImportError:</code>.
+A lazy module importer may never raise <code>ImportError</code> here because
+to do so, it would need to search the filesystem for a module
+to know if it exists and searching the filesystem would add overhead,
+so they don't do it! You work around this by accessing an attribute
+on the imported module. This forces the <code>ImportError</code> to be raised
+if the module doesn't exist but undermines the laziness of the module
+import! This problem is quite nasty. Mercurial's lazy module
+importer has to maintain a list of modules that are known to not
+be lazy importable to work around it. Another issue is the
+<code>from foo import x, y</code> syntax, which also undermines lazy module
+importing in cases where <code>foo</code> is a module (as opposed to a package)
+because in order to return a reference to <code>x</code> and <code>y</code>, the module
+has to be imported.</p>
+<p>PyOxidizer, having a fixed set of modules <em>frozen</em> into the binary,
+can be efficient about raising <code>ImportError</code>. And Python 3.7's
+module <code>__getattr__</code> provides additional flexibility for lazy
+module importers. I hope to integrate a robust lazy module importer
+into <code>PyOxidizer</code> so these gains are realized automatically.</p>
+<p>The best solution to avoiding the interpreter startup and module
+import overhead problem is to run a persistent Python process.
+If you run Python in a daemon process (say for a web server), you
+pretty much get this for free. Mercurial's solution to this is to
+run a persistent Python process in the background which exposes a
+<a href="https://www.mercurial-scm.org/wiki/CommandServer">command server</a>
+protocol. <code>hg</code> is aliased to a C (or now Rust) executable
+which connects to that persistent process and dispatches a
+command. The command server approach is a lot of work and can
+be a bit fragile and has security concerns. I'm exploring the
+idea of shipping a command server with <code>PyOxidizer</code> so
+executable can easily gain its benefits and the cost to solving
+the problem only needs to be paid in one central place: the
+<code>PyOxidizer</code> project.</p>
+<h2>Function Call Overhead</h2>
+<p>Function calls in Python are relatively slow. (This observation
+applies less to PyPy, which can JIT code execution.)</p>
+<p>I've seen literally dozens of patches to Mercurial where we inline
+code or combine Python functions in order to avoid function
+call overhead. In the current development cycle, some effort was
+made to reduce the number of functions called when updating
+progress bars. (We try to use progress bars for any operation
+that could take a while so users know what is going on.) The
+old progress bar update code would dispatch to a handful of
+functions.
+<a href="https://www.mercurial-scm.org/repo/hg/rev/6603de284b0a">Caching function call results</a>
+and <a href="https://www.mercurial-scm.org/repo/hg/rev/963462786f6e">avoiding simple lookups via functions</a>
+shaves dozens to hundreds of milliseconds off execution when we're
+talking about 1 million executions.</p>
+<p>If you have tight loops or recursive functions in Python where
+hundreds of thousands or more function calls could be in play, you
+need to be aware of the overhead of calling an individual function,
+as it can add up quickly! Consider in-lining simple functions
+and combining functions to avoid the overhead.</p>
+<h2>Attribute Lookup Overhead</h2>
+<p>This problem is similar to function call overhead because it
+can actually be the same problem!</p>
+<p>Resolving an attribute in Python can be relatively slow. (Again,
+this observation applies less to PyPy.)</p>
+<p>Again, working around this issue is something we do a lot in
+Mercurial.</p>
+<p>Say you have the following code:</p>
+<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
+<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">member</span><span class="p">):</span>
+    <span class="n">total</span> <span class="o">+=</span> <span class="n">obj</span><span class="o">.</span><span class="n">member</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</pre></div>
+
+<p>Ignoring that there are better ways to write this example
+(<code>total = sum(obj.member)</code> should work), as written, the loop
+here will need to resolve <code>obj.member</code> on every iteration.
+Python has a relatively complex mechanism for
+<a href="https://docs.python.org/3/reference/datamodel.html">resolving attributes</a>.
+For simple types, it can be quite fast. But for complex types,
+that attribute access can silently be invoking <code>__getattr__</code>,
+<code>__getattribute__</code>, various other <em>dunder</em> methods, and even
+custom <code>@property</code> functions. What looks like it should be
+a fast attribute lookup can silently be several function calls,
+leading to function call overhead! And this overhead can compound
+if you are doing things like <code>obj.member1.member2.member3</code> etc.</p>
+<p>Each attribute lookup adds overhead. And since nearly everything
+in Python is a dictionary, it is somewhat accurate to equate
+each attribute lookup as a dictionary lookup. And we know from
+basic data structures that dictionary lookups are intrinsically not
+as fast as having say a pointer. Yes, there are some tricks in
+CPython to avoid the dictionary lookup overhead. But the general
+theme I want to get across is that each attribute lookup is a
+potential performance sink.</p>
+<p>For tight loops - especially those over potentially hundreds of
+thousands of iterations - you can avoid this measurable attribute
+lookup overhead by aliasing the value to a local. We would write the
+example above as:</p>
+<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
+<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="n">member</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">member</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">len</span><span class="p">(</span><span class="n">member</span><span class="p">):</span>
+    <span class="n">total</span> <span class="o">+=</span> <span class="n">member</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</pre></div>
+
+<p>Of course, this is only safe when the aliased item isn't
+replaced inside the loop! If that happens, your iterator will
+hold a reference to the old item and things may blow up.</p>
+<p>The same trick can be used when calling a method of an object.
+Instead of:</p>
+<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">):</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</pre></div>
+
+<p>Do the following:</p>
+<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
+<span class="n">fn</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">process</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">:)</span>
+    <span class="n">fn</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</pre></div>
+
+<p>It's also worth noting that in cases where the attribute lookup
+is used to call a method (such as the previous example),
+Python 3.7 is
+<a href="https://bugs.python.org/issue26110">significantly faster</a>
+than previous releases. But I'm pretty sure this is due to
+dispatch overhead to the method function itself, not attribute
+lookup overhead. So things will be faster yet by avoiding the
+attribute lookup.</p>
+<p>Finally, unless attribute lookup is calling functions to
+resolve the attribute, attribute lookup is generally less of
+a problem than function call overhead. And it generally requires
+eliminating a lot of attribute lookups for you to notice a
+meaningful improvement. That being said, once you add up all
+attribute accesses inside a loop, you may be talking about
+10 or 20 attributes in the loop alone - before function calls.
+And loops with only thousands or low tens of thousands of iterations
+can quickly provide hundreds of thousands or millions of attribute
+lookups. So be on the lookout!</p>
+<h2>Object Overhead</h2>
+<p>From the perspective of the Python interpreter, every value is
+an object. In CPython, each value is a <code>PyObject</code> struct. Each
+object managed by the interpreter is on the heap and needs to have
+its own memory holding its reference count, its type, and other
+state. Every object is garbage collected. This means that each
+new object introduces overhead for the reference counting / garbage
+collection mechanism to process. (Again, PyPy can avoid some of
+this overhead by being more intelligent about the <em>lifetimes</em> of
+short-lived values.)</p>
+<p>As a general rule of thumb, the more unique Python values/objects
+you create, the slower things are.</p>
+<p>For example, say you are iterating over a collection of 1 million
+objects. You call a function to process that object into a tuple:</p>
+<div class="pygments_murphy"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">my_collection</span><span class="p">:</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">process</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+
+<p>In this example, <code>process()</code> returns an <code>8-tuple</code>. It doesn't
+matter of we destructure the return value or not: this tuple requires
+the creation of at least 9 Python values: 1 for the tuple itself
+and 8 for its inner members. OK, in reality there could be fewer
+values if <code>process()</code> returns a reference to an existing value.
+Or there could be more if the types aren't simple types and require
+multiple <code>PyObject</code> to represent. My point is that under the hood
+the interpreter is having to juggle multiple objects to represent
+things.</p>
+<p>From my experience, this overhead is only relevant for operations
+that benefit from speedups when implemented in a native language
+like C or Rust. The reason is the CPython interpreter is just
+unable to execute bytecode fast enough for object overhead itself
+to matter. Instead, you will likely hit performance issues with
+function call overhead, processing overhead, etc long before
+object overhead. But there are some exceptions to this, such as
+constructing tuples or dicts with several members.</p>
+<p>As a concrete example of this overhead, Mercurial has C code for
+parsing some of the lower-level data structures. In terms of
+raw parsing speed, the C code runs on an order of two magnitudes
+faster than CPython. But once we have that C code create
+<code>PyObject</code> to present the result, the speedup drops to just a
+few times faster, if that. In other words, the overhead is coming
+from creating and managing Python values so they can be used
+by Python code.</p>
+<p>A workaround for this is to produce fewer Python values. If you
+only need to access a single value, have a function return that
+single value instead of say a tuple or dict with N values. However,
+watch out for function call overhead!</p>
+<p>When you have a lot of speedup code using the CPython C API and
+values need to be shared across different modules, pass around Python
+types that expose data as C structs and have the compiled code
+access those C structs instead of going through the CPython
+C API. By avoiding the Python C API for data access, you will
+be avoiding most of its overhead.</p>
+<p>Treating values as data (instead of having functions for accessing
+everything) is more Pythonic. So another workaround for compiled
+code is is to lazily create
+<code>PyObject</code> instances. If you create a custom Python
+type (<code>PyTypeObject</code>) to represent your complex values, you
+can define the
+<a href="https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_members">tp_members</a>
+and/or <a href="https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getset">tp_getset</a>
+fields to register custom C functions to resolve the value for
+an attribute. If you are say writing a parser and you know that
+consumers will only access a subset of the parsed fields, you can
+quickly construct a type holding the raw data, return that type,
+and have the Python attribute lookup call a C function which
+resolves the <code>PyObject</code>. You can even defer parsing until this
+function is called, saving additional overhead if a parse is
+never required! This technique is quite rare (because it requires
+writing a non-trivial amount of code against the Python C API).
+But it can result in substantial wins.</p>
+<h2>Pre-Sizing Collections</h2>
+<p>This one applies to the CPython C API.</p>
+<p>When creating collections like lists or dicts, use e.g.
+<code>PyList_New()</code> + <code>PyList_SET_ITEM()</code> to populate new
+collections when their size is known at collection creation
+time. This will pre-size the collection to have capacity to hold
+the final number of elements. And it skips checks when inserting
+elements that the collection is large enough to hold them. When
+creating collections of thousands of elements, this can save a
+bit of overhead!</p>
+<h2>Using Zero-copy in the C API</h2>
+<p>The CPython C API really likes to make copies of things rather
+than return references. For example,
+<a href="https://docs.python.org/3.7/c-api/bytes.html#c.PyBytes_FromStringAndSize">PyBytes_FromStringAndSize()</a>
+copies a <code>char*</code> to memory <em>owned</em> by Python. If you are doing
+this for a large number of values or sufficiently large data,
+we could be talking about gigabytes of memory I/O and associated
+allocator overhead.</p>
+<p>If writing high-performance code against the C API, you'll want
+to become familiar with the
+<a href="https://docs.python.org/3.7/c-api/buffer.html">buffer protocol</a>
+and related types, like
+<a href="https://docs.python.org/3.7/c-api/memoryview.html">memoryview</a>.</p>
+<p>The <em>buffer protocol</em> is implemented by Python types and allows
+the Python interpreter to <em>cast</em> a type to/from bytes. It essentially
+allows the interpreter's C code to get a handle on a
+<code>void*</code> of certain size representing the object. This allows you
+to associate any address in memory with a <code>PyObject</code>. Many
+functions operating on binary data transparently accept any
+object implementing the <em>buffer protocol</em>. And if you are coding
+against the C API and want to accept any object that can be
+treated as bytes, you should be using the
+<code>s*</code>, <code>y*</code> or <code>w*</code>
+<a href="https://docs.python.org/3/c-api/arg.html#strings-and-buffers">format units</a>
+when parsing function arguments.</p>
+<p>By using the buffer protocol, you give the interpreter the
+best opportunity possible to be using zero-copy operations and
+avoiding having to copy bytes around in memory.</p>
+<p>By using Python types like
+<a href="https://docs.python.org/3.7/library/stdtypes.html#memoryview">memoryview</a>,
+you are also allowing Python to reference slices of memory by
+reference instead of by copy.</p>
+<p>When you have gigabytes of data flowing through your Python
+program, astute use of Python types that support zero-copy can
+make a world of difference on performance. I once measured
+that <a href="https://github.com/indygreg/python-zstandard">python-zstandard</a>
+was faster than some Python LZ4 bindings (LZ4 should be faster
+than zstandard) because I made heavy use of the buffer protocol
+and avoiding excessive memory I/O in python-zstandard!</p>
+<h2>Conclusion</h2>
+<p>This post has outlined some of the things I've learned optimizing
+Python programs over the years. This post is by no means
+a comprehensive overview of Python performance techniques and
+gotchas. I recognize that my use of Python is probably more
+demanding than most and that the recommendations I made are
+not applicable to many Python programs. <strong>You should not
+mass update your Python code to e.g. inline functions and
+remove attribute lookups after reading this post.</strong> As always,
+when it comes to performance optimization, measure first and
+optimize where things are observed to be slow. I highly recommend
+<a href="https://github.com/benfred/py-spy">py-spy</a> for profiling Python
+applications. That being said, it's hard to attach a time value
+to low-level activity in the Python interpreter such as calling
+functions and looking up attributes. So if you e.g. have a loop 
+that you know is tight, experiment with suggestions in this post,
+and see if you can measure an improvement!</p>
+<p>Finally this post should not be interpreted as a dig against Python
+or its performance properties. Yes, you can make arguments that
+Python should or shouldn't be used in particular areas because of
+performance properties. But Python is extremely versatile -
+especially with PyPy delivering exceptional performance for a
+dynamic programming language. The performance of Python is probably
+<em>good enough</em> for most people. For better or worse, I have used
+Python for uses cases that often feel like outliers across all
+users. And I wanted to share my experiences such that others
+know what life at the frontier is like. And maybe, just maybe, I
+can cause the smart people who actually maintain Python distributions
+to think about the issues I've had in more detail and provide
+improvements to mitigate them.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -1904,214 +2279,5 @@ incredible. But I think in order to achieve the next round of major
 advancements in workflow productivity, we'll need to focus on how all of
 the pieces fit together. And that requires treating the entire workflow
 as a cohesive product.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Revisiting Using Docker]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker" />
-    <id>http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker</id>
-    <updated>2018-05-16T13:45:00Z</updated>
-    <published>2018-05-16T13:45:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Docker" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Revisiting Using Docker]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2018/05/16/revisiting-using-docker"><![CDATA[<p>When Docker was taking off like wildfire in 2013, I was caught up in the
-excitement like everyone else. I remember knowing of the existence
-of LXC and container technologies in Linux at the time. But Docker seemed to
-be the first open source tool to actually make that technology usable (a
-terrific example of how user experience matters).</p>
-<p>At Mozilla, Docker was adopted all around me and by me for various utilities.
-<a href="https://docs.taskcluster.net/">Taskcluster</a> - Mozilla's task execution
-framework geared for running complex CI systems - adopted Docker as a
-mechanism to run processes in self-contained images. Various groups in
-Mozilla adopted Docker for running services in production. I adopted Docker
-for
-<a href="/blog/2015/01/24/end-to-end-testing-with-docker/">integration testing of complex systems</a>.</p>
-<p>Having seen various groups use Docker and having spent a lot of time in the
-trenches battling technical problems, my conclusion is <strong>Docker is unsuitable
-as a general purpose container runtime. Instead, Docker has its niche
-for hosting complex network services.</strong> Other uses of Docker should be highly
-scrutinized and potentially discouraged.</p>
-<p>When Docker hit first the market, it was arguably the only game in town.
-Using Docker to achieve containerization was defensible because there weren't
-exactly many (any?) practical alternatives. So if you wanted to use containers,
-you used Docker.</p>
-<p>Fast forward a few years. We now have the
-<a href="https://www.opencontainers.org/">Open Container Initiative</a> (OCI). There are
-specifications describing common container formats. So you can produce a
-container once and take it to any number OCI compatible <em>container runtimes</em>
-for execution. And in 2018, there are a <em>ton</em> of players in this space.
-<a href="https://github.com/opencontainers/runc">runc</a>,
-<a href="https://github.com/rkt/rkt">rkt</a>, and
-<a href="https://github.com/google/gvisor">gVisor</a> are just some. So Docker is no
-longer the only viable tool for executing a container. If you are just
-getting started with the container space, you would be wise to research the
-available options and their pros and cons.</p>
-<p>When you look at all the options for running containers in 2018, I think it
-is obvious that Docker - usable though it may be - is not ideal for a
-significant number of container use cases. If you divide use cases into a spectrum
-where one end is <em>run a process in a sandbox</em> and the other is <em>run a complex system
-of orchestrated services in production</em>, Docker appears to be focusing on the
-latter. Take it from <a href="https://www.docker.com/what-docker">Docker themselves</a>:</p>
-<p><em>Docker is the company driving the container movement and the only container
-platform provider to address every application across the hybrid cloud. Today's
-businesses are under pressure to digitally transform but are constrained by
-existing applications and infrastructure while rationalizing an increasingly
-diverse portfolio of clouds, datacenters and application architectures. Docker
-enables true independence between applications and infrastructure and developers
-and IT ops to unlock their potential and creates a model for better
-collaboration and innovation.</em></p>
-<p>That description of Docker (the company) does a pretty good job of
-describing what Docker (the technology) has become: a constellation
-of software components providing the underbelly for managing complex
-applications in complex infrastructures. That's pretty far detached on the
-spectrum from <em>run a process in a sandbox</em>.</p>
-<p>Just because Docker (the company) is focused on a complex space doesn't mean
-they are incapable of exceeding at solving simple problems. However, I believe
-that in this particular case, the complexity of what Docker (the company) is
-focusing on has inhibited its Docker products to adequately address simple
-problems.</p>
-<p>Let's dive into some technical specifics.</p>
-<p>At its most primitive, Docker is a glorified tool to run a process in a
-sandbox. On Linux, this is accomplished by using
-the <a href="http://man7.org/linux/man-pages/man2/clone.2.html">clone(2)</a> function
-with specific flags and combined with various other techniques (filesystem
-remounting, capabilities, cgroups, chroot, seccomp, etc) to <em>sandbox</em> the
-process from the main operating system environment and kernel. There are a host
-of tools living at this not-quite-containers level that make it easy to run
-a sandboxed process. The
-<a href="https://github.com/projectatomic/bubblewrap">bubblewrap</a> tool is one of them.</p>
-<p>Strictly speaking, you don't need anything fancy to create a process
-sandbox: just an executable you want to invoke and an executable that makes
-a set of system calls (like bubblewrap) to run that executable.</p>
-<p>When you install Docker on a machine, it starts a daemon running as root.
-That daemon listens for HTTP requests on a network port and/or UNIX socket.
-When you run <code>docker run</code> from the command line, that command establishes
-a connection to the Docker daemon and sends any number of HTTP requests to
-instruct the daemon to take actions.</p>
-<p>A daemon with a remote control protocol is useful. But it shouldn't be the
-only way to spawn containers with Docker. If all I want to do is spawn a temporary
-container that is destroyed afterwards, I should be able to do that from
-a local command without touching a network service. Something like bubblewrap.
-The daemon adds all kinds of complexity and overhead. Especially if I just want
-to run a simple, short-lived command.</p>
-<p>Docker at this point is already pretty far detached from a tool like bubblewrap.
-And the disparity gets worse.</p>
-<p>Docker adds another abstraction on top of basic process sandboxing in the form
-of storage / filesystem management. Docker insists that processes execute in
-self-contained, chroot()'d filesystem environment and that these environments
-(Docker images) be managed by Docker itself. When Docker images are <em>imported</em>
-into Docker, Docker manages them using one of a handful of
-<a href="https://docs.docker.com/storage/storagedriver/">storage drivers</a>. You can choose
-from devicemapper, overlayfs, zfs, btrfs, and aufs and employ various
-configurations of all these. Docker images are composed of <em>layers</em>, with one
-layer stacked on top of the prior. This allows you to have an immutable base
-layer (that can be shared across containers) where run-time file changes can be
-isolated to a specific container instance.</p>
-<p>Docker's ability to manage storage is pretty cool. And I dare say Docker's killer
-feature in the very beginning of Docker was the ability to easily produce and
-exchange self-contained Docker <em>images</em> across machines.</p>
-<p>But this utility comes at a <em>very</em> steep price. Again, if our use case is
-<em>run a process in a sandbox</em>, do we really care about all this advanced
-storage functionality? Yes, if you are running hundreds of containers on
-a single system, a storage model built on top of copy-on-write is perhaps
-necessary for scaling. But for simple cases where you just want to run a single
-or small number of processes, it is extremely overkill and adds many more
-problems than it solves.</p>
-<p>I cannot stress this enough, but <strong>I have spent hours debugging and working
-around problems due to how filesystems/storage works in Docker</strong>.</p>
-<p>When Docker was initially released, aufs was widely used. As I
-<a href="/blog/2017/12/08/good-riddance-to-aufs/">previously wrote</a>, aufs has abysmal
-performance as you scale up the number of concurrent I/O operations. We shaved
-<strong>minutes</strong> off tasks in Firefox CI by ditching aufs for overlayfs.</p>
-<p>But overlayfs is far from a panacea. File metadata-only updates are
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/rev/63f19cfacc5c">apparently very slow in overlayfs</a>.
-We're talking ~100ms to call <code>fchownat()</code> or <code>utimensat()</code>. If you perform
-an <code>rsync -a</code> or <code>chown -R</code> on a directory with only just a hundred files that
-were defined in a base image layer, you can have delays of seconds.</p>
-<p>The Docker storage drivers backed by <em>real</em> filesystems like zfs and btrfs are
-a bit better. But they have their quirks too. For example, creating layers in
-images is comparatively very slow compared to overlayfs (which are practically
-instantaneous). This matters when you are iterating on a Dockerfile for example
-and want to quickly test changes. Your edit-compile cycle grows frustratingly
-long very quickly.</p>
-<p>And I could opine on a handful of other problems I've encountered over the years.</p>
-<p>Having spent hours of my life debugging and working around issues with
-Docker's storage, my current attitude is <em>enough of this complexity, just let me
-use a directory backed by the local filesystem, dammit</em>.</p>
-<p>For many use cases, <strong>you don't need the storage complexity that Docker forces
-upon you</strong>. Pointing Docker at a directory on a local filesystem to chroot into
-is <em>good enough</em>. I know the behavior and performance properties of common Linux
-filesystems. ext4 isn't going to start making <code>fchownat()</code> or <code>utimensat()</code> calls
-take ~100ms. It isn't going to complain when a hard link spans multiple layers in
-an image. Or slow down to a crawl when multiple threads are performing concurrent
-read I/O. There's not going to be intrinsically complicated algorithms and
-caching to walk N image layers to find the most recent version of a file (or if
-there is, it will be so far down the stack in kernel land that I likely won't
-ever have to deal with it as a normal user). Docker images with their multiple
-layers add complexity and overhead. For many use uses, the pain it inflicts
-offsets the initial convenience it saves.</p>
-<p>Docker's optimized-for-complex-use-cases architecture demonstrates its
-inefficiency in simple benchmarks.</p>
-<p>On my machine, <code>docker run -i --rm debian:stretch /bin/ls /</code> takes ~850ms.
-Almost a second to perform a directory listing (sometimes it does take over
-1 second - I was being generous and quoting a quicker time). This command
-takes ~1ms when run in a local shell. So we're at 2.5-3 magnitudes of overhead.
-The time here does include time to initially create the container and
-destroy it afterwards. We can isolate that overhead by starting a persistent
-container and running <code>docker exec -i &lt;cid&gt; /bin/ls /</code> to spawn a new process
-in an existing container. This takes ~85ms. So, ~2 magnitudes of overhead to
-spawn a process in a Docker container versus spawning it <em>natively</em>. What's
-adding so much overhead, I'm not sure. Yes, there are HTTP requests under
-the hood. But HTTP to a local daemon shouldn't be that slow. I'm not sure
-what's going on.</p>
-<p>If we <code>docker export</code> that image to the local filesystem and use <code>runc state</code>
-to configure so we can run it with <code>runc</code>, <code>runc run</code> takes ~85ms to run
-<code>/bin/ls /</code>. If we <code>runc exec &lt;cid&gt; /bin/ls /</code> to start a process in an
-existing container, that completes in ~10ms. <code>runc</code> appears to be executing
-these simple tasks ~10x faster than Docker.</p>
-<p>But to even get to that point, we had to make a filesystem available to
-spawn the container in. With Docker, you need to load an image into Docker.
-Using <code>docker save</code> to produce a 105,523,712 tar file,
-<code>docker load -i image.tar</code> takes ~1200ms to complete. <code>tar xf image.tar</code>
-takes ~65ms to extract that image to the local filesystem. Granted, Docker
-is computing the SHA-256 of the image as part of import. But SHA-256 runs
-at ~250MB/s on my machine and on that ~105MB input takes ~400ms. Where is
-that extra ~750ms of overhead in Docker coming from?</p>
-<p>The Docker image loading overhead is still present on large images. With
-a 4,336,605,184 image, <code>docker load</code> was taking ~32s and <code>tar x</code> was
-taking ~2s. Obviously the filesystem was buffering writes in the <code>tar</code>
-case. And the ~2s is ignoring the ~17s to obtain the SHA-256 of the
-entire input. But there's still a substantial disparity here. (I suspect
-a lot of it is overlayfs not being as optimal as ext4.)</p>
-<p>Several years ago there weren't many good choices for tools to execute containers.
-But today, there are good tools readily available. And thanks to OCI standards,
-you can often swap in alternate container runtimes. Docker (the tool) has an
-architecture that is optimized for solving complex use cases (coincidentally use
-cases that Docker the company makes money from). Because of this, my conclusion -
-drawn from using Docker for several years - is that Docker is unsuitable for
-many common use cases. <strong>If you care about low container startup/teardown
-overhead, low latency when interacting with containers (including spawning
-processes from outside of them), and for workloads where Docker's storage model
-interferes with understanding or performance, I think Docker should be avoided.</strong>
-A simpler tool (such as <code>runc</code> or even <code>bubblewrap</code>) should be used instead.</p>
-<p>Call me a curmudgeon, but having seen all the problems that Docker's complexity
-causes, I'd rather see my containers resemble a tarball that can easily be
-chroot()'d into. <strong>I will likely be revisiting projects that use Docker and
-replacing Docker with something lighter weight and architecturally simpler.</strong> As
-for the use of Docker in the more complex environments it seems to be designed
-for, I don't have a meaningful opinion as I've never really used it in that
-capacity. But given my negative experiences with Docker over the years, I am
-definitely biased against Docker and will lean towards simpler products, especially
-if their storage/filesystem management model is simpler. Docker introduced
-containers to the masses and they should be commended for that. But for my
-day-to-day use cases for containers, Docker is simply not the right tool for
-the job.</p>
-<p>I'm not sure exactly what I'll replace Docker with for my simpler use cases.
-If you have experiences you'd like to share, sharing them in the comments
-will be greatly appreciated.</p>]]></content>
   </entry>
 </feed>
