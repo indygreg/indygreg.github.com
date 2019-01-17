@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2019-01-17T18:46:49Z</updated>
+  <updated>2019-01-17T20:02:19Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -25,10 +25,10 @@
     <published>2019-01-17T10:45:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="Personal" />
     <summary type="html"><![CDATA[On Algorithms and Interviewing]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2019/01/17/on-algorithms-and-interviewing"><![CDATA[<p>As I write this, I'm hours away from starting to interview for full-time.
-I've spoken with a number of recruiters and hiring managers and have
-received interview preparation materials from a handful of companies,
-many of which you've probably heard of.</p>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2019/01/17/on-algorithms-and-interviewing"><![CDATA[<p>As I write this, I'm hours away from starting to interview for full-time
+jobs in the software field. I've spoken with a number of recruiters and
+hiring managers and have received interview preparation materials from
+a handful of companies, many of which you've probably heard of.</p>
 <p>I was hoping things would have changed since I last seriously underwent
 this endeavor ~7.5 years ago (I did interview periodically when I was at
 Mozilla in order to test waters, keep my interview skills sharp, etc). But
