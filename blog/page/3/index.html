@@ -51,6 +51,222 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="scaling-firefox-development-workflows"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/05/16/scaling-firefox-development-workflows" rel="bookmark" title="Permanent Link to Scaling Firefox Development Workflows">Scaling Firefox Development Workflows</a></h2>
+  <small>May 16, 2018 at 04:10 PM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2018/05/16/scaling-firefox-development-workflows#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>One of the central themes of my time at Mozilla has been my pursuit
+of making it easier to contribute to and hack on Firefox.</p>
+<p>I vividly remember my first day at Mozilla in 2011 when I went to
+build Firefox for the first time. I thought the entire experience -
+from obtaining the source code, installing build dependencies, building,
+running tests, submitting patches for review, etc was quite... lacking.
+When I asked others if they thought this was an issue, many rightfully
+identified problems (like the build system being slow). But there was
+a significant population who seemed to be naive and/or apathetic to
+the breadth of the user experience shortcomings. This is totally
+understandable: the scope of the problem is immense and various
+people don't have the perspective, are blinded/biased by personal
+experience, and/or don't have the product design or UX experience
+necessary to comprehend the problem.</p>
+<p><strong>When it comes to contributing to Firefox, I think the problems have
+as much to do with user experience (UX) as they do with technical
+matters.</strong> As I
+<a href="/blog/2012/05/07/improving-the-mozilla-build-system-experience/">wrote in 2012</a>,
+<em>user experience matters and developers are people too.</em> You can have
+a technically superior product, but if the UX is bad, you will have a
+hard time attracting and retaining new users. And existing users won't
+be as happy. These are the kinds of problems that a product manager or
+designer deals with. A difference is that in the case of Firefox
+development, the target audience is a very narrow and highly
+technically-minded subset of the larger population - much smaller than
+what your typical product targets. The total addressable population is
+(realistically) in the thousands instead of millions. But this doesn't
+mean you ignore the principles of good product design when designing
+developer tooling. <strong>When it comes to developer tooling and workflows, I
+think it is important to have a <em>product manager</em> mindset and treat it
+not as a collection of tools for technically-minded individuals, but as
+a product having an overall experience.</strong> You only have to look as far as
+the Firefox Developer Tools to see this approach applied and the positive
+results it has achieved.</p>
+<p>Historically, Mozilla has lacked a formal team with the domain expertise
+and mandate to treat Firefox contribution as a <em>product</em>. We didn't have
+anything close to this until a few years ago. Before we had such a team,
+I took on some of these problems individually. In 2012, I wrote <code>mach</code> - a
+generic CLI command dispatch tool - to provide a central, convenient,
+and easy-to-use command to discover development actions and to run them.
+(Read the <a href="/blog/2012/09/26/mach-has-landed/">announcement blog post</a> for
+some historical context.) I also
+<a href="/blog/2012/09/18/bootstrap-your-system-to-build-firefox/">introduced</a>
+a one-line bootstrap tool (now <code>mach bootstrap</code>) to make it easier to
+configure your machine for building Firefox. A few months later, I
+was responsible for
+<a href="/blog/2013/02/28/moz.build-files-and-the-firefox-build-system/">introducing moz.build files</a>,
+which paved the way for countless optimizations and for rearchitecting
+the Firefox build system to use modern tools - a project that is still
+ongoing (digging out from ~two decades of technical debt is a massive
+effort). And a few months after that, I started going down the version
+control rabbit hole and improving matters there. And I was also heavily
+involved with MozReview for improving the code review experience.</p>
+<p>Looking back, I was responsible for and participated in a ton of
+foundational changes to how Firefox is developed. Of course, dozens of
+others have contributed to getting us to where we are today and I can't
+and won't take credit for the hard work of others. Nor will I claim I was the
+only person coming up with good ideas or transforming them into reality. I
+can name several projects (like Taskcluster and Treeherder) that have
+been just as or more transformational than the changes I can take credit
+for. It would be vain and naive of me to elevate my contributions on a
+taller pedestal and I hope nobody reads this and thinks I'm doing that.</p>
+<p>(On a personal note, numerous people have told me that things like <code>mach</code>
+and the bootstrap tool have transformed the Firefox contribution experience
+for the better. I've also had very senior people tell me that they don't
+understand why these tools are important and/or are skeptical of the need
+for investments in this space. I've found this dichotomy perplexing and
+troubling. Because some of the <em>detractors</em> (for lack of a better word) are
+highly influential and respected, their apparent skepticism sews seeds of
+doubt and causes me to second guess my contributions and world view. This
+feels like a form or variation of imposter syndrome and it is something I
+have struggled with during my time at Mozilla.)</p>
+<p>From my perspective, the previous five or so years in Firefox development
+workflows has been about initiating foundational changes and executing on
+them. When it was introduced, <code>mach</code> was <em>radical</em>. It didn't do much and
+its use was optional. Now almost everyone uses it. Similar stories have
+unfolded for Taskcluster, MozReview, and various other tools and
+platforms. In other words, we laid a foundation and have been steadily
+building upon it for the past several years. That's not to say other
+foundational changes haven't occurred since (they have - the imminent switch
+to Phabricator is a terrific example). But the volume of foundational
+changes has slowed since 2012-2014. (I think this is due to Mozilla
+deciding to invest more in tools as a result of growing pains from
+significant company expansion that began in 2010. With that investment, we
+invested in the bigger ticket long-standing workflow pain points, such as
+CI (Taskcluster), the Firefox build system, Treeherder, and code review.)</p>
+<h2>Workflows Today and in the Future</h2>
+<p>Over the past several years, the size, scope, and complexity of Firefox
+development activities has increased.</p>
+<p>One way to see this is at the source code level. The following chart
+shows the size of the <a href="https://hg.mozilla.org/mozilla-central/">mozilla-central</a>
+version control repository over time.</p>
+<p><img alt="mozilla-central size over time" src="/images/firefox-repo-size-over-time.png" /></p>
+<p>The size increases are obvious. The increases cumulatively represent
+new features, technologies, and workflows. For example, the repository
+contains thousands of <em>Web Platform Tests</em> (WPT) files, a shared test
+suite for web platform implementations, like Gecko and Blink. WPT didn't
+exist a few years ago. Now we have files under source control, tools for
+running those tests, and workflows revolving around changing those tests.
+The incorporation of Rust and components of Servo into Firefox is also
+responsible for significant changes. Firefox features such as Developer
+Tools have been introduced or ballooned in size in recent years. The
+<em>Go Faster</em> project and the move to system add-ons has introduced various
+new workflows and challenges for testing Firefox.</p>
+<p>Many of these changes are building upon the user-facing foundational
+workflow infrastructure that was last significantly changed in 2012-2014.
+This has definitely contributed to some growing pains. For example, there
+are now 92 <code>mach</code> commands instead of like 5. <code>mach help</code> - intended to
+answer <em>what can I do and how should I do it</em> - is overwhelming, especially
+to new users. The repository is around 2 gigabytes of data to clone instead
+of around 500 megabytes. We have 240,000 files in a full checkout instead
+of 70,000 files. There's a <strong>ton</strong> of new pieces floating around. Any
+product manager tasked with user acquisition and retention will tell you
+that increasing the barrier to entry and use will jeopardize these
+outcomes. But with the growth of Firefox's technical underbelly in the
+previous years, we've made it harder to contribute by requiring users to
+download and see a lot more files (version control) and be overwhelmed
+by all the options for actions to take (<code>mach</code> having 92 commands). And
+as the sheer number of components constituting Firefox increases, it
+becomes harder and harder for everyone - not just new contributors - to
+reason about how everything fits together.</p>
+<p>I've been framing this general problem as <em>scaling Firefox development
+workflows</em> and <strong>every time I think about the high-level challenges facing
+Firefox contribution today and in the years ahead, this problem floats
+to the top of my list of concerns</strong>. Yes, we have pressing issues like
+improving the code review experience and making the Firefox build
+system and Taskcluster-based CI fast, efficient, and reliable. But even
+if you make these individual pieces great, there is still a cross-domain
+problem of how all these components weave together. <strong>This is why I think
+it is important to take a wholistic view and treat developer workflow
+as a product.</strong></p>
+<p>When I look at this the way a product manager or designer would, I see a
+few fundamental problems that need addressing.</p>
+<p>First, we're not optimizing for comprehensive end-to-end workflows. By and
+large, we're designing our tools in isolation. We focus more on maximizing
+the individual components instead of maximizing the interaction between
+them. For example, Taskcluster and Treeherder are pretty good in isolation.
+But we're missing features like Treeherder being able to tell me the
+command to run locally to reproduce a failure: I want to see a failure on
+Treeherder and be able to copy and paste commands into my terminal to
+debug the failure. In the case of code review, we've designed two good
+code review tools (MozReview and Phabricator) but we haven't invested in
+making submitting code reviews turn key (the initial system configuration
+is difficult and we still don't have things like automatic bug filing or
+reviewer selection). <strong>We are leaving many workflow optimizations on
+the table by not implementing thoughtful tie-ins and transitions between
+various tools.</strong></p>
+<p>Second, by-and-large we're still optimizing for a single, monolithic user
+segment instead of recognizing and optimizing for different users and
+their workflow requirements. For example, <code>mach help</code> lists 92 commands.
+I don't think any single person cares about all 92 of those commands. The
+average person may only care about 10 or even 20. In terms of user
+interface design, the features and workflow requirements of small user
+segments are polluting the interface for all users and making the entire
+experience complicated and difficult to reason about. As a concrete
+example, why should a system add-on developer or a Firefox Developer Tools
+developer (these people tend to care about testing a standalone Firefox
+add-on) care about Gecko's build system or tests? If you aren't touching
+Gecko or Firefox's <em>chrome</em> code, why should you be exposed to workflows
+and requirements that don't have a major impact on you? Or something more
+extreme, if you are developing a standalone Rust module or Python package
+in mozilla-central, why do you need to care about Firefox at all? (Yes,
+Firefox or another downstream consumer may care about changes to that
+<em>standalone</em> component and you can't ignore those dependencies. But it
+should at least be possible to hide those dependencies.)</p>
+<p>Waving my hands, the solution to these problems is to treat Firefox
+development workflow as a product and to apply the same rigor that we
+use for actual Firefox product development. Give people with a vision
+for the entire workflow the ability to prioritize investment across
+tools and platforms. Give them a process for defining features that
+work across tools. Perform formal user studies. See how people are
+actually using the tools you build. Bring in design and user experience
+experts to help formulate better workflows. Perform user typing so
+different, segmentable workflows can be optimized for. Treat developers
+as you treat users of <em>real</em> products: listen to them. Give developers
+a voice to express frustrations. Let them tell you what they are trying
+to do and what they wish they could do. Integrate this feedback into a
+feature roadmap. Turn common feedback into action items for new features.</p>
+<p>If you think these ideas are silly and it doesn't make sense to apply a
+<em>product mindset</em> to developer workflows and tooling, then you should be
+asking whether product management and all that it entails is also a silly
+idea. If you believe that aspects of product management have beneficial
+outcomes (which most companies do because otherwise there wouldn't be
+product managers), then why <em>wouldn't</em> you want to apply the methods of
+that discipline to developers and development workflows? Developers are
+users too and the fact that they work for the same company that is
+creating the product shouldn't make them immune from the benefits of
+product management.</p>
+<p>If we want to make contributing to Firefox an even better experience for
+Mozilla employees and community contributors, I think we need to take a step
+back and assess the situation as a product manager would. The improvements
+that have been made to the individual pieces constituting Firefox's
+development workflow during my nearly seven years at Mozilla have been
+incredible. But I think in order to achieve the next round of major
+advancements in workflow productivity, we'll need to focus on how all of
+the pieces fit together. And that requires treating the entire workflow
+as a cohesive product.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/05/16/scaling-firefox-development-workflows#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="revisiting-using-docker"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/05/16/revisiting-using-docker" rel="bookmark" title="Permanent Link to Revisiting Using Docker">Revisiting Using Docker</a></h2>
   <small>May 16, 2018 at 01:45 PM | categories: 
@@ -1277,151 +1493,6 @@ avoid AUFS. Use overlayfs instead.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/12/08/good-riddance-to-aufs#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="from-__past__-import-bytes_literals"></a>
-  <h2 class="blog_post_title"><a href="/blog/2017/03/13/from-__past__-import-bytes_literals" rel="bookmark" title="Permanent Link to from __past__ import bytes_literals">from __past__ import bytes_literals</a></h2>
-  <small>March 13, 2017 at 09:55 AM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Last year, I simultaneously committed one of the ugliest and
-impressive hacks of my programming <em>career</em>. I haven't had time
-to write about it. Until now.</p>
-<p>In summary, the hack is a
-<a href="https://www.mercurial-scm.org/repo/hg/rev/1c22400db72d">source-transforming module loader</a>
-for Python. It can be used by Python 3 to import a Python 2 source
-file while translating certain primitives to their Python 3 equivalents.
-It is kind of like <a href="https://docs.python.org/3.6/library/2to3.html">2to3</a>
-except it executes at run-time during <code>import</code>. The main goal of the
-hack was to facilitate porting Mercurial to Python 3 while deferring
-having to make the most invasive - and therefore most annoying -
-elements of the port in the canonical source code representation.</p>
-<p>For the technically curious, it works as follows.</p>
-<p>The <code>hg</code> Python executable registers a custom
-<a href="https://docs.python.org/3.6/library/sys.html#sys.meta_path">meta path finder</a>
-instance. This entity is invoked during <code>import</code> statements to try
-to find the module being imported. It tells a later phase of the
-import mechanism how to <em>load</em> that module from wherever it is
-(usually a <code>.py</code> or <code>.pyc</code> file on disk) to a Python module object.
-The custom finder only responds to requests for modules known
-to be managed by the Mercurial project. For these modules, it tells
-the next stage of the import mechanism to invoke a custom
-<a href="https://docs.python.org/3.6/library/importlib.html#importlib.abc.SourceLoader">SourceLoader</a>
-instance. Here's where the real magic is: when the custom <em>loader</em>
-is invoked, it tokenizes the Python source code using the
-<a href="https://docs.python.org/3.6/library/tokenize.html">tokenize</a> module,
-iterates over the token stream, finds specific patterns, and
-rewrites them to something <em>more appropriate</em>. It then <em>untokenizes</em>
-back to Python source code then falls back to the built-in loader
-which does the heavy lifting of compiling the source to Python code
-objects. So, we have Python 2 source files on disk that magically get
-transformed to be Python compatible when they are loaded by Python 3.
-Oh, and there is no performance penalty for the token transformation
-on subsequence loads because the transformed bytecode is cached in
-the <code>.pyc</code> file (using a custom header so we know it was transformed
-and can be invalidated when the transformation logic changes).</p>
-<p>At the time I wrote it, the token stream manipulation converted most
-string literals (<code>''</code>) to bytes literals (<code>b''</code>). In other words, it
-restored the Python 2 behavior of string literals being <code>bytes</code> and
-not <code>unicode</code>. We jokingly call it
-<code>from __past__ import bytes_literals</code> (a play on Python 2's
-<code>from __future__ import unicode_literals</code> special syntax which
-changes string literals from Python 2's <code>str</code>/<code>bytes</code> type to
-<code>unicode</code> to match Python 3's behavior).</p>
-<p>Since I implemented the first version, others have implemented:</p>
-<ul>
-<li><a href="https://www.mercurial-scm.org/repo/hg/rev/178c89e8519a">Automatically inserting</a>
-  a <code>from mercurial.pycompat import ...</code> statement to the top of the
-  source. This statement is the Mercurial equivalent of importing
-  common wrapper types similar to what
-  <a href="https://pythonhosted.org/six/">six</a> provides.</li>
-<li>More robust
-  <a href="https://www.mercurial-scm.org/repo/hg/rev/423377290a3a">function argument parsing support</a>.
-  (Because going from a token stream to a higher-level primitive like a
-  function call is difficult.)</li>
-<li><a href="https://www.mercurial-scm.org/repo/hg/rev/eaaedad68011">Automatically rewriting</a>
-  <code>.iteritems()</code> to <code>.items()</code>.</li>
-</ul>
-<p>As one can expect, when I tweeted a link to this commit, many Python
-developers (including a few CPython core developers) expressed a mix
-of intrigue and horror. But mostly horror.</p>
-<p>I fully concede that what I did here is a gross hack. And, it is the
-intention of the Mercurial project to undo this hack and perform a
-proper port once Python 3 support in Mercurial is more mature. But, I
-want to lay out my defense on why I did this and why the Mercurial
-project is tolerant of this ugly hack.</p>
-<p>Individuals within the Mercurial project have wanted to port to Python
-3 for years. Until recently, it hasn't been a project priority
-because a port was too much work for too little end-user gain. And, on
-the technical front, a port was just not practical until Python 3.5.
-(Two main blockers were no <code>u''</code> literals - restored in Python 3.3 -
-and no <code>%</code> formatting for <code>b''</code> literals - restored in 3.5. And as I
-understand it, senior members of the Mercurial project had to lobby
-Python maintainers pretty hard to get features like <code>%</code> formatting of
-<code>b''</code> literals restored to Python 3.)</p>
-<p>Anyway, after a number of failed attempts to initiate the Python 3
-port over the years, the Mercurial project started making some
-positive steps towards Python 3 compatibility, such as switching
-to <a href="https://www.python.org/dev/peps/pep-0328/">absolute imports</a> and
-addressing syntax issues that allowed modules to be parsed into
-an AST and even compiled and loadable. These may seem like small
-steps, but for a larger project, it was a lot of work.</p>
-<p>The porting effort hit a large wall when it came time to actually
-make the AST-valid Python code run on Python 3. Specifically, we had
-a strings problem.</p>
-<p>When you write software that exchanges data between machines -
-sometimes machines running different operating systems or having
-different encodings - and there is an expectation that things work
-the same and data roundtrips accordingly, trying to force text
-encodings is essentially impossible and inevitably breaks something or
-someone. It is much easier for Mercurial to operate <em>bytes first</em> and
-only take text encoding into consideration when absolutely necessary
-(such as when emitting bytes to the terminal in the wanted encoding
-or when emitting JSON). That's not to say Mercurial ignores the
-existence of encodings. Far from it: Mercurial does attempt to
-normalize some data to Unicode. But it often does so with a special
-Python type that internally stores the raw byte sequence of the
-source so that a consumer can choose to operate at the bytes or
-Unicode level. </p>
-<p>Anyway, this means that practically every string variable in Mercurial
-is a <code>bytes</code> type (or something that acts like a <code>bytes</code> type). And
-since string literals in Python 3 are the <code>str</code> type (which represents
-Unicode), that would mean having to prefix almost every <code>''</code> string
-literal in Mercurial with <code>b''</code> in order to placate Python 3. Having
-to update every occurrence of simple primitives that could be statically
-transformed automatically felt like busy work. <strong>We wanted to spend time
-on the meaningful parts of the Python 3 port so we could find
-interesting problems and challenges, not toil with mechanical
-conversions that add little to no short-term value while simultaneously
-increasing cognitive dissonance and quite possibly increasing the odds
-of introducing a bug in Python 2.</strong> In other words, why should humans
-do the work that machines can do for us? Thus, the source-transforming
-module importer was born.</p>
-<p>While I concede what Mercurial did is a giant hack, I maintain it was
-the correct thing to do. It has allowed the Python 3 port to move
-forward without being blocked on the more tedious and invasive
-transformations that could introduce subtle bugs (including performance
-regressions) in Python 2. Perfect is the enemy of good. People time is
-valuable. The source-transforming module importer allowed us to unblock
-an important project without sinking a lot of people time into it. I'd
-make that trade-off again.</p>
-<p>While I won't encourage others to take this approach to porting to
-Python 3, if you want to, Mercurial's source is available under a GPL
-license and the custom module importer could be adapted to any project
-with minimal modifications. If someone does extract it as reusable code,
-please leave a comment and I'll update the post to link to it.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">« Previous Page</a>
   --  
