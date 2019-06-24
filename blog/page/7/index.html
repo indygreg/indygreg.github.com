@@ -51,6 +51,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="moz.build-metadata-on-hg.mozilla.org"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to moz.build metadata on hg.mozilla.org">moz.build metadata on hg.mozilla.org</a></h2>
+  <small>August 04, 2015 at 07:55 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Sometime last week we enabled a new API on hg.mozilla.org:
+<em>json-mozbuildinfo</em>. This endpoint will return JSON describing
+moz.build-derived metadata about the files that changed in a commit.</p>
+<p><a href="https://hg.mozilla.org/mozilla-central/json-mozbuildinfo/1164ec236273">Example</a>.
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/mozbuildinfo.html">Docs</a>.</p>
+<p>We plan to eventually leverage this API to do cool things like
+have MozReview automatically file bugs in the appropriate component and
+assign appropriate reviewers given the set of changed files in a commit.</p>
+<p>The API is currently only available on mozilla-central. And, we have
+very conservative resource limits in place. So large commits may cause
+it to error out. As such, the API is considered experimental. Also,
+performance is not as optimal as it could be. You have to start
+somewhere.</p>
+<p>I'd like to thank Guillaume Destuynder (kang) for his help with the
+security side of things. When I started on this project, I didn't think
+I'd be writing
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/02e353037996/testing/docker/builder-hgweb-chroot/mozbuild-eval.c">C code for spawning secure processes</a>,
+but here we are. In the not so distant future, I'll likely be adding
+<a href="http://man7.org/linux/man-pages/man2/seccomp.2.html">seccomp(2)</a>
+into the mix, which will make the execution environment as
+or more secure than the Firefox content process sandbox, depending
+on how it is implemented. The rabbit holes we find ourselves in to
+implement proper security...</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="hg.mozilla.org-operational-workings-now-open-sourced"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/08/04/hg.mozilla.org-operational-workings-now-open-sourced" rel="bookmark" title="Permanent Link to hg.mozilla.org Operational Workings Now Open Sourced">hg.mozilla.org Operational Workings Now Open Sourced</a></h2>
   <small>August 04, 2015 at 02:30 PM | categories: 
@@ -417,57 +459,6 @@ help enact change, please
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/17/prompting-to-run-mach-mercurial-setup#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mozreview-statistics-july-2015"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/07/16/mozreview-statistics-july-2015" rel="bookmark" title="Permanent Link to MozReview Statistics July 2015">MozReview Statistics July 2015</a></h2>
-  <small>July 16, 2015 at 02:00 PM | categories: 
-
-<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>As of today, ~15.6% of commits landing in Firefox in July have gone
-through <a href="https://reviewboard.mozilla.org/">MozReview</a> or have been produced
-on machines that have used MozReview. This is still a small percentage
-of overall commits. But, signs are that the percentage is going up. Last
-month, about half as many commits exhibited the same signature. It's
-only July 16 and we've already passed the total from June.</p>
-<p>What I find interesting is the differences between commits that have
-gone through MozReview versus the rest. When you look at the diff
-statistics (a quick proxy of change size), we find that MozReview
-commits tend to be smaller. The median <em>adds</em> as reported by diff stat
-(basically lines that were changed) is 12 for MozReview versus 17
-elsewhere. The average is 58 for MozReview versus 100 elsewhere. For
-number of files modified, MozReview averages 2.59 versus elsewhere's
-2.71. (These numbers exclude some specific large commits that appeared to
-be bulk imports of external projects and drove up the non-MozReview
-figures.)</p>
-<p>It's entirely possible the root cause behind the discrepancy is a
-side-effect of the population of MozReview users: perhaps MozReview
-users just write smaller commits. However, I'd like to think it's because
-MozReview makes it easier to manage multiple commits and people are taking
-advantage of that (this is an explicit design goal of MozReview). Whatever
-the root cause, I'm glad diffs are smaller.
-As I've <a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">written about before</a>,
-smaller commits are easier to review and land, thus enabling projects to
-move faster.</p>
-<p>I have a quarterly goal to remove the requirement for a Mozilla LDAP
-account to push to MozReview. That will allow first time contributors to
-use MozReview. This will be a huge win, as we can do much more magic in
-the MozReview world than we can from vanilla Bugzilla (automatic bug
-filing, automatic reviewer assignment, etc). Unofficially, I'd like to
-have more than 50% of Firefox commits go through MozReview by the end of
-the year.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/07/16/mozreview-statistics-july-2015#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../6">« Previous Page</a>
   --  
