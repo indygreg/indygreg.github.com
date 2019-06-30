@@ -10,10 +10,65 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Mon, 24 Jun 2019 04:38:48 GMT</pubDate>
+    <pubDate>Sun, 30 Jun 2019 23:46:34 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>C Extension Support in PyOxidizer</title>
+      <link>http://gregoryszorc.com/blog/2019/06/30/c-extension-support-in-pyoxidizer</link>
+      <pubDate>Sun, 30 Jun 2019 16:40:00 PDT</pubDate>
+      <category><![CDATA[Python]]></category>
+      <category><![CDATA[PyOxidizer]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2019/06/30/c-extension-support-in-pyoxidizer</guid>
+      <description>C Extension Support in PyOxidizer</description>
+      <content:encoded><![CDATA[<p>The <a href="/blog/2019/06/24/building-standalone-python-applications-with-pyoxidizer/">initial release</a>
+of PyOxidizer generated a bit of excitement across the Internet! The post was
+commented on heavily in various forums and my phone was constantly buzzing from
+all the Twitter activity. There has been a steady stream of
+<a href="https://github.com/indygreg/PyOxidizer/issues">GitHub Issues</a> for the project,
+which I consider a good sign. So thank you everybody for the support and
+encouragement! And especially thank you to everyone who filed an issue or
+submitted a pull request!</p>
+<p>While I don't usually read the comments, I was looking at various forums
+posting about PyOxidizer to see what reactions were like. A common negative
+theme was the lack of C extension support in PyOxidizer. People seemed
+dismissive of PyOxidizer because it didn't support C extensions. Despite the
+documentation stating that the feature was planned and that I had an idea for
+how to implement it, people seemed pessimistic. Perhaps I didn't adequately
+communicate that making C extensions work is actually a subset of the
+already-solved <em>single file executable</em> problem and therefore was already
+a <em>solved problem</em> at the technical level (only the integration with the
+Python and PyOxidizer <em>build systems</em> was missing). So in my mind C
+extension support was only a matter of time and the only open question was
+how many hacks would be needed to make it work, not <em>whether</em> it would work.</p>
+<p>Well, I'm pleased to report that <strong>the just-released version 0.2 of PyOxidizer
+supports C extensions on Windows, macOS, and Linux</strong>. If you install a Python
+package through a <code>pip-install-simple</code>, <code>pip-requirements-file</code>, or
+<code>setup-py-install</code> packaging rule, C extensions will be compiled in a special
+way that enables them to be embedded in the same binary containing Python
+itself. I've tested it with the <code>zope.interface</code>, <code>zstandard</code>, and
+<code>mercurial</code> packages and it seems to work (although Mercurial has other
+issues that prevent it from being packaged as a PyOxidizer application - but
+the C extensions do compile).</p>
+<p>There are some
+<a href="https://pyoxidizer.readthedocs.io/en/latest/status.html#native-extension-modules">limitations</a>
+to the support, however. I'm pretty confident the limitations can be eliminated
+given enough time. Given how many people were hung up on the lack of C extensions
+and were seemingly writing off PyOxidizer thinking it was snake oil or something,
+I wanted to deliver basic C extension support to curtail this line of criticism.
+Perfect is the enemy of good and hopefully basic C extension support is good
+enough to ease concerns about PyOxidizer's viability.</p>
+<p>Also in PyOxidizer 0.2 are some minor new features, like the <code>--pip-install</code> and
+<code>--python-code</code> flags to <code>pyoxidizer init</code>. These allow you to generate a
+<code>pyoxidizer.toml</code> file pre-configured to install some packages from pip and run
+custom Python code. So now applications can be created and built with a one-liner
+without having to edit a <code>pyoxidizer.toml</code> file!</p>
+<p>The full release notes <a href="https://pyoxidizer.readthedocs.io/en/latest/history.html">are available</a>.
+As always, please keep
+<a href="https://github.com/indygreg/PyOxidizer/issues">filing issues</a>. I'm particularly
+interested in hearing about packages whose C extensions don't work properly.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Building Standalone Python Applications with PyOxidizer</title>
       <link>http://gregoryszorc.com/blog/2019/06/24/building-standalone-python-applications-with-pyoxidizer</link>
@@ -2713,44 +2768,6 @@ inflexible for the needs of modern computing. If you use compression,
 I highly recommend investigating Zstandard.</p>
 <p><em>(I updated the post on 2017-03-08 to include a paragraph about the
 supplemental license in the <code>PATENTS</code> file.)</em></p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Automatic Python Static Analysis on MozReview</title>
-      <link>http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview</link>
-      <pubDate>Sat, 24 Jan 2015 23:30:00 PST</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[MozReview]]></category>
-      <category><![CDATA[Mozilla]]></category>
-      <category><![CDATA[code review]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2015/01/24/automatic-python-static-analysis-on-mozreview</guid>
-      <description>Automatic Python Static Analysis on MozReview</description>
-      <content:encoded><![CDATA[<p>A bunch of us were in Toronto last week hacking on MozReview.</p>
-<p>One of the cool things we did was deploy a bot for performing Python
-static analysis. If you submit some .py files to MozReview, the bot
-should leave a review. If it finds violations (it uses
-<a href="https://flake8.readthedocs.org/">flake8</a> internally), it will open
-an issue for each violation. It also leaves a comment that should
-hopefully give enough detail on how to fix the problem.</p>
-<p>While we haven't done much in the way of performance optimizations,
-the bot typically submits results less than 10 seconds after the review
-is posted! So, a human should never be reviewing Python that the bot
-hasn't seen. This means you can stop thinking about style nits and start
-thinking about what the code does.</p>
-<p>This bot should be considered an alpha feature. The code for the bot
-isn't even checked in yet. We're running the bot against production
-to get a feel for how it behaves. If things don't go well, we'll turn
-it off until the problems are fixed.</p>
-<p>We'd like to eventually deploy C++, JavaScript, etc bots. Python won out
-because it was the easiest to integrate (it has sane and efficient
-tooling that is compatible with Mozilla's code bases - most existing
-JavaScript tools won't work with Gecko-flavored JavaScript, sadly).</p>
-<p>I'd also like to eventually make it easier to locally run the same
-static analysis we run in MozReview. Addressing problems locally before
-pushing is a no-brainer since it avoids needless context switching from
-other people and is thus better for productivity. This will come in
-time.</p>
-<p>Report issues in #mozreview or in the Developer Services :: MozReview
-Bugzilla component.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

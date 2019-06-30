@@ -51,6 +51,85 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="pyoxidizer-support-for-windows"></a>
+  <h2 class="blog_post_title"><a href="/blog/2019/01/06/pyoxidizer-support-for-windows" rel="bookmark" title="Permanent Link to PyOxidizer Support for Windows">PyOxidizer Support for Windows</a></h2>
+  <small>January 06, 2019 at 10:00 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>, <a href='/blog/category/rust'>Rust</a>
+ | <a href="http://gregoryszorc.com/blog/2019/01/06/pyoxidizer-support-for-windows#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A few weeks ago I
+<a href="/blog/2018/12/18/distributing-standalone-python-applications">introduced PyOxidizer</a>,
+a project that aims to make it easier to produce completely self-contained
+executables embedding a Python interpreter (using Rust). A few days later I
+<a href="/blog/2018/12/28/faster-in-memory-python-module-importing/">observed some PyOxidizer performance benefits</a>.</p>
+<p>After a few more hacking sessions, I'm very pleased to report that
+PyOxidizer is now working on Windows!</p>
+<p>I am able to produce a standalone Windows <code>.exe</code> containing a fully
+featured CPython interpreter, all its library dependencies (OpenSSL, SQLite,
+liblzma, etc), and a copy of the Python standard library (both source and
+bytecode data). The binary weighs in at around 25 MB. (It could be smaller
+if we didn't embed <code>.py</code> source files or stripped some dependencies.)
+The only DLL dependencies of the exe are <code>vcruntime140.dll</code> and various
+system DLLs that are always present on Windows.</p>
+<p>Like I did for Linux and macOS, I produced a Python script that performs
+~500 <code>import</code> statements for the near entirety of the Python standard library.
+I then ran this script with both the official 64-bit Python distribution
+and an executable produced with PyOxidizer:</p>
+<pre><code># Official CPython 3.7.2 Windows distribution.
+$ time python.exe &lt; import_stdlib.py
+real    0m0.475s
+
+# PyOxidizer with non-PGO CPython 3.7.2
+$ time target/release/pyapp.exe &lt; import_stdlib.py
+real    0m0.347s
+</code></pre>
+<p>Compared to the official CPython distribution, a PyOxidizer executable
+can import almost the entirety of the Python standard library ~125ms
+faster - or ~73% of original. In terms of the percentage of speedup,
+the gains are similar to Linux and macOS. However, there is substantial
+new process overhead on Windows compared to POSIX architectures. On the
+same machine, a <em>hello world</em> Python process will execute in ~10ms on Linux
+and ~40ms on Windows. If we remove the startup overhead, importing
+the Python standard library runs at ~70% of its original time, making
+the relative speedup on par with that seen on macOS + APFS.</p>
+<p>Windows support is a major milestone for PyOxidizer. And it was the
+hardest platform to make work. CPython's build system on Windows uses
+Visual Studio project files. And coercing the build system to produce
+static libraries was a real pain. Lots of CPython's build tooling assumes
+Python is built in a very specific manner and multiple changes I made
+completely break those assumptions. On top of that, it's very easy to
+encounter problems with symbol name mismatch due to the use of
+<code>__declspec(dllexport)</code> and <code>__declspec(dllimport)</code>. I spent
+several hours going down a rabbit hole learning how Rust generates symbols
+on Windows for <code>extern {}</code> items. Unfortunately, we currently have
+to use a Rust Nightly feature (the <code>static-nobundle</code> linkage kind)
+to get things to work. But I <em>think</em> there are options to remove that
+requirement.</p>
+<p>Up to this point, my work on PyOxidizer has focused on prototyping the
+concept. With Windows out of the way and PyOxidizer working on Linux,
+macOS, and Windows, I have achieved confidence that my vision of a
+single executable embedding a full-featured Python interpreter is
+technically viable on major desktop platforms! (BSD people, I care
+about you too. The solution for Linux should be portable to BSD.)
+This means I can start focusing on features, usability, and optimization.
+In other words, I can start building a tool that others will want to use.</p>
+<p>As always, you can follow my work on this blog and by following
+the <a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
+and <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> projects on
+GitHub.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2019/01/06/pyoxidizer-support-for-windows#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="faster-in-memory-python-module-importing"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/12/28/faster-in-memory-python-module-importing" rel="bookmark" title="Permanent Link to Faster In-Memory Python Module Importing">Faster In-Memory Python Module Importing</a></h2>
   <small>December 28, 2018 at 12:40 PM | categories: 
@@ -1332,110 +1411,6 @@ That's really a shame. </p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/10/29/global-kernel-locks-in-apfs#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="benefits-of-clone-offload-on-version-control-hosting"></a>
-  <h2 class="blog_post_title"><a href="/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting" rel="bookmark" title="Permanent Link to Benefits of Clone Offload on Version Control Hosting">Benefits of Clone Offload on Version Control Hosting</a></h2>
-  <small>July 27, 2018 at 03:48 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Back in 2015, I implemented a feature in Mercurial 3.6 that allows
-servers to advertise URLs of pre-generated <em>bundle</em> files. When a
-compatible client performs a <code>hg clone</code> against a repository leveraging
-this feature, it downloads and applies the bundle from a URL then goes
-back to the server and performs the equivalent of an <code>hg pull</code> to obtain
-the changes to the repository made after the bundle was generated.</p>
-<p>On <a href="https://hg.mozilla.org/">hg.mozilla.org</a>, we've been using this
-feature since 2015. We host bundles in Amazon S3 and make them available
-via the CloudFront CDN. We perform
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/99f7164339ed/hgext/hgmo/__init__.py#l1022">IP filtering on the server</a>
-so clients connecting from AWS IPs are served S3 URLs corresponding to
-the closest region / S3 bucket where bundles are hosted. Most
-Firefox build and test automation is run out of EC2 and automatically
-clones high-volume repositories from an S3 bucket hosted in the same
-AWS region. (Doing an intra-region transfer is very fast and clones
-can run at &gt;50 MB/s.) Everyone else clones from a CDN. See our
-<a href="https://mozilla-version-control-tools.readthedocs.io/en/latest/hgmo/bundleclone.html">official docs</a>
-for more.</p>
-<p>I <a href="/blog/2015/10/22/cloning-improvements-in-mercurial-3.6/">last reported</a>
-on this feature in October 2015. Since then, Bitbucket also
-<a href="https://developer.atlassian.com/blog/2017/02/bitbucket-CDN-cloning/">deployed this feature</a>
-in early 2017.</p>
-<p>I was reminded of this <em>clone bundles</em> feature this week when
-kernel.org posted
-<a href="https://www.kernel.org/best-way-to-do-linux-clones-for-your-ci.html">Best way to do linux clones for your CI</a>
-and that post was making the rounds in my version control circles.
-tl;dr git.kernel.org apparently suffers high load due to high
-clone volume against the Linux Git repository and since Git doesn't
-have an equivalent feature to clone bundles built in to Git itself,
-they are asking people to perform equivalent functionality to mitigate
-server load.</p>
-<p>(A <em>clone bundles</em> feature has been discussed on the Git mailing list
-before. I remember finding old discussions when I was doing research
-for Mercurial's feature in 2015. I'm sure the topic has come up since.)</p>
-<p>Anyway, I thought I'd provide an update on just how valuable the
-<em>clone bundles</em> feature is to Mozilla. In doing so, I hope maintainers
-of other version control tools see the obvious benefits and consider
-adopting the feature sooner.</p>
-<p>In a typical week, hg.mozilla.org is currently serving ~135 TB of
-data. The overwhelming majority of this data is related to the Mercurial
-wire protocol (i.e. not HTML / JSON served from the web interface).
-Of that ~135 TB, ~5 TB is served from the CDN, ~126 TB is served from
-S3, and ~4 TB is served from the Mercurial servers themselves. In other
-words, <strong>we're offloading ~97% of bytes served from the Mercurial servers
-to S3 and the CDN</strong>.</p>
-<p>If we assume this offloaded ~131 TB is equally distributed throughout
-the week, this comes out to ~1,732 Mbps on average. In reality, we do
-most of our load from California's Sunday evenings to early Friday
-evenings. And load is typically concentrated in the 12 hours when
-the sun is over Europe and North America (where most of Mozilla's
-employees are based). So the typical throughput we are offloading is
-more than 2 Gbps. And at a lower level, automation tends to perform
-clones soon after a push is made. So load fluctuates significantly
-throughout the day, corresponding to when pushes are made.</p>
-<p>By volume, most of the data being offloaded is for the
-<a href="https://hg.mozilla.org/mozilla-unified">mozilla-unified</a> Firefox
-repository. Without clone bundles and without the special <em>stream
-clone</em> Mercurial feature (which we also leverage via clone bundles), the
-servers would be generating and sending ~1,588 MB of zstandard level 3
-compressed data for each clone of that repository. Each clone would
-consume ~280s of CPU time on the server. And at ~195,000 clones per
-month, that would come out to ~309 TB/mo or ~72 TB/week. In CPU time,
-that would be ~54.6 million CPU-seconds, or ~21 CPU-months. I will
-leave it as an exercise to the reader to attach a dollar cost to how
-much it would take to operate this service without clone bundles. But
-I will say the total AWS bill for our S3 and CDN hosting for this
-service is under $50 per month. (It is worth noting that intra-region
-data transfer from S3 to other AWS services is free. And we are
-definitely taking advantage of that.)</p>
-<p>Despite a significant increase in the size of the Firefox repository and
-clone volume of it since 2015, our servers are still performing less
-work (in terms of bytes transferred and CPU seconds consumed) than they
-were in 2015. The ~97% of bytes and millions of CPU seconds offloaded
-in any given week have given us a lot of breathing room and have
-saved Mozilla several thousand dollars in hosting costs. The feature
-has likely helped us avoid many operational incidents due to high server
-load. It has made Firefox automation faster and more reliable.</p>
-<p>Succinctly, Mercurial's <em>clone bundles</em> feature has successfully and
-largely effortlessly offloaded a ton of load from the hg.mozilla.org
-Mercurial servers. Other version control tools should implement this
-feature because it is a game changer for server operators <strong>and</strong>
-results in a better client-side experience (eliminates server-side CPU
-bottleneck and may eliminate network bottleneck due to a geo-local CDN
-typically being as fast as your Internet pipe). It's a win-win. And a
-massive win if you are operating at scale.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../1">« Previous Page</a>
   --  

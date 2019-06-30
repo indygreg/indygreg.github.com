@@ -51,6 +51,71 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="c-extension-support-in-pyoxidizer"></a>
+  <h2 class="blog_post_title"><a href="/blog/2019/06/30/c-extension-support-in-pyoxidizer" rel="bookmark" title="Permanent Link to C Extension Support in PyOxidizer">C Extension Support in PyOxidizer</a></h2>
+  <small>June 30, 2019 at 04:40 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>
+ | <a href="http://gregoryszorc.com/blog/2019/06/30/c-extension-support-in-pyoxidizer#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The <a href="/blog/2019/06/24/building-standalone-python-applications-with-pyoxidizer/">initial release</a>
+of PyOxidizer generated a bit of excitement across the Internet! The post was
+commented on heavily in various forums and my phone was constantly buzzing from
+all the Twitter activity. There has been a steady stream of
+<a href="https://github.com/indygreg/PyOxidizer/issues">GitHub Issues</a> for the project,
+which I consider a good sign. So thank you everybody for the support and
+encouragement! And especially thank you to everyone who filed an issue or
+submitted a pull request!</p>
+<p>While I don't usually read the comments, I was looking at various forums
+posting about PyOxidizer to see what reactions were like. A common negative
+theme was the lack of C extension support in PyOxidizer. People seemed
+dismissive of PyOxidizer because it didn't support C extensions. Despite the
+documentation stating that the feature was planned and that I had an idea for
+how to implement it, people seemed pessimistic. Perhaps I didn't adequately
+communicate that making C extensions work is actually a subset of the
+already-solved <em>single file executable</em> problem and therefore was already
+a <em>solved problem</em> at the technical level (only the integration with the
+Python and PyOxidizer <em>build systems</em> was missing). So in my mind C
+extension support was only a matter of time and the only open question was
+how many hacks would be needed to make it work, not <em>whether</em> it would work.</p>
+<p>Well, I'm pleased to report that <strong>the just-released version 0.2 of PyOxidizer
+supports C extensions on Windows, macOS, and Linux</strong>. If you install a Python
+package through a <code>pip-install-simple</code>, <code>pip-requirements-file</code>, or
+<code>setup-py-install</code> packaging rule, C extensions will be compiled in a special
+way that enables them to be embedded in the same binary containing Python
+itself. I've tested it with the <code>zope.interface</code>, <code>zstandard</code>, and
+<code>mercurial</code> packages and it seems to work (although Mercurial has other
+issues that prevent it from being packaged as a PyOxidizer application - but
+the C extensions do compile).</p>
+<p>There are some
+<a href="https://pyoxidizer.readthedocs.io/en/latest/status.html#native-extension-modules">limitations</a>
+to the support, however. I'm pretty confident the limitations can be eliminated
+given enough time. Given how many people were hung up on the lack of C extensions
+and were seemingly writing off PyOxidizer thinking it was snake oil or something,
+I wanted to deliver basic C extension support to curtail this line of criticism.
+Perfect is the enemy of good and hopefully basic C extension support is good
+enough to ease concerns about PyOxidizer's viability.</p>
+<p>Also in PyOxidizer 0.2 are some minor new features, like the <code>--pip-install</code> and
+<code>--python-code</code> flags to <code>pyoxidizer init</code>. These allow you to generate a
+<code>pyoxidizer.toml</code> file pre-configured to install some packages from pip and run
+custom Python code. So now applications can be created and built with a one-liner
+without having to edit a <code>pyoxidizer.toml</code> file!</p>
+<p>The full release notes <a href="https://pyoxidizer.readthedocs.io/en/latest/history.html">are available</a>.
+As always, please keep
+<a href="https://github.com/indygreg/PyOxidizer/issues">filing issues</a>. I'm particularly
+interested in hearing about packages whose C extensions don't work properly.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2019/06/30/c-extension-support-in-pyoxidizer#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="building-standalone-python-applications-with-pyoxidizer"></a>
   <h2 class="blog_post_title"><a href="/blog/2019/06/24/building-standalone-python-applications-with-pyoxidizer" rel="bookmark" title="Permanent Link to Building Standalone Python Applications with PyOxidizer">Building Standalone Python Applications with PyOxidizer</a></h2>
   <small>June 24, 2019 at 09:00 AM | categories: 
@@ -1263,85 +1328,6 @@ near future!</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2019/01/07/seeking-employment#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="pyoxidizer-support-for-windows"></a>
-  <h2 class="blog_post_title"><a href="/blog/2019/01/06/pyoxidizer-support-for-windows" rel="bookmark" title="Permanent Link to PyOxidizer Support for Windows">PyOxidizer Support for Windows</a></h2>
-  <small>January 06, 2019 at 10:00 AM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>, <a href='/blog/category/rust'>Rust</a>
- | <a href="http://gregoryszorc.com/blog/2019/01/06/pyoxidizer-support-for-windows#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>A few weeks ago I
-<a href="/blog/2018/12/18/distributing-standalone-python-applications">introduced PyOxidizer</a>,
-a project that aims to make it easier to produce completely self-contained
-executables embedding a Python interpreter (using Rust). A few days later I
-<a href="/blog/2018/12/28/faster-in-memory-python-module-importing/">observed some PyOxidizer performance benefits</a>.</p>
-<p>After a few more hacking sessions, I'm very pleased to report that
-PyOxidizer is now working on Windows!</p>
-<p>I am able to produce a standalone Windows <code>.exe</code> containing a fully
-featured CPython interpreter, all its library dependencies (OpenSSL, SQLite,
-liblzma, etc), and a copy of the Python standard library (both source and
-bytecode data). The binary weighs in at around 25 MB. (It could be smaller
-if we didn't embed <code>.py</code> source files or stripped some dependencies.)
-The only DLL dependencies of the exe are <code>vcruntime140.dll</code> and various
-system DLLs that are always present on Windows.</p>
-<p>Like I did for Linux and macOS, I produced a Python script that performs
-~500 <code>import</code> statements for the near entirety of the Python standard library.
-I then ran this script with both the official 64-bit Python distribution
-and an executable produced with PyOxidizer:</p>
-<pre><code># Official CPython 3.7.2 Windows distribution.
-$ time python.exe &lt; import_stdlib.py
-real    0m0.475s
-
-# PyOxidizer with non-PGO CPython 3.7.2
-$ time target/release/pyapp.exe &lt; import_stdlib.py
-real    0m0.347s
-</code></pre>
-<p>Compared to the official CPython distribution, a PyOxidizer executable
-can import almost the entirety of the Python standard library ~125ms
-faster - or ~73% of original. In terms of the percentage of speedup,
-the gains are similar to Linux and macOS. However, there is substantial
-new process overhead on Windows compared to POSIX architectures. On the
-same machine, a <em>hello world</em> Python process will execute in ~10ms on Linux
-and ~40ms on Windows. If we remove the startup overhead, importing
-the Python standard library runs at ~70% of its original time, making
-the relative speedup on par with that seen on macOS + APFS.</p>
-<p>Windows support is a major milestone for PyOxidizer. And it was the
-hardest platform to make work. CPython's build system on Windows uses
-Visual Studio project files. And coercing the build system to produce
-static libraries was a real pain. Lots of CPython's build tooling assumes
-Python is built in a very specific manner and multiple changes I made
-completely break those assumptions. On top of that, it's very easy to
-encounter problems with symbol name mismatch due to the use of
-<code>__declspec(dllexport)</code> and <code>__declspec(dllimport)</code>. I spent
-several hours going down a rabbit hole learning how Rust generates symbols
-on Windows for <code>extern {}</code> items. Unfortunately, we currently have
-to use a Rust Nightly feature (the <code>static-nobundle</code> linkage kind)
-to get things to work. But I <em>think</em> there are options to remove that
-requirement.</p>
-<p>Up to this point, my work on PyOxidizer has focused on prototyping the
-concept. With Windows out of the way and PyOxidizer working on Linux,
-macOS, and Windows, I have achieved confidence that my vision of a
-single executable embedding a full-featured Python interpreter is
-technically viable on major desktop platforms! (BSD people, I care
-about you too. The solution for Linux should be portable to BSD.)
-This means I can start focusing on features, usability, and optimization.
-In other words, I can start building a tool that others will want to use.</p>
-<p>As always, you can follow my work on this blog and by following
-the <a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
-and <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> projects on
-GitHub.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2019/01/06/pyoxidizer-support-for-windows#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../2">Next Page »</a>
 

@@ -51,6 +51,85 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mozreview-git-support-and-improved-commit-mapping"></a>
+  <h2 class="blog_post_title"><a href="/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping" rel="bookmark" title="Permanent Link to MozReview Git Support and Improved Commit Mapping">MozReview Git Support and Improved Commit Mapping</a></h2>
+  <small>February 08, 2016 at 11:05 AM | categories: 
+
+<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>MozReview - Mozilla's Review Board based code review tool - now
+supports ingestion from Git. Previously, it only supported Mercurial.</p>
+<p><a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install-git.html">Instructions</a>
+for configuring Git with MozReview are available. Because blog posts
+are not an appropriate medium for documenting systems and processes, I
+will not say anything more here on how to use Git with MozReview.</p>
+<p>Somewhat related to the introduction of Git support is an improved
+mechanism for mapping commits to existing review requests.</p>
+<p>When you submit commits to MozReview, MozReview has to decide how
+to <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/commits.html#understanding-how-commits-are-mapped-to-review-requests">map</a>
+those commits to review requests in Review Board. It has to choose
+whether to recycle an existing review request or create a new one.
+When recycling, is has to pick an appropriate one. If it chooses
+incorrectly, wonky things can happen. For example, a review request
+could switch to tracking a new and completely unrelated commit. That's
+bad.</p>
+<p>Up until today, our commit mapping algorithm was extremely simple. Yet
+it seemed to work 90% of the time. However, a number of people
+found the cracks and complained. With Git support coming online,
+I had a feeling that Git users would find these cracks with higher
+frequency than Mercurial users due to what I perceive to be
+variations in the commit workflows of Git versus Mercurial. So,
+I decided to proactively improve the commit mapping before the Git
+users had time to complain.</p>
+<p><strong>Both the Git and Mercurial MozReview client-side extensions now insert
+a <em>MozReview-Commit-ID</em> metadata line in commit messages.</strong> This line
+effectively defines a (likely) unique ID that identifies the commit
+across rewrites. When MozReview maps commits to review requests,
+it uses this identifier to find matches. What this means is that
+history rewriting (such as reordering commits) should be handled
+well by MozReview and should not confuse the commit mapping
+mechanism.</p>
+<p>I'm not claiming the commit mapping mechanism is perfect. In fact,
+I know of areas where it can still fall apart. But it is much
+better than it was before. If you think you found a bug in the
+commit mapping, don't hesitate to
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=MozReview">file a bug</a>.
+Please have it block <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1243483">bug 1243483</a>.</p>
+<p>A side-effect of introducing this improved commit mapping is that
+commit messages will have a <em>MozReview-Commit-ID</em> line in them. This
+may startle some. Some may complain about the <em>spam</em>. Unfortunately,
+there's no better alternative. Both Mercurial and Git do support a
+hidden key-value dictionary for each commit object. In fact, the
+MozReview Mercurial extension has been storing the very commit IDs
+that now appear in the commit message in this dictionary for months!
+Unfortunately, actually using this hidden dictionary for metadata
+storage is riddled with problems. For example, some Mercurial
+commands don't preserve all the metadata. And accessing or setting
+this data from Git is painful. While I wish this metadata (which
+provides little value to humans) were not located in the commit
+message where humans could be bothered by it, it's really the only
+practical place to put it. If people find it super annoying, we
+could modify Autoland to strip it before landing. Although, I think
+I like having it preserved because it will enable some useful
+scenarios down the road, such as better workflows for uplift
+requests. It's also worth noting that there is precedent for storing
+unique IDs in commit messages for purposes of commit mapping in the
+code review tool: <a href="https://gerrit-documentation.storage.googleapis.com/Documentation/2.11.5/user-changeid.html">Gerrit uses Change-ID lines</a>.</p>
+<p>I hope you enjoy the Git support and the more robust commit to review
+request mapping mechanism!</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2016/02/08/mozreview-git-support-and-improved-commit-mapping#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="making-mozreview-faster-by-disregarding-restful-design"></a>
   <h2 class="blog_post_title"><a href="/blog/2016/01/13/making-mozreview-faster-by-disregarding-restful-design" rel="bookmark" title="Permanent Link to Making MozReview Faster by Disregarding RESTful Design">Making MozReview Faster by Disregarding RESTful Design</a></h2>
   <small>January 13, 2016 at 03:25 PM | categories: 
@@ -329,66 +408,6 @@ to enable this on an existing share, see
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="hg.mozilla.org-updates"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/11/05/hg.mozilla.org-updates" rel="bookmark" title="Permanent Link to hg.mozilla.org Updates">hg.mozilla.org Updates</a></h2>
-  <small>November 05, 2015 at 09:20 AM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/11/05/hg.mozilla.org-updates#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>A number of changes have been made to
-<a href="https://hg.mozilla.org">hg.mozilla.org</a> over the past few days:</p>
-<ul>
-<li>
-<p>Bookmarks are now replicated from master to mirrors properly (before,
-  you could have seen <em>foo@default</em> bookmarks appearing). This means
-  bookmarks now properly work on hg.mozilla.org!
-  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1139056">bug 1139056</a>).</p>
-</li>
-<li>
-<p>Universally upgraded to Mercurial 3.5.2. Previously we were running
-  3.5.1 on the SSH master server and 3.4.1 on the HTTP endpoints. Some
-  HTML templates received minor changes.
-  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1200769">bug 1200769</a>).</p>
-</li>
-<li>
-<p>Pushes from clients running Mercurial older than 3.5 will now see
-  an advisory message encouraging them to upgrade.
-  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1221827">bug 1221827</a>).</p>
-</li>
-<li>
-<p>Author/user fields are now validated to be a RFC 822-like value
-  (e.g. "Joe Smith &lt;someone@example.com&gt;").
-  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=787620">bug 787620</a>).</p>
-</li>
-<li>
-<p>We can now mark individual repositories as read-only.
-  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1183282">bug 1183282</a>).</p>
-</li>
-<li>
-<p>We can now mark all repositories read-only (useful during maintenance
-  events).
-  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1183282">bug 1183282</a>).</p>
-</li>
-<li>
-<p>Pushlog commit list view only shows first line of commit message.
-  (<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=666750">bug 666750</a>).</p>
-</li>
-</ul>
-<p>Please report any issues in their respective bugs. Or if it is an
-emergency, #vcs on irc.mozilla.org.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/11/05/hg.mozilla.org-updates#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../4">« Previous Page</a>
   --  
