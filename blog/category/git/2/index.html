@@ -51,6 +51,140 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="repository-centric-development"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/07/24/repository-centric-development" rel="bookmark" title="Permanent Link to Repository-Centric Development">Repository-Centric Development</a></h2>
+  <small>July 24, 2014 at 08:23 PM | categories: 
+
+<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I was editing a wiki page yesterday and I think I coined a new term
+which I'd like to enter the common nomenclature: <em>repository-centric
+development</em>. The term refers to development/version control
+workflows that place repositories - not patches - first.</p>
+<p>When collaborating on version controlled code with modern tools like
+Git and Mercurial, you essentially have two choices on how to
+share version control data: patches or repositories.</p>
+<p>Patches have been around since the dawn of version control. Everyone
+knows how they work: your version control system has a copy of
+the canonical data and it can export a view of a specific change
+into what's called a patch. A patch is essentially a diff with
+extra metadata.</p>
+<p>When distributed version control systems came along, they brought
+with them an alternative to patch-centric development:
+repository-centric development. You could still exchange patches if you
+wanted, but distributed version control allowed you to <em>pull</em> changes
+directly from multiple <em>repositories</em>. You weren't limited to a single
+master server (that's what the <em>distributed</em> in <em>distributed version
+control</em> means). You also didn't have to go through an intermediate
+transport such as email to exchange patches: you communicate directly
+with a peer repository instance.</p>
+<p>Repository-centric development eliminates the <em>middle man</em> required
+for patch exchange: instead of exchanging derived data, you exchange
+the actual data, speaking the repository's native language.</p>
+<p>One advantage of repository-centric development is it eliminates the
+problem of patch non-uniformity. Patches come in many different flavors.
+You have plain diffs. You have diffs with metadata. You have Git style
+metadata. You have Mercurial style metadata. You can produce patches
+with various lines of context in the diff. There are different methods
+for handling binary content. There are different ways to express
+file adds, removals, and renames. It's all a hot mess. Any system
+that consumes patches needs to deal with the non-uniformity. Do you
+think this isn't a problem in the real world? Think again. If you are
+involved with an open source project that collects patches via email
+or by uploading patches to a bug tracker, have you ever seen someone
+accidentally upload a patch in the wrong format? That's patch
+non-uniformity. New contributors to Firefox do this all the time. I
+also see it in the Mercurial project. With repository-centric
+development, patches never enter the picture, so patch non-uniformity
+is a non-issue. (Don't confuse the superficial formatting of patches
+with the content, such as an incorrect commit message format.)</p>
+<p>Another advantage of repository-centric development is it makes the
+act of exchanging data easier. Just have two repositories talk to
+each other. This used to be difficult, but hosting services like
+GitHub and Bitbucket make this easy. Contrast with patches, which
+require hooking your version control tool up to wherever those patches
+are located. The Linux Kernel, like so many other projects,
+<a href="https://www.kernel.org/doc/Documentation/SubmittingPatches">uses email for contributing changes</a>.
+So now Git, Mercurial, etc all fulfill Zawinski's law. This means your
+version control tool is talking to your inbox to send and receive code.
+Firefox development uses Bugzilla to hold patches as attachments. So now your
+version control tool needs to talk to your issue tracker. (Not the worst
+idea in the world I will concede.) While, yes, the tools around using
+email or uploading patches to issue trackers or whatever else you are
+using to exchange patches exist and can work pretty well, the grim
+reality is that these tools are all reinventing the wheel of repository
+exchange and are solving a problem that has already been solved by
+<em>git push</em>, <em>git fetch</em>, <em>hg pull</em>, <em>hg push</em>, etc. Personally, I would
+rather <em>hg push</em> to a remote and have tools like issue trackers and
+mailing lists pull directly from repositories. At least that way they
+have a direct line into the source of truth and are guaranteed a
+consistent output format.</p>
+<p>Another area where direct exchange is huge is multi-patch commits
+(<em>branches</em> in Git parlance) or where commit data is fragmented. When
+pushing patches to email, you need to insert metadata saying which patch
+comes after which. Then the email import tool needs to reassemble things
+in the proper order (remember that the typical convention is one email
+per patch and email can be delivered out of order). Not the most
+difficult problem in the world to solve. But seriously, it's been
+solved already by <em>git fetch</em> and <em>hg pull</em>! Things are worse for
+Bugzilla. There is no bullet-proof way to order patches there. The
+convention at Mozilla is to add <em>Part N</em> strings to
+commit messages and have the Bugzilla import tool do a sort (I assume it
+does that). But what if you have a logical commit series spread across
+multiple bugs? How do you reassemble everything into a linear series of
+commits? You don't, sadly. Just today I wanted to apply a somewhat
+complicated series of patches to the Firefox build system I was asked to
+review so I could jump into a debugger and see what was going on so I
+could conduct a more thorough review. There were 4 or 5 patches spread
+over 3 or 4 bugs. Bugzilla and its patch-centric workflow prevented me
+from importing the patches. Fortunately, this patch series was pushed to
+Mozilla's Try server, so I could pull from there. But I haven't always
+been so fortunate. This limitation means developers have to make
+sacrifices such as writing fewer, larger patches (this makes code review
+harder) or involving unrelated parties in the same bug and/or review.
+In other words, deficient tools are imposing limited workflows. No bueno.</p>
+<p>It is a fair criticism to say that not everyone can host a server or
+that permissions and authorization are hard. Although I think concerns
+about impact are overblown. If you are a small project, just create a
+GitHub or Bitbucket account. If you are a larger project, realize that
+people time is one of your largest expenses and invest in tools like
+proper and efficient repository hosting (often this can be GitHub) to
+reduce this waste and keep your developers happier and more efficient.</p>
+<p>One of the clearest examples of repository-centric development is
+GitHub. There are no patches in GitHub. Instead, you <em>git push</em>
+and <em>git fetch</em>. Want to apply someone else's work? Just add a remote
+and <em>git fetch</em>! Contrast with first locating patches, hooking up
+Git to consume them (this part was always confusing to me - do you
+need to retroactively have them sent to your email inbox so you can
+import them from there), and finally actually importing them. Just
+give me a URL to a repository already. But the benefits of
+repository-centric development with GitHub don't stop at pushing and
+pulling. GitHub has built code review functionality into pushes. They
+call these <em>pull requests</em>. While I have significant issues with
+GitHub's implemention of pull requests (I need to blog about those some
+day), I can't deny the utility of the repository-centric workflow and
+all the benefits around it. Once you switch to GitHub and its
+repository-centric workflow, you more clearly see how lacking
+patch-centric development is and quickly lose your desire to go back
+to the 1990's state-of-the-art methods for software development.</p>
+<p>I hope you now know what repository-centric development is and will join
+me in championing it over patch-based development.</p>
+<p>Mozillians reading this will be very happy to learn that work is under
+way to shift Firefox's development workflow to a more repository-centric
+world. Stay tuned.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="new-repository-for-mozilla-version-control-tools"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/02/05/new-repository-for-mozilla-version-control-tools" rel="bookmark" title="Permanent Link to New Repository for Mozilla Version Control Tools">New Repository for Mozilla Version Control Tools</a></h2>
   <small>February 05, 2014 at 07:15 PM | categories: 
@@ -515,359 +649,9 @@ powerful extensions. The future is bright for this tool.</p>
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-(and-git)#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="making-hg-git-faster"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/04/14/making-hg-git-faster" rel="bookmark" title="Permanent Link to Making hg-git Faster">Making hg-git Faster</a></h2>
-  <small>April 14, 2013 at 09:45 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/git'>Git</a>
- | <a href="http://gregoryszorc.com/blog/2013/04/14/making-hg-git-faster#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>When enterprising individuals at Mozilla
-<a href="http://bluishcoder.co.nz/2011/02/10/git-conversion-of-mozilla-central.html">started maintaining</a>
-a Git mirror of Firefox's main source repository (hosted in Mercurial),
-they ran into a significant problem: conversion was slow. The initial
-conversion apparently took over 6 days and used a lot of memory.
-Furthermore, each subsequent commit took many seconds, even on modern
-hardware. This meant that the they could only maintain a Git mirror of
-a few project branches and that updates would be slow. Furthermore,
-the slowness of the conversion significantly discouraged people
-from using the tool locally as part of regular development.</p>
-<p>I thought this was unacceptable. I wanted to enable people to use
-their tool of choice (Git) to develop Firefox. So, I did what annoyed
-engineers do when confronted with an itch: I scratched it.</p>
-<h2>Diagnosing the Problem</h2>
-<p>When I started tackling this problem, I had little knowledge of the
-problem space other than the problem statement: <em>converting from
-Mercurial to Git is prohibitively slow</em> and that the slow tool was
-<a href="http://hg-git.github.io/">hg-git</a>. My challenge was thus to make
-hg-git faster.</p>
-<p>When confronted with a performance problem, one of the first things you
-do is identify the source of the bad performance. Then, you need to
-acertain whether that is something you have the ability to change.</p>
-<p>This often starts by answering some high-level questions then drilling
-down into more detail as necessary. For a long-running system tool like
-hg-git, I start with the <em>top test</em>: how much CPU, memory, and I/O is
-the process utilizing?</p>
-<p>In the case of hg-git, we were CPU bound. The Python process was
-consistently pegging a single CPU core while periodically incurring I/O
-(but not nearly enough to saturate a magnetic disk). This told me a few
-things. First, I should look for bottlenecks inside Python. Second, I
-should investigate whether parallel execution would be possible. The
-latter is especially important these days because the trend in
-processors is towards more cores rather than higher clock speeds. It's
-no longer acceptable to let increases in clock speed or cycle efficiency
-bail you out: if you want a CPU bound process to run as fast as
-possible, it's often necessary to involve all available CPU cores.</p>
-<p>Once I diagnosed CPU as the limiting factor, I pulled out the next tool
-in the arsenal: a code profiler. I quickly discovered exactly where the
-conversion was taking the most CPU time. As feared, it was in the
-<em>export Mercurial changeset to Git commit</em> function.
-Specifically, profiling had flagged the conversion of Mercurial
-manifests to Git trees and blobs. Furthermore, most of the time was
-spent in functions in Mercurial itself (Mercurial is implemented in
-Python and hg-git calls into it natively) and Dulwich (a pure Python
-implementation of Git). So, I was either looking at deficiencies or
-Mercurial and/or Dulwich, a bad conversion algorithm in hg-git, or both.
-To know which, I would need a better grasp on the internal storage
-models of Mercurial and Git.</p>
-<h2>Learning about Mercurial's and Git's internal storage models</h2>
-<p>To understand why conversion from Mercurial to Git was slow, I needed to
-understand how each stored data internally. My hope was that if attained
-better understanding I could apply the knowledge to assess the algorithm
-hg-git was using and optimize it, hopefully introducing parallel
-execution along the way.</p>
-<h3>Git's internals</h3>
-<p>I already had a fairly good understanding of how Git works internally.
-And, it's quite simple really. The <a href="http://git-scm.com/book/en/Git-Internals">Git Internals</a>
-chapter of the <em>Pro Git</em> is extremely useful. While I encourage readers
-to read all of the <a href="http://git-scm.com/book/en/Git-Internals-Git-Objects">Git Objects</a>
-section, the gist is:</p>
-<ul>
-<li>Git's core storage is a key-value data store. Keys are SHA-1 checksums
-  of content. Each entity is storage in a <em>Git object</em>.</li>
-<li>A <em>blob</em> is an object holding the raw content of a file.</li>
-<li>A <em>tree</em> is an object holding a list of <em>tree entries</em>. Each tree entry
-  defines a blob, another tree object, etc. A tree is essentially a
-  directory listing.</li>
-<li>A <em>commit</em> object holds metadata about an individual Git commit. Each
-  commit object refers to a specific <em>tree</em> object.</li>
-</ul>
-<p>When you introduce a new file that hasn't been seen before, a new <em>blob</em>
-is added to storage. That blob is referenced by a <em>tree</em>. When you
-update a file, a new <em>tree</em> is created referring to the new <em>blob</em> that
-was created.</p>
-<p>Things get a little complicated when you consider directories. If you
-update the file <em>foo/bar/baz.c</em>, the tree for <em>foo/bar</em> changes (because
-the SHA-1 of <em>baz.c</em> changed). And, the SHA-1 for the <em>foo/bar</em> tree
-changes, so the <em>bar</em> entry in <em>foo</em>'s tree changes, changing the SHA-1
-for the root tree.</p>
-<p>That's essentially how Git addresses commits, directories, and files. If
-you don't grok this, please, please read the aforementioned page on it -
-it may even help you better grok Git!</p>
-<h3>Mercurial's internals</h3>
-<p>Unlike Git, I didn't really have a clue how Mercurial worked internally.
-So, I needed to do some self-education here.</p>
-<p>The best resource for Mercurial's storage model I've found is the
-<a href="http://hgbook.red-bean.com/read/behind-the-scenes.html">Behind the Scenes</a>
-chapter from <em>Mercurial: The Definitive Guide</em>. The gist is:</p>
-<ul>
-<li>History for an individual file is stored in a <em>filelog</em>. Each
-  <em>filelog</em> contains the history of a single file. Each file revision
-  has a hash based on the file contents.</li>
-<li>The <em>manifest</em> lists every file, its permissions, and its file
-  revision for each changeset in the repository.</li>
-<li>The <em>changelog</em> contains information about each changeset, including
-  the revision of the <em>manifest</em> to use.</li>
-<li>Each of these logs contain <em>revisions</em> and you can address an
-  individual revision within the log.</li>
-</ul>
-<p>From a high level, Mercurial's storage model is very similar to Git's.
-They both address files by hashing their content. Where Git uses
-multiple tree objects to define every file in a commit, Mercurial has a
-single manifest containing a flat list. Aside from that, the
-differences are mostly in implementation details. These are important,
-as we'll soon see.</p>
-<h2>Analyzing hg-git's conversion algorithm</h2>
-<p>Armed with knowledge of how Git and Mercurial internally store data, I
-was ready to analyze how hg-git was performing conversion from Mercurial
-to Git. Since profiling revealed it was the <em>convert a single changeset
-into Git commit</em> function that was taking all the time, I started there.</p>
-<p>In Python (but not the actual Python), the algorithm was essentially:</p>
-<div class="pygments_murphy"><pre><span></span><span class="k">def</span> <span class="nf">export_changeset_to_git</span><span class="p">(</span><span class="n">changeset</span><span class="p">,</span> <span class="n">git</span><span class="p">,</span> <span class="n">already_converted</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Receives the Mercurial changeset and a handle on a Git object storre.&quot;&quot;&quot;</span>
-    <span class="c1"># This is an entity that helps us build Git tree objects from</span>
-    <span class="c1"># paths and blobs. The logic is at</span>
-    <span class="c1"># https://github.com/jelmer/dulwich/blob/2a8548be3b1fd4a1ae7d0436dce91611112c47c2/dulwich/index.py#L298</span>
-    <span class="n">tree_builder</span> <span class="o">=</span> <span class="n">TreeBuilder</span><span class="p">()</span>
-
-    <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">changeset</span><span class="o">.</span><span class="n">manifest</span><span class="p">:</span>
-        <span class="n">blob_id</span> <span class="o">=</span> <span class="n">already_converted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">blob_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">blob</span> <span class="o">=</span> <span class="n">Blob</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">data</span><span class="p">())</span>
-            <span class="n">git</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">blob</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">blob</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-            <span class="n">already_converted</span><span class="p">[</span><span class="nb">file</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
-            <span class="n">blob_id</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
-
-        <span class="n">tree_builder</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">blob_id</span><span class="p">,</span> <span class="nb">file</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">all_trees</span><span class="p">():</span>
-        <span class="n">git</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-
-    <span class="n">root_tree</span> <span class="o">=</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">root_tree</span>
-
-    <span class="c1"># And proceed to build the Git commit and insert it.</span>
-</pre></div>
-
-<p>On the face of it, this code doesn't seem too bad. If I were writing the
-functionality from scratch, I'd likely do something very similar. So,
-why is it so slow?</p>
-<p>As I mentioned earlier, profiling results had identified Mercurial and
-Dulwich as the hot spots. The Mercurial hotspot was in iteration over
-the files in the manifest. And the Dulwich offender with Git <em>tree</em>
-object construction. By why?</p>
-<p>First, it turns out that iterating a manifest the way hg-git was isn't
-exactly performant. I never traced all the gory details, but I'm pretty
-sure every time it accessed the file context through the change context
-there was I/O involved. Not good, especially if you may not need the
-information contained if it was already cached!</p>
-<p>Second, it turns out that creating Git <em>tree</em> objects in Dulwich is
-rather slow. And, the problem is magnified when converting large
-repositories - like mozilla-central (Firefox's canonical repository).</p>
-<p>So, I was faced with a decision: make Mercurial and/or Dulwich faster or
-change hg-git. Since improving these would have benefits outside of
-hg-git, I initially went down those roads. However, I eventually
-abandonded the effort because of effort involved. And, in the case of
-Dulwich, improving things would likely require rewriting some pieces in
-C - not something I cared to do nor something that the Dulwich people
-would likely accept since Dulwich is all about being a pure Python
-implementation of Git! And in hindsight, this was the right call.
-Mercurial and Dulwich are fast enough - it's hg-git that was being
-suboptimal.</p>
-<p>I was faced with two problems: don't mass iterate over manifests and
-don't mass generate Git trees. Both were seemingly impossible to avoid
-because both are critical to converting a Mercurial changeset to Git.</p>
-<p>I thought about this problem for a while. I experimented with numerous
-micro benchmarks. I engaged the very helpful Mercurial developers on IRC
-(thanks everyone!). And, I eventually arrived at what I think is an
-elegant solution.</p>
-<p>When I took a step back and looked at the larger problem of exporting
-Mercurial changesets to Git, I realized it would be beneficial in terms
-of efficiency for the conversion to be more aware of what had occurred
-before. Before I came along, hg-git was asking Mercurial for the full
-state of each changeset for each changeset conversion. When you think
-about it in low-level operations, this is extremely inefficient. Let's
-take Git trees as an example.</p>
-<p>When you perform a commit, only the trees - and
-their parents - that had modified files will change. All the
-other trees will be identical across commits. For large repositories (in
-terms of files and directories) like mozilla-central, the number of
-<em>static</em> trees across small commits is quite significant compared to
-changed trees. The overhead of computing all these trees is not
-insignificant!</p>
-<p>Instead of throwing away all the trees and file context information
-between changeset exports, what if I preserved it and reused it for the
-next changeset? I think I'm on to something...</p>
-<h2>Implementing incremental changeset export</h2>
-<p>To minimize the work performed when exporting Mercurial changesets to
-Git, I <a href="https://github.com/indygreg/hg-git/commit/aef6eacf86fb08101ea98a7787f3b20dd67287c2">implemented</a>
-a standalone class that can emit Mercurial changeset deltas in terms of
-Git objects. Essentially, it caches a Git tree representation of a
-Mercurial manifest. When you feed a new Mercurial changeset into it, it
-asks Mercurial to compare those changesets using the same API used by
-<em>hg status</em>. This API is efficient and returns the information I care
-about: the paths that changed. Once we have the changed files, we
-<em>simply</em> reflect those changes in terms of updating Git trees.</p>
-<p>If a file changes or is added, we emit a <em>blob</em>. If a <em>tree</em> changes, we
-emit the new <em>tree</em> object. When the consumer has finished writing the
-set of new objects to Git, it asks for the SHA-1 of the root tree. (Up
-until this point the consumer is not aware of what any of the emitted
-objects actually are - just that they likely need to be added to
-storage.) It then uses the SHA-1 of the root tree to construct the
-commit. Then it moves on to the next changeset.</p>
-<p>The impact of this change is significant. On my computer, converting
-Mercurial's own Mercurial repository Git went from <strong>21:07</strong> to <strong>8:14</strong>
-on my i7-2600k. mozilla-central is even more drastic. The first 200
-commits (the first commit was a large dump from CVS) took <strong>8:17</strong>
-before and now take <strong>2:32</strong>. I don't have exact numbers from newer
-commits, but I do know they were at least twice as slow as the initial
-commits and showed an even more drastic speedup.</p>
-<p>But I was just getting started.</p>
-<p>The initial implementation wasn't very efficient in terms of reducing
-tree object calculations. I changed that earlier today when I
-<a href="https://groups.google.com/d/msg/hg-git/I5w_FscF6lw/LAc0pw1iilQJ">submitted a patch for consideration</a>
-that only calculates tree changes for trees that actually changed. I
-also removed some needless sorting on the order of export operations.
-This second patch reduced conversion of Mercurial's repository down to
-<strong>5:33</strong>. Even more impressive is that <strong>mozilla-central's changesets are
-now exporting almost 4x faster</strong> with this patch alone. The first 200
-changesets now export in <strong>42s</strong> (down from <strong>2:32</strong> which is down from
-<strong>8:17</strong>). This is mostly due to the overhead of reprocessing
-non-dirty trees on every export.</p>
-<p>And I'm not through.</p>
-<p>As part of building the standalone incremental changeset exporter, one
-of the goals in the back of my mind was to eventually have things
-execute in parallel.</p>
-<p>In my <a href="https://github.com/indygreg/hg-git/tree/performance-next">personal development branch</a>
-I have a <a href="https://github.com/indygreg/hg-git/commit/e74641284fecc928b0b8f8dcc01ef9b99e09c3cc">patch</a>
-to perform Mercurial changeset export on multiple cores. Essentially
-hg-git fires up a bunch of worker processes and asks each to export a
-consecutive range of changesets. The workers writes new Git objects into
-Git and then tells the coordinator process the root tree SHA-1
-corresponding to each Mercurial changeset. The coordinator process then
-uses these root tree SHA-1's to derive Git commit objects (you can't
-create the commit object until you know the SHA-1 of the commit's
-parents).</p>
-<p>The blob and tree exporting on separate processes makes Mercurial to Git
-export scale out to however many cores you feel like throwing at it.
-When 32 core machines come around, you can convert using all available
-cores and the speedup should roughly be linear with the number of cores.</p>
-<p>I'm still working out some kinks in the multiple processes patch
-(the <em>multiprocessing</em> module is very difficult to get working on all
-platforms and I don't want to break hg-git when it lands). But,
-<a href="http://ehsanakhgari.org/">Ehsan Akhgari</a> has been using it to power the
-<a href="https://github.com/mozilla/mozilla-central/">GitHub mirror</a> of
-mozilla-central for months without issue. (His use of these patches
-freed up the CPU required to support conversion of more project branches
-on the Git mirror. And, he's still not using the 4x improvement patch I
-wrote today - he will shortly - so who knows what improvements will stem
-from that.)</p>
-<p>With all the patches applied, hg-git now feels like a Ferrari when
-exporting Mercurial changesets to Git. Conversion of Mercurial's
-repository now takes <strong>1:25</strong> (down from <strong>21:07</strong>). <strong>Conversion of
-mozilla-central has gone from 6+ days to about 3 hours!</strong> More
-importantly, ongoing conversions feel somewhat snappy now.</p>
-<h2>Making Git export even faster</h2>
-<p>With the patch today, I'd say optimization of exporting Mercurial
-changesets is nearing its limits. There are a few things I could try
-that may net another 2 or 3x improvement. But, I think the ~50x
-improvement I've already attained (at least for mozilla-central) is
-pretty damn good and good enough for most users. (Part of performance
-optimization is knowing when is good enough and stopping before you
-invest excessive time in the long tail.)</p>
-<p>There is one giant refactor that could likely net a significant win for
-Git export. However, it requires optimizing for initial export over
-recurring incremental export (which is why I have little interest in
-it). Incremental export incurs a lot of <em>random</em> I/O accessing Mercurial
-filelogs and extracting specific file revisions as they are needed. An
-optimal export would iterate over the filelogs and export Git blobs from
-each filelog in the sequence they occur in within the filelogs. It would
-cache the file node to blob SHA-1. After all blobs are exported, the
-mappings would be combined and distributed to all workers. Then, tree
-export would occur in parallel largely under the existing model modulo
-blob writing. This would minimize overall I/O and work in Mercurial and
-would likely be significantly faster. However, it's mostly useful for
-initial export and IMO not worth implementing. (It's possible to employ
-a variation for incremental export that iterates over filelogs and
-exports not-yet-seen revisions. Perhaps I will investigate this some
-day.)</p>
-<h2>What about converting Git to Mercurial?</h2>
-<p>Now that I've tackled Mercurial to Git conversion, it's very tempting to
-work magic on the inverse: converting Git commits to Mercurial
-changesets. While I haven't looked at this problem in detail, I already
-know it will be at least slightly more challenging.</p>
-<p>The reason is parallelization. With Mercurial export, I have each child
-process reading directly from Mercurial and writing directly to Git.
-There are no locks involved. There is just a coordinator that ensures
-minimum redundant work among workers. There is some redundant
-work, sure. But, the alternative would be lots of locking and/or
-exchange of state across processes - not cheap operations! Furthermore,
-the writes into Git can occur in any order (since Git is just a
-key-value store). The only hard requirement is a child commit must
-come after its parent (because you need the parent commit's SHA-1).
-And, single-threaded insert of commit objects isn't a big deal because
-you can crank through hundreds of them per second (it might even be over
-1000/s on my machine).</p>
-<p>Mercurial's storage implementation does not afford me the same
-<em>carelessness</em> with regards to writing into storage. Since Mercurial
-uses shared files for individual file and manifest history, we have
-a contention problem. We <em>could</em> lock files when writing to them.
-However, these files (<em>revlogs</em> in Mercurial speak) also use
-transparent delta compression. You get the best performance/compression
-when changes are written in the order they actually occured in (at
-least in the typical case).</p>
-<p>To optimally write to Mercurial you need to order inserts. This means
-parallel reads from Git (in separate worker processes) would be very
-difficult to implement. Doable, sure, but you're looking at a lot of
-transferred state and ordering. This likely involves a lot more memory
-and CPU usage.</p>
-<p>The best idea I've come up with so far is a single process
-that reads off Git commits and iterates trees. It hashes the paths of
-seen files to a consistent worker process which then pulls the blob from
-Git's storage and inserts it into the filelog. You don't need to lock
-filelogs because only one worker owns a specific path. Workers report
-the blob's corresponding file node to another process which then
-assembles manifests, writes manifests in order, and finally creates
-and writes changesets. Unfortunately, the worker processes are just
-doing blob I/O. There is no parallel processing of Git tree calculation
-or Mercurial manifests. Given this was a significant source of slowness
-exporting <em>to</em> Git, I worry the inverse will be true. Although, the
-problem with Git was tree <em>creation</em> and it was due to the volume. Since
-there is only 1 manifest per changeset, perhaps it won't be as bad.</p>
-<p>While I've brainstormed a solution, I have no concrete plans to work on
-Git to Mercurial conversion. The impetus for me working on Mercurial to
-Git speedups was that I and a number of other Mozilla people were
-personally impacted. If the same is true for Git to Mercurial slowness,
-I could invest a few hours the next time I'm sick and bored over the
-weekend.</p>
-<h2>Conclusion</h2>
-<p>Converting Mercurial repositories to Git with hg-git is now
-significantly faster. If you thought it was too slow before, grab the
-latest code (from either the official repository or my personal branch)
-and enjoy.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/04/14/making-hg-git-faster#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
  <a href="/blog/category/git/1">« Previous Page</a>
+  --  
+ <a href="/blog/category/git/3">Next Page »</a>
 
               </div>
               

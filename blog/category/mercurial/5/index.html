@@ -51,6 +51,124 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="faster-cloning-from-hg.mozilla.org-with-server-provided-bundles"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles" rel="bookmark" title="Permanent Link to Faster Cloning from hg.mozilla.org With Server Provided Bundles">Faster Cloning from hg.mozilla.org With Server Provided Bundles</a></h2>
+  <small>May 29, 2015 at 11:30 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>When you type <em>hg clone</em>, the Mercurial server will create a <em>bundle</em>
+from repository content at the time of the request and stream it to
+the client. (Git works essentially the same way.)</p>
+<p>This approach usually <em>just works</em>. But there are some downsides,
+particularly with large repositories.</p>
+<p>Creating bundles for large repositories is not cheap. For
+mozilla-central, Firefox's main repository, it takes ~280s of CPU time
+on my 2014 MacBook Pro to generate a bundle. Every time a client runs a
+<em>hg clone https://hg.mozilla.org/mozilla-central</em>, a server somewhere
+is spinning a CPU core generating ~1.1 GB of data. What's more, if
+another clone arrives at the same time, another process will perform
+the exact same work! When we talk about multiple minutes of CPU time
+per request, this extra work starts to add up.</p>
+<p>Another problem with large repositories is interrupted downloads. If
+you suffer a connectivity blip during your <em>clone</em> command, you'll
+have to start from scratch. This potentially means re-transferring
+hundreds of megabytes from the server. It also means the server has
+to generate a new bundle, consuming even more CPU time. This is not
+good for the user or the server.</p>
+<p>There have been multiple outages of hg.mozilla.org as a result of
+the service being flooded with clone requests to large repositories.
+Dozens of clients (most of them in Firefox or Firefox OS
+release automation) have cloned the same repository around the same
+time and overwhelmed network bandwidth in the data center or CPU
+cores on the Mercurial servers.</p>
+<p>A common solution to this problem is to not use the <em>clone</em> command
+to receive initial repository data from the server. Instead, a
+static <em>bundle</em> file will be generated and made available to clients.
+Clients will call <em>hg init</em> to create an empty repository then will
+perform an <em>hg unbundle</em> to apply the contents of a pre-generated
+bundle file. They will then run <em>hg pull</em> to fetch new data that
+was created after the bundle was generated. (It's worth noting that
+Git's <em>clone --reference</em> option is similar.)</p>
+<p>This is a good technical solution. Firefox and Firefox OS release
+automation have effectively implemented this. However, it is a lot of
+work: you have to build your own bundle generation and hosting
+infrastructure and you have to remember that every <em>hg clone</em> should
+probably be using bundles instead. It is extra complexity and complexity
+that must be undertaken by every client. If a client forgets, the
+consequences can be disastrous (clone flooding leading to service
+outage). Client-side opt-in is prone to lapses and doesn't scale.</p>
+<p><strong>As of today, we've deployed a more scalable, server-based solution to
+hg.mozilla.org.</strong></p>
+<p>hg.mozilla.org is now itself generating bundles for a handful of
+repositories, including mozilla-central, inbound, fx-team, and
+mozharness. These bundles are being uploaded to Amazon S3. And
+<strong>those bundles are being advertised by the server over Mercurial's
+wire protocol</strong>.</p>
+<p>When you install the <em>bundleclone</em> Mercurial extension, <em>hg clone</em> is
+taught to look for bundles being advertised on the server. If a bundle
+is available, the bundle is downloaded, applied, and then the client
+does the equivalent of an <em>hg pull</em> to fetch all new data since when the
+bundle was generated. If a bundle exists, it is used transparently: no
+client side cooperation is needed beyond installing the <em>bundleclone</em>
+extension. If a bundle doesn't exist, it simply falls back to
+Mercurial's default behavior. <strong>This effectively shifts responsibility
+for doing efficient clones from clients to server operators, which
+means server operators don't need cooperation from clients to enact
+important service changes.</strong> Before, if clients weren't using bundles,
+we'd have to wait for clients to update their code. Now, we can see
+a repository is being cloned heavily and start generating bundles for
+it without having to wait for the client to deploy new code.</p>
+<p>Furthermore, we've built primitive <em>content negotiation</em> into the
+process. The server doesn't simply advertise one bundle file: it
+advertises several bundle files. We offer gzip, bzip2, and <em>stream</em>
+bundles. gzip is what Mercurial uses by default. It works OK. bzip2
+bundles are smaller, but they take longer to process. <em>stream</em> bundles
+are essentially tar archives of the <em>.hg/store</em> directory and are larger
+than gzip bundles, but insanely fast because there is very little CPU
+required to apply them. In addition, we advertise URLs for multiple S3
+regions, currently us-west-2 (Oregon) and us-east-1 (Virginia). This
+enables clients to prefer the bundle most appropriate for them.</p>
+<p>A benefit of serving bundles from S3 is that Firefox and Firefox OS
+release automation (the biggest consumers of hg.mozilla.org) live in
+Amazon EC2. They are able to fetch from S3 over a gigabit network.
+And, since we're transferring data within the same AWS region, there
+are no data transfer costs. Previously, we were transferring ~1.1 GB
+from a Mozilla data center to EC2 for each clone. This took up bandwidth
+in Mozilla's network and cost Mozilla money to send data thousands of
+miles away. And, we never came close to saturating a gigabit network (we
+do with stream bundles). Wins everywhere!</p>
+<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">full instructions</a>
+detail how to use <em>bundleclone</em>. <strong>I recommend everyone at Mozilla
+install the extension</strong> because there should be no downside to doing it.</p>
+<p>Once <em>bundleclone</em> is deployed to Firefox and Firefox OS release
+automation, we should hopefully never again see those machines bring
+down hg.mozilla.org due to a flood of clone requests. We should also
+see a drastic reduction in load to hg.mozilla.org. I'm optimistic
+bandwidth will decrease by over 50%!</p>
+<p>It's worth noting that the functionality from the <em>bundleclone</em> extension
+is coming to vanilla Mercurial. The functionality (which was initially
+added by Mozilla's Mike Hommey) is part of Mercurial's <em>bundle2</em> protocol,
+which is available, but isn't enabled by default yet. <em>bundleclone</em> is thus
+a temporary solution to bring us server stability and client
+improvements until modern Mercurial versions are deployed everywhere
+in a few months time.</p>
+<p>Finally, I would like to credit Augie Fackler for the
+<a href="http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/54872/focus=54872">original idea</a>
+for server-assisted bundle-based clones.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="firefox-mercurial-repository-with-cvs-history"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/18/firefox-mercurial-repository-with-cvs-history" rel="bookmark" title="Permanent Link to Firefox Mercurial Repository with CVS History">Firefox Mercurial Repository with CVS History</a></h2>
   <small>May 18, 2015 at 08:40 AM | categories: 
@@ -382,71 +500,6 @@ incremental effort to be part of the solution.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-3.4-released"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/04/mercurial-3.4-released" rel="bookmark" title="Permanent Link to Mercurial 3.4 Released">Mercurial 3.4 Released</a></h2>
-  <small>May 04, 2015 at 12:40 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial 3.4 was released on May 1 (following Mercurial's time-based
-schedule of releasing a new version every 3 months).</p>
-<p>3.4 is a significant release for a few reasons.</p>
-<p>First, the next version of the wire protocol (<em>bundle2</em>) has been
-marked as non-experimental on servers. This version of the protocol
-paves over a number of deficiencies in the classic protocol. I won't
-go into low-level details. But I will say that the protocol enables
-some rich end-user experiences, such as having the server hand out URLs
-for pre-generated bundles (e.g. offload clones to S3), atomic push
-operations, and advanced workflows, such as having the server rebase
-automatically on push. Of course, you'll need a server running 3.4
-to realize the benefits of the new protocol. hg.mozilla.org won't be
-updated until at least June 1.</p>
-<p>Second, Mercurial 3.4 contains improvements to the tags cache to make
-performance concerns a thing of the past. Due to the structure of the
-Firefox repositories, the previous implementation of the tags cache
-could result in pauses of dozens of seconds during certain workflows.
-The problem should go away with Mercurial 3.4. <strong>Please note that on
-first use of Mercurial 3.4, your repository may perform a one-time
-upgrade of the tags cache. This will spin a full CPU core and will
-take up to a few minutes to complete on Firefox repos. Let it run to
-completion and performance should not be an issue again.</strong> I wrote the
-patches to change the tags cache (with lots of help from Pierre-Yves
-David, a Mercurial core contributor). So if you find anything wrong,
-I'm the one to complain to.</p>
-<p>Third, the HTTP interface to Mercurial (hgweb) now has JSON output
-for nearly every endpoint. The implementation isn't yet complete,
-but it is better than nothing. But, it should be good enough for
-services to start consuming it. Again, this won't be available on
-hg.mozilla.org until the server is upgraded on June 1 at the earliest.
-This is a feature I added to core Mercurial. If you have feature
-requests, send them my way.</p>
-<p>Fourth, a number of performance regressions introduced in Mercurial
-3.3 were addressed. These performance issues frequently manifested
-during <em>hg blame</em> operations. Many Mozillians noticed them on
-hg.mozilla.org when looking at blame through the web interface.</p>
-<p>For a more comprehensive list of changes, see
-<a href="https://groups.google.com/d/msg/mozilla.dev.version-control/z4aWvBoAGYw/d0hUGKJU_psJ">my post about the 3.4 RC</a>
-and the
-<a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_3.4_.282015-05-01.29">official release notes</a>.</p>
-<p>3.4 was a significant release. There are compelling reasons to upgrade.
-That being said, there were a lot of changes in 3.4. If you want to wait
-until 3.4.1 is released (scheduled for June 1) so you don't run into
-any regressions, nobody can fault you for that.</p>
-<p>If you want to upgrade, I recommend reading the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/installing.html">Mercurial for Mozillians Installation Page</a>.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/mercurial-3.4-released#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/4">« Previous Page</a>
   --  

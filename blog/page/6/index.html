@@ -51,6 +51,68 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mozilla-mercurial-extension-updates"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/12/16/mozilla-mercurial-extension-updates" rel="bookmark" title="Permanent Link to Mozilla Mercurial Extension Updates">Mozilla Mercurial Extension Updates</a></h2>
+  <small>December 16, 2015 at 05:40 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>There have been a handful of updates to Mozilla's client-side
+Mercurial tools in the past week and all users are encouraged
+to pull down the latest commit of mozilla-central and run
+<em>mach mercurial-setup</em> to ensure their configuration is up to
+date.</p>
+<p>Improvements to <em>mach mercurial-setup</em> include:</p>
+<ul>
+<li><em>~</em> are now used in paths when appropriate</li>
+<li>Mercurial 3.5.2 is now the oldest version you can run without
+  the wizard complaining</li>
+<li>The clone bundles feature is enabled when running Mercurial 3.6</li>
+<li><em>hg wip</em> is available for configuration</li>
+<li><em>hgwatchman</em> (make <em>hg status</em> significantly faster via background
+  filesystem watching) is now available on OS X</li>
+<li>x509 host key fingerprints are no longer pinned if your Python
+  and Mercurial version is modern (this pinning exists in Mercurial
+  because old versions of Python don't verify x509 certificates
+  properly)</li>
+<li>3rd party Mercurial extensions are pulled with extensions disabled
+  (to prevent issues with old, incompatible extensions crashing the
+  <em>hg pull</em> invocation)</li>
+</ul>
+<p>The firefoxtree extension has also been updated. It now uses the
+new <em>namespaces</em> feature of Mercurial so all Firefox labels/names/refs
+are exposed in a <em>firefoxtree</em> namespace instead of as tags. As part
+of this change, <strong>you will lose old tags created by this extension
+and will need to re-pull repos to recreate them as namespaced
+labels</strong>. <em>hg log</em> output will now look like the following:</p>
+<pre><code>changeset:   332223:0babaa3edcf9
+fxtree:      central
+parent:      332188:40038a66525f
+parent:      332222:c6fc9d77e86f
+user:        Carsten "Tomcat" Book &lt;cbook@mozilla.com&gt;
+date:        Wed Dec 16 12:01:46 2015 +0100
+summary:     merge mozilla-inbound to mozilla-central a=merge
+</code></pre>
+<p>(Note the <em>fxtree</em> line.)</p>
+<p>The firefoxtree extension also now works with <em>hg share</em>. i.e. if
+you <em>hg share</em> from a Firefox repository and <em>hg pull</em> from
+the source repo or any shared repo, the labels will be updated in
+every repo. This only works on newly-created shares. If you want
+to enable this on an existing share, see
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1115188#c31">this comment</a>.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="hg.mozilla.org-updates"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/11/05/hg.mozilla.org-updates" rel="bookmark" title="Permanent Link to hg.mozilla.org Updates">hg.mozilla.org Updates</a></h2>
   <small>November 05, 2015 at 09:20 AM | categories: 
@@ -443,64 +505,6 @@ tracked this feature.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="serving-mercurial-clones-from-a-cdn"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/09/01/serving-mercurial-clones-from-a-cdn" rel="bookmark" title="Permanent Link to Serving Mercurial Clones from a CDN">Serving Mercurial Clones from a CDN</a></h2>
-  <small>September 01, 2015 at 03:00 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>For the past few months, Mozilla has been
-<a href="http://gregoryszorc.com/blog/2015/07/08/cloning-from-s3/">serving Mercurial clones from Amazon S3</a>.
-We upload snapshots (called <em>bundles</em>) of large and/or high-traffic
-repositories to S3. We have a custom Mercurial extension on the
-client and server that knows how to exchange the URLs for these
-snapshots and to transparently use them to bootstrap a clone. The
-end result is drastically reduced Mercurial server load and faster
-clone times. The benefits are seriously ridiculous when you operate
-version control at scale.</p>
-<p><a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> is a CDN.
-You can easily configure it up to be backed by an S3 bucket. So
-we did.</p>
-<p><a href="https://hg.cdn.mozilla.net/">https://hg.cdn.mozilla.net/</a> is
-Mozilla's CDN for hosting Mercurial data. Currently it's just bundles to
-be used for cloning.</p>
-<p>As of today, if you
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/bundleclone.html">install the bundleclone Mercurial extension</a>
-and <em>hg clone</em> a repository on
-<a href="https://hg.mozilla.org/">hg.mozilla.org</a> such as
-<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a>
-(<em>hg clone https://hg.mozilla.org/mozilla-central</em>), the CDN
-URLs will be preferred by default. (Previously we preferred S3 URLs
-that hit servers in Oregon, USA.)</p>
-<p><strong>This should result in clone time reductions for Mozillians not
-close to Oregon, USA</strong>, as the CloudFront CDN has servers all across
-the globe and your Mercurial clone should be bootstrapped from the
-closest and hopefully therefore fastest server to you.</p>
-<p>Unfortunately, you do need the the aforementioned <em>bundleclone</em>
-extension installed for this to work. But, this should only be
-temporary: I've
-<a href="https://mercurial.selenic.com/wiki/StaticBundlePlan">proposed</a>
-integrating this feature into the core of Mercurial so if a client
-talks to a server advertising pre-generated bundles the clone
-offload <em>just works</em>. I already have tentative buy-in from one
-Mercurial maintainer. So hopefully I can land this feature in
-Mercurial 3.6, which will be released November 1. After that,
-I imagine some high-traffic Mercurial servers (such as Bitbucket)
-will be very keen to deploy this so CPU load on their servers
-is drastically reduced.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/09/01/serving-mercurial-clones-from-a-cdn#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../5">« Previous Page</a>
   --  

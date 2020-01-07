@@ -51,6 +51,56 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="major-bzexport-updates"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/13/major-bzexport-updates" rel="bookmark" title="Permanent Link to Major bzexport Updates">Major bzexport Updates</a></h2>
+  <small>January 13, 2015 at 03:55 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The <em>bzexport</em> Mercurial extension - an extension that enables you to
+easily create new Bugzilla bugs and upload patches to Bugzilla for
+review - just received some
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1033394">major updates</a>.</p>
+<p>First, we now have automated test coverage of bzexport! This is built on
+top of the version control test harness I
+<a href="/blog/2014/10/14/robustly-testing-version-control-at-mozilla/">previously blogged about</a>.
+As part of the tests, we start Docker containers that run the same code
+that's running on <a href="https://bugzilla.mozilla.org/">bugzilla.mozilla.org</a>,
+so interactions with Bugzilla are properly tested. This is much, much
+better than mocking HTTP requests and responses because if Bugzilla
+changes, our tests will detect it. Yay continuous integration.</p>
+<p>Second, bzexport now uses Bugzilla' REST API instead of the legacy bzAPI
+endpoint for all but 1 HTTP request. This should make BMO maintainers
+very happy.</p>
+<p>Third and finally, bzexport now uses shared code for obtaining Bugzilla
+credentials. The behavior is
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/auth.html">documented</a>,
+of course. Behavior is <strong>not backwards compatible</strong>. If you were using some
+old configuration values, you will now see warnings when running bzexport.
+These warnings are actionable, so I shouldn't need to describe them
+here.</p>
+<p>Please obtain the new code by pulling the
+<a href="https://hg.mozilla.org/hgcustom/version-control-tools">version-control-tools</a>
+repository. Or, if you have a Firefox clone, run <em>mach mercurial-setup</em>.</p>
+<p>If you find any regressions, file a bug in the
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20bzexport">Developers Services :: Mercurial: bzexport</a>
+component and have it depend on
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1033394">bug 1033394</a>.</p>
+<p>Thanks go out to Steve Fink, Ed Morley, and Ted Mielczarek for looking
+at the code.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/13/major-bzexport-updates#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="utilizing-github-for-firefox-development"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/12/utilizing-github-for-firefox-development" rel="bookmark" title="Permanent Link to Utilizing GitHub for Firefox Development">Utilizing GitHub for Firefox Development</a></h2>
   <small>January 12, 2015 at 11:00 AM | categories: 
@@ -638,65 +688,6 @@ or ping people in #vcs on IRC.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/01/09/style-changes-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-pushlog-is-now-robust-against-interrupts"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts" rel="bookmark" title="Permanent Link to Mercurial Pushlog Is Now Robust Against Interrupts">Mercurial Pushlog Is Now Robust Against Interrupts</a></h2>
-  <small>December 30, 2014 at 12:25 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/firefox'>Firefox</a>
- | <a href="http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p><a href="https://hg.mozilla.org">hg.mozilla.org</a> - Mozilla's Mercurial server -
-has functionality called the <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/pushlog.html">pushlog</a>
-which records who pushed what when. Essentially, it's a log of when
-a repository was changed. This is separate from the commit log because
-the commit log can be spoofed and the commit log doesn't record when
-commits were actually pushed.</p>
-<p>Since its inception, the pushlog has suffered from data consistency
-issues. If you aborted the push at a certain time, data was not inserted
-in the pushlog. If you aborted the push at another time, data existed in
-the pushlog but not in the repository (the repository would get rolled
-back but the pushlog data wouldn't).</p>
-<p><strong>I'm pleased to announce that the pushlog is now robust against
-interruptions and its updates are consistent with what is recorded by
-Mercurial.</strong> The pushlog database commit/rollback is tied to Mercurial's
-own transaction API. What Mercurial does to the push transaction, the
-pushlog follows.</p>
-<p>This former inconsistency has caused numerous problems over the years.
-When data was inconsistent, we often had to close trees until someone
-could SSH into the machines and manually run SQL to fix the problems.
-This also contributed to a culture of <em>don't press ctrl+c during push:
-it could corrupt Mercurial.</em> (Ctrl+c should be safe to press any time: if
-it isn't, there is a bug to be filed.)</p>
-<p>Any time you remove a source of tree closures is a cause for celebration.
-Please join me in celebrating your new freedom to abort pushes without
-concern for data inconsistency.</p>
-<p>In case you want to test things out, aborting pushes and (and rolling
-back the pushlog) should now result in something like:</p>
-<pre><code>pushing to ssh://hg.mozilla.org/mozilla-central
-searching for changes
-adding changesets
-adding manifests
-adding file changes
-added 1 changesets with 1 changes to 1 files
-Trying to insert into pushlog.
-Inserted into the pushlog db successfully.
-^C
-rolling back pushlog
-transaction abort!
-rollback completed
-</code></pre>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/12/30/mercurial-pushlog-is-now-robust-against-interrupts#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="../12">« Previous Page</a>
   --  

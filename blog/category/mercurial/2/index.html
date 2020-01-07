@@ -51,6 +51,151 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="from-__past__-import-bytes_literals"></a>
+  <h2 class="blog_post_title"><a href="/blog/2017/03/13/from-__past__-import-bytes_literals" rel="bookmark" title="Permanent Link to from __past__ import bytes_literals">from __past__ import bytes_literals</a></h2>
+  <small>March 13, 2017 at 09:55 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Last year, I simultaneously committed one of the ugliest and
+impressive hacks of my programming <em>career</em>. I haven't had time
+to write about it. Until now.</p>
+<p>In summary, the hack is a
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1c22400db72d">source-transforming module loader</a>
+for Python. It can be used by Python 3 to import a Python 2 source
+file while translating certain primitives to their Python 3 equivalents.
+It is kind of like <a href="https://docs.python.org/3.6/library/2to3.html">2to3</a>
+except it executes at run-time during <code>import</code>. The main goal of the
+hack was to facilitate porting Mercurial to Python 3 while deferring
+having to make the most invasive - and therefore most annoying -
+elements of the port in the canonical source code representation.</p>
+<p>For the technically curious, it works as follows.</p>
+<p>The <code>hg</code> Python executable registers a custom
+<a href="https://docs.python.org/3.6/library/sys.html#sys.meta_path">meta path finder</a>
+instance. This entity is invoked during <code>import</code> statements to try
+to find the module being imported. It tells a later phase of the
+import mechanism how to <em>load</em> that module from wherever it is
+(usually a <code>.py</code> or <code>.pyc</code> file on disk) to a Python module object.
+The custom finder only responds to requests for modules known
+to be managed by the Mercurial project. For these modules, it tells
+the next stage of the import mechanism to invoke a custom
+<a href="https://docs.python.org/3.6/library/importlib.html#importlib.abc.SourceLoader">SourceLoader</a>
+instance. Here's where the real magic is: when the custom <em>loader</em>
+is invoked, it tokenizes the Python source code using the
+<a href="https://docs.python.org/3.6/library/tokenize.html">tokenize</a> module,
+iterates over the token stream, finds specific patterns, and
+rewrites them to something <em>more appropriate</em>. It then <em>untokenizes</em>
+back to Python source code then falls back to the built-in loader
+which does the heavy lifting of compiling the source to Python code
+objects. So, we have Python 2 source files on disk that magically get
+transformed to be Python compatible when they are loaded by Python 3.
+Oh, and there is no performance penalty for the token transformation
+on subsequence loads because the transformed bytecode is cached in
+the <code>.pyc</code> file (using a custom header so we know it was transformed
+and can be invalidated when the transformation logic changes).</p>
+<p>At the time I wrote it, the token stream manipulation converted most
+string literals (<code>''</code>) to bytes literals (<code>b''</code>). In other words, it
+restored the Python 2 behavior of string literals being <code>bytes</code> and
+not <code>unicode</code>. We jokingly call it
+<code>from __past__ import bytes_literals</code> (a play on Python 2's
+<code>from __future__ import unicode_literals</code> special syntax which
+changes string literals from Python 2's <code>str</code>/<code>bytes</code> type to
+<code>unicode</code> to match Python 3's behavior).</p>
+<p>Since I implemented the first version, others have implemented:</p>
+<ul>
+<li><a href="https://www.mercurial-scm.org/repo/hg/rev/178c89e8519a">Automatically inserting</a>
+  a <code>from mercurial.pycompat import ...</code> statement to the top of the
+  source. This statement is the Mercurial equivalent of importing
+  common wrapper types similar to what
+  <a href="https://pythonhosted.org/six/">six</a> provides.</li>
+<li>More robust
+  <a href="https://www.mercurial-scm.org/repo/hg/rev/423377290a3a">function argument parsing support</a>.
+  (Because going from a token stream to a higher-level primitive like a
+  function call is difficult.)</li>
+<li><a href="https://www.mercurial-scm.org/repo/hg/rev/eaaedad68011">Automatically rewriting</a>
+  <code>.iteritems()</code> to <code>.items()</code>.</li>
+</ul>
+<p>As one can expect, when I tweeted a link to this commit, many Python
+developers (including a few CPython core developers) expressed a mix
+of intrigue and horror. But mostly horror.</p>
+<p>I fully concede that what I did here is a gross hack. And, it is the
+intention of the Mercurial project to undo this hack and perform a
+proper port once Python 3 support in Mercurial is more mature. But, I
+want to lay out my defense on why I did this and why the Mercurial
+project is tolerant of this ugly hack.</p>
+<p>Individuals within the Mercurial project have wanted to port to Python
+3 for years. Until recently, it hasn't been a project priority
+because a port was too much work for too little end-user gain. And, on
+the technical front, a port was just not practical until Python 3.5.
+(Two main blockers were no <code>u''</code> literals - restored in Python 3.3 -
+and no <code>%</code> formatting for <code>b''</code> literals - restored in 3.5. And as I
+understand it, senior members of the Mercurial project had to lobby
+Python maintainers pretty hard to get features like <code>%</code> formatting of
+<code>b''</code> literals restored to Python 3.)</p>
+<p>Anyway, after a number of failed attempts to initiate the Python 3
+port over the years, the Mercurial project started making some
+positive steps towards Python 3 compatibility, such as switching
+to <a href="https://www.python.org/dev/peps/pep-0328/">absolute imports</a> and
+addressing syntax issues that allowed modules to be parsed into
+an AST and even compiled and loadable. These may seem like small
+steps, but for a larger project, it was a lot of work.</p>
+<p>The porting effort hit a large wall when it came time to actually
+make the AST-valid Python code run on Python 3. Specifically, we had
+a strings problem.</p>
+<p>When you write software that exchanges data between machines -
+sometimes machines running different operating systems or having
+different encodings - and there is an expectation that things work
+the same and data roundtrips accordingly, trying to force text
+encodings is essentially impossible and inevitably breaks something or
+someone. It is much easier for Mercurial to operate <em>bytes first</em> and
+only take text encoding into consideration when absolutely necessary
+(such as when emitting bytes to the terminal in the wanted encoding
+or when emitting JSON). That's not to say Mercurial ignores the
+existence of encodings. Far from it: Mercurial does attempt to
+normalize some data to Unicode. But it often does so with a special
+Python type that internally stores the raw byte sequence of the
+source so that a consumer can choose to operate at the bytes or
+Unicode level. </p>
+<p>Anyway, this means that practically every string variable in Mercurial
+is a <code>bytes</code> type (or something that acts like a <code>bytes</code> type). And
+since string literals in Python 3 are the <code>str</code> type (which represents
+Unicode), that would mean having to prefix almost every <code>''</code> string
+literal in Mercurial with <code>b''</code> in order to placate Python 3. Having
+to update every occurrence of simple primitives that could be statically
+transformed automatically felt like busy work. <strong>We wanted to spend time
+on the meaningful parts of the Python 3 port so we could find
+interesting problems and challenges, not toil with mechanical
+conversions that add little to no short-term value while simultaneously
+increasing cognitive dissonance and quite possibly increasing the odds
+of introducing a bug in Python 2.</strong> In other words, why should humans
+do the work that machines can do for us? Thus, the source-transforming
+module importer was born.</p>
+<p>While I concede what Mercurial did is a giant hack, I maintain it was
+the correct thing to do. It has allowed the Python 3 port to move
+forward without being blocked on the more tedious and invasive
+transformations that could introduce subtle bugs (including performance
+regressions) in Python 2. Perfect is the enemy of good. People time is
+valuable. The source-transforming module importer allowed us to unblock
+an important project without sinking a lot of people time into it. I'd
+make that trade-off again.</p>
+<p>While I won't encourage others to take this approach to porting to
+Python 3, if you want to, Mercurial's source is available under a GPL
+license and the custom module importer could be adapted to any project
+with minimal modifications. If someone does extract it as reusable code,
+please leave a comment and I'll update the post to link to it.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/03/13/from-__past__-import-bytes_literals#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="better-compression-with-zstandard"></a>
   <h2 class="blog_post_title"><a href="/blog/2017/03/07/better-compression-with-zstandard" rel="bookmark" title="Permanent Link to Better Compression with Zstandard">Better Compression with Zstandard</a></h2>
   <small>March 07, 2017 at 09:55 AM | categories: 
@@ -952,202 +1097,6 @@ to enable this on an existing share, see
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/12/16/mozilla-mercurial-extension-updates#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="cloning-improvements-in-mercurial-3.6"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/10/22/cloning-improvements-in-mercurial-3.6" rel="bookmark" title="Permanent Link to Cloning Improvements in Mercurial 3.6">Cloning Improvements in Mercurial 3.6</a></h2>
-  <small>October 22, 2015 at 05:00 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/10/22/cloning-improvements-in-mercurial-3.6#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Mercurial 3.6 (scheduled for release on or shortly after November 1)
-contains a number of improvements to cloning. In this post, I will
-describe a new feature to help server operators reduce load (while
-enabling clients to clone faster) and some performance work to make
-clone operations faster on the client.</p>
-<p>Cloning repositories can incur a lot of load on servers. For
-<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a> (the main
-Firefox repository), clones require the server to spend 4+ minutes CPU
-time and send ~1,230 MB over the network. Multiply by thousands of
-clients from build and test automation and developers, and you could
-quickly finding yourself running out of CPU cores or network bandwidth.
-Scaling Mercurial servers (like many services) can therefore be
-challenging. (It's worth noting that Git is in the same boat for
-reasons technically similar to Mercurial's.)</p>
-<p>Mozilla previously implemented a Mercurial extension to
-<a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">seed clones from pre-generated bundle files</a>
-so the Mercurial servers themselves don't have to work very hard for
-an individual clone. (That linked post goes into the technical
-reasons why cloning is expensive). We now offload cloning of frequently
-cloned repositories on <a href="https://hg.mozilla.org/">hg.mozilla.org</a> to
-<a href="/blog/2015/07/08/cloning-from-s3/">Amazon S3</a> and
-<a href="/blog/2015/09/01/serving-mercurial-clones-from-a-cdn/">a CDN</a> and
-are diverting 1+ TB/day and countless hours of CPU work away from the
-hg.mozilla.org servers themselves.</p>
-<p>The positive impact from seeding clones from pre-generated,
-externally-hosted bundles has been immense. Load on hg.mozilla.org
-dropped off a cliff. Clone times on clients became a lot faster (mainly
-because they aren't waiting for a server to dynamically generate/stream
-bits). But there was a problem with this approach: it required the
-cooperation of clients to install an extension in order for clone load
-to be offloaded. It didn't <em>just work</em>.</p>
-<p><strong>I'm pleased to announce that the ability to seed clones from
-server-advertised pre-generated bundles is now a core feature in
-Mercurial 3.6!</strong> Server operators can install the
-<a href="https://selenic.com/repo/hg/file/default/hgext/clonebundles.py">clonebundles extension</a> (it is distributed with Mercurial)
-to advertise the location of pre-generated, externally-hosted bundle
-files. Compatible clients will automatically clone from the
-server-advertised URLs instead of creating potentially excessive load
-on the Mercurial server. The implementation is almost identical to what
-Mozilla has deployed with great success. <strong>If you operate a Mercurial
-server that needs to serve larger repositories (100+ MB) and/or is under
-high load, you should be jumping with joy at the existence of this
-feature, as it should make scaling problems attached to cloning mostly
-go away.</strong></p>
-<p>Documentation for server operators is currently in the extension and
-can be accessed at the aforementioned URL or with
-<em>hg help -e clonebundles</em>. It does require a bit of setup work. But
-if you are at the scale where you could benefit from the feature, the
-results will almost certainly be worth it.</p>
-<p>One caveat is that the feature is currently behind an <em>experimental</em>
-flag on the client. This means that it doesn't <em>just work</em> yet. This
-is because we want to reserve the right to change some behaviors without
-worrying about backwards compatibility. However, I'm pretty confident
-the server parts won't change significantly. Or if they do, I'm pretty
-committed to providing an easy transition path since I'll need one for
-hg.mozilla.org. So, I'm giving server operators a tentative
-green light to deploy this extension. I can't guarantee there won't be a
-few bumps transitioning to a future release. But it shouldn't be a
-break-the-world type of problem. It is my intent to remove the
-experimental flag and have the feature enabled by default in
-Mercurial 3.7. At that point, server operators just need clients to run
-a modern Mercurial release and they can count on drastically reduced
-load from cloning.</p>
-<p>To help with adoption and testing of the <em>clone bundles</em> feature,
-servers advertising bundles will inform compatible clients of the
-existence of the feature when they clone:</p>
-<div class="pygments_murphy"><pre><span></span>$ hg clone https://hg.mozilla.org/mozilla-central
-requesting all changes
-remote: this server supports the experimental &quot;clone bundles&quot; feature that should enable faster and more reliable cloning
-remote: help test it by setting the &quot;experimental.clonebundles&quot; config flag to &quot;true&quot;
-adding changesets
-adding manifests
-adding file changes
-...
-</pre></div>
-
-<p>And if you have the feature enabled, you'll see something like:</p>
-<div class="pygments_murphy"><pre><span></span>$ hg clone https://hg.mozilla.org/mozilla-central
-applying clone bundle from https://hg.cdn.mozilla.net/mozilla-central/daa7d98525e859d32a3b3e97101e129a897192a1.gzip.hg
-adding changesets
-adding manifests
-adding file changes
-added 265986 changesets with 1501210 changes to 223996 files
-finished applying clone bundle
-searching for changes
-adding changesets
-adding manifests
-adding file changes
-added 1 changesets with 1 changes to 1 files
-</pre></div>
-
-<p>This new <em>clone bundles</em> feature is deployed on hg.mozilla.org. Users of
-Mercurial 3.6 can start using it today by cloning from one of the
-<a href="https://hg.cdn.mozilla.net/">repositories with bundles enabled</a>. (If
-you have previously installed the <em>bundleclone</em> extension, please be
-sure your <em>version-control-tools</em> repository is up to date, as the
-extension was recently changed to better interact with the official
-feature.)</p>
-<p>And that's the <em>clone bundles</em> feature. I hope you are as excited about
-it as I am!</p>
-<p>Mercurial 3.6 also contains numerous performance improvements that make
-cloning faster, regardless of whether you are using <em>clone bundles</em>! For
-starters:</p>
-<ul>
-<li><a href="https://selenic.com/repo/hg/rev/836291420d53">Caching just-added entries</a>
-  made changelog writing 25% faster.</li>
-<li><a href="https://selenic.com/repo/hg/rev/39d643252b9f">Reusing file handles</a>
-  when adding revlog entries drastically reduced the number of file
-  opens, closes, and writes.</li>
-<li><a href="https://selenic.com/repo/hg/rev/56a640b0f656">Avoiding excessive file flushing</a>
-  when adding revlog entries drastically reduced system call count.</li>
-</ul>
-<p>These performance enhancements will make all operations that write
-new repository data faster. But it will be felt most on clone and pull
-operations on the client and push operations on the server.</p>
-<p>One of the most impressive performance optimizations was to a Python
-class that converts a generator of raw data chunks to something that
-resembles a file object so it can be read() from.
-<a href="https://selenic.com/repo/hg/rev/6ae14d1ca3aa">Refactoring read()</a>
-to avoid <a href="https://docs.python.org/2/library/collections.html#collections.deque">collections.deque</a>
-operations and an extra string slice and allocation made <em>unbundle</em>
-operations 15-20% faster. Since this function can handle hundreds of
-megabytes or even gigabytes of data across hundreds of thousands of
-calls, small improvements like this can make a huge difference! This
-patch was a stark reminder that function calls, collection mutations,
-string slicing, and object allocation all can have a significant cost
-in a higher-level, garbage collected language like Python.</p>
-<p>The end result of all this performance optimization on applying a
-mozilla-central gzip bundle on Linux on an i7-6700K:</p>
-<ul>
-<li>35-40s wall time faster (~245s to ~205s) (~84% of original)</li>
-<li>write(2) calls reduced from 1,372,411 to 679,045 (~49% of
-  original)</li>
-<li>close(2) calls reduced from 405,147 to 235,039 (~58% of
-  original)</li>
-<li>total system calls reduced from 5,120,893 to 2,938,479 (~57% of
-  original)</li>
-</ul>
-<p>And the same operation on Windows 10 on the same machine:</p>
-<ul>
-<li>~300s wall time faster (933s to 633s) (~68% of original)</li>
-</ul>
-<p>You may have noticed the discrepancy between Linux and Windows wall
-times, where Windows is 2-4x slower than Linux. What gives? The reason
-is closing file handles that have been appended to is slow on Windows.
-For more, read my <a href="/blog/2015/10/22/append-i/o-performance-on-windows/">recent blog post</a>.</p>
-<p>Mercurial writes ~226,000 files during a clone of mozilla-central
-(excluding the working copy). Assuming 2ms per file close operation,
-that comes out to <strong>~450s just for file close operations</strong>! (All
-operations are on the same thread.) The current wall time difference
-between clone times on Windows and Linux is ~428s. So it's fair to say
-that waiting on file closes accounts for most of this.</p>
-<p>Along the same vein, the aforementioned performance work reduced total
-number of file close operations during a mozilla-central clone by
-~165,000. Again assuming 2ms per file close, that comes to ~330s, which
-is in the same ballpark as the ~300s wall time decrease we see on
-Windows in Mercurial 3.6. <strong>Writing - and therefore closing - hundreds
-of thousands of files handles is slower on Windows and accounts for most
-of the performance difference on that platform.</strong></p>
-<p>Empowered by this knowledge, I wrote some patches to move file closing
-to a background thread on Windows. The results were
-<a href="https://selenic.com/pipermail/mercurial-devel/2015-September/073788.html">promising</a>
-(minutes saved when writing 100,000+ files). Unfortunately, I didn't
-have time to finish these patches for Mercurial 3.6. Hopefully they'll
-make it into 3.7. I also have some mad scientist ideas for alternate
-storage mechanisms that don't rely on hundreds of thousands of files.
-This should enable clones to run at 100+ MB/s on all platforms -
-basically as fast as your network and system I/O can keep up (yes,
-Python and Windows are capable of this throughput). Stay tuned.</p>
-<p>And that's a summary of the cloning improvements in Mercurial 3.6!</p>
-<p>Mercurial 3.6 is currently in release candidate. Please help test
-it by downloading the RC at
-<a href="https://www.mercurial-scm.org/">https://www.mercurial-scm.org/</a>.
-Mercurial 3.6 final is due for release on or shortly after November 1.
-There is a large gathering of Mercurial contributors in London this
-weekend. So if a bug is reported, I can pretty much guarantee a lot of
-eyeballs will see it and there's a good chance it will be acted upon.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/10/22/cloning-improvements-in-mercurial-3.6#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/1">« Previous Page</a>
   --  

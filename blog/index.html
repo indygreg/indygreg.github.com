@@ -51,6 +51,1091 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="problems-with-pull-requests-and-how-to-fix-them"></a>
+  <h2 class="blog_post_title"><a href="/blog/2020/01/07/problems-with-pull-requests-and-how-to-fix-them" rel="bookmark" title="Permanent Link to Problems with Pull Requests and How to Fix Them">Problems with Pull Requests and How to Fix Them</a></h2>
+  <small>January 07, 2020 at 12:10 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/git'>Git</a>
+ | <a href="http://gregoryszorc.com/blog/2020/01/07/problems-with-pull-requests-and-how-to-fix-them#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>You've probably used or at least heard of <em>pull requests</em>: the <em>pull
+request</em> is the contribution workflow practiced on and made popular by
+[code] collaboration sites like GitHub, GitLab, Bitbucket, and others.
+Someone (optionally) creates a <em>fork</em>, authors some commits, pushes them
+to a branch, then creates a <em>pull request</em> to track integrating those commits
+into a target repository and branch. The <em>pull request</em> is then used as a
+vehicle for code review, tracking automated checks, and discussion until
+it is ready to be integrated. Integration is usually performed by a
+project maintainer, often with the click of a <em>merge</em> button on the pull
+request's web page.</p>
+<p>It's worth noting that the term <em>pull request</em> is not universally used:
+GitLab calls them <em>merge requests</em> for example. Furthermore I regard the
+terms <em>pull request</em> and <em>merge request</em> to be poorly named, as the terms
+can be conflated with terminology used by your version control tool (e.g.
+<code>git pull</code> or <code>git merge</code>. And the implementations of a <em>pull</em> or <em>merge</em>
+request may not even perform a <em>pull</em> or a <em>merge</em> (you can also <em>rebase</em> a
+<em>pull</em>/<em>merge</em> request, but nobody is calling them <em>rebase requests</em>). A
+modern day <em>pull request</em> is so much more than a version control tool
+operation or even a simple request to <em>pull</em> or <em>merge</em> a branch: it is a
+nexus to track the integration of a proposed change before during and after
+that change is integrated. But alas. Because GitHub coined the term and is
+the most popular collaboration platform implementing this functionality, I'll
+refer to this general workflow as implemented on GitHub, GitLab, Bitbucket,
+and others as <em>pull requests</em> for the remainder of this post.</p>
+<p>Pull requests have existed in essentially their current form for over
+a decade. The core workflow has remained mostly unchanged.
+What is different are the addition of value-add features, such as integrating
+status checks like CI results, the ability to rebase or squash commits
+instead of merging, code review tooling improvements, and lots of UI
+polish. GitLab deserves a call out here, as their implementation of
+<em>merge requests</em> tracks so much more than other tools do. (This is a
+side-effect of GitLab having more built-in features than comparable tools.)
+I will also give kudos to GitLab for adding new features to pull requests
+when GitHub was asleep at the wheel as a company a few years ago. (Not having
+a CEO for clear product/company leadership really showed.) Fortunately,
+both companies (and others) are now churning out new, useful features at a
+terrific clip, greatly benefiting the industry!</p>
+<p>While I don't have evidence of this, I suspect pull requests (and the forking
+model used by services that implement them) came into existence when someone
+thought <em>how do I design a collaboration web site built on top of Git's new and
+novel distributed nature and branching features</em>. They then proceeded to invent
+<em>forking</em> and <em>pull requests</em>. After all, the pull request as implemented by
+GitHub was initially a veneer over a common Git workflow of <em>create a clone,
+create a branch, and send it somewhere.</em> Without GitHub, you would run <code>git
+clone</code>, <code>git branch</code>, then some other command like
+<a href="https://git-scm.com/docs/git-request-pull">git request-pull</a> (where have I seen
+those words before) to generate/send your branch somewhere. On GitHub, the
+comparable steps are roughly <em>create a fork</em>, <em>create a branch to your fork</em>,
+and <em>submit a pull request</em>. Today, you can even do all of this straight from
+the web interface without having to run <code>git</code> directly! This means that GitHub
+can conceptually be thought of as a purely server-side abstraction/implementation
+of the Git feature branch workflow.</p>
+<p><strong>At its core, the pull request is fundamentally a nice UI and feature layer
+built around the common Git feature branch workflow.</strong> It was likely initially
+conceived as polish and value-add features over this historically client-side
+workflow. And this core property of pull requests from its very first days has
+been copied by vendors like Bitbucket and GitLab (and in Bitbucket's case it
+was implemented for Mercurial - not Git - as Bitbucket was initially Mercurial
+only).</p>
+<p>A decade is an eternity in the computer industry. As they say, if you
+aren't moving forward, you are moving backward. <strong>I think it is time
+for industry to scrutinize the pull request model and to evolve it into
+something better.</strong></p>
+<p>I know what you are thinking: you are thinking that pull requests
+work great and that they are popular because they are a superior model
+compared to what came before. These statements - aside from some nuance -
+are true. But if you live in the version control space (like I do) or
+are paid to deliver tools and workflows to developers to improve
+productivity and code/product quality (which I am), the deficiencies
+in the pull request workflow and implementation of that workflow among
+vendors like GitHub, GitLab, Bitbucket, etc are obvious and begging to be
+overhauled if not replaced wholesale.</p>
+<p>So buckle in: you've started a ten thousand word adventure about everything
+you didn't think you wanted to know about pull requests!</p>
+<h2>Problems with Pull Requests</h2>
+<p>To build a better workflow, we first have to understand what is
+wrong/sub-optimal with pull requests.</p>
+<p><strong>I posit that the foremost goal of an pull request is to foster the
+incorporation of a high quality and desired change into a target
+repository with minimal overhead and complexity for submitter,
+integrator, and everyone in between.</strong> Pull requests achieve this
+goal by fostering collaboration to discuss the change (including code
+review), tracking automated checks against the change, linking to related
+issues, etc. In other words, the way I see the world is that a specific
+vendor's pull request implementation is just that: an implementation detail.
+And like all implementation details, they should be frequently scrutinized
+and changed, if necessary.</p>
+<p>Let's start dissecting the problems with pull requests by focusing on
+the size of review units. Research by
+<a href="https://sback.it/publications/icse2018seip.pdf">Google</a>,
+Microsoft <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/bosu2015useful.pdf">here</a>,
+and <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2015/05/PID3556473.pdf">here</a>,
+and others has shown an inverse correlation with review unit size
+and defect rate. In Google's words (emphasis mine):</p>
+<p>The size distribution of changes is an important factor in the
+   quality of the code review process. <strong>Previous studies have found that
+   the number of useful comments decreases and the review latency
+   increases as the size of the change increases.</strong> Size also
+   influences developers' perception of the code review process; a
+   survey of Mozilla contributors found that <strong>developers feel that
+   size-related factors have the greatest effect on review latency</strong>.
+   A correlation between change size and review quality is
+   acknowledged by Google and <strong>developers are strongly encouraged to
+   make small, incremental changes</strong> (with the exception of large
+   deletions and automated refactoring). These findings and our study
+   support the value of reviewing small changes and the need for
+   research and tools to help developers create such small,
+   self-contained code changes for review.</p>
+<p>Succinctly, larger changes result in fewer useful comments during
+review (meaning quality is undermined) and make reviews take longer
+(meaning productivity is undermined). <strong>Takeaway: if you care about
+defect rate / quality and/or velocity, you should be authoring and
+reviewing more, smaller changes as opposed to fewer, larger changes.</strong></p>
+<p>I stronger agree with Google's opinion on this matter and wholeheartedly
+endorse writing more, smaller changes. Having practiced both forms of
+change authorship, I can say without a doubt that more, smaller changes
+is superior: superior for authors, superior for code reviewers, and
+superior for people looking at repository history later. The main downside
+with this model is that it requires a bit more knowledge of your version
+control tool to execute. And, it requires corresponding tooling to play
+well with this change authorship model and to introduce as little
+friction as possible along the way since the number of interactions
+with tooling will increase as change size decreases, velocity
+increases, and there are more distinct units of change being considered
+for integration.</p>
+<p>That last point is important and is germane to this post because the
+common implementation of pull requests today is not very compatible
+with the <em>many small changes</em> workflow. As I'll argue, <strong>the current
+implementation of pull requests actively discourages the many smaller
+changes workflow. And since smaller changes result in higher quality
+and faster reviews, today's implementations of pull requests are
+undermining quality and velocity.</strong></p>
+<p>I don't mean to pick on them, but since they are the most popular and
+the people who made pull requests popular, let's use GitHub's implementation
+of pull requests to demonstrate my point.</p>
+<p><strong>I posit that in order for us to author more, smaller changes, we must
+either a) create more, smaller pull requests or b) have pull request
+reviews put emphasis on the individual commits (as opposed to the
+overall <em>merge diff</em>).</strong> Let's examine these individually.</p>
+<p>If we were to author more, smaller pull requests, this would seemingly
+necessitate the need for dependencies between pull requests in order
+to maintain velocity. And dependencies between pull requests adds
+a potentially prohibitive amount of overhead. Let me explain. We don't
+want to sacrifice the overall rate at which authors and maintainers are
+able to integrate proposed changes. If we were to split existing proposed
+changes into more, smaller pull requests, we would have a lot more pull
+requests. Without dependencies between them, authors could wait for each
+pull request to be integrated before sending the next one. But this would
+incur more round trips between author and integrator and would almost
+certainly slow down the overall process. That's not desirable. The
+obvious mitigation to that is to allow multiple, related pull requests
+in flight simultaneously. But this would necessitate the invention of
+dependencies between pull requests in order to track relationships so
+one pull request doesn't integrate before another it logically depends on.
+This is certainly technically doable. But it imposes considerable
+overhead of its own. How do you define dependencies? Are dependencies
+automatically detected or updated based on commits in a DAG? If yes,
+what happens when you force push and it is ambiguous whether a <em>new</em>
+commit is a logically new commit or a successor of a previous one? If
+no, do you really want to impose additional hurdles on submitters to
+define dependencies between every pull request? In the extreme case of
+one pull request per commit, do you make someone submitting a series of
+say twenty commits and pull requests really annotate nineteen dependencies?
+That's crazy!</p>
+<p>There's another, more practical issue at play: the interplay between
+Git branches and pull requests. As implemented on GitHub, a pull request
+is tracked by a Git branch. If we have N inter-dependent pull requests,
+that means N Git branches. In the worst case, we have one Git branch for
+every Git commit. Managing N in-flight Git branches would be absurd.
+It would impose considerable overhead on pull request submitters. It
+would perfectly highlight the inefficiency in Git's
+<a href="/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them/">game of refs</a>
+branch management that I blogged about two years ago. (Succinctly,
+once you are accustomed to workflows - like Mercurial's - which don't
+require you to name commits or branches, Git's forced naming of branches
+and all the commands requiring those branch names feels grossly inefficient
+and a mountain of overhead.) Some tooling could certainly be implemented
+to enable efficient submission of pull requests. (See
+<a href="https://github.com/ezyang/ghstack">ghstack</a> for an example.) But I
+think the interplay between Git branches and GitHub pull requests is
+sufficiently complex that the tooling and workflow would be intractable
+for anything but the most trivial and best-case scenarios. Keep in mind
+that any sufficiently user-friendly solution to this problem would
+also entail improving <code>git rebase</code> so it moves branches on rewritten
+ancestor commits instead of leaving them on the old versions of
+commits. (Seriously, someone should implement this feature: it arguably
+makes sense as the default behavior for local branches.) In other
+words, <strong>I don't think you can implement the multiple pull request model
+reliably and without causing excessive burden on people without
+fundamentally changing the requirement that a pull request be a Git
+branch</strong>. (I'd love to be proven wrong.)</p>
+<p>Therefore, <strong>I don't think the more, smaller changes workflow can be easily
+practiced with multiple pull requests using the common GitHub model without
+effectively moving the definition of a pull request away from
+equivalence with a Git branch</strong> (more on this later). And I also
+don't mean to imply that dependencies between pull requests can't be
+implemented: they can and
+<a href="https://docs.gitlab.com/ee/user/project/merge_requests/merge_request_dependencies.html">GitLab is evidence</a>.
+But GitLab's implementation is somewhat simple and crude (possibly
+because doing anything more complicated is really hard as I speculate).</p>
+<p>So without fundamentally changing the relationship between a pull
+request and a branch, that leaves us with our alternative of pull
+requests putting more emphasis on the individual changes rather than
+the <em>merge diff</em>. Let's talk about that now.</p>
+<p>Pull requests have historically placed emphasis on the <em>merge diff</em>.
+That is, GitHub (or another provider) takes the Git branch you have
+submitted, runs a <code>git merge</code> against the target branch behind the
+scenes, and displays that diff front and center for review as the main
+proposed unit of change: if you click the <em>Files changed</em> tab to
+commence review, you are seeing this overall <em>merge diff</em>. You can
+click on the <em>Commits</em> tab then select an individual commit to review
+just that commit. Or you can use the dropdown on the <em>Files changed</em>
+tab to select an individual commit to review it. These (relatively
+new) features are a very welcome improvement and do facilitate
+performing a commit-by-commit review, which is a requirement to realize
+the benefits of a more, smaller changes workflow. Unfortunately, they
+are far from sufficient to fully realize the benefits of that workflow.</p>
+<p>Defaults matter and GitHub's default is to show the <em>merge diff</em> when
+conducting review. (I bet a large percentage of users don't even know
+it is possible to review individual commits.) <strong>Since larger changes
+result in a higher defect rate and slower review, GitHub's default
+of showing the <em>merge diff</em> effectively means GitHub is defaulting to
+lower quality, longer-lasting reviews.</strong> (I suppose this is good for
+engagement numbers, as it inflates service usage both immediately and
+in the long-term due to subsequent bugs driving further usage. But I
+sincerely hope no product manager is thinking <em>let's design a product
+that undermines quality to drive engagement</em>.)</p>
+<p>Unfortunately, a trivial change of the default to show individual commits
+instead of the <em>merge diff</em> is not so simple, as many authors and
+projects don't practice clean commit authorship practices, where
+individual commits are authored such that they can be reviewed in isolation.</p>
+<p>(One way of classifying commit authorship styles is by whether a series
+of commits is authored such that each commit is good in isolation or
+whether the effect of applying the overall series is what matters. A
+handful of mature projects - like the Linux kernel, Firefox, Chrome,
+Git, and Mercurial - practice the <em>series of individually-good commits</em>
+model, which I'll call a <em>commit-centric workflow</em>. I would wager the
+majority of projects on GitHub and similar services practice the <em>we only
+care about the final result of the series of commits</em> model. A litmus
+test for practicing the latter model is whether pull requests contain commits
+like <em>fixup foo</em> or if subsequent revisions to pull requests create new
+commits instead of amending existing ones. I'm a strong proponent of
+a clean commit history where each commit in the final repository history
+stands as <em>good</em> in isolation. But I tend to favor more <em>grown-up</em>
+software development practices and am a version control guru. That
+being said, the subject/debate is fodder for another post.)</p>
+<p>If GitHub (or someone else) switched the pull request default to a
+per-commit review without otherwise changing the relationship between a
+pull request and a Git branch, that would force a lot of less experienced
+users to familiarize themselves with history rewriting in Git. This would
+impose considerable pain and suffering on pull request authors, which
+would in turn upset users, hurt engagement, etc. Therefore, I don't think
+this is a feasible <em>global</em> default that can be changed. Maybe if Git's
+user experience for history rewriting were better or we didn't have a
+decade of behavior to undo we'd be in a better position... But pull
+request implementations don't need to make a <em>global</em> change: <strong>they could
+<em>right the ship</em> by offering projects that practice <em>clean commit
+practices</em> an option to change the review default so it emphasizes
+individual commits instead of the <em>merge diff</em>.</strong> This would go a long way
+towards encouraging authoring and reviewing individual commits, which
+should have positive benefits on review velocity and code quality
+outcomes.</p>
+<p>But even if these services did emphasize individual commits by default in
+pull request reviews, there's still a handful of significant
+deficiencies that would undermine the more, smaller changes workflow
+that we desire.</p>
+<p>While it is possible to review individual commits, all the review comments
+are still funneled into a single per pull request <em>timeline</em> view of
+activity. <strong>If submitter and reviewer make the effort to craft and
+subsequently review individual commits, your reward is that all the feedback
+for the discrete units of change gets lumped together into one massive pile
+of feedback for the pull request as a whole.</strong> This unified pile of feedback
+(currently) does a poor job of identifying which commit it applies to and
+gives the author little assistance in knowing which commits need amending to
+address the feedback. This undermines the value of commit-centric workflows
+and effectively pushes commit authors towards the <em>fixup</em> style of commit
+authorship. <strong>In order to execute per-commit review effectively, review
+comments and discussion need to be bucketed by commit and not combined into a
+unified pull request timeline.</strong> This would be a massive change to the pull
+request user interface and would be a daunting undertaking, so it is
+understandable why it hasn't happened yet. And such an undertaking would also
+require addressing subtly complex issues like how to preserve reviews in the
+face of force pushes. Today, GitHub's review comments can <em>lose context</em> when
+force pushes occur. Things are better than they used to be, when review comments
+left on individual commits would flat out be deleted (yes: GitHub really did
+effectively lose code review comments for several years.) But even with tooling
+improvements, problems still remain and should adoption of commit-level review
+tracking occur, these technical problems would likely need resolution to
+appease users of this workflow.</p>
+<p>Even if GitHub (or someone else) implements robust per-commit review
+for pull requests, there's still a problem with velocity. And that problem
+is that <strong>if the pull request is your unit of integration (read: <em>merging</em>),
+then you have to wait until every commit is reviewed before integration
+can occur</strong>. This may sound tolerable (it's what we practice today after
+all). But I argue this is less optimal than a world where a change
+integrates as soon as it is ready to, without having to wait for the
+changes after it. <strong>As an author and maintainer, if I see a change that
+is ready to integrate, I prefer to integrate it as soon as possible, without
+delay.</strong> The longer a ready-to-integrate change lingers, the longer it is
+susceptible to bit rot (when the change is no longer valid/good due to
+other changes in the system). Integrating a judged-good change sooner also
+reduces the time to meaningful feedback: if there is a fundamental
+problem early in a series of changes that isn't caught before integration,
+integrating earlier changes sooner without waiting for the ones following
+will expose problems sooner. This minimizes deltas in changed systems
+(often making regression hunting easier), often minimizes the blast radius if
+something goes wrong, and gives the author more time and less pressure to
+amend subsequent commits that haven't been integrated yet. And in addition
+to all of this, <strong>integrating more often just feels better</strong>.
+<a href="https://hbr.org/2011/05/the-power-of-small-wins">The Progress Principle</a>
+states that people feel better and perform better work when they are
+making continuous progress. But setbacks more than offset the power of
+small wins. While I'm not aware of any explicit research in this area,
+my interpretation of the Progress Principle to change authorship and project
+maintenance(which is supported by anecdotal observation) is
+that a steady stream of integrated changes feels a hell of a lot better
+than a single monolithic change lingering in review purgatory for what can
+often seem like an eternity. <strong>While you need to be cognizant to not
+confuse movement with meaningful progress, I think there is real power
+to the Progress Principle and that we should aim to incorporate changes
+as soon as they are ready and not any later.</strong> Applied to version control
+and code review, this means integrating a commit as soon as author,
+reviewer, and our machine overlords reporting status checks all agree it
+is ready, without having to wait for a larger unit of work, like the
+pull request. Succinctly, move forward as soon as you are able to!</p>
+<p>This desire to <em>integrate faster</em> has significant implications for
+pull requests. Again, looking at GitHub's implementation of pull
+requests, I don't see how today's pull requests could adapt to this
+desired end state without significant structural changes. For starters,
+review <strong>must</strong> grow the ability to track per-commit state otherwise
+integrating individual commits without the entirety of the parts makes
+little sense. But this entails all the complexity I described above.
+Then there's the problem of Git branches effectively defining a pull
+request. What happens when some commits in a pull request are integrated
+and the author rebases or merges their local branch against their new
+changes? This may or may not <em>just work</em>. And when it doesn't <em>just work</em>,
+the author can easily find themselves in <em>merge conflict hell</em>, where
+one commit after the other fails to apply cleanly and their carefully
+curated stack of commits quickly becomes a liability and impediment to
+forward progress. (As an aside, the Mercurial version control tool has
+a concept called <em>changeset evolution</em> where it tracks which commits -
+changesets in Mercurial parlance - have been rewritten as other commits
+and gracefully reacts in situations like a rebase. For example, if you
+have commits <code>X</code> and <code>Y</code> and <code>X</code> is integrated via a rebase as <code>X'</code>, an
+<code>hg rebase</code> of <code>Y</code> onto <code>X'</code> will see that <code>X</code> was rewritten as <code>X'</code> and
+skip attempting to rebase <code>X</code> because it is already applied! This cleanly
+sidesteps a lot of the problems with history rewriting - like merge
+conflicts - and can make the end-user experience much more pleasant as
+a result.) While it is certainly possible to integrate changes as soon
+as they are <em>ready</em> with a pull request workflow, I think that it is
+awkward and that by the time you've made enough changes to accommodate
+the workflow, very little is left of the pull request workflow as we
+know it and it is effectively a different workflow altogether.</p>
+<p><strong>The above arguments overly hinge on the assumption that more smaller
+changes is superior for quality and/or velocity and that we should
+design workflows around this assertion.</strong> While I strongly believe
+in the merits of smaller units of change, others may disagree. (If
+you do disagree, you should ask yourself whether you believe the
+converse: that larger units of change are better for quality and
+velocity. I suspect most people can't justify this. But I do believe
+there is merit to the argument that smaller units of change impose
+additional per-unit costs or have second order effects that undermine
+their touted quality or velocity benefits.)</p>
+<p><strong>But even if you don't buy into the change size arguments, there's
+still a very valid reason why we should think beyond pull requests as
+they are implemented today: tool scalability.</strong></p>
+<p>The implementation of pull requests today is strongly coupled with
+how Git works out of the box. A pull request is initiated from a Git
+branch pushed to a remote Git repository. When the pull request is
+created, the server creates a Git branch/ref referring to that pull
+request's <em>head</em> commits. On GitHub, these refs are
+<a href="https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/checking-out-pull-requests-locally">named</a>
+<code>pull/ID/head</code> (you can fetch these from the remote Git repository but
+they are not fetched by default). Also when a pull request is created
+or updated, a <code>git merge</code> is performed to produce a diff for review.
+On GitHub, the resulting merge commit is <em>saved</em> and pointed to on
+the open pull request via a <code>pull/ID/merge</code> ref, which can also be
+fetched locally. (The <em>merge</em> ref is deleted when the pull request is
+closed.)</p>
+<p>Herein resides our scalability problem: unbound growth of Git refs
+and ever-increasing rate of a change for a growing project.
+Each Git ref adds overhead to graph walking operations and data exchange.
+While involved operations are continuously getting optimized (often through
+the use of more advanced data structures or algorithms), there are
+intrinsic scaling challenges with this unbound growth that - speaking as
+a version control tool maintainer - I want no part of. Are technical
+solutions enabling things to scale to millions of Git refs viable?
+Yes'ish. But it requires high-effort solutions like
+<a href="https://git.eclipse.org/r/#/c/146568/">JGit's Reftable</a>, which
+required ~90 review rounds spanned across ~4 months to land. And that's
+after design of the feature was first proposed at least as far back
+as <a href="https://public-inbox.org/git/CAJo=hJtyof=HRy=2sLP0ng0uZ4=S-DpZ5dR1aF+VHVETKG20OQ@mail.gmail.com/">July 2017</a>.
+Don't get me wrong: am I glad Reftable exists: yes. It is a fantastic
+solution to a real problem and reading how it works will probably
+make you a better engineer. But simultaneously, it is a solution to a
+problem that does not need to exist. There is a space for scaling graph
+data structures and algorithms to millions or even billions of nodes, edges,
+and paths: your version control tool should not be it. Millions or billions
+of commits and files: that's fine. But scaling the number of distinct paths
+through that graph by introducing millions of DAG heads is insane given how much
+complexity it introduces in random areas of the tool. In my opinion it
+requires unjustifiably large amounts of investment to make work
+at scale. As an engineer, my inclination when posed with problems like
+these is to avoid them in the first place. The easiest problems to solve
+are those you don't have.</p>
+<p><strong>Unfortunately, the tight coupling of pull requests to Git branches/refs
+introduces unbound growth and a myriad of problems associated with it.</strong>
+Most projects may not grow to a size that experiences these problems. But
+as someone who has experience with this problem space at multiple companies,
+I can tell you the problem is very real and the performance and scalability
+issues it creates undermines the viability of using today's implementation of
+pull requests once you've reached a certain scale. Since we can likely fix the
+underlying scaling issues with Git, I don't think the explosion of Git refs
+is a long-term deal breaker for scaling pull requests. But it is today and
+will remain so until Git and the tools built on top of it improve.</p>
+<p>In summary, some high-level problems with pull requests are as follows:</p>
+<ul>
+<li>Review of <em>merge diff</em> by default encourages larger units of review,
+  which undermines quality and velocity outcomes.</li>
+<li>Inability to incrementally integrate commits within a pull request,
+  which slows down velocity, time to meaningful feedback, and can
+  lower morale.</li>
+<li>Tight coupling of pull requests with Git branches adds rigidity to
+  workflows and shoehorns into less flexible and less desired workflows.</li>
+<li>Deficiencies in the Git user experience - particular around what happens
+  when rewrites (including rebase) occur - significantly curtail what
+  workflows can be safely practiced with pull requests.</li>
+<li>Tight coupling of pull requests with Git branches can lead to performance
+  issues at scale.</li>
+</ul>
+<p>We can invert language to arrive at a set of more ideal outcomes:</p>
+<ul>
+<li>Review experience is optimized for individual commits - not the <em>merge
+  diff</em> - so review units are smaller and quality and velocity outcomes
+  are improved.</li>
+<li>Ability to incrementally integrate individual commits from a larger
+  set so ready-to-go changes are incorporated sooner, improving velocity,
+  time to meaningful feedback, and morale.</li>
+<li>How you use Git branches does not impose significant restrictions on
+  handling of pull requests.</li>
+<li>You can use your version control tool how you want, without having to
+  worry about your workflow being shoehorned by how pull requests
+  work.</li>
+<li>Pull request server can scale to the most demanding use cases with
+  relative ease.</li>
+</ul>
+<p>Let's talk about how we could achieve these more desirable outcomes.</p>
+<h2>Exploring Alternative Models</h2>
+<p>A <em>pull request</em> is merely an implementation pattern for the general problem
+space of <em>integrating a proposed change</em>. There are other patterns used by other
+tools. Before I describe them, I want to coin the term <em>integration request</em> to
+refer to the generic concept of requesting some change being <em>integrated</em>
+elsewhere. GitHub pull requests and GitLab merge requests are implementations
+of <em>integration requests</em>, for example.</p>
+<p>Rather than describe alternative tools in detail, I will outline the key
+areas where different tools differ from pull requests and assess the benefits
+and drawbacks to the different approaches.</p>
+<h3>Use of the VCS for Data Exchange</h3>
+<p>One can classify implementations of <em>integration requests</em> by how they utilize
+the underlying version control tools.</p>
+<p>Before Git and GitHub came along, you were probably running a centralized version
+control tool which didn't support offline commits or feature branches (e.g. CVS
+or Subversion). In this world, the common mechanism for <em>integration requests</em>
+was exchanging diffs or patches through various media - email, post to a web
+service of a code review tool, etc. Your version control tool didn't speak
+directly to a VCS server to initiate an <em>integration request</em>. Instead, you
+would run a command which would export a text-based representation of the
+change and then send it somewhere.</p>
+<p>Today, we can classify <em>integration requests</em> by whether or not they speak
+the version control tool's native protocol for exchanging data or whether
+they exchange patches through some other mechanism. Pull requests speak the
+VCS native protocol. Tools like Review Board and Phabricator exchange patches
+via custom HTTP web services. Typically, tools using non-native exchange
+will require additional client-side configuration, including potentially the
+installation of a custom tool (e.g. <code>RBTools</code> for Review Board or <code>Arcanist</code>
+for Phabricator). Although modern version control tools sometimes have
+this functionality built-in. (e.g. Git and Mercurial fulfill
+<a href="https://en.wikipedia.org/wiki/Jamie_Zawinski#Principles">Zawinski's law</a> and
+Mercurial has a Phabricator extension in its official distribution).</p>
+<p>An interesting outlier is Gerrit, which ingests its <em>integration requests</em> via
+<code>git push</code>. (See
+<a href="https://gerrit-review.googlesource.com/Documentation/user-upload.html">the docs</a>.)
+But the way Gerrit's ingestion via <code>git push</code> works is fundamentally different
+from how pull requests work! With pull requests, you are pushing your local
+branch to a remote branch and a pull request is built around that remote branch.
+With Gerrit, your push command is like <code>git push gerrit HEAD:refs/for/master</code>.
+For the non-gurus, that <code>HEAD:refs/for/master</code> syntax means, <em>push the <code>HEAD</code>
+commit (effectively the commit corresponding to the working directory) to the
+<code>refs/for/master</code> ref on the <code>gerrit</code> remote</em> (the <code>SOURCE:DEST</code>
+syntax specifies a mapping of local revision identifier to remote ref). The
+wizard behind the curtain here is that Gerrit runs a special Git server that
+implements non-standard behavior for the <code>refs/for/*</code> refs. When you push to
+<code>refs/for/master</code>, Gerrit receives your Git push like a normal Git server would.
+But instead of writing a ref named <code>refs/for/master</code>, it takes the incoming commits
+and ingests them into a code review request! Gerrit will create Git refs for the
+pushed commits. But it mainly does that for its internal tracking (Gerrit stores
+all its data in Git - from Git data to review comments). And if
+that functionality isn't too magical for you, you can also pass parameters to
+Gerrit via the ref name! e.g. <code>git push gerrit HEAD refs/for/master%private</code>
+will create a private review request that requires special permissions to see.
+(It is debatable whether overloading the ref name for additional functionality
+is a good user experience for average users. But you can't argue that this isn't
+a cool hack!)</p>
+<p>On the surface, it may seem like using the version control tool's native data
+exchange is a superior workflow because it is <em>more native</em> and more modern.
+(<em>Emailing patches is so old school.</em>) Gone are the days of having to configure
+client-side tools to export and submit patches. Instead, you run <code>git push</code> and
+your changes can be turned into an <em>integration request</em> automatically or with
+a few mouse clicks. And from a technical level, this exchange methodology is
+likely safer, as round-tripping a text-based representation of a change without
+data loss is surprisingly finicky. (e.g. JSON's lack of lossless binary data
+exchange without encoding to e.g. base64 first often means that many services
+exchanging text-based patches are lossy, especially in the presence of content
+which doesn't conform to UTF-8, which can be commonplace in tests. You would be
+surprised how many tools experience data loss when converting version control
+commits/diffs to text. But I digress). Having Git's wire protocol exchange
+binary data is safer than exchanging text patches and probably easier to use
+since it doesn't require any additional client-side configuration.</p>
+<p>But despite being more native, modern, and arguably robust, exchange via the
+version control tool may not be <em>better</em>.</p>
+<p>For starters, use of the version control tool's native wire protocol inhibits
+use of arbitrary version control tools on the client. When your <em>integration
+request</em> requires the use of a version control tool's wire protocol, the client
+likely needs to be running that version control tool. With other approaches like
+exchange of text based patches, the client could be running any software it
+wanted: as long as it could spit out a patch or API request in the format the
+server needed, an <em>integration request</em> could be created! This meant there was
+less potential for <em>lock-in</em>, as people could use their own tools on their
+machines if they wanted and they (hopefully) wouldn't be inflicting their choice
+on others. Case in point, a majority of Firefox developers use Mercurial - the
+VCS of the canonical repository - but a large number use Git on the client. Because
+Firefox is using Phabricator (Review Board and Bugzilla before that) for code
+review and because Phabricator ingests text-based patches, the choice of the
+VCS on the client doesn't matter that much and the choice of the server VCS
+can be made without inciting a holy war among developers who would be forced
+to use a tool they don't prefer. Yes, there are good reasons for using a
+consistent tool (including organizational overhead) and sometimes mandates for
+tool use are justified. But in many cases (such as random open source
+contributions), it probably doesn't or shouldn't matter. And in cases like
+Git and Mercurial, where tools like the fantastic
+<a href="https://github.com/glandium/git-cinnabar">git-cinnabar</a> make it
+possible to easily convert between the repositories without data loss and
+acceptable overhead, adoption of the version control tool's native wire
+protocol can exclude or inhibit the productivity of contributors since it can
+mandate use of specific, undesired tooling.</p>
+<p>Another issue with using the version control tool's wire protocol is that it
+often forces or strongly encourages you to work a certain way. Take GitHub
+pull requests for example. The pull request is defined around the remote Git
+branch that you <code>git push</code>. If you want to update that branch, you need to know
+its name. So that requires some overhead to either create and track that branch
+or find its name when you want to update it. Contrast with Gerrit, where you
+don't have an explicit remote branch you push to: you simply <code>git push gerrit
+HEAD:refs/for/master</code> and it figures things out automatically (more on this
+later). With Gerrit, I don't have to create a local Git branch to initiate an
+<em>integration request</em>. With pull requests, I'm compelled to. And this can undermine
+my productivity by compelling me to practice less-efficient workflows!</p>
+<p>Our final point of comparison involves scalability. <strong>When you use the version
+control tool wire protocol as part of <em>integration requests</em>, you have
+introduced the problem of scaling your version control server.</strong> Take it from
+someone who has had multiple jobs involving scaling version control servers
+and who is intimately aware of the low-level details of both the
+Git and Mercurial wire protocols: you don't want to be in the business of
+scaling a version control server. The wire protocols for both Git and
+Mercurial were designed in a now-ancient era of computing and weren't designed
+by network protocol experts. They are fundamentally difficult to scale at
+just the wire protocol level. I've heard stories that at one time, the
+most expensive single server at Google was their Perforce or Perforce-derived
+server (this was several years ago - Google has since moved on to a better
+architecture).</p>
+<p>The poor network protocols of version control tools have many side-effects,
+including the inability or sheer difficulty of using distributed storage
+on the server. So in order to scale compute horizontally, you need to invest
+in expensive network storage solutions or devise a replication and
+synchronization strategy. And take it from someone who worked on data
+synchronization products (outside of the source control space) at three
+companies: this is a problem you don't want to solve yourself. Data
+synchronization is intrinsically difficult and rife with difficult trade-offs.
+It's almost always a problem best avoided if you have a choice in the matter.</p>
+<p>If creating Git refs is part of creating an <em>integration request</em>, you've
+introduced a scaling challenge with the number of Git refs. Do these Git
+refs live forever? What happens when you have thousands of developers -
+possibly all working in the same repository - and the number of refs or ref
+mutations grows to the hundreds of thousands or millions per year?</p>
+<p>Can your version control server handle ingesting a push every second or two
+with reasonable performance? Unless you are Google, Facebook, or a handful of
+other companies I'm aware of, it can't. And before you cry that I'm talking
+about problems that only plague the 0.01% of companies out there, I can name a
+handful of companies under 10% the size of these behemoths where this is a
+problem for them. And I also guarantee that many people don't have client-side
+metrics for their <code>git push</code> P99 times or reliability and don't even realize
+there is a problem! Scaling version control is probably not a core part of your
+company's business. Unfortunately, it all too often becomes something companies
+have to allocate resources for because of poorly designed or utilized tools.</p>
+<p>Contrast the challenges of scaling <em>integration requests</em> with a native
+version control server versus just exchanging patches. With the more
+<em>primitive</em> approach, you are probably sending the patch over HTTP to a web
+service. And with tools like Phabricator and Review Board, that patch gets
+turned into rows in a relational database. <strong>I guarantee it will be easier
+to scale an HTTP web service fronting a relational database than it will
+be your version control server.</strong> If nothing else, it should be easier to manage
+and debug, as there are tons more experts in these domains than in the
+version control server domain!</p>
+<p>Yes, it is true that many will not hit the scaling limits of the version
+control server. And some nifty solutions for scaling do exist. But large
+segments of this problem space - including the version control tool maintainers
+having to support <em>crazy</em> scaling vectors in their tools - could be avoided
+completely if <em>integration requests</em> didn't lean so heavily on the version
+control tools's default mode of operation. Unfortunately, solutions like
+GitHub pull requests and Gerrit's use of Git refs for storing <em>everything</em>
+exert a lot of pressure on scaling the version control server and make this
+a very real problem once you reach a certain scale.</p>
+<p>Hopefully the above paragraphs enlightened you to some of the implications
+that the choice of a data exchange mechanism has on <em>integration requests</em>!
+Let's move on to another point of comparison.</p>
+<h3>Commit Tracking</h3>
+<p>One can classify implementations of <em>integration requests</em> by how they <em>track</em>
+commits through their integration lifecycle. What I mean by this is how the
+<em>integration request</em> follows the same logical change as it evolves. For
+example, if you submit a commit then amend it, how does the system know that the
+commit <em>evolved</em> from commit <code>X</code> to <code>X'</code>.</p>
+<p>Pull requests don't track commits directly. Instead, a commit is part of a Git
+branch and that branch is tracked as the entity the pull request is built
+around. The review interface presents the <em>merge diff</em> front and center.
+It is possible to view individual commits. But as far as I know, none of
+these tools have smarts to explicitly track or map commits across new
+submissions. Instead, they simply assume that the commit order will be the
+same. If commits are reordered or added or removed in the middle of an
+existing series, the tool can get confused quite easily. (With GitHub, it
+was once possible for a review comment left on a commit to disappear entirely.
+The behavior has since been corrected and if GitHub doesn't know where to
+print a comment from a previous commit, it renders it as part of the pull
+request's timeline view.)</p>
+<p>If all you are familiar with is pull requests, you may not realize there are
+alternatives to commit tracking! In fact, the most common alternative (which
+isn't <em>do nothing</em>) predates pull requests entirely and is still practiced by
+various tools today.</p>
+<p>The way that Gerrit, Phabricator, and Review Board work is the commit message
+contains a unique token identifying the <em>integration request</em> for that commit.
+e.g. a commit message for a Phabricator review will contain the line
+<code>Differential Revision: https://phab.mercurial-scm.org/D7543</code>. Gerrit will
+have something like <code>Change-Id: Id9bfca21f7697ebf85d6a6fa7bac7de4358d7a43</code>.</p>
+<p>The way this annotation appears in the commit message differs by tool.
+Gerrit's web UI advertises a shell one-liner to clone repositories which
+not only performs a <code>git clone</code> but also uses <code>curl</code> to download a shell
+script from the Gerrit server and install it as Git's <code>commit-msg</code> hook in the
+newly-cloned repositories. This Git hook will ensure that any newly-created
+commit has a <code>Change-ID: XXX</code> line containing a randomly generated, hopefully
+unique identifier. Phabricator and Review Board leverage client-side tooling
+to rewrite commit messages after submission to their respective tool so
+the commit message contains the URL of the code review. One can debate
+which approach is <em>better</em> - they each have advantages and drawbacks.
+Fortunately, this debate is not germane to this post, so we won't cover it here.</p>
+<p>What is important is how this metadata in commit messages is used.</p>
+<p>The commit message metadata comes into play when a commit is being ingested
+into an <em>integration request</em>. If a commit message lacks metadata or references
+an entity that doesn't exist, the receiving system assumes it is new. If the
+metadata matches an entity on file, the incoming commit is often automatically
+matched up to an existing commit, even if its Git SHA is different!</p>
+<p>This approach of inserting a tracking identifier into commit messages works
+surprisingly well for tracking the evolution of commits! Even if you amend,
+reorder, insert, or remove commits, the tool can often figure out what matches
+up to previous submissions and reconcile state accordingly. Although support
+for this varies by tool. Mercurial's extension for submitting to Phabricator
+is smart enough to take the local commit DAG into account and change dependencies
+of review units in Phabricator to reflect the new DAG <em>shape</em>, for example.</p>
+<p><strong>The tracking of commits is another one of those areas where the simpler and
+more modern features of pull requests often don't work as well as the
+solutions that came before.</strong> Yes, inserting an identifier into commit messages
+feels hacky and can be brittle at times (some tools don't implement commit
+rewriting very well and this can lead to a poor user experience). But you
+can't argue with the results: <strong>using explicit, stable identifiers to track
+commits is far more robust than the heuristics that pull requests rely on</strong>.
+The false negative/positive rate is so much lower. (I know this from first hand
+experience because we attempted to implement commit tracking heuristics for
+a code review tool at Mozilla before Phabricator was deployed and there were
+a surprising number of corner cases we couldn't handle properly. And this was
+using Mercurial's <em>obsolescence markers</em>, which gave us commit evolution data
+generated directly by the version control tool! If that didn't work well enough,
+it's hard to imagine an heuristic that would. We eventually gave up and used
+stable identifiers in commit messages, which fixed most of the annoying
+corner cases.)</p>
+<p>The use of explicit commit tracking identifiers may not seem like it makes a
+meaningful difference. But it's impact is profound.</p>
+<p>The obvious benefit of tracking identifiers is that they allow rewriting commits
+without <em>confusing</em> the <em>integration request</em> tool. <strong>This means that people
+can perform advanced history rewriting with near impunity as to how it would
+affect the <em>integration request</em>.</strong> I am a heavy history rewriter. I like
+curating a series of individually high-quality commits that can each stand
+in isolation. When I submit a series like this to a GitHub pull request and
+receive feedback on something I need to change, when I enact those changes I have
+to think <em>will my rewriting history here make re-review harder</em>? (I try to be
+empathetic with the reviewer and make their life easier whenever possible. I
+ask what I would appreciate someone doing if I were reviewing their change and
+tend to do that.) With GitHub pull requests, if I reorder commits or add or remove
+a commit in the middle of a series, I realize that this may make review comments
+left on those commits hard to find since GitHub won't be able to sort out the
+history rewriting. And this may mean those review comments get <em>lost</em> and are
+ultimately not acted upon, leading to bugs or otherwise deficient changes. <strong>This
+is a textbook example of tooling deficiencies dictating a sub-optimal workflow
+and outcome: because pull requests don't track commits explicitly, I'm
+forced to adopt a non-ideal workflow or sacrifice something like commit
+quality in order to minimize risks that the review tool won't get confused.</strong>
+In general, tools should not externalize these kinds of costs or trade-offs onto
+users: they should <em>just work</em> and optimize for generally agreed-upon ideal
+outcomes.</p>
+<p><strong>Another benefit to tracking identifiers is that they enable per-commit review
+to be viable.</strong> Once you can track the logical evolution of a single commit,
+you can start to associate things like review comments with individual commits
+with a high degree of confidence. With pull requests (as they are implemented
+today), you can attempt to associate comments with commits. But because you are
+unable to track commits across rewrites with an acceptably high degree of
+success, rewritten commits often <em>fall through the cracks</em>, orphaning data
+like review comments with them. Data loss is bad, so you need a place to
+collect this orphaned data. The main pull request activity timeline facilitates
+this function.</p>
+<p>But once you can track commits reliably (and tools like Gerrit and Phabricator
+prove this is possible), you don't have this severe problem of data loss and
+therefore don't need to worry about finding a place to collect orphaned data!
+You are then able to create per-commit review units, each as loosely coupled
+with other commits and an overall series as you want to make it!</p>
+<p>It is interesting to note the different approaches in different tools here.
+it is doubly interesting to note behavior that is possible with the review
+tool itself and what it does by default!</p>
+<p>Let's examine Phabricator. Phabricator's review unit is the
+<em>Differential revision</em>. (<em>Differential</em> is the name of the code review tool
+in Phabricator, which is actually a suite of functionality - like GitLab,
+but not nearly as feature complete.) A <em>Differential revision</em> represents a
+single diff. <em>Differential revisions</em> can have parent-child relationships
+with others. Multiple revisions associated like this form a conceptual
+<em>stack</em> in Phabricator's terminology. Go to
+<a href="https://phab.mercurial-scm.org/D4414">https://phab.mercurial-scm.org/D4414</a>
+and search for <em>stack</em> to see it in action. (<em>Stack</em> is a bit misleading name
+because the parent-child relationships actually form a DAG and Phabricator is
+capable of rendering things like multiple children in its graphical view.)
+Phabricator's official client side tool for
+submitting to Phabricator - Arcanist or <code>arc</code> - has default behavior
+of collapsing all Git commits into a single <em>Differential revision</em>.</p>
+<p>Phabricator can preserve metadata from the individual commits (it can render
+at least the commit messages in the web UI so you can see where the <em>Differential
+revision</em> came from). In other words, by default Arcanist does <em>not</em> construct
+multiple <em>Differential revisions</em> for each commit and therefore does not construct
+parent-child relationships for them. So there is no <em>stack</em> to render here.
+To be honest, I'm not sure if modern versions of Arcanist even support doing
+this. I do know both Mercurial and Mozilla authored custom client side
+tools for submitting to Phabricator to work around deficiencies like this in
+Arcanist. Mozilla's may or may not be generally suitable for users outside
+of Mozilla - I'm not sure.</p>
+<p>Another interesting aspect of Phabricator is that there is no concept of an
+over-arching series. Instead, each <em>Differential revision</em> stands in isolation.
+They can form parent-child relationships and constitute a <em>stack</em>. But there
+is no primary UI or APIs for <em>stacks</em> (the last I looked anyway). This may seem
+radical. You may be asking questions like <em>how do I track the overall state
+of a series</em> or <em>how do I convey information pertinent to the series as a whole</em>.
+These are good questions. But without diving into them, the answer is that
+as radical as it sounds to not have an overall tracking entity for a series of
+<em>Differential revisions</em>, it does work. And having used this workflow with the
+Mercurial Project for a few years, I can say I'm not missing the functionality
+that much.</p>
+<p>Gerrit is also worth examining. Like Phabricator, Gerrit uses an identifier
+in commit messages to track the commit. But whereas Phabricator rewrites
+commit messages at initially submission time to contain the URL that was
+created as part of that submission, Gerrit peppers the commit message with
+a unique identifier at commit creation time. The server then maintains a
+mapping of commit identifier to review unit. Implementation details aside,
+the end result is similar: individual commits can be tracked more easily.</p>
+<p>What distinguishes Gerrit from Phabricator is that Gerrit does have a stronger
+grouping around multiple commits. Gerrit will track when commits are submitted
+together and will render both a <em>relation chain</em> and <em>submitted together</em> list
+automatically. While it lacks the visual beauty of Phabricator's implementation,
+it is effective and is shown in the UI by default, unlike Phabricator.</p>
+<p>Another difference from Phabricator is that Gerrit uses per-commit review
+by default. Whereas you need a non-official client for Phabricator to submit
+a series of commits to constitute a linked chain, Gerrit does this by default.
+And as far as I can tell, there's no way to tell Gerrit to squash your local
+commits down to a single diff for review: if you want a single review to appear,
+you must first squash commits locally then push the squashed commit. (More
+on this topic later in the post.) </p>
+<p><strong>A secondary benefit of per-commit review is that this model enables incremental
+integration workflows, where some commits in a series or set can integrate before
+others, without having to wait for the entire batch.</strong> Incremental integration
+of commits can drastically speed up certain workflows, as commits can integrate
+as soon as they are <em>ready</em> and not any longer. The benefits of this model can
+be incredible. But actually deploying this workflow can be tricky. One problem
+is that your version control tool may get confused when you rebase or merge
+partially landed state. Another problem is it can increase the overall change
+rate of the repository, which may strain systems from version control to CI
+to deployment mechanisms. Another potential problem involves communicating
+review sign-off from integration sign-off. Many tools/workflows conflate <em>I
+sign off on this change</em> and <em>I sign off on landing this change</em>. While they
+are effectively identical in many cases, there are some valid cases where you
+want to track these distinctly. And adopting a workflow where commits can
+integrate incrementally will expose these corner cases. So before you go down
+this path, you want to be thinking about who integrates commits and when
+they are integrated. (You should probably be thinking about this anyway because
+it is important.)</p>
+<h2>Designing a Better Integration Request</h2>
+<p>Having described some problems with pull requests and alternate ways of going
+about solving the general problem of <em>integration requests</em>, it is time to answer
+the million dollar problem: designing a better <em>integration request</em>. (When you
+factor in the time people spend in pull requests and the cost of bugs / low
+quality changes that slip through due to design of existing tooling, improving
+integration requests industry wide would be a <strong>lot</strong> more valuable than $1M.)</p>
+<p>As a reminder, the pull request is fundamentally a nice UI and set of features
+built around the common Git feature branch workflow. This property is preserved
+from the earliest days of pull requests in 2007-2008 and has been copied by
+vendors like Bitbucket and GitLab in the years since. In my mind, pull requests
+should be ripe for overhaul.</p>
+<h3>Replace Forks</h3>
+<p><strong>The first change I would make to pull requests is to move away from <em>forks</em>
+being a required part of the workflow.</strong> This may seem radical. But it isn't!</p>
+<p>A <em>fork</em> on services like GitHub is a fully fledged project - just like the
+canonical project it was forked from. It has its own issues, wiki, releases,
+pull requests, etc. Now show of hands: how often do you use these features
+on a fork? Me neither. <strong>In the overwhelming majority of cases, a <em>fork</em>
+exists solely as a vehicle to initiate a pull request against the repository
+it was forked from.</strong> It serves little to no additional meaningful
+functionality. Now, I'm not saying <em>forks</em> don't serve a purpose - they
+certainly do! <strong>But in the case of someone wanting to propose a change to
+a repository, a <em>fork</em> is not strictly required and its existence is imposed
+on us by the current implementation of pull requests.</strong></p>
+<p>I said <em>impose</em> in the previous sentence because <em>forks</em> introduce overhead
+and confusion. The existence of a <em>fork</em> may confuse someone as to where a
+canonical project lives. <em>Forks</em> also add overhead in the version control
+tool. Their existence forces the user to manage an additional Git remote
+and branches. It forces people to remember to keep their branches in sync on
+their fork. As if remembering to keep your local repository in sync wasn't
+hard enough! And if pushing to a <em>fork</em>, you need to re-push data that was
+already pushed to the canonical repository, even though that data already
+exists on the server (just in a different view of the Git repository). (I
+believe Git is working on wire protocol improvements to mitigate this.)</p>
+<p><strong>When merely used as a vehicle to initiate <em>integration requests</em>, I do not
+believe <em>forks</em> offer enough value to justify their existence.</strong> Should forks
+exist: yes. Should people be forced to use them in order to contribute
+changes, no. (Valid use cases for a <em>fork</em> would be to perform a community
+splinter of a project and to create an independent entity for reasons such as
+better guarantees of data availability and integrity.)</p>
+<p><em>Forks</em> are essentially a veneer on top of a server-side <code>git clone</code>. And the
+reason why a separate Git repository is used at all is probably because the
+earliest versions of GitHub were just a pile of abstractions over <code>git</code>
+commands. The service took off in popularity, people copied its features
+almost verbatim, and nobody ever looked back and thought <em>why are we doing
+things like this in the first place.</em></p>
+<p>To answer what we would replace <em>forks</em> with, we have to go back to first
+principles and ask <em>what are we trying to do.</em> And that is <em>propose a unit
+a change against an existing project</em>. And for version control tools, all
+you need to propose a change is a patch/commit. So to replace <em>forks</em>, we
+<em>just</em> need an alternate mechanism to submit patches/commits to an existing
+project.</p>
+<p><strong>My preferred alternative to forks is to use <code>git push</code> directly to the
+canonical repository.</strong> This could be implemented like Gerrit where you push
+to a special ref. e.g. <code>git push origin HEAD:refs/for/master</code>. Or - and this is
+my preferred solution - version control servers could grow more smarts about
+how <em>pushes</em> work - possibly even changing what commands like <code>git push</code> do if
+the server is operating in special modes.</p>
+<p>One idea would be for the Git server to expose different refs <em>namespaces</em>
+depending on the authenticated user. For example, I'm <code>indygreg</code> on GitHub.
+If I wanted to propose a change to a project - let's say <code>python/cpython</code> -
+I would <code>git clone git@github.com:python/cpython</code>. I would create a branch -
+say <code>indygreg/proposed-change</code>. I would then
+<code>git push origin indygreg/proposed-change</code> and because the branch prefix matches
+my authenticated username, the server lets it through. I can then open a
+pull request without a fork! (Using branch prefixes is less than ideal, but
+it should be relatively easy to implement on the server. A better approach
+would rely on remapping Git ref names. But this may require a bit more
+configuration with current versions of Git than users are willing to stomach.
+An even better solution would be for Git to grow some functionality to make
+this easier. e.g. <code>git push --workspace origin proposed-change</code> would push
+<code>proposed-change</code> to a <em>workspace</em> on the <code>origin</code> remote, which Git would
+know how to translate to a proper remote ref update.)</p>
+<p>Another idea would be for the version control server to invent a new concept
+for exchanging commits - one based on <em>sets of commits</em> instead of DAG
+synchronization. Essentially, instead of doing a complicated discovery
+dance to synchronize commits with the underlying Git repository, the server
+would ingest and expose representations of <em>sets of commits</em> stored next
+to - but not within - the repository itself. This way you are not scaling the
+repository DAG to infinite heads - which is a hard problem! A concrete
+implementation of this might have the client run a <code>git push --workspace
+origin proposed-change</code> to tell the remote server to store your
+<code>proposed-change</code> branch in your personal <em>workspace</em> (sorry for reusing the term
+from the previous paragraph). The Git server would receive your commits,
+generate a standalone blob to hold them, save that blob to a key-value
+store like S3, then update a mapping of which commits/branches are in
+which blobs in a data store such as a relational database somewhere. This
+would effectively segment the core project data from the more transient
+branch data, keeping the core repository clean and pure. It allows the server
+to lean on easier-to-scale data stores such as key-value blob stores and
+relational databases instead of the version control tool. I know this idea
+is feasible because Facebook implemented it for Mercurial. The <code>infinitepush</code>
+extension essentially siphons Mercurial <em>bundles</em> (standalone files holding
+commit data) off to a blob store when pushes come in over the wire. At
+<code>hg pull</code> time, if a requested revision is not present in the repository, the
+server asks the database-backed blob index if the revision exists anywhere.
+If it does, the blob/bundle is fetched, dynamically overlayed onto the
+repository in memory, and served to the client. While the <code>infinitepush</code>
+extension in the official Mercurial project is somewhat lacking (through no
+fault of Facebook's), the core idea is solid and I wish someone would spend
+the time to flush out the design a bit more because it really could lead
+to logically scaling repositories to <em>infinite</em> DAG heads without the
+complexities of actually scaling scaling DAG algorithms, repository storage,
+and version control tool algorithms to <em>infinite</em> heads. Getting back to the
+subject of <em>integration requests</em>, one could imagine having a <em>target</em> for
+<em>workspace pushes</em>. For example, <code>git push --workspace=review origin</code> would
+push to the <code>review</code> workspace, which would automatically initiate a code
+review.</p>
+<p>Astute readers of this blog may find these ideas familiar. I proposed
+<em>user namespaces</em> in my
+<a href="High-level problems with Git and how to fix them">/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them/</a>
+post a few years ago. So read there for more on implications of doing
+away with <em>forks</em>.</p>
+<p>Could <em>forks</em> be done away with as a requirement to submit pull requests?
+Yes! Gerrit's <code>git push origin HEAD:refs/for/master</code> mechanism proves it.
+Is Gerrit's approach too much magic or confusing for normal users? I'm not
+sure. Could Git grow features to make the user experience much better so
+users don't need to be burdened with complexity or magic and could
+simply run commands like <code>git submit --for review</code>? Definitely!</p>
+<h3>Shift Focus From Branches to Individual Commits</h3>
+<p><strong>My ideal <em>integration request</em> revolves around individual commits, not
+branches.</strong> While the client may submit a branch to initiate or update
+an <em>integration request</em>, the <em>integration request</em> is composed of a set
+of loosely coupled commits, where parent-child relationships can exist to
+express a dependency between commits. Each commit is evaluated
+individually. Although someone may need to inspect multiple commits to
+gain a full understanding of the proposed change. And some UI enabling
+operations against a group of related commits (such as mass deleting
+abandoned commits) may be warranted.</p>
+<p>In this world, the branch would not matter. Instead, commits are king.
+Because we would be abandoning the branch name as a tracker for the
+<em>integration request</em>, we would need something to replace it, otherwise we
+have no way of knowing how to update an existing <em>integration request</em>!
+We should do what tools like Phabricator, Gerrit, and Review Board do and
+add a persistent identifier to commits which survive history rewriting.
+(Branch-based pull requests should do this anyway so history rewrites don't
+confuse the review tool and e.g. cause comments to get orphaned - see
+above.)</p>
+<p><strong>It's worth noting that a commit-centric <em>integration request</em> model does
+not imply that everyone is writing or reviewing series of smaller commits!</strong>
+While titans of industry and I strongly encourage the authorship of smaller
+commits, commit-centric <em>integration requests</em> don't intrinsically force you
+to do so. This is because commit-centric <em>integration requests</em> aren't forcing
+you to change your local workflow! If you are the type of person who doesn't
+want to curate a ton of small, good-in-isolation commits (it does take a bit
+more work after all), nobody would be forcing you to do so. Instead, if this
+is your commit authorship pattern, the submission of the proposed change
+could <em>squash</em> these commits together as part of the submission, <em>optionally</em>
+rewriting your local history in the process. If you want to keep dozens of
+<em>fixup commits</em> around in your local history, that's fine: just have the
+tooling collapse them all together on submission. While I don't think those
+<em>fixup commits</em> are that valuable and shouldn't be seen by reviewers, if
+we wanted, we could have tools continue to submit them and make them visible
+(like they are in e.g. GitHub pull requests today). But they wouldn't be the
+focus of review (again like GitHub pull requests today). <strong>Making <em>integration
+requests</em> commit-centric doesn't force people to adopt a different commit
+authorship workflow. But it does enable projects that wish to adopt more
+<em>mature</em> commit hygiene to do so.</strong> That being said, hows tools are
+implemented can impose restrictions. But that's nothing about commit-centric
+review that fundamentally prohibits the use of <em>fixup commits</em> in local
+workflows.</p>
+<p>While I should create a dedicated post espousing the virtues of commit-centric
+workflows, I'll state my case through proxy by noting that some projects aren't
+using modern pull requests precisely because commit-centric workflows are not
+viable. When I was at Mozilla, one of the blockers to <em>moving to GitHub</em> was
+the pull request review tooling wasn't compatible with our world view that
+review units should be small. (This view is generally shared by Google, Facebook,
+and some prominent open source projects, among others.) And for reasons
+outlined earlier in this post, I think that as long as pull requests revolve
+around branches / <em>merge diffs</em> and aren't robust in the face of history rewriting
+(due to the lack of robust commit tracking), projects that insist on more
+<em>refined</em> practices will continue to eschew pull requests. Again, a link between
+review size and quality has been established. And better quality - along
+with its long-term effect of lowering development costs due to fewer bugs -
+can tip the scales in its favor, even against all the benefits you receive
+when using a product like GitHub, GitLab, or Bitbucket.</p>
+<h2>The Best of What's Around</h2>
+<p>Aspects of a better <em>integration request</em> exist in tools today. Unfortunately,
+many of these features are not present on pull requests as implemented by
+GitHub, GitLab, Bitbucket, etc. So to improve the pull request, these products
+will need to borrow ideas from other tools.</p>
+<p><em>Integration requests</em> not built around Git branches (Gerrit, Phabricattor,
+Review Board, etc) use identifiers in commit messages to track commits.
+This helps tracking commits across changes. There are compelling advantages
+to this model. Robust commit tracking is a requirement for commit-centric
+workflows. And it would even improve the functionality of branch-based pull
+requests. A well-designed <em>integration request</em> would have a robust commit
+tracking mechanism.</p>
+<p>Gerrit has the best-in-class experience for commit-centric workflows. It is
+the only popular implementation of <em>integration requests</em> I'm aware of that
+supports and caters to this workflow by default. In fact, I don't think you
+can change this! (This behavior is user hostile in some cases since it forces
+users to know how to rewrite commits, which is often perilous in Git land. It
+would be nice if you could have Gerrit squash commits into the same review unit
+automatically on the server. But I understand the unwillingness to implement
+this feature because this has its own set of challenges around commit tracking,
+which I won't bore you with.) Gerrit also shows groups of related commits
+front and center when viewing a proposed change.</p>
+<p>Phabricator is the only other tool I know of where one can achieve a reasonable
+commit-centric workflow without the pitfalls of orphaned comments, context
+overload, etc mentioned earlier in this post. But this requires non-standard
+submission tooling and commit series aren't featured prominently in the web UI.
+So Phabricator's implementation is not as solid as Gerrit's.</p>
+<p>Another Gerrit feature worth lauding is the submission mechanism. You simply
+<code>git push</code> to a special ref. That's it. There's no fork to create. No need to
+create a Git branch. No need to create a separate pull request after the push.
+Gerrit just takes the commits you pushed and turns them into a request for
+review. And it doesn't require any additional client-side tooling!</p>
+<p>Using a single common <code>git</code> command to submit and update an <em>integration
+request</em> is simpler and arguably more intuitive than other tools. Is Gerrit's
+submission perfect? No. The <code>git push origin HEAD:refs/for/master</code> syntax is
+not intuitive. And overloading submission options by effectively encoding URL
+parameters on the ref name is a gross - albeit effective - hack. But users will
+likely quickly learn the one-liner's or create more intuitive aliases.</p>
+<p>The elegance of using just a <code>git push</code> to initiate an <em>integration request</em>
+puts Gerrit in a league of its own. I would be ecstatic if the GitHubs of the
+world reduced the complexity of submitting pull requests to simply <em>clone the
+canonical repository, create some commits, and run a <code>git</code> command. The future
+of submitting </em>integration requests* hopefully looks more like Gerrit than
+other alternatives.</p>
+<h2>What Needs Built</h2>
+<p>Some aspects of the better <em>integration request</em> don't yet exist or need
+considerable work before I consider them viable.</p>
+<p>For tools which leverage the native version control tool for submission
+(e.g. via <code>git push</code>), there needs to be some work to support submission
+via a more generic, HTTP endpoint. I'm fine with leveraging <code>git push</code> as a
+submission mechanism because it makes the end-user experience so
+turnkey. But making it the only submission mechanism is a bit unfortunate.
+There is some support for this: I believe you can cobble together a pull
+request from scratch via GitHub's APIs, for example. But it isn't as simple
+as <em>submit a patch to an endpoint</em>, which it arguably should be. Even
+Gerrit's
+<a href="https://gerrit-review.googlesource.com/Documentation/rest-api.html">robust HTTP API</a>,
+does not seem to allow creating new commits/diffs via that API. Anyway, this
+limitation not only excludes non-Git tools from using these tools, but also
+limits other tooling from submitting without using Git. For example, you may
+want to write a bot that proposes automated changes and it is much easier
+to produce a diff than to use <code>git</code> since the former does not require a
+filesystem (this matters in <em>serverless</em> environments for example).</p>
+<p>A larger issue with many implementations is the over-reliance on Git for server
+storage. This is most pronounced in Gerrit, where not only are your <code>git push</code>es
+stored in a Git repository on the Gerrit server, but every code review comment
+and reply is stored in Git as well! Git <em>is</em> a generic key-value store and you
+can store any data you want in it if you shoehorn it properly. And it is cool
+that all your Gerrit data can be replicated via <code>git clone</code> - this pretty much
+eliminates the <em>we took a decentralized tool and centralized it via GitHub</em>
+series of arguments. But if you apply this <em>store everything in Git</em> approach
+at scale, it means you will be running a Git server at scale. And not just any
+Git server - a write load heavy Git server! And if you have thousands of
+developers possibly all working out of the same repository, then you are looking
+at potentially millions of new Git refs per year. While the Git, Gerrit, and
+JGit people have done some fantastic work making these tools scale, I'd feel
+much better if we eschewed the <em>make Git scale to infinite pushes and refs</em>
+problem and used a more scalable approach, like an HTTP ingestion endpoint
+which writes data to key-value stores or relational databases. In order words,
+use of a version control tool for servicing <em>integration requests</em> at scale
+is a self-imposed footgun and could be avoided.</p>
+<h2>Conclusion</h2>
+<p>Congratulations on making it through my brain dump! As massive as the wall
+of text is, there are still plenty of topics I could have covered but didn't.
+This includes the more specific topic of code review and the various features
+that entails. I also largely ignored some general topics like the value that
+an <em>integration request</em> can serve on the overall development lifecycle:
+<em>integration requests</em> are more than just code review - they serve as a nexus
+to track the evolution of a change throughout time.</p>
+<p>Hopefully this post gave you some idea at some of the structural issues at
+play with the integration of pull requests and <em>integration requests</em>. And
+if you are someone in a position to design or implement a better
+<em>integration request</em> or tooling around them (including in version control
+tools themselves), hopefully it gave you some good ideas or where to go next.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2020/01/07/problems-with-pull-requests-and-how-to-fix-them#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="c-extension-support-in-pyoxidizer"></a>
   <h2 class="blog_post_title"><a href="/blog/2019/06/30/c-extension-support-in-pyoxidizer" rel="bookmark" title="Permanent Link to C Extension Support in PyOxidizer">C Extension Support in PyOxidizer</a></h2>
   <small>June 30, 2019 at 04:40 PM | categories: 
@@ -1138,196 +2223,6 @@ improvements to mitigate them.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2019/01/10/what-i've-learned-about-optimizing-python#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="seeking-employment"></a>
-  <h2 class="blog_post_title"><a href="/blog/2019/01/07/seeking-employment" rel="bookmark" title="Permanent Link to Seeking Employment">Seeking Employment</a></h2>
-  <small>January 07, 2019 at 03:25 PM | categories: 
-
-<a href='/blog/category/personal'>Personal</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2019/01/07/seeking-employment#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>After almost seven and a half years as an employee of Mozilla Corporation,
-I'm moving on. I have already worked my final day as an employee.</p>
-<p>This post is the first time that I've publicly acknowledged my departure.
-To any Mozillians reading this, I regret that I did not send out a
-farewell email before I left. But the circumstances of my departure weren't
-conducive to doing so. I've been drafting a proper farewell blog post. But
-it has been very challenging to compose. Furthermore, each passing day
-brings with it new insights into my time at Mozilla and a new wrinkle to
-integrate into the reflective story I want to tell in that post. I vow to
-eventually publish a proper goodbye that serves as the bookend to my
-employment at Mozilla. Until then, just let me say that I'm already missing
-working with many of you. I've connected with several people since I left
-and still owe responses or messages to many more. If you want to get in
-touch, my contact info is in my <a href="/resume.pdf">résumé</a>.</p>
-<p>I left Mozilla without new employment lined up. That leads me to the
-subject line of this post: I'm seeking employment. The remainder of this
-post is thus tailored to potential employers.</p>
-<p>My <a href="/resume.pdf">résumé</a> has been updated. But that two page summary
-only scratches the surface of my experience and set of skills. The
-<a href="/work.html">Body of Work</a> page of my website is a more detailed record
-of the work I've done. But even it is not complete!</p>
-<p>Perusing through my posts on this blog will reveal even more about the
-work I've done and how I go about it. My résumé links to a few posts
-that I think are great examples of the level of understanding and detail
-that I'm capable of harnessing.</p>
-<p>As far as the kind of work I want to do or the type of company I want
-to work for, I'm trying to keep an open mind. But I do have some biases.</p>
-<p>I prefer established companies to early start-ups for various reasons.
-Dan Luu's <a href="https://danluu.com/startup-tradeoffs/">Big companies v. startups</a>
-is aligned pretty well with my thinking.</p>
-<p>One of the reasons I worked for Mozilla was because of my personal
-alignment with the
-<a href="https://www.mozilla.org/en-US/about/manifesto/">Mozilla Manifesto</a>. So
-I gravitate towards employers that share those principles and am
-somewhat turned off by those that counteract them. But I recognize that
-the world is complex and that competing perspectives aren't intrinsically
-evil. In other words, I try to maintain an open mind.</p>
-<p>I'm attracted to employers that align their business with improving the
-well-being of the planet, especially the people on it. The link
-between the business and well-being can be tenuous: a B2B business for
-example is presumably selling something that helps people, and that helping
-is what matters to me. The tighter the link between the business and
-improving the world will increase my attraction to a employer.</p>
-<p>I started my university education as a biomedical engineer because I
-liked the idea of being at the intersection of technology and medicine.
-And part of me really wants to return to this space because there
-are few things more noble than helping a fellow human being in need.</p>
-<p>As for the kind of role or technical work I want to do, I could go in
-any number of directions. I still enjoy doing individual contributor type
-work and believe I could be an asset to an employer doing that work. But
-I also crave working on a team, performing technical mentorship, and being
-a leader of technical components. I enjoy participating in high-level
-planning as well as implementing the low-level aspects. I recognize that
-while my individual output can be substantial (I can provide data showing
-that I was one of the most prolific technical contributors at Mozilla
-during my time there) I can be more valuable to an employer when I
-bestow skills and knowledge unto others through teaching, mentorship,
-setting an example, etc.</p>
-<p>I have what I would consider expertise in a few domains that may be
-attractive to employers.</p>
-<p>I was a technical maintainer of Firefox's build system and initiated a
-transition away from an architecture that had been in place since the
-Netscape days. I definitely geek out way too much on build systems.</p>
-<p>I am a contributor to the Mercurial version control tool. I know way
-too much about the internals of Mercurial, Git, and other version
-control tools. I am intimately aware of scaling problems with these
-tools. Some of the scaling work I did for Mercurial saved Mozilla tens
-of thousands of dollars in direct operational costs and probably
-hundreds of thousands of dollars in saved people time due to fewer
-service disruptions and faster operations.</p>
-<p>I have exposure to both client and server side work and the problems
-encountered within each domain. I've dabbled in lots of technologies,
-operating systems, and tools. I'm not afraid to learn something new.
-Although as my experience increases, so does my skepticism of shiny
-new things (I've been burned by technical fads too many times).</p>
-<p>I have a keen fascination with optimization and scaling, whether it
-be on a technical level or in terms of workflows and human behavior.
-I like to ask <em>and then what</em> so I'm thinking a few steps out and am
-prepared for the next problem or consequence of an immediate action.</p>
-<p>I seem to have a knack for caring about user experience and interfaces.
-(Although my own visual design skills aren't the greatest - see my
-website design for proof.) I'm pretty passionate that tools that people
-use should be simple and usable. Cognitive dissonance, latency, and
-distractions are real and as an industry we don't do a great job
-minimizing these disruptions so focus and productivity can be
-maximized. I'm not saying I would be a good product manager or
-UI designer. But it's something I've thought about because not many
-engineers seem to exhibit the passion for good user experience that
-I do and that intersection of skills could be valuable.</p>
-<p>My favorite time at Mozilla was when I was working on a unified
-<em>engineering productivity</em> team. The team controlled most of the tools
-and infrastructure that Firefox developers interacted with in order
-to do their jobs. I absolutely loved taking a whole-world view of
-that problem space and identifying the high-level problems - and
-low-hanging fruit - to improve the overall Firefox development
-experience. I derived a lot of satisfaction from identifying pain
-points, equating them to a dollar cost by extrapolating people time
-wasted due to them, justifying working on them, and finally
-celebrating - along with the overall engineering team - when improvements
-were made. I think I would be a tremendous asset to a company working
-in this space. And if my experience at Mozilla is any indicator, I
-would more than offset my total employment cost by doing this kind
-of work.</p>
-<p>I've been entertaining the idea of contracting for a while before
-I resume full-time employment with a single employer. However, I've
-never contracted before and need to do some homework before I commit
-to that. (Please leave a comment or email me if you have recommendations
-on reading material.)</p>
-<p>My dream contract gig would likely be to finish the Mercurial wire
-protocol and storage work I started last year. I would need to type
-up a formal proposal, but the gist of it is the work I started has the
-potential to leapfrog Git in terms of both client-side and server-side
-performance and scalability. Mercurial would be able to open Git
-repositories on the local filesystem as well as consume them via the
-Git wire protocol. Transparent Git interoperability would enable
-Mercurial to be used as a drop-in replacement for Git, which would
-benefit users who don't have control over the server (such as projects
-that live on GitHub). Mercurial's new wire protocol is designed with
-global scalability and distribution in mind. The goal is to enable
-server operators to deploy scalable VCS servers in a turn-key manner
-by relying on scalable key-value stores and content distribution
-networks as much as possible (Mercurial and Git today require servers
-to perform way too much work and aren't designed with modern distributed
-systems best practices, which is why scaling them is hard). The new
-protocol is being designed such that a <em>Mercurial</em> server could expose
-Git data. It would then be possible to teach a Git client to speak the
-<em>Mercurial</em> wire protocol, which would result in Mercurial being a more
-scalable Git server than Git is today. If my vision is achieved, this
-would make server-side VCS scaling problems go away and would eliminate
-the religious debate between Git and Mercurial (the answer would be
-<em>deploy a Mercurial server, allow data to be exposed to Git, and let
-consumers choose</em>). I conservatively estimate that the benefits to
-industry would be in the millions of dollars. How I would structure
-a contract to deliver aspects of this, I'm not sure. But if you are
-willing to invest six figures towards this bet, let's talk. A good
-foundation of this work is already implemented in Mercurial and the
-Mercurial core development team is already on-board with many aspects
-of the vision, so I'm not spewing vapor.</p>
-<p>Another potential contract opportunity would be funding
-<a href="https://gregoryszorc.com/blog/category/pyoxidizer/">PyOxidizer</a>.
-I started the project a few months back as a side-project as an
-excuse to learn Rust while solving a <em>fun</em> problem that I thought
-needed solving. I was hoping for the project to be useful for
-Mercurial and Mozilla one day. But if social media activity is any
-indication, there seems to be somewhat widespread interest in this
-project. I have no doubt that once complete, companies will be using
-PyOxidizer to ship products that generate revenue and that PyOxidizer
-will save them engineering resources. I'd very much like to recapture
-some of that value into my pockets, if possible. Again, I'm somewhat
-naive about how to write contracts since I've never contracted, but I
-imagine <em>deliver a tool that allows me to ship product X as a
-standalone binary to platforms Y and Z</em> is definitely something that
-could be structured as a contract. </p>
-<p>As for the timeline, I was at Mozilla for what feels like an eternity
-in Silicon Valley. And Mozilla's way of working is substantially
-different from many companies. I need some time to decompress and
-unlearn some Mozilla habits. My future employer will inherit a happier
-and more productive employee by allowing me to take some much-needed
-time off.</p>
-<p>I'm looking to resume full-time work no sooner than March 1. I'd like
-to figure out what the next step in my career is by the end of January.
-Then I can sign some papers, pack up my skiis, and become a ski bum
-for the month of February: if I don't use this unemployment opportunity
-to have at least 20 days on the slopes this season and visit some new
-mountains, I will be very disappointed in myself!</p>
-<p>If you want to get in touch, my contact info is in my
-<a href="/resume.pdf">résumé</a>. I tend not to answer incoming calls from
-unknown numbers, so email is preferred. But if you leave a voicemail,
-I'll try to get back to you.</p>
-<p>I look forward to working for a great engineering organization in the
-near future!</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2019/01/07/seeking-employment#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/page/2">Next Page »</a>
 
