@@ -51,6 +51,36 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial-2.8-released"></a>
+  <h2 class="blog_post_title"><a href="/blog/2013/11/08/mercurial-2.8-released" rel="bookmark" title="Permanent Link to Mercurial 2.8 released">Mercurial 2.8 released</a></h2>
+  <small>November 08, 2013 at 02:30 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p><a href="http://mercurial.selenic.com/">Mercurial</a> 2.8 has been released.</p>
+<p>The <a href="http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_2.8_.282013-11-1.29">changes</a>
+aren't as sexy as previous releases. But there are a handful of bug
+fixes that seem useful to pull in. People may also find the new <em>shelve</em>
+extension useful.</p>
+<p>I encourage Mozillians to keep their Mercurial up to date. I once went
+around the San Francisco office and stood behind people as they
+upgraded to a modern Mercurial. For the next few weeks I was hearing a
+lot of "OMG Mercurial is so much better now." Don't handicap yourself by
+running an older, buggy Mercurial.</p>
+<p>If you don't yet feel comfortable running 2.8, 2.7 should be safe.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/11/08/mercurial-2.8-released#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="using-mercurial-to-query-mozilla-metadata"></a>
   <h2 class="blog_post_title"><a href="/blog/2013/11/08/using-mercurial-to-query-mozilla-metadata" rel="bookmark" title="Permanent Link to Using Mercurial to query Mozilla metadata">Using Mercurial to query Mozilla metadata</a></h2>
   <small>November 08, 2013 at 09:42 AM | categories: 
@@ -474,101 +504,6 @@ included in.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/25/track-pushes-and-train-riding-with-mercurial#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="mercurial-extension-for-gecko-development"></a>
-  <h2 class="blog_post_title"><a href="/blog/2013/07/22/mercurial-extension-for-gecko-development" rel="bookmark" title="Permanent Link to Mercurial Extension for Gecko Development">Mercurial Extension for Gecko Development</a></h2>
-  <small>July 22, 2013 at 10:27 AM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>My weekend was spent hacking on Mercurial extensions. First, I worked on
-<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=827123">porting the pushlog extension off SQLite</a>.
-This will eventually enable Mozilla to move Mercurial hosting off NFS
-and should make <a href="https://hg.mozilla.org/">hg.mozilla.org</a> much faster as
-a result!</p>
-<p>But the main purpose of this blog post is to introduce a new Mercurial
-extension I wrote this weekend!</p>
-<p>Gecko developers perform a number of common tasks with Mercurial, so I
-thought it would be handy to package them up in an extension.</p>
-<p>To install the extension:</p>
-<pre><code>hg clone https://hg.mozilla.org/hgcustom/version-control-tools
-</code></pre>
-<p>Then add this extension to your hgrc file (either the global or
-per-repository will suffice):</p>
-<pre><code>[extensions]
-mozext = /path/to/version-control-tools/hgext/mozext
-</code></pre>
-<p>Since I believe tools should be self-documenting, run the following for
-usage info:</p>
-<pre><code>$ hg help mozext
-</code></pre>
-<p>Here are some examples:</p>
-<div class="pygments_murphy"><pre><span></span><span class="c1"># Clone mozilla-central into the mc directory.</span>
-hg clone central mc
-hg clone mc mc
-
-<span class="c1"># Create a unified Mercurial repository containing changesets</span>
-<span class="c1"># from all the release repositories.</span>
-hg cloneunified gecko
-
-<span class="c1"># Pull changes from the central and inbound repositories.</span>
-hg pull central
-hg pull inbound
-
-<span class="c1"># Update the working tree to the tip of inbound.</span>
-hg up inbound/default
-
-<span class="c1"># View the tree open/closed status.</span>
-hg treestatus
-
-<span class="c1"># Show a list of all known trees and their aliases.</span>
-hg moztrees
-
-<span class="c1"># Open TBPL for the push containing a changeset.</span>
-hg tbpl inbound 821e984ef423
-hg tbpl inbound inbound/default
-
-<span class="c1"># Push the tip of inbound to mozilla-central</span>
-hg pushtree -r inbound/default central
-</pre></div>
-
-<p>I've only tested this extension with Mercurial 2.6 (which every Mozilla
-developer should be running). I'm not willing to support older versions.
-Upgrade already!</p>
-<p>There are a number of features I'd like to implement:</p>
-<ul>
-<li><strong>hg importtry</strong> - Automatically import changesets for a Try push into
-  the repository.</li>
-<li><strong>hg land</strong> - Automatically land patches on an integration tree (like
-  inbound). Will handle rebasing automatically.</li>
-<li><strong>hg critic</strong> - Perform stlye checking and other analysis on a
-  changeset or group of changesets.</li>
-<li>Ability to integrate build status into changeset info. This will allow
-  things such as <em>pull only the last green changeset</em>. I'd also like a
-  <em>build status</em> field to appear in the log output. Unfortunately, I
-  believe the latency of the build lookup API is prohibitively high to
-  perform the kind of tight integration I'd like.</li>
-<li>Move <em>mozautomation</em> Python package into a standalone package or
-  integrate already existing code (did I reinvent the wheel?).</li>
-<li>Log fetching. Specify a changeset and fetch build/test logs.</li>
-<li>Possibly move code into mozilla-central.</li>
-<li>Possibly add mach commands for some of this functionality.</li>
-</ul>
-<p>There's no bug component for this extension (yet). If you find any
-issues or wish to add a feature, just email a patch to me at gps@mozilla.com.</p>
-<p>Please let me know if you find this useful or if you have any questions.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2013/07/22/mercurial-extension-for-gecko-development#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/11">« Previous Page</a>
   --  

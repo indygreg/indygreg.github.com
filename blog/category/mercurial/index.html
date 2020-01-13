@@ -51,6 +51,589 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial's-journey-to-and-reflections-on-python-3"></a>
+  <h2 class="blog_post_title"><a href="/blog/2020/01/13/mercurial's-journey-to-and-reflections-on-python-3" rel="bookmark" title="Permanent Link to Mercurial's Journey to and Reflections on Python 3">Mercurial's Journey to and Reflections on Python 3</a></h2>
+  <small>January 13, 2020 at 08:45 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mercurial'>Mercurial</a>
+ | <a href="http://gregoryszorc.com/blog/2020/01/13/mercurial's-journey-to-and-reflections-on-python-3#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial 5.2 was released on November 5, 2019. It is the first version
+of Mercurial that supports Python 3. This milestone comes nearly 11 years
+after Python 3.0 was first released on December 3, 2008.</p>
+<p>Speaking as a maintainer of Mercurial and an avid user of Python, I
+feel like the experience of making Mercurial work with Python 3 is
+worth sharing because there are a number of lessons to be learned.</p>
+<p>This post is logically divided into two sections: a mostly factual recount
+of Mercurial's Python 3 porting effort and a more opinionated commentary
+of the transition to Python 3 and the Python language ecosystem as a whole.
+Those who don't care about the mechanics of porting a large Python project
+to Python 3 may want to skip the next section or two.</p>
+<h2>Porting Mercurial to Python 3</h2>
+<p>Let's start with a brief history lesson of Mercurial's support for
+Python 3 as told by its own commit history.</p>
+<p>The Mercurial version control tool was first released in April 2005
+(the same month that Git was initially released). Version 1.0 came out
+in March 2008. The first reference to Python 3 I found in the code base
+was in <a href="https://www.mercurial-scm.org/repo/hg/rev/8fee8ff13d37">September 2008</a>.
+Then not much happens for a while until
+<a href="https://www.mercurial-scm.org/repo/hg/rev/4494fb02d549">June 2010</a>, when
+someone authors a bunch of changes to make the Python C extensions
+start to recognize Python 3. Then things were again quiet for a while
+until <a href="https://www.mercurial-scm.org/repo/hg/rev/56ef99fbd6f2">January 2013</a>,
+when a handful of changes landed to remove 2 argument <code>raise</code>. There were
+a handful of commits in 2014 but nothing worth calling out.</p>
+<p>Mercurial's meaningful journey to Python 3 started in 2015. In code,
+the work started in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/af6e6a0781d7">April 2015</a>, with
+effort to make Mercurial's test harness run with Python 3. Part of
+this was a <a href="https://www.mercurial-scm.org/repo/hg/rev/fefc72523491">decision</a>
+that Python 3.5 (to be released several months later in September 2015)
+would be the minimum Python 3 version that Mercurial would support.</p>
+<p>Once the Mercurial Project decided it wanted to port to Python 3 (as opposed
+to another language), one of the earliest decisions was how to perform that
+port. <strong>Mercurial's code base was too large to attempt a flag day conversion</strong>
+where there would be a Python 2 version and a Python 3 version and one day
+everyone would switch from Python 2 to 3. <strong>Mercurial needed a way to run the
+same code (or as much of the same code) on both Python 2 and 3.</strong> We would
+maintain a single code base and users would gradually switch from running with
+Python 2 to Python 3.</p>
+<p>The main goal with Mercurial's early porting work was just getting the code base
+to a point where <code>import mercurial</code> would work. There were a myriad of places
+where Mercurial used syntax that was invalid on Python 3 and Python 3
+couldn't even parse the source code, let alone compile it to bytecode and
+execute it.</p>
+<p>This effort began in earnest in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/e93036747902">June 2015</a>
+with global source code rewrites like using modern octal syntax,
+modern exception catching syntax (<code>except Exception as e</code> instead of
+<code>except Exception, e</code>), <code>print()</code> instead of <code>print</code>, and a
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1a6a117d0b95">modern import convention</a>
+along with the use of <code>from __future__ import absolute_import</code>.</p>
+<p>In the early days of the port, our first goal was to get all source code
+parsing as valid Python 3. The next step was to get all the modules <code>import</code>ing
+cleanly. This entailed fixing code that ran at <code>import</code> time to work on
+Python 3. Our thinking was that we would need the code base to be <code>import</code>
+clean on Python 3 before seriously thinking about run-time behavior. In reality,
+we quickly ported a lot of modules to <code>import</code> cleanly and then moved on
+to higher-level porting, leaving a long-tail of modules with <code>import</code> failures.</p>
+<p>This initial porting effort played out over months. There weren't many
+people working on it in the early days: a few people would basically hack on
+Python 3 as a form of itch scratching and most of the project's energy was
+focused on improving the existing Python 2 based product. You can get a rough
+idea of the timeline and participation in the early porting effort through the
+<a href="https://www.mercurial-scm.org/repo/hg/log/081a77df7bc6/tests/test-check-py3-compat.t?revcount=960">history of test-check-py3-compat.t</a>.
+We see the test being added in <a href="https://www.mercurial-scm.org/repo/hg/rev/40eb385f798f">December 2015</a>,
+By June 2016, most of the code base was ported to our modern import convention
+and we were ready to move on to more meaningful porting.</p>
+<p>One of the biggest early hurdles in our porting effort was how to overcome
+the string literals type mismatch between Python 2 and 3. In Python 2, a
+<code>''</code> string literal is a sequence of bytes. In Python 3, a <code>''</code> string literal
+is a sequence of Unicode code points. These are fundamentally different types.
+And in Mercurial's code base, <strong>most of our <em>string</em> types are binary by design:
+use of a Unicode based <code>str</code> for representing data is flat out wrong for our use
+case</strong>. We knew that Mercurial would need to eventually switch many string
+literals from <code>''</code> to <code>b''</code> to preserve type compatibility. But doing so would
+be problematic.</p>
+<p>In the early days of Mercurial's Python 3 port in 2015, Mercurial's project
+maintainer (Matt Mackall) set a ground rule that the Python 3 port shouldn't overly
+disrupt others: he wanted the Python 3 port to more or less happen in the background
+and not require every developer to be aware of Python 3's low-level behavior in order
+to get work done on the existing Python 2 code base. This may seem like a questionable
+decision (and I probably disagreed with him to some extent at the time because I was
+doing Python 3 porting work and the decision constrained this work). But it was the
+correct decision. Matt knew that it would be years before the Python 3 port was either
+necessary or resulted in a meaningful return on investment (the value proposition of
+Python 3 has always been weak to Mercurial because Python 3 doesn't demonstrate a
+compelling advantage over Python 2 for our use case). What Matt was trying to do was
+minimize the externalized costs that a Python 3 port would inflict on the project.
+He correctly recognized that maintaining the existing product and supporting
+existing users was more important than a long-term bet in its infancy.</p>
+<p>This ground rule meant that a mass insertion of <code>b''</code> prefixes everywhere
+was not desirable, as that would require developers to think about whether
+a type was a <code>bytes</code> or <code>str</code>, a distinction they didn't have to worry about
+on Python 2 because we practically never used the Unicode-based string type in
+Mercurial.</p>
+<p>In addition, there were some other practical issues with doing a bulk <code>b''</code>
+prefix insertion. One was that the added <code>b</code> characters would cause a lot of lines
+to grow beyond our length limits and we'd have to reformat code. That would
+require manual intervention and would significantly slow down porting. And
+a sub-issue of adding all the <code>b</code> prefixes and reformatting code is that it would
+<em>break</em> annotate/blame more than was tolerable. The latter issue was addressed
+by teaching Mercurial's annotate/blame feature to <em>skip</em> revisions. The project
+now has a convention of annotating commit messages with <code># skim-blame &lt;reason&gt;</code>
+so structural only changes can easily be ignored when performing an
+annotate/blame.</p>
+<p>A stop-gap solution to the <code>b''</code> everywhere issue came in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1c22400db72d">July 2016</a>, when I
+introduced a custom Python module importer that rewrote source code as part
+of <code>import</code> when running on Python 3. (I have
+<a href="/blog/2017/03/13/from-__past__-import-bytes_literals/">previously blogged</a>
+about this hack.) What this did was transparently add <code>b''</code> prefixes to all
+un-prefixed string literals as well as modify how a few common functions were
+called so that we wouldn't need to modify source code so things would run natively
+on Python 3. The source transformer allowed us to have the benefits of progressing
+in our Python 3 port without having to rewrite tens of thousands of lines of
+source code. The solution was hacky. But it enabled us to make significant
+progress on the Python 3 port without externalizing a lot of cost onto others.</p>
+<p>I thought the source transformer would be relatively short-lived and would be
+removed shortly after the project inevitably decided to go all in on Python 3.
+To my surprise, others built additional transforms over the years and the source
+transformer persisted all the way until
+<a href="https://www.mercurial-scm.org/repo/hg/rev/d783f945a701">October 2019</a>, when
+I removed it just before the first non-alpha Python 3 compatible version
+of Mercurial was released.</p>
+<p>A common problem Mercurial faced with making the code base dual Python 2/3 native
+was dealing with standard library differences. Most of the problems stemmed
+from changes between Python 2.7 and 3.5+. But there are changes within the
+versions of Python 3 that we had to wallpaper over as well. In
+<a href="https://www.mercurial-scm.org/repo/hg/rev/6041fb8f2da8">April 2016</a>, the
+<code>mercurial.pycompat</code> module was introduced to export aliases or wrappers around
+standard library functionality to abstract the differences between Python
+versions. This file <a href="https://www.mercurial-scm.org/repo/hg/log/66af68d4c751/mercurial/pycompat.py?revcount=240">grew over time</a>
+and <a href="https://www.mercurial-scm.org/repo/hg/file/66af68d4c751/mercurial/pycompat.py">eventually became</a>
+Mercurial's version of <a href="https://six.readthedocs.io/">six</a>. To be honest, I'm
+not sure if we should have used <code>six</code> from the beginning. <code>six</code> probably would
+have saved some work. But we had to eventually write a lot of shims for
+converting between <code>str</code> and <code>bytes</code> and would have needed to invent a
+<code>pycompat</code> layer in some form anyway. So I'm not sure <code>six</code> would have saved
+enough effort to justify the baggage of integrating a 3rd party package into
+Mercurial. (When Mercurial accepts a 3rd party package, downstream packagers
+like Debian get all hot and bothered and end up making questionable patches
+to our source code. So we prefer to minimize the surface area for
+problems by minimizing dependencies on 3rd party packages.)</p>
+<p>Once we had a source transforming module importer and the <code>pycompat</code>
+compatibility shim, we started to focus in earnest on making core
+functionality actually work on Python 3. We established a convention of
+annotating changesets needed for Python 3 with <code>py3</code>, so a
+<a href="https://www.mercurial-scm.org/repo/hg/log?rev=desc(py3)&amp;revcount=4000">commit message search</a>
+yields a lot of the history. (But it isn't a full history since not every Python 3
+oriented change used this convention). We see from that history that after
+the source importer landed, a lot of porting effort was spent on things
+very early in the <code>hg</code> process lifetime. This included handling environment
+variables, loading config files, and argument parsing. We introduced a
+<a href="https://www.mercurial-scm.org/repo/hg/log/@/tests/test-check-py3-commands.t">test-check-py3-commands.t</a>
+test to track the progress of <code>hg</code> commands working in Python 3. The very early
+history of that file shows the various error messages changing, as underlying
+early process functionality was slowly ported to work on Python 3. By
+<a href="https://www.mercurial-scm.org/repo/hg/rev/2d555d753f0e">December 2016</a>, we
+had <code>hg version</code> working on Python 3!</p>
+<p>With basic <code>hg</code> command dispatch ported to Python 3 at the end of 2016,
+2017 represented an inflection point in the Python 3 porting effort. With the
+early process functionality working, different people could pick up different
+commands and code paths and start making code work with Python 3. By
+<a href="https://www.mercurial-scm.org/repo/hg/rev/52ee1b5ac277">March 2017</a>, basic
+repository opening and <code>hg files</code> worked. Shortly thereafter,
+<a href="https://www.mercurial-scm.org/repo/hg/rev/ed23f929af38">hg init started working as well</a>.
+And <a href="https://www.mercurial-scm.org/repo/hg/rev/935a1b1117c7">hg status</a> and
+<a href="https://www.mercurial-scm.org/repo/hg/rev/aea8ec3f7dd1">hg commit</a> did as well.</p>
+<p>Within a few months, enough of Mercurial's functionality was working with Python
+3 that we started to <a href="https://www.mercurial-scm.org/repo/hg/rev/7a877e569ed6">track which tests passed on Python 3</a>.
+The <a href="https://www.mercurial-scm.org/repo/hg/log/@/contrib/python3-whitelist?revcount=480">evolution of this file</a>
+shows a reasonable history of the porting velocity.</p>
+<p>In <a href="https://www.mercurial-scm.org/repo/hg/rev/bd8875b6473c">November 2017</a>, I
+landed a test harness feature to report exceptions seen during test runs. I
+later <a href="https://www.mercurial-scm.org/repo/hg/rev/8de90e006c78">refined the output</a>
+so the most frequent failures were reported more prominently. This feature
+greatly enabled our ability to target the most common exceptions, allowing
+us to write patches to fix the most prevalent issues on Python 3 and uncover
+previously unknown failures.</p>
+<p>By the end of 2017, we had most of the structural pieces in place to complete
+the port. Essentially all that was required at that point was time and labor.
+We didn't have a formal mechanism in place to target porting efforts. Instead,
+people would pick up a component or test that they wanted to hack on and then
+make incremental changes towards making that work. All the while, we didn't
+have a strict policy on not regressing Python 3 and regressions in Python 3
+porting progress were semi-frequent. Although we did tend to correct
+regressions quickly. And over time, developers saw a flurry of Python 3
+patches and slowly grew awareness of how to accommodate Python 3, and the
+number of Python 3 regressions became less frequent.</p>
+<p>As useful as the source-transforming module importer was, it incurred some
+additional burden for the porting effort. The source transformer effectively
+converted all un-prefixed string literals (<code>''</code>) to bytes literals (<code>b''</code>)
+to preserve string type behavior with Python 2. But various aspects of Python
+3 didn't like the existence of <code>bytes</code>. Various standard library functionality
+now wanted unicode <code>str</code> and didn't accept <code>bytes</code>, even though the Python
+2 implementation used the equivalent of <code>bytes</code>. So our <code>pycompat</code> layer
+grew pretty large to accommodate calling into various standard library
+functionality. Another side-effect which we didn't initially anticipate
+was the <code>**kwargs</code> calling convention. Python allows you to use <code>**</code>
+with a dict with string keys to turn those keys into named arguments
+in a function call. But Python 3 requires these <code>dict</code> keys to be
+<code>str</code> and outright rejects <code>bytes</code> keys, even if the <code>bytes</code> instance
+is ASCII safe and has the same underlying byte representation of the
+string data as the <code>str</code> instance would. So we had to invent support
+functions that would convert <code>dict</code> keys from <code>bytes</code> to <code>str</code> for
+use with <code>**kwargs</code> and another to convert a <code>**kwargs</code> dict from
+<code>str</code> keys to <code>bytes</code> keys so we could use <code>''</code> syntax to access keys
+in our source code! Also on the string type front, we had to sprinkle
+the codebase with raw string literals (<code>r''</code>) to force the use of
+<code>str</code> irregardless of which Python version you were running on (our
+source transformer only changed unprefixed string literals, so existing
+<code>r''</code> strings would be preserved as <code>str</code>).</p>
+<p>By mid 2019, the number of test failures in Python 3 had been whittled
+down to a reasonable, less daunting number. It felt like victory was
+in grasp and inevitable. But a few significant issues lingered.</p>
+<p>One remaining question was around addressing differences between Python
+3 versions. At the time, Python 3.5, 3.6, and 3.7 were released and 3.8
+was scheduled for release by the end of the year. We had a surprising
+number of issues with differences in Python 3 versions. Many of us
+were running Python 3.7, so it had the fewest failures. We had to spend
+extra effort to get Python 3.5 and 3.6 working as well as 3.7. Same for
+3.8.</p>
+<p>Another task we deferred until the second half of 2019 was standing up
+robust CI for Python 3. We had some coverage, but it was minimal. Wanting
+a distraction from PyOxidizer for a bit and wanting to overhaul Mercurial's
+CI system (which is officially built on Buildbot), I cobbled together a
+<em>serverless</em> CI system built on top of AWS DynamoDB and S3 for storage,
+Lambda functions and CloudWatch events for all business logic, and EC2 spot
+instances for job execution. This CI system executed Python 3.5, 3.6, 3.7,
+and 3.8 variants of our test harness on Linux and Python 3.7 on Windows.
+This gave developers insight into version-specific failures. More
+importantly, it also gave insight into Windows failures, which was
+previously not well tested. It was discovered that Python 3 on Windows was
+lagging significantly behind POSIX.</p>
+<p>By the time of the Mercurial developer meetup in October 2019, nearly
+all tests were passing on POSIX platforms and we were confident that
+we could declare Python 3 support as at least beta quality for the
+Mercurial 5.2 release, planned for early November.</p>
+<p>One of our blockers for ripping off the alpha label on Python 3 support
+was removing our source-transforming module importer. It had performance
+implications and it wasn't something we wanted to ship because it felt
+too hacky. A blocker for this was we wanted to automatically format
+our source tree with <a href="https://black.readthedocs.io/en/stable/">black</a>
+because if we removed the source transformer, we'd have to rewrite
+a lot of source code to apply changes the transformer was performing,
+which would necessitate wrapping a lot of lines, which would involve a lot
+of manual effort. We wanted to <em>blacken</em> our code base first so that
+mass rewriting source code wouldn't involve a lot of tedious reformatting
+since <code>black</code> would handle that for us automatically. And rewriting the
+source tree with <code>black</code> was blocked on a specific feature landing in
+<code>black</code>! (We did not agree with <code>black</code>'s behavior of
+unwrapping comma-delimited lists of items if they could fit on a single
+line. So one of our core contributors wrote a patch to <code>black</code> that
+changed its behavior so a trailing <code>,</code> in a list of items will force
+items to be formatted on multiple lines. I personally find the multiple line
+formatting much easier to read. And the behavior is arguably better for
+code review and <em>annotation</em>, which is line based.) Once this feature
+landed in <code>black</code>, we reformatted our source tree and started ripping
+out the source transformations, starting by inserting <code>b''</code> literals
+everywhere. By late October, the source transformer was no more and
+we were ready to release beta quality support for Python 3 (at least
+on UNIX-like platforms).</p>
+<p>Having described a mostly factual overview of Mercurial's port to Python
+3, it is now time to shift gears to the speculative and opinionated
+parts of this post. <strong>I want to underscore that the opinions reflected
+here are my own and do not reflect the overall Mercurial Project or even
+a consensus within it.</strong></p>
+<h2>The Future of Python 3 and Mercurial</h2>
+<p>Mercurial's port to Python 3 is still ongoing. While we've shipped
+Python 3 support and the test harness is clean on Python 3, I view shipping
+as only a milestone - arguably <em>the</em> most important one - in a longer
+journey. There's still a lot of work to do.</p>
+<p>It is now 2020 and Python 2 support is now officially dead from the
+perspective of the Python language maintainers. Linux distributions are
+starting to rip out Python 2. Packages are dropping Python 2 support in
+new versions. The world is moving to Python 3 only. But <strong>Mercurial still
+officially supports Python 2</strong>. And it is still yet to be determined how
+long we will retain support for Python 2 in the code base. We've only had
+one release supporting Python 3. Our users still need to port their
+extensions (implemented in Python). Our users still need to start widely
+using Mercurial with Python 3. Even our own developers need to switch to
+Python 3 (old habits are hard to break).</p>
+<p>I anticipate a long tail of random bugs in Mercurial on Python 3. While
+the tests may pass, our code coverage is not 100%. And even if it were,
+Python is a dynamic language and there are tons of invariants that aren't
+caught at compile time and can only be discovered at run time. <strong>These
+invariants cannot all be detected by tests, no matter how good your test
+coverage is.</strong> This is a <em>feature</em>/<em>limitation</em> of dynamic languages. Our
+users will likely be finding a long tail of miscellaneous bugs on Python
+3 for <em>years</em>.</p>
+<p>At present, our code base is littered with tons of random hacks to bridge
+the gap between Python 2 and 3. Once Python 2 support is dropped, we'll
+need to remove these hacks and make the source tree Python 3 native, with
+minimal shims to wallpaper over differences in Python 3 versions. <strong>Removing
+this Python version bridge code will likely require hundreds of commits and
+will be a non-trivial effort.</strong> It's likely to be deemed a low priority (it
+is glorified busy work after all), and code for the express purpose of
+supporting Python 2 will likely linger for years.</p>
+<p>We are also still shoring up our packaging and distribution story on
+Python 3. This is easier on some platforms than others. I created
+<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> partially because
+of the poor experience I had with Python application packaging and
+distribution through the Mercurial Project. The Mercurial Project has
+already signed off on using PyOxidizer for distributing Mercurial in
+the future. So look for an <em>oxidized</em> Mercurial distribution in the
+near future! (You could argue PyOxidizer is an epic yak shave to better
+support Mercurial. But that's for another post.)</p>
+<p>Then there's Windows support. A Python 3 powered Mercurial on Windows
+still has a handful of known issues. It may require a few more releases
+before we consider Python 3 on Windows to be stable.</p>
+<p>Because we're still on a code base that must support Python 2, our
+adoption of Python 3 features is very limited. The only Python 3
+feature that Mercurial developers seem to almost universally get excited
+about is type annotations. We already have some people playing around
+with <code>pytype</code> using comment-based annotations and <code>pytype</code> has already
+caught a few bugs. We're eager to go all in on type annotations and
+uncover lots of dynamic typing bugs and poorly implemented APIs.
+Beyond type annotations, I can't name any feature that people are screaming
+to adopt and which makes a lot of sense for Mercurial. There's a long
+tail of minor features I'm sure will get utilized. But none of the
+marquee features that define major language releases seem that interesting
+to us. Time will tell.</p>
+<h2>Commentary on Python 3</h2>
+<p>Having described Mercurial's ongoing journey to Python 3, I now want to
+focus more on Python itself. Again, the opinions here are my own and
+don't reflect those of the Mercurial Project.</p>
+<p><strong>Succinctly, my experience porting Mercurial and other projects to
+Python 3 has significantly soured my perceptions of Python. As much as
+I have historically loved Python - from the language to the welcoming
+community - I am still struggling to understand how Python could manage
+to inflict so much hardship on the community by choosing the transition
+plan that they did.</strong> I believe Python's choices represent a terrific
+example of what not to do when managing a large project or ecosystem.
+Maintainers of other largely-deployed systems would benefit from taking
+the time to understand and reflect on Python's missteps.</p>
+<p>Python 3.0 was released on December 3, 2008. And it took the better part of
+a decade for the community to embrace it. <strong>This should be universally
+recognized as a failure.</strong> While hindsight is 20/20, many of the issues
+with Python 3 were obvious at the time and could have been mitigated had
+the language maintainers been more accommodating - and dare I say
+empathetic - to its users.</p>
+<p>Initially, Python 3 had a rather cavalier attitude towards backwards and
+forwards compatibility. In the early years of Python 3, the attitude of
+Python's maintainers was <em>Python 3 is a new, better language: you should
+target it explicitly</em>. There were some tools and methods to ease the
+transition. But nothing super polished, especially in the early years.
+Adoption of Python 3 in the overall community was slow. Python developers
+in the wild justifiably complained that the value proposition of Python 3
+was too weak to justify porting effort. Not helping was that the early
+advice for targeting Python 3 was to rewrite the source code to become
+Python 3 native. This is in contrast with using the same source to run on both
+Python 2 and 3. For library and application maintainers, this potentially
+meant maintaining separate versions of your code or forcing end-users to
+make a giant leap, which would realistically orphan users on an old version,
+fragmenting your user base. Neither of those were great alternatives, so
+you can understand why many projects didn't bite.</p>
+<p>For many projects of non-trivial size, flag day transitions from Python 2 to
+3 were simply not viable: the pathway to Python 3 was to make code dual
+Python 2/3 compatible and gradually switch over the runtime to Python 3.
+But initial versions of Python 3 made this effectively impossible! Let me
+give a few specific examples.</p>
+<p>In Python 2, a string literal <code>''</code> is effectively an array of bytes. In
+Python 3, it is a series of Unicode code points - a fundamentally different
+type! In Python 2, you could write <code>b''</code> to be explicit that a string literal
+was bytes or you could write <code>u''</code> to indicate a Unicode literal, mimicking
+Python 3's behavior. In Python 3, you could write <code>b''</code> to create a <code>bytes</code>
+instance. But for whatever reason, Python 3 initially removed the <code>u''</code> syntax,
+meaning there wasn't as easy way to explicitly denote the type of each
+string literal so that it was consistent between Python 2 and 3! Python 3.3
+(released September 2012) restored <code>u''</code> support, making it more viable to
+write Python source code that worked on both Python 2 and 3. <strong>For nearly 4
+years, Python 3 took away the consistent syntax for denoting bytes/Unicode
+string literals.</strong></p>
+<p>Another feature was <code>%</code> formatting of strings. Python 2 allowed use of the
+<code>%</code> formatting operator on both its string types. But Python 3 initially
+removed the implementation of <code>%</code> from <code>bytes</code>. Why, I have no clue. It
+is perfectly reasonable to splice byte sequences into a buffer via use of
+a formatting string. But the Python language maintainers insisted otherwise.
+And it wasn't until the community complained about its absence loudly enough
+that this feature was
+<a href="https://docs.python.org/3/whatsnew/3.5.html#whatsnew-pep-461">restored in Python 3.5</a>,
+which was released in September 2015. Fun fact: the lack of this feature was
+once considered a blocker for Mercurial moving to Python 3 because
+Mercurial uses <code>bytes</code> almost universally, which meant that nearly every use
+of <code>%</code> would have to be changed to something else. And to this day, Python
+3's <code>bytes</code> still doesn't have a <code>format()</code> method, so the alternative was
+effectively string concatenation, which is a massive step backwards from the
+expressiveness of <code>%</code> formatting.</p>
+<p><strong>The initial approach of Python 3 mirrors a folly that many developers
+and projects make: attempting a rewrite instead of performing incremental
+evolution.</strong> For established projects, large scale rewrites often go poorly.
+And Python 3 is no exception. Yes, from a code level, CPython (and likely
+other Python implementations) were incremental changes over Python 2 using
+the same code base. But from a language and standard library level, the
+differences in Python 3 were significant enough that I - and even Python's
+core maintainers - considered it a new language, and therefore a rewrite.
+When your random project attempts a rewrite and fails, the blast radius of that is
+often contained to that project. Maybe you don't publish a new release
+as soon as you otherwise would. <strong>But when you are powering an ecosystem,
+the ripple effects from a failed rewrite percolate throughout that ecosystem
+and last for years and have many second order effects. We see this with
+Python 3, where poor choices made in the late 2000s are inflicting significant
+hardship still in 2020.</strong></p>
+<p>From the initial restrained adoption of Python 3, it is obvious that the
+Python ecosystem overwhelmingly rejected the initial boil the oceans approach
+of Python 3. Python's maintainers eventually got the message and started
+restoring features like <code>u''</code> and <code>bytes</code> <code>%</code> formatting back into the
+language to placate the community. All the while Python 3 had been accumulating
+new features and the cumulative sum of those features was compelling enough
+to win over users.</p>
+<p>For many projects (including Mercurial), Python 3.4/3.5 was the first viable
+porting target for Python 3. Python 3.5 was released in September 2015, almost
+7 years after Python 3.0 was released in December 2008. <strong>Seven. Years.</strong>
+An ecosystem that falters for that long is generally not healthy. What may have
+saved Python from total collapse here is that Python 2 was still going strong and
+people were generally happy with it. I really do think Python dodged a bullet
+here, because there was a massive window where the language could have
+hemorrhaged a critical amount of its user base and been relegated to an
+afterthought. One could draw an analogy to Perl, which lost out to PHP,
+Python, and Ruby, and whose fall from grace aligned with a lengthy
+transition from Perl 5 to 6.</p>
+<p>If you look back at the early history of Python 3, <strong>I think you are forced
+to conclude that Python effectively kneecapped itself for 5-7 years
+through questionable implementation choices that prevented users from
+incurring incremental transitions between the major language versions. 2008
+to 2013-2015 should be known as the <em>lost years of Python</em> because so much
+opportunity and energy was squandered.</strong> Yes, Python is still healthy today
+and Python 3 is (finally) being adopted at scale. But had earlier versions
+of Python 3 been more <em>empathetic</em> towards Python 2 users porting to it,
+Python and Python 3 in 2020 would be even stronger than it is. The community
+was artificially hindered for years. And we won't know until 2023-2025 what
+things could have looked like in 2020 had the Python core language team
+spent more time paving a smoother road between the major language versions.</p>
+<p>To be clear, I do think Python 3 is generally a better language than Python 2.
+It has fewer warts, more compelling features, and better performance (except
+for startup time, which is still slower than Python 2). I am ecstatic the
+community is finally rallying around Python 3! For my Python coding, it has
+reached the point where I curse under my breath when I need to support
+Python 2 or even older versions of Python 3, like 3.5 or 3.6: I just wish
+the world would move on and adopt the future already!</p>
+<p>But I would be remiss if I failed to mention some of my gripes with Python
+3 beyond the transition shenanigans.</p>
+<p>Perhaps my least favorite <em>feature</em> of Python 3 is its insistence that the
+world is Unicode. In Python 2, the default string type was backed by
+bytes. In Python 3, the default string type is backed by Unicode code
+points. As part of that transition, large parts of the standard library
+now operate in the Unicode space instead of the domain of bytes. I understand
+why Python does this: they want <em>strings</em> to be Unicode and don't want
+users to have to spend that much energy thinking about when to use
+<code>str</code> versus <code>bytes</code>. This approach is admirable and somewhat defensible
+because it takes a stand on a solution that is arguably <em>good enough</em> for
+most users. However, <strong>the approach of assuming the world is Unicode is
+flat out wrong and has significant implications for systems level
+applications</strong> (like version control tools).</p>
+<p>There are a myriad of places in Python's standard library where Python
+insists on using the Unicode-backed <code>str</code> type and rejects <code>bytes</code>. For
+example, various networking modules refuse to accept <code>bytes</code> for hostnames
+or URLs. HTTP libraries won't accept <code>bytes</code> for HTTP header names or values.
+Functions that are proxies to POSIX-defined functions won't accept <code>bytes</code>
+even though the POSIX function it calls into is using <code>char *</code> and isn't
+Unicode aware. Then there's filename handling, where Python assumes the
+existence of a global encoding for filenames and uses this encoding to convert
+between <code>str</code> and <code>bytes</code>. And it does this despite POSIX filesystem paths
+being a bag of bytes where the only rules are that <code>\0</code> terminates the
+filename and <code>/</code> is special.</p>
+<p>In cases like Python refusing to accept <code>bytes</code> for things like HTTP
+header names (which will just be spit out over the wire as bytes), Python's
+pendulum has swung too far towards Unicode only. In my opinion, Python needs
+to be more accommodating and allow <code>bytes</code> when it makes sense. I hope the
+pendulum knocks some sense into people when it swings back towards a more
+reasonable solution that better acknowledges the realities of the world we
+live in.</p>
+<p>For areas like filename handling, the world is more complicated. Python
+is effectively an abstraction layer over the operating system APIs exposing
+this functionality. And there is often an impedance mismatch between operating
+systems. For example, POSIX (Linux) tends to use <code>char *</code> for everything
+and doesn't care about encoding and Windows tends to use 16 bit character
+types where the encoding is... a can of worms.</p>
+<p><strong>The reality here is that it is impossible to abstract over differences
+between operating system behavior without compromises that can result in data
+loss, outright wrong behavior, or loss of functionality. But Python 3 attempts
+to do it anyway, making Python 3 unsuitable (or at least highly undesirable) for
+certain systems level applications that rely on it</strong> (like a version control
+tool).</p>
+<p>In fairness to Python, it isn't the only programming language that gets
+this wrong. The only language I've seen <em>properly</em> implement higher-order
+abstractions on top of operating system facilities is Rust, whose approach can
+be generalized as <em>use Python 3's solution of normalizing to Unicode/UTF-8 by
+default</em>, but expose <em>escape hatches</em> which allow access to the raw underlying
+types and APIs used by the operating system for the advanced consumers who
+require it. For example, Rust's <code>Path</code> type which represents a filesystem path
+<a href="https://doc.rust-lang.org/std/path/struct.Path.html#method.as_os_str">allows access</a>
+to the raw <a href="https://doc.rust-lang.org/std/ffi/struct.OsStr.html">OsStr</a> value
+used by the operating system, not a normalization of it to bytes or Unicode,
+which may be lossy. This allows consumers to e.g. create and retrieve
+OS-native filesystem paths without data loss. This functionality is critical
+in some domains. Python 3's awareness/insistence that the world is
+Unicode (which it isn't universally) reduces Python's applicability in these
+domains.</p>
+<p>Speaking of Rust, at the Mercurial developer meetup in October 2019, we were
+discussing the use of Rust in Mercurial and one of the core maintainers blurted
+out something along the lines of <em>if Rust were at its current state 5 years ago,
+Mercurial would have likely ported from Python 2 to Rust instead of Python 3</em>.
+As crazy as it initially sounded, I think I agree with that assessment. With the
+benefit of hindsight, having been a key player in the Python 3 porting effort,
+seeing all the complications and headaches Python 3 is introducing, and
+having learned Rust and witnessed its benefits for performance, control,
+and correctness firsthand, porting to Rust would likely have been the correct
+move for the project at that point in time. 2020 is not 2014, however, and I'm
+not sure if I would opt for a rewrite in Rust today. (Most rewrites are follies
+after all.) But I know one thing: I certainly wouldn't implement a new version
+control tool in Python 3 and I would probably choose Rust as an implementation
+language for most new projects in the systems level space or with an expected
+shelf life of 10+ years. (I really should blog about how awesome Rust is.)</p>
+<p>Back to the topic of Python itself, <strong>I'm really soured on Python at this
+point in time. The effort required to port to Python 3 was staggering. For
+Mercurial, Python 3 introduces a ton of problems and doesn't really solve
+many. We effectively sludged through mud for several years only to wind
+up in a state that feels strictly worse than where we started. I'm sure it will
+be strictly better in a few years. But at that point, we're talking about a
+5+ year transition. To call the Python 3 transition disruptive and
+distracting for the project would be an understatement. As a project maintainer,
+it's natural to ask what we could have accomplished if we weren't forced
+to carry out this sideshow.</strong></p>
+<p>I can't shake the feeling that a lot of the pain afflicted by the Python 3
+transition could have been avoided had Python's language leadership made
+a different set of decisions and more highly prioritized the transition
+experience. (Like not initially removing features like <code>u''</code> and <code>bytes %</code>
+and not introducing gratuitous backwards compatibility breaks, like with
+<code>items()/iteritems()</code>. I would have also liked to see a feature like
+<code>from __future__</code> - maybe <code>from __past__</code> - that would make it easier for
+Python 3 code to target semantics in earlier versions in order to provide
+a more turnkey on-ramp onto new versions.) I simultaneously see Python 3
+losing its position as a justifiable tool in some domains (like systems
+level tooling) due to ongoing design decisions and poor implementation (like
+startup overhead problems). (In contrast, I see Rust excelling where Python
+is faltering and find Rust code surprisingly expressive to write and maintain
+given how low-level it is and therefore feel that Rust is a compelling
+alternative to Python in a surprisingly large number of domains.)</p>
+<p>Look, I know it is easy for me to armchair quarterback and critique with the
+benefit of hindsight/ignorance. I'm sure there is a lot of nuance here. I'm
+sure there was disagreement within the Python community over a lot of these
+issues. Maintaining a large and successful programming language and community
+like Python's is hard and you aren't going to please all the people all the
+time. And speaking as a maintainer, I have mad respect for the people leading
+such a large community. But niceties aside, everyone knows the Python 3
+transition was rough and could have gone better. It should not have taken 11
+years to get to where we are today.</p>
+<p><strong>I'd like to encourage the Python Project to conduct a thorough postmortem on
+the transition to Python 3.</strong> Identify what went well, what could have gone
+better, and what should be done next time such a large language change is wanted.
+Speaking as a Python user, a maintainer of a Python project, and as someone in
+industry who is now skeptical about use of Python at work due to risks of
+potentially company crippling high-effort migrations in the future, a postmortem
+would help restore my confidence that Python's maintainers learned from the
+various missteps on the road to Python 3 and these potentially ecosystem
+crippling mistakes won't be made again.</p>
+<p>Python had a wildly successful past few decades. And it can continue to
+thrive for several more. But the Python 3 migration was painful for all
+involved. And as much as we need to move on and leave Python 2 behind us,
+there are some important lessons to be learned. I hope the Python community
+takes the opportunity to reflect and am confident it will grow stronger by
+taking the time to do so.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2020/01/13/mercurial's-journey-to-and-reflections-on-python-3#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="problems-with-pull-requests-and-how-to-fix-them"></a>
   <h2 class="blog_post_title"><a href="/blog/2020/01/07/problems-with-pull-requests-and-how-to-fix-them" rel="bookmark" title="Permanent Link to Problems with Pull Requests and How to Fix Them">Problems with Pull Requests and How to Fix Them</a></h2>
   <small>January 07, 2020 at 12:10 PM | categories: 
@@ -1829,725 +2412,6 @@ massive win if you are operating at scale.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="high-level-problems-with-git-and-how-to-fix-them"></a>
-  <h2 class="blog_post_title"><a href="/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them" rel="bookmark" title="Permanent Link to High-level Problems with Git and How to Fix Them">High-level Problems with Git and How to Fix Them</a></h2>
-  <small>December 11, 2017 at 10:30 AM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I have a... complicated relationship with Git.</p>
-<p>When Git first came onto the scene in the mid 2000's, I was initially
-skeptical because of its horrible user interface. But once I learned
-it, I appreciated its speed and features - especially the ease at which
-you could create feature branches, merge, and even create commits
-offline (which was a big deal in the era when Subversion was the
-dominant version control tool in open source and you needed to speak with
-a server in order to commit code). When I started using Git day-to-day,
-it was such an obvious improvement over what I was using before (mainly
-Subversion and even CVS).</p>
-<p>When I started working for Mozilla in 2011, I was exposed to the
-Mercurial version control, which then - and still today - hosts the
-canonical repository for Firefox. I didn't like Mercurial initially.
-Actually, I despised it. I thought it was slow and its features lacking.
-And I frequently encountered repository corruption.</p>
-<p>My first experience learning the <em>internals</em> of both Git and Mercurial
-came when I found myself hacking on
-<a href="http://hg-git.github.io/]">hg-git</a> - a tool that allows you to convert
-Git and Mercurial repositories to/from each other. I was hacking on hg-git
-so I could improve the performance of converting Mercurial repositories
-to Git repositories. And I was doing that because I wanted to use Git -
-not Mercurial - to hack on Firefox. I was trying to enable an unofficial
-Git mirror of the Firefox repository to synchronize faster so it would
-be more usable. The ulterior motive was to demonstrate that Git is a
-superior version control tool and that Firefox should switch its canonical
-version control tool from Mercurial to Git.</p>
-<p>In what is a textbook definition of <em>irony</em>, what happened instead was
-I actually learned how Mercurial worked, interacted with the Mercurial
-Community, realized that Mozilla's documentation and developer practices
-were... lacking, and that Mercurial was actually a much, much more
-pleasant tool to use than Git. It's an old post, but I
-<a href="/blog/2013/05/12/thoughts-on-mercurial-(and-git)/">summarized my conversion</a>
-four and a half years ago. This started a chain of events that somehow
-resulted in me contributing a ton of patches to Mercurial, taking
-stewardship of <em>hg.mozilla.org</em>, and becoming a member of the Mercurial
-Steering Committee - the governance group for the Mercurial Project.</p>
-<p>I've been an advocate of Mercurial over the years. Some would probably say
-I'm a Mercurial fanboy. I reject that characterization because <em>fanboy</em> has
-connotations that imply I'm ignorant of realities. I'm well aware of
-Mercurial's faults and weaknesses. I'm well aware of Mercurial's relative
-lack of popularity, I'm well aware that this lack of popularity almost
-certainly turns away contributors to Firefox and other Mozilla projects
-because people don't want to have to learn a new tool. I'm well aware that
-there are changes underway to enable Git to scale to <em>very large
-repositories</em> and that these changes could threaten Mercurial's scalability
-advantages over Git, making choices to use Mercurial even harder to defend.
-(As an aside, the party most responsible for pushing Git to adopt
-architectural changes to enable it to scale these days is Microsoft.
-Could anyone have foreseen that?!)</p>
-<p>I've achieved mastery in both Git and Mercurial. I know their internals
-and their command line interfaces extremely well. I understand the
-architecture and principles upon which both are built. I'm also exposed
-to some very experienced and knowledgeable people in the Mercurial
-Community. People who have been around version control for much, much
-longer than me and have knowledge of random version control tools you've
-probably never heard of. This knowledge and exposure allows me to make
-connections and see opportunities for version control that quite frankly
-most do not. </p>
-<p>In this post, I'll be talking about some high-level, high-impact problems
-with Git and possible solutions for them. My primary goal of this post is
-to foster positive change in Git and the services around it. While I
-personally prefer Mercurial, improving Git is good for everyone. Put
-another way, I want my knowledge and perspective from being part of
-a version control community to be put to good wherever it can.</p>
-<p>Speaking of Mercurial, as I said, I'm a heavy contributor and am somewhat
-influential in the Mercurial Community. I want to be clear that my opinions
-in this post are my own and I'm not speaking on behalf of the Mercurial
-Project or the larger Mercurial Community. I also don't intend to claim
-that Mercurial is <em>holier-than-thou</em>. Mercurial has tons of user interface
-failings and deficiencies. And I'll even admit to being frustrated that some
-systemic failings in Mercurial have gone unaddressed for as long as they
-have. But that's for another post. This post is about Git. Let's get started.</p>
-<h2>The Staging Area</h2>
-<p>The staging area is a feature that should not be enabled in the default
-Git configuration.</p>
-<p>Most people see version control as an obstacle standing in the way of
-accomplishing some other task. They just want to save their progress
-towards some goal. In other words, they want version control to be a
-<em>save file</em> feature in their workflow.</p>
-<p>Unfortunately, modern version control tools don't work that way. For
-starters, they require people to specify a <em>commit message</em> every time
-they save. This in of itself can be annoying. But we generally accept
-that as the price you pay for version control: that <em>commit message</em> has
-value to others (or even your future self). So you must record it.</p>
-<p>Most people want the barrier to saving changes to be effortless. A commit
-message is already too annoying for many users! The Git staging area
-establishes a <em>higher</em> barrier to saving. Instead of just saving your
-changes, you must first <em>stage</em> your changes to be saved.</p>
-<p>If you requested <em>save</em> in your favorite GUI application, text editor,
-etc and it popped open a <em>select the changes you would like to
-save dialog</em>, you would rightly think <em>just save all my changes already,
-dammit.</em> But this is exactly what Git does with its staging area! Git
-is saying <em>I know all the changes you made: now tell me which changes
-you'd like to save.</em> To the average user, this is infuriating because
-it works in contrast to how the <em>save</em> feature works in almost every
-other application.</p>
-<p>There is a counterargument to be made here. You could say that the
-editor/application/etc is complex - that it has multiple <em>contexts</em>
-(files) - that each context is independent - and that the user should
-have full control over which contexts (files) - and even changes within
-those contexts - to save. I agree: this is a compelling feature. However,
-it isn't an appropriate <em>default</em> feature. The ability to pick which
-changes to save is a power-user feature. Most users just want to save all
-the changes all the time. So that should be the default behavior. And
-the Git staging area should be an opt-in feature.</p>
-<p>If intrinsic workflow warts aren't enough, the Git staging area has a
-horrible user interface. It is often referred to as the <em>cache</em>
-<a href="https://stackoverflow.com/questions/6716355/why-staging-directory-is-also-called-index-git-index/6718135#6718135">for historical reasons</a>.
-<em>Cache</em> of course means something to anyone who knows anything about
-computers or programming. And Git's use of <em>cache</em> doesn't at all align
-with that common definition. Yet the the terminology in Git persists.
-You have to run commands like <code>git diff --cached</code> to examine the state
-of the <em>staging area</em>. Huh?!</p>
-<p>But Git also refers to the <em>staging area</em> as the <em>index</em>. And this
-terminology also appears in Git commands! <code>git help commit</code> has numerous
-references to the <em>index</em>. Let's see what <code>git help glossary</code> has to say::</p>
-<pre><code>index
-    A collection of files with stat information, whose contents are
-    stored as objects. The index is a stored version of your working tree.
-    Truth be told, it can also contain a second, and even a third
-    version of a working tree, which are used when merging.
-
-index entry
-    The information regarding a particular file, stored in the index.
-    An index entry can be unmerged, if a merge was started, but not
-    yet finished (i.e. if the index contains multiple versions of that
-    file).
-</code></pre>
-<p>In terms of end-user documentation, this is a train wreck. It tells the
-lay user absolutely nothing about what the <em>index</em> actually is. Instead,
-it casually throws out references to <em>stat information</em> (requires the user
-know what the <code>stat()</code> function call and struct are) and <em>objects</em> (a Git
-term for a piece of data stored by Git). It even undermines its own credibility
-with that <em>truth be told</em> sentence. This definition is so bad that it
-would probably improve user understanding if it were deleted!</p>
-<p>Of course, <code>git help index</code> says <em>No manual entry for gitindex</em>. So
-there is literally no hope for you to get a concise, understandable
-definition of the <em>index</em>. Instead, it is one of those concepts that you
-think you learn from interacting with it all the time. <em>Oh, when I
-<code>git add</code> something it gets into this state where <code>git commit</code> will
-actually save it.</em></p>
-<p>And even if you know what the Git staging area/index/cached is, it can
-still confound you. Do you know the interaction between uncommitted
-changes in the staging area and working directory when you <code>git rebase</code>?
-What about <code>git checkout</code>? What about the various <code>git reset</code> invocations?
-I have a confession: I can't remember all the edge cases either. To play
-it safe, I try to make sure all my outstanding changes are committed
-before I run something like <code>git rebase</code> because I <em>know</em> that will be
-safe.</p>
-<p>The Git staging area doesn't have to be this complicated. A <em>re-branding</em>
-away from <em>index</em> to <em>staging area</em> would go a long way. Adding an alias
-from <code>git diff --staged</code> to <code>git diff --cached</code> and removing references
-to the <em>cache</em> from common user commands would make a lot of sense and
-reduce end-user confusion.</p>
-<p>Of course, the Git staging area doesn't really need to exist at all!
-The staging area is essentially a <em>soft commit</em>. It performs the
-<em>save progress</em> role - the basic requirement of a version control tool.
-And in some aspects it is actually a better <em>save progress</em> implementation
-than a <em>commit</em> because it doesn't require you to type a commit message!
-Because the <em>staging area</em> is a soft commit, all workflows using it can
-be modeled as if it were a real commit and the <em>staging area</em> didn't
-exist at all! For example, instead of <code>git add --interactive</code> +
-<code>git commit</code>, you can run <code>git commit --interactive</code>. Or if you wish
-to incrementally add new changes to an in-progress commit, you can
-run <code>git commit --amend</code> or <code>git commit --amend --interactive</code> or
-<code>git commit --amend --all</code>. If you actually understand the various modes
-of <code>git reset</code>, you can use those to <em>uncommit</em>. Of course, the user
-interface to performing these actions in Git today is a bit convoluted.
-But if the <em>staging area</em> didn't exist, new high-level commands like
-<code>git amend</code> and <code>git uncommit</code> could certainly be invented. </p>
-<p>To the average user, the <em>staging area</em> is a complicated concept. I'm
-a power user. I understand its purpose and how to harness its power. Yet
-when I use Mercurial (which doesn't have a <em>staging area</em>), I don't miss
-the <em>staging area</em> at all. Instead, I learn that all operations involving
-the <em>staging area</em> can be modeled as other fundamental primitives (like
-<em>commit amend</em>) that you are likely to encounter anyway. The <em>staging
-area</em> therefore constitutes an unnecessary burden and cognitive load on
-users. While powerful, its complexity and incurred confusion does not
-justify its existence in the default Git configuration. The <em>staging
-area</em> is a power-user feature and should be opt-in by default. </p>
-<h2>Branches and Remotes Management is Complex and Time-Consuming</h2>
-<p>When I first used Git (coming from CVS and Subversion), I thought
-branches and remotes were incredible because they enabled new workflows
-that allowed you to easily track multiple lines of work across many
-repositories. And ~10 years later, I still believe the workflows they
-enable are important. However, having amassed a broader perspective, I
-also believe their implementation is poor and this unnecessarily confuses
-many users and wastes the time of <em>all</em> users.</p>
-<p>My initial <em>zen moment</em> with Git - the time when Git finally clicked for me -
-was when I understood Git's object model: that Git is just a
-content indexed key-value store consisting of a different object types
-(blobs, trees, and commits) that have a particular relationship with
-each other. <em>Refs</em> are symbolic names pointing to Git commit objects. And
-Git <em>branches</em> - both local and remote - are just <em>refs</em> having a
-well-defined naming convention (<code>refs/heads/&lt;name&gt;</code> for local branches and
-<code>refs/remotes/&lt;remote&gt;/&lt;name&gt;</code> for remote branches). Even <em>tags</em> and
-<em>notes</em> are defined via <em>refs</em>.</p>
-<p><em>Refs</em> are a necessary primitive in Git because the Git storage model is
-to throw all <em>objects</em> into a single, key-value namespace. Since the store
-is content indexed and the key name is a cryptographic hash of the object's
-content (which for all intents and purposes is random gibberish to
-end-users), the Git store by itself is unable to locate objects. If all you
-had was the key-value store and you wanted to <em>find all commits</em>, you would
-need to walk every object in the store and read it to see if it is a commit
-object. You'd then need to buffer metadata about those objects in memory so
-you could reassemble them into say a DAG to facilitate looking at commit
-history. This approach obviously doesn't scale. <em>Refs</em> short-circuit this
-process by providing pointers to objects of importance. It may help to
-think of the set of <em>refs</em> as an <em>index</em> into the Git store.  </p>
-<p><em>Refs</em> also serve another role: as guards against garbage collection.
-I won't go into details about loose objects and packfiles, but it's worth
-noting that Git's key-value store also behaves in ways similar to
-a generational garbage collector like you would find in programming languages
-such as Java and Python. The important thing to know is that Git will
-garbage collect (read: delete) objects that are unused. And the mechanism
-it uses to determine which objects are unused is to iterate through <em>refs</em>
-and walk all transitive references from that initial pointer. If there is
-an object in the store that can't be traced back to a <em>ref</em>, it is
-<em>unreachable</em> and can be deleted.</p>
-<p><em>Reflogs</em> maintain the history of a value for a <em>ref</em>: for each <em>ref</em> they
-contain a log of what <em>commit</em> it was pointing to, when that pointer
-was established, who established it, etc. <em>Reflogs</em> serve two purposes:
-facilitating <em>undoing</em> a previous action and holding a reference to <em>old</em>
-data to prevent it from being garbage collected. The two use cases are
-related: if you don't care about undo, you don't need the old reference
-to prevent garbage collection.</p>
-<p>This design of Git's store is actually quite sensible. It's not perfect
-(nothing is). But it is a solid foundation to build a version control tool
-(or even other data storage applications) on top of.</p>
-<p>The title of this section has to do with sub-optimal branches and
-remotes management. But I've hardly said anything about branches or remotes!
-And this leads me to my main complaint about Git's branches and remotes:
-that they are very thin veneer over <em>refs</em>. The properties of Git's
-underlying key-value store unnecessarily bleed into user-facing concepts
-(like branches and remotes) and therefore dictate sub-optimal practices.
-This is what's referred to as a <em>leaky abstraction</em>.</p>
-<p>I'll give some examples.</p>
-<p>As I stated above, many users treat version control as a <em>save file</em>
-step in their workflow. I believe that any step that interferes with users
-saving their work is user hostile. This even includes writing a commit
-message! I already argued that the <em>staging area</em> significantly interferes
-with this critical task. Git <em>branches</em> do as well.</p>
-<p>If we were designing a version control tool from scratch (or if you were
-a new user to version control), you would probably think that a sane
-feature/requirement would be to update to <em>any</em> revision and start making
-changes. In Git speak, this would be something like
-<code>git checkout b201e96f</code>, make some file changes, <code>git commit</code>. I think
-that's a pretty basic workflow requirement for a version control tool.
-And the workflow I suggested is pretty intuitive: choose the thing to
-start working on, make some changes, then save those changes.</p>
-<p>Let's see what happens when we actually do this:</p>
-<pre><code>$ git checkout b201e96f
-Note: checking out 'b201e96f'.
-
-You are in 'detached HEAD' state. You can look around, make experimental
-changes and commit them, and you can discard any commits you make in this
-state without impacting any branches by performing another checkout.
-
-If you want to create a new branch to retain commits you create, you may
-do so (now or later) by using -b with the checkout command again. Example:
-
-  git checkout -b &lt;new-branch-name&gt;
-
-HEAD is now at b201e96f94... Merge branch 'rs/config-write-section-fix' into maint
-
-$ echo 'my change' &gt;&gt; README.md
-$ git commit -a -m 'my change'
-[detached HEAD aeb0c997ff] my change
- 1 file changed, 1 insertion(+)
-
-$ git push indygreg
-fatal: You are not currently on a branch.
-To push the history leading to the current (detached HEAD)
-state now, use
-
-    git push indygreg HEAD:&lt;name-of-remote-branch&gt;
-
-$ git checkout master
-Warning: you are leaving 1 commit behind, not connected to
-any of your branches:
-
-  aeb0c997ff my change
-
-If you want to keep it by creating a new branch, this may be a good time
-to do so with:
-
- git branch &lt;new-branch-name&gt; aeb0c997ff
-
-Switched to branch 'master'
-Your branch is up to date with 'origin/master'.
-</code></pre>
-<p>I know what all these messages mean because I've mastered Git. But if
-you were a newcomer (or even a seasoned user), you might be very confused.
-Just so we're on the same page, here is what's happening (along with
-some commentary).</p>
-<p>When I run <code>git checkout b201e96f</code>, Git is trying to tell me that I'm
-potentially doing something that could result in the loss of my data. A
-golden rule of version control tools is <em>don't lose the user's data</em>. When
-I run <code>git checkout</code>, Git should be stating the risk for data loss very
-clearly. But instead, the <em>If you want to create a new branch</em> sentence is
-hiding this fact by instead phrasing things around <em>retaining commits you
-create</em> rather than the possible loss of data. It's up to the user
-to make the connection that <em>retaining commits you create</em> actually means
-<em>don't eat my data</em>. Preventing data loss is critical and Git should not
-mince words here!</p>
-<p>The <code>git commit</code> seems to work like normal. However, since we're in a
-<em>detached HEAD</em> state (a phrase that is likely gibberish to most users),
-that commit isn't referred to by any <em>ref</em>, so it can be <em>lost</em> easily.
-Git <em>should</em> be telling me that I just committed something it may not
-be able to find in the future. But it doesn't. Again, Git isn't being
-as protective of my data as it needs to be.</p>
-<p>The failure in the <code>git push</code> command is essentially telling me I need
-to give things a name in order to <em>push</em>. <em>Pushing</em> is effectively <em>remote
-save</em>. And I'm going to apply my reasoning about version control tools
-not interfering with <em>save</em> to <em>pushing</em> as well: Git is adding an
-extra barrier to <em>remote save</em> by refusing to push commits without a
-<em>branch</em> attached and by doing so is being user hostile.</p>
-<p>Finally, we <code>git checkout master</code> to move to another commit. Here, Git
-is actually doing something halfway reasonable. It is telling me I'm
-leaving commits behind, which commits those are, and the command to
-use to <em>keep</em> those commits. The warning is good but not great. I think
-it needs to be stronger to reflect the risk around data loss if that
-suggested Git commit isn't executed. (Of course, the <em>reflog</em> for <code>HEAD</code>
-will ensure that data isn't immediately deleted. But users shouldn't
-need to involve <em>reflogs</em> to not lose data that wasn't rewritten.)</p>
-<p>The point I want to make is that Git doesn't allow you to just <em>update
-and save</em>. Because its <em>dumb</em> store requires pointers to relevant commits
-(<em>refs</em>) and because that requirement isn't abstracted away or paved over
-by user-friendly features in the frontend, Git is effectively requiring
-end-users to define names (<em>branches</em>) for all commits. If you fail to
-define a name, it gets a lot harder to find your commits, exchange them,
-and Git may delete your data. While it is technically possible to not
-create branches, the version control tool is essentially unusable without
-them.</p>
-<p>When local branches are exchanged, they appear as <em>remote branches</em> to
-others. Essentially, you give each instance of the repository a name
-(the <em>remote</em>). And branches/refs fetched from a named <em>remote</em> appear
-as a <em>ref</em> in the <em>ref namespace</em> for that <em>remote</em>. e.g.
-<em>refs/remotes/origin</em> holds <em>refs</em> for the <em>origin</em> <em>remote</em>. (Git allows
-you to not have to specify the <em>refs/remotes</em> part, so you can refer
-to e.g. <em>refs/remotes/origin/master</em> as <em>origin/master</em>.)</p>
-<p>Again, if you were designing a version control tool from scratch or you
-were a new Git user, you'd probably think <em>remote refs</em> would make
-good starting points for work. For example, if you know you should be
-saving new work on top of the <em>master</em> branch, you might be inclined
-to begin that work by running <code>git checkout origin/master</code>. But like
-our specific-commit checkout above:</p>
-<pre><code>$ git checkout origin/master
-Note: checking out 'origin/master'.
-
-You are in 'detached HEAD' state. You can look around, make experimental
-changes and commit them, and you can discard any commits you make in this
-state without impacting any branches by performing another checkout.
-
-If you want to create a new branch to retain commits you create, you may
-do so (now or later) by using -b with the checkout command again. Example:
-
-  git checkout -b &lt;new-branch-name&gt;
-
-HEAD is now at 95ec6b1b33... RelNotes: the eighth batch
-</code></pre>
-<p>This is the same message we got for a direct checkout. But we did
-supply a <em>ref</em>/<em>remote branch</em> name. What gives? Essentially, Git tries
-to enforce that the <em>refs/remotes/</em> namespace is read-only and only
-updated by operations that exchange data with a remote, namely <code>git fetch</code>,
-<code>git pull</code>, and <code>git push</code>.</p>
-<p>For this to work correctly, you need to create a new <em>local branch</em>
-(which initially points to the commit that <code>refs/remotes/origin/master</code>
-points to) and then switch/activate that <em>local branch</em>.</p>
-<p>I could go on talking about all the subtle nuances of how Git branches
-are managed. But I won't.</p>
-<p>If you've used Git, you know you need to use branches. You may or may
-not recognize just how frequently you have to type a branch name into
-a <code>git</code> command. I guarantee that if you are familiar with version control
-tools and workflows that aren't based on having to manage <em>refs</em> to
-track data, you will find Git's forced usage of <em>refs</em> and <em>branches</em>
-a bit absurd. I half jokingly refer to Git as <em>Game of Refs</em>. I say that
-because coming from Mercurial (which doesn't require you to name things),
-Git workflows feel to me like all I'm doing is typing the names of branches
-and <em>refs</em> into <code>git</code> commands. I feel like I'm wasting my precious
-time telling Git the names of things only because this is necessary to
-placate the leaky abstraction of Git's storage layer which requires
-references to relevant commits.</p>
-<p>Git and version control doesn't have to be this way.</p>
-<p>As I said, my Mercurial workflow doesn't rely on naming things. Unlike
-Git, Mercurial's store has an explicit (not shared) storage location
-for commits (<em>changesets</em> in Mercurial parlance). And this data structure
-is ordered, meaning a changeset <em>later</em>  always occurs after its
-parent/predecessor. This means that Mercurial can open a single
-file/index to quickly find all <em>changesets</em>. Because Mercurial doesn't
-need pointers to commits of relevance, names aren't required.</p>
-<p>My <em>Zen of Mercurial</em> moment came when I realized you didn't have
-to name things in Mercurial. Having used Git before Mercurial, I
-was conditioned to always be naming things. This is the Git way
-after all. And, truth be told, it is common to name things in Mercurial
-as well. Mercurial's <em>named branches</em> were the way to do <em>feature
-branches</em> in Mercurial for years. Some used the <em>MQ</em> extension (essentially
-a port of <a href="https://en.wikipedia.org/wiki/Quilt_(software)">quilt</a>), which
-also requires naming individual patches. Git users coming to Mercurial
-were missing Git branches and Mercurial's <em>bookmarks</em> were a poor
-<em>port</em> of Git branches.</p>
-<p>But recently, more and more Mercurial users have been coming to the
-realization that names aren't really necessary. If the tool doesn't
-actually require naming things, why force users to name things? As long
-as users can find the commits they need to find, do you actually need
-names?</p>
-<p>As a demonstration, my Mercurial workflow leans heavily on the <code>hg show work</code>
-and <code>hg show stack</code> commands. You will need to enable the <em>show</em> extension
-by putting the following in your hgrc config file to use them:</p>
-<pre><code>[extensions]
-show =
-</code></pre>
-<p>Running <code>hg show work</code> (I have also set the config
-<code>commands.show.aliasprefix=s</code>to enable me to type <code>hg swork</code>) finds all
-in-progress changesets and other likely-relevant changesets (those
-with names and DAG heads). It prints a concise DAG of those changesets:</p>
-<p><img alt="hg show work output" src="/images/hg-show-work.png" /></p>
-<p>And <code>hg show stack</code> shows just the current line of work and its
-relationship to other important heads:</p>
-<p><img alt="hg show stack output" src="/images/hg-show-stack.png" /></p>
-<p>Aside from the <code>@</code> bookmark/name set on that top-most changeset, there are
-no names! (That <code>@</code> comes from the remote repository, which has set that name.)</p>
-<p>Outside of code archeology workflows, <code>hg show work</code> shows the changesets I
-care about 95% of the time. With all I care about (my in-progress work and
-possible rebase targets) rendered concisely, I don't have to name things
-because I can just find whatever I'm looking for by running <code>hg show work</code>!
-Yes, you need to run <code>hg show work</code>, visually scan for what you are looking
-for, and copy a (random) hash fragment into a number of commands. This
-sounds like a lot of work. But I believe it is far less work than naming
-things. Only when you practice this workflow do you realize just how much
-time you actually spend finding and then typing names in to <code>hg</code> and -
-especailly - <code>git</code> commands! The ability to just <code>hg update</code> to a changeset
-and commit without having to name things is just so liberating. It feels
-like my version control tool is putting up fewer barriers and letting me
-work quickly.</p>
-<p>Another benefit of <code>hg show work</code> and <code>hg show stack</code> are that they present
-a concise DAG visualization to users. This helps educate users about the
-underlying <em>shape</em> of repository data. When you see connected nodes on a
-graph and how they change over time, it makes it a lot easier to understand
-concepts like <em>merge</em> and <em>rebase</em>. </p>
-<p>This <em>nameless</em> workflow may sound radical. But that's because we're all
-conditioned to naming things. I initially thought it was crazy as well. But
-once you have a mechanism that gives you rapid access to data you care
-about (<code>hg show work</code> in Mercurial's case), names become very optional. Now,
-a pure <em>nameless</em> workflow isn't without its limitations. You want names
-to identify the main <em>targets</em> for work (e.g. the <em>master</em> branch). And when
-you exchange work with others, names are easier to work with, especially
-since names survive rewriting. But in my experience, most of my commits
-are only exchanged with me (synchronizing my in-progress commits across
-devices) and with code review tools (which don't really need names and
-can operate against raw commits). My most frequent use of names comes
-when I'm in <em>repository maintainer mode</em> and I need to ensure commits
-have names for others to reference.</p>
-<p>Could Git support <em>nameless</em> workflows? In theory it can.</p>
-<p>Git needs <em>refs</em> to find relevant commits in its store. And the wire
-protocol uses <em>refs</em> to exchange data. So <em>refs</em> have to exist for Git
-to function (assuming Git doesn't radically change its storage and
-exchange mechanisms to mitigate the need for <em>refs</em>, but that would be
-a massive change and I don't see this happening).</p>
-<p>While there is a fundamental requirement for <em>refs</em> to exist, this
-doesn't necessarily mean that user-facing names must exist. The reason
-that we need <em>branches</em> today is because <em>branches</em> are little more than
-a <em>ref</em> with special behavior. It is theoretically possible to invent a
-mechanism that transparently maps <em>nameless</em> commits onto <em>refs</em>. For
-example, you could create a <em>refs/nameless/</em> namespace that was
-automatically populated with DAG heads that didn't have names attached.
-And Git could exchange these <em>refs</em> just like it can <em>branches</em> today.
-It would be a lot of work to think through all the implications and to
-design and implement support for <em>nameless</em> development in Git. But I
-think it is possible.</p>
-<p>I encourage the Git community to investigate supporting <em>nameless</em> workflows.
-Having adopted this workflow in Mercurial, Git's workflow around naming
-branches feels heavyweight and restrictive to me. Put another way, <em>nameless</em>
-commits are actually lighter-weight branches than Git branches! To the
-common user who just wants version control to be a <em>save</em> feature,
-requiring names establishes a barrier towards that goal. So removing the
-naming requirement would make Git simpler and more approachable to new
-users.</p>
-<h2>Forks aren't the Model You are Looking For</h2>
-<p>This section is more about hosted Git services (like GitHub, Bitbucket, and
-GitLab) than Git itself. But since hosted Git services are synonymous
-with <em>Git</em> and interaction with a hosted Git services is a regular
-part of a common Git user's workflow, I feel like I need to cover it.
-(For what it's worth, my experience at Mozilla tells me that a large
-percentage of people who say <em>I prefer Git</em> or <em>we should use Git</em>
-actually mean <em>I like GitHub</em>. Git and GitHub/Bitbucket/GitLab are
-effectively the same thing in the minds of many and anyone finding
-themselves discussing version control needs to keep this in mind because
-<em>Git</em> is more than just the command line tool: it is an ecosystem.)</p>
-<p>I'll come right out and say it: I think <em>forks</em> are a relatively poor
-model for collaborating. They are light years better than what
-existed before. But they are still so far from the turn-key experience
-that should be possible. The <em>fork</em> hasn't really changed much since
-the current implementation of it was made popular by GitHub many years
-ago. And I view this as a general failure of hosted services to
-innovate.</p>
-<p>So we have a shared understanding, a <em>fork</em> (as implemented on GitHub,
-Bitbucket, GitLab, etc) is essentially a complete copy of a repository
-(a <code>git clone</code> if using Git) and a fresh workspace for additional
-value-added services the hosting provider offers (pull requests, issues,
-wikis, project tracking, release tracking, etc). If you open the main
-web page for a <em>fork</em> on these services, it looks just like the main
-project's. You know it is a fork because there are cosmetics somewhere
-(typically next to the project/repository name) saying <em>forked from</em>.</p>
-<p>Before service providers adopted the <em>fork</em> terminology, <em>fork</em> was
-used in open source to refer to a splintering of a project. If
-someone or a group of people didn't like the direction a project was
-taking, wanted to take over ownership of a project because of
-stagnation, etc, they would <em>fork it</em>. The <em>fork</em> was based on the
-original (and there may even be active collaboration between the
-fork and original), but the intent of the <em>fork</em> was to create
-distance between the original project and its new incantation. A
-new entity that was sufficiently independent of the original.</p>
-<p><em>Forks</em> on service providers mostly retain this <em>old school</em> <em>fork</em>
-model. The <em>fork</em> gets a new copy of issues, wikis, etc. And anyone
-who <em>forks</em> establishes what looks like an independent incantation
-of a project. It's worth noting that the execution varies by service
-provider. For example, GitHub won't enable <em>Issues</em> for a fork by
-default, thereby encouraging people to file issues against the
-<em>upstream</em> project it was forked from. (This is good default behavior.)</p>
-<p>And I know why service providers (initially) implemented things this
-way: it was easy. If you are building a product, it's simpler to just
-say <em>a user's version of this project is a <code>git clone</code> and they get
-a fresh database</em>. On a technical level, this meets the traditional
-definition of <em>fork</em>. And rather than introduce a new term into the
-vernacular, they just re-purposed <em>fork</em> (albeit with <em>softer</em>
-connotations, since the traditional <em>fork</em> commonly implied there
-was some form of strife precipitating a <em>fork</em>).</p>
-<p>To help differentiate flavors of <em>forks</em>, I'm going to define the
-terms <em>soft fork</em> and <em>hard fork</em>. A <em>soft fork</em> is a <em>fork</em> that
-exists for purposes of collaboration. The differentiating feature
-between a <em>soft fork</em> and <em>hard fork</em> is whether the <em>fork</em> is
-intended to be used as its own project. If it is, it is a
-<em>hard fork</em>. If not - if all changes are intended to be <em>merged</em>
-into the <em>upstream</em> project and be consumed from there - it is a
-<em>soft fork</em>.</p>
-<p>I don't have concrete numbers, but I'm willing to wager that the vast
-majority of <em>forks</em> on Git service providers which have changes are
-<em>soft forks</em> rather than <em>hard forks</em>. In other words, these <em>forks</em>
-exist purely as a conduit to collaborate with the canonical/upstream
-project (or to facilitate a short-lived one-off change).</p>
-<p>The current implementation of <em>fork</em> - which borrows a lot from its
-predecessor of the same name - is a good - but not great - way to
-facilitate collaboration. It isn't great because it technically
-resembles what you'd expect to see for <em>hard fork</em> use cases even
-though it is used predominantly with <em>soft forks</em>. This mismatch
-creates problems.</p>
-<p>If you were to take a step back and invent your own version control
-hosted service and weren't tainted by exposure to existing services
-and were willing to think a bit beyond making it a glorified frontend
-for the <code>git</code> command line interface, you might realize that the problem
-you are solving - the product you are selling - is collaboration as
-a service, not a Git hosting service. And if your product is
-collaboration, then implementing your collaboration model around the
-<em>hard fork</em> model with strong barriers between the original project and
-its <em>forks</em> is counterproductive and undermines your own product.
-But this is how GitHub, Bitbucket, GitLab, and others have implemented
-their product!</p>
-<p>To improve collaboration on version control hosted services, the concept
-of a <em>fork</em> needs to significantly curtailed. Replacing it should be
-a UI and workflow that revolves around the central, canonical repository.</p>
-<p>You shouldn't need to create your own <em>clone</em> or <em>fork</em> of a repository
-in order to contribute. Instead, you should be able to clone the
-canonical repository. When you create commits, those commits should
-be stored and/or more tightly affiliated with the original project - not
-inside a <em>fork</em>.</p>
-<p>One potential implementation is doable today. I'm going to call it
-<em>workspaces</em>. Here's how it would work.</p>
-<p>There would exist a namespace for <em>refs</em> that can be controlled by
-the user. For example, on GitHub (where my username is <em>indygreg</em>),
-if I wanted to contribute to some random project, I would <code>git push</code>
-my refs somewhere under <code>refs/users/indygreg/</code> directly to that
-project's. No <em>forking</em> necessary. If I wanted to contribute to a
-project, I would just clone its repo then push to my <em>workspace</em> under
-it. You could do this today by configuring your Git <em>refspec</em> properly.
-For pushes, it would look something like
-<code>refs/heads/*:refs/users/indygreg/*</code> (that tells Git to map local <em>refs</em>
-under <code>refs/heads/</code> to <code>refs/users/indygreg/</code> on that <em>remote</em> repository).
-If this became a popular feature, presumably the Git wire protocol could
-be taught to advertise this feature such that Git clients automatically
-configured themselves to push to user-specific <em>workspaces</em> attached to
-the original repository.</p>
-<p>There are several advantages to such a <em>workspace</em> model. Many of them
-revolve around eliminating <em>forks</em>.</p>
-<p>At initial contribution time, no server-side <em>fork</em> is necessary in order
-to contribute. You would be able to <em>clone and contribute</em> without waiting
-for or configuring a <em>fork</em>. Or if you can create commits from the web
-interface, the clone wouldn't even be necessary! Lowering the barrier to
-contribution is a good thing, especially if collaboration is the product
-you are selling.</p>
-<p>In the web UI, <em>workspaces</em> would also revolve around the source project
-and not be off in their own world like <em>forks</em> are today. People could
-more easily see what others are up to. And fetching their work would
-require typing in their username as opposed to configuring a whole new
-remote. This would bring communities closer and hopefully lead to better
-collaboration.</p>
-<p>Not requiring <em>forks</em> also eliminates the need to synchronize your <em>fork</em>
-with the upstream repository. I don't know about you, but one of the things
-that bothers me about the <em>Game of Refs</em> that Git imposes is that I have
-to keep my <em>refs</em> in sync with the upstream <em>refs</em>. When I fetch from
-<em>origin</em> and pull down a new <em>master</em> branch, I need to <code>git merge</code>
-that branch into my local <em>master</em> branch. Then I need to push that new
-<em>master</em> branch to my fork. This is quite tedious. And it is easy to merge
-the wrong branches and get your <em>branch</em> state out of whack. There are
-better ways to map remote <em>refs</em> into your local names to make this far
-less confusing.</p>
-<p>Another win here is not having to push and store data multiple times.
-When working on a <em>fork</em> (which is a separate repository), after you
-<code>git fetch</code> changes from upstream, you need to eventually <code>git push</code> those
-into your <em>fork</em>. If you've ever worked on a large repository and didn't
-have a super fast Internet connection, you may have been stymied by
-having to <code>git push</code> large amounts of data to your <em>fork</em>. This is quite
-annoying, especially for people with slow Internet connections. Wouldn't
-it be nice if that <code>git push</code> only pushed the data that was truly new and
-didn't already exist somewhere else on the server? A <em>workspace</em> model
-where development all occurs in the original repository would fix this.
-As a bonus, it would make the storage problem on servers easier because
-you would eliminate thousands of forks and you probably wouldn't have to
-care as much about data duplication across repos/clones because the
-version control tool solves a lot of this problem for you, courtesy of
-having all data live alongside or in the original repository instead of
-in a <em>fork</em>.</p>
-<p>Another win from <em>workspace</em>-centric development would be the potential to
-do more user-friendly things after <em>pull/merge requests</em> are incorporated
-in the official project. For example, the <em>ref</em> in your workspace could
-be deleted automatically. This would ease the burden on users to clean up
-after their submissions are accepted. Again, instead of mashing keys to
-play the <em>Game of Refs</em>, this would all be taken care of for you
-automatically. (Yes, I know there are scripts and shell aliases to
-make this more turn-key. But user-friendly behavior shouldn't have to
-be opt-in: it should be the default.)</p>
-<p>But <em>workspaces</em> aren't all rainbows and unicorns. There are access
-control concerns. You probably don't want users able to mutate the
-<em>workspaces</em> of other users. Or do you? You can make a compelling
-case that project <em>administrators</em> should have that ability. And what if
-someone pushes bad or illegal content to a workspace and you receive
-a cease and desist? Can you take down just the offending workspace while
-complying with the order? And what happens if the original project is
-deleted? Do all its workspaces die with it? These are not trivial
-concerns. But they don't feel impossible to tackle either.</p>
-<p><em>Workspaces</em> are only one potential alternative to <em>forks</em>. And I can
-come up with multiple implementations of the <em>workspace</em> concept. Although
-many of them are constrained by current features in the Git wire protocol.
-But Git is (finally) getting a more extensible wire protocol, so hopefully
-this will enable <em>nice things</em>.</p>
-<p>I challenge Git service providers like GitHub, Bitbucket, and GitLab to
-think outside the box and implement something better than how <em>forks</em>
-are implemented today. It will be a large shift. But I think users will
-appreciate it in the long run.</p>
-<h2>Conclusion</h2>
-<p>Git is an ubiquitous version control tool. But it is
-<a href="http://stevelosh.com/blog/2013/04/git-koans/">frequently lampooned</a> for
-its <a href="https://stevebennett.me/2012/02/24/10-things-i-hate-about-git/">poor usability</a>
-and <a href="https://git-man-page-generator.lokaltog.net/">documentation</a>.
-We even have
-<a href="https://spderosso.github.io/onward13.pdf">research</a>
-<a href="https://spderosso.github.io/oopsla16.pdf">papers</a> telling us which parts
-are bad. Nobody I know has had a pleasant initial experience with Git.
-And it is clear that few people actually understand Git: most just know
-the command incantations they need to know to accomplish a small set of
-common activities. (If you are such a person, there is nothing to be
-ashamed about: Git is a <em>hard</em> tool.)</p>
-<p>Popular Git-based hosting and collaboration services (such as GitHub,
-Bitbucket, and GitLab) exist. While they've made strides to make it
-easier to commit data to a Git repository (I purposefully avoid saying
-<em>use Git</em> because the most usable tools seem to avoid the <code>git</code> command
-line interface as much as possible), they are often a thin veneer over
-Git itself (see <em>forks</em>). And Git is a thin veneer over a content
-indexed key-value store (see forced usage of bookmarks).</p>
-<p>As an industry, we should be concerned about the lousy usability of Git
-and the tools and services that surround it. Some may say that Git -
-with its near monopoly over version control mindset - is a success. I
-have a different view: I think it is a failure that a tool with a user
-experience this bad has achieved the success it has.</p>
-<p>The cost to Git's poor usability can be measured in tens if not hundreds
-of millions of dollars in time people have wasted because they couldn't
-figure out how to use Git. Git should be viewed as a source of
-embarrassment, not a success story.</p>
-<p>What's really concerning is that the usability problems of Git have been
-known for years. Yet it is as popular as ever and there have been few
-substantial usability improvements. We do have some
-<a href="http://gitless.com/">alternative frontends</a> floating around. But these
-haven't caught on.</p>
-<p>I'm at a loss to understand how an open source tool as popular as Git
-has remained so mediocre for so long. The source code is out there.
-Anybody can submit a patch to fix it. Why is it that so many people get
-tripped up by the same poor usability issues years after Git became
-the common version control tool? It certainly appears that as an
-industry we have been unable or unwilling to address systemic deficiencies
-in a critical tool. Why this is, I'm not sure.</p>
-<p>Despite my pessimism about Git's usability and its poor track record of
-being attentive to the needs of people who aren't power users, I'm
-optimistic that the future will be brighter. While the ~7000 words in this
-post pale in comparison to the aggregate word count that has been
-written about Git, hopefully this post strikes a nerve and causes
-positive change. Just because one generation has toiled with the
-usability problems of Git doesn't mean the next generation has to
-suffer through the same. Git can be improved and I encourage that change
-to happen. The three issues above and their possible solutions would
-be a good place to start.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2017/12/11/high-level-problems-with-git-and-how-to-fix-them#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/2">Next Page »</a>
 

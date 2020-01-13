@@ -7,12 +7,590 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2020-01-07T20:09:12Z</updated>
+  <updated>2020-01-13T04:31:56Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Mercurial's Journey to and Reflections on Python 3]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2020/01/13/mercurial's-journey-to-and-reflections-on-python-3" />
+    <id>http://gregoryszorc.com/blog/2020/01/13/mercurial's-journey-to-and-reflections-on-python-3</id>
+    <updated>2020-01-13T08:45:00Z</updated>
+    <published>2020-01-13T08:45:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Python" />
+    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
+    <summary type="html"><![CDATA[Mercurial's Journey to and Reflections on Python 3]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2020/01/13/mercurial's-journey-to-and-reflections-on-python-3"><![CDATA[<p>Mercurial 5.2 was released on November 5, 2019. It is the first version
+of Mercurial that supports Python 3. This milestone comes nearly 11 years
+after Python 3.0 was first released on December 3, 2008.</p>
+<p>Speaking as a maintainer of Mercurial and an avid user of Python, I
+feel like the experience of making Mercurial work with Python 3 is
+worth sharing because there are a number of lessons to be learned.</p>
+<p>This post is logically divided into two sections: a mostly factual recount
+of Mercurial's Python 3 porting effort and a more opinionated commentary
+of the transition to Python 3 and the Python language ecosystem as a whole.
+Those who don't care about the mechanics of porting a large Python project
+to Python 3 may want to skip the next section or two.</p>
+<h2>Porting Mercurial to Python 3</h2>
+<p>Let's start with a brief history lesson of Mercurial's support for
+Python 3 as told by its own commit history.</p>
+<p>The Mercurial version control tool was first released in April 2005
+(the same month that Git was initially released). Version 1.0 came out
+in March 2008. The first reference to Python 3 I found in the code base
+was in <a href="https://www.mercurial-scm.org/repo/hg/rev/8fee8ff13d37">September 2008</a>.
+Then not much happens for a while until
+<a href="https://www.mercurial-scm.org/repo/hg/rev/4494fb02d549">June 2010</a>, when
+someone authors a bunch of changes to make the Python C extensions
+start to recognize Python 3. Then things were again quiet for a while
+until <a href="https://www.mercurial-scm.org/repo/hg/rev/56ef99fbd6f2">January 2013</a>,
+when a handful of changes landed to remove 2 argument <code>raise</code>. There were
+a handful of commits in 2014 but nothing worth calling out.</p>
+<p>Mercurial's meaningful journey to Python 3 started in 2015. In code,
+the work started in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/af6e6a0781d7">April 2015</a>, with
+effort to make Mercurial's test harness run with Python 3. Part of
+this was a <a href="https://www.mercurial-scm.org/repo/hg/rev/fefc72523491">decision</a>
+that Python 3.5 (to be released several months later in September 2015)
+would be the minimum Python 3 version that Mercurial would support.</p>
+<p>Once the Mercurial Project decided it wanted to port to Python 3 (as opposed
+to another language), one of the earliest decisions was how to perform that
+port. <strong>Mercurial's code base was too large to attempt a flag day conversion</strong>
+where there would be a Python 2 version and a Python 3 version and one day
+everyone would switch from Python 2 to 3. <strong>Mercurial needed a way to run the
+same code (or as much of the same code) on both Python 2 and 3.</strong> We would
+maintain a single code base and users would gradually switch from running with
+Python 2 to Python 3.</p>
+<p>The main goal with Mercurial's early porting work was just getting the code base
+to a point where <code>import mercurial</code> would work. There were a myriad of places
+where Mercurial used syntax that was invalid on Python 3 and Python 3
+couldn't even parse the source code, let alone compile it to bytecode and
+execute it.</p>
+<p>This effort began in earnest in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/e93036747902">June 2015</a>
+with global source code rewrites like using modern octal syntax,
+modern exception catching syntax (<code>except Exception as e</code> instead of
+<code>except Exception, e</code>), <code>print()</code> instead of <code>print</code>, and a
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1a6a117d0b95">modern import convention</a>
+along with the use of <code>from __future__ import absolute_import</code>.</p>
+<p>In the early days of the port, our first goal was to get all source code
+parsing as valid Python 3. The next step was to get all the modules <code>import</code>ing
+cleanly. This entailed fixing code that ran at <code>import</code> time to work on
+Python 3. Our thinking was that we would need the code base to be <code>import</code>
+clean on Python 3 before seriously thinking about run-time behavior. In reality,
+we quickly ported a lot of modules to <code>import</code> cleanly and then moved on
+to higher-level porting, leaving a long-tail of modules with <code>import</code> failures.</p>
+<p>This initial porting effort played out over months. There weren't many
+people working on it in the early days: a few people would basically hack on
+Python 3 as a form of itch scratching and most of the project's energy was
+focused on improving the existing Python 2 based product. You can get a rough
+idea of the timeline and participation in the early porting effort through the
+<a href="https://www.mercurial-scm.org/repo/hg/log/081a77df7bc6/tests/test-check-py3-compat.t?revcount=960">history of test-check-py3-compat.t</a>.
+We see the test being added in <a href="https://www.mercurial-scm.org/repo/hg/rev/40eb385f798f">December 2015</a>,
+By June 2016, most of the code base was ported to our modern import convention
+and we were ready to move on to more meaningful porting.</p>
+<p>One of the biggest early hurdles in our porting effort was how to overcome
+the string literals type mismatch between Python 2 and 3. In Python 2, a
+<code>''</code> string literal is a sequence of bytes. In Python 3, a <code>''</code> string literal
+is a sequence of Unicode code points. These are fundamentally different types.
+And in Mercurial's code base, <strong>most of our <em>string</em> types are binary by design:
+use of a Unicode based <code>str</code> for representing data is flat out wrong for our use
+case</strong>. We knew that Mercurial would need to eventually switch many string
+literals from <code>''</code> to <code>b''</code> to preserve type compatibility. But doing so would
+be problematic.</p>
+<p>In the early days of Mercurial's Python 3 port in 2015, Mercurial's project
+maintainer (Matt Mackall) set a ground rule that the Python 3 port shouldn't overly
+disrupt others: he wanted the Python 3 port to more or less happen in the background
+and not require every developer to be aware of Python 3's low-level behavior in order
+to get work done on the existing Python 2 code base. This may seem like a questionable
+decision (and I probably disagreed with him to some extent at the time because I was
+doing Python 3 porting work and the decision constrained this work). But it was the
+correct decision. Matt knew that it would be years before the Python 3 port was either
+necessary or resulted in a meaningful return on investment (the value proposition of
+Python 3 has always been weak to Mercurial because Python 3 doesn't demonstrate a
+compelling advantage over Python 2 for our use case). What Matt was trying to do was
+minimize the externalized costs that a Python 3 port would inflict on the project.
+He correctly recognized that maintaining the existing product and supporting
+existing users was more important than a long-term bet in its infancy.</p>
+<p>This ground rule meant that a mass insertion of <code>b''</code> prefixes everywhere
+was not desirable, as that would require developers to think about whether
+a type was a <code>bytes</code> or <code>str</code>, a distinction they didn't have to worry about
+on Python 2 because we practically never used the Unicode-based string type in
+Mercurial.</p>
+<p>In addition, there were some other practical issues with doing a bulk <code>b''</code>
+prefix insertion. One was that the added <code>b</code> characters would cause a lot of lines
+to grow beyond our length limits and we'd have to reformat code. That would
+require manual intervention and would significantly slow down porting. And
+a sub-issue of adding all the <code>b</code> prefixes and reformatting code is that it would
+<em>break</em> annotate/blame more than was tolerable. The latter issue was addressed
+by teaching Mercurial's annotate/blame feature to <em>skip</em> revisions. The project
+now has a convention of annotating commit messages with <code># skim-blame &lt;reason&gt;</code>
+so structural only changes can easily be ignored when performing an
+annotate/blame.</p>
+<p>A stop-gap solution to the <code>b''</code> everywhere issue came in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1c22400db72d">July 2016</a>, when I
+introduced a custom Python module importer that rewrote source code as part
+of <code>import</code> when running on Python 3. (I have
+<a href="/blog/2017/03/13/from-__past__-import-bytes_literals/">previously blogged</a>
+about this hack.) What this did was transparently add <code>b''</code> prefixes to all
+un-prefixed string literals as well as modify how a few common functions were
+called so that we wouldn't need to modify source code so things would run natively
+on Python 3. The source transformer allowed us to have the benefits of progressing
+in our Python 3 port without having to rewrite tens of thousands of lines of
+source code. The solution was hacky. But it enabled us to make significant
+progress on the Python 3 port without externalizing a lot of cost onto others.</p>
+<p>I thought the source transformer would be relatively short-lived and would be
+removed shortly after the project inevitably decided to go all in on Python 3.
+To my surprise, others built additional transforms over the years and the source
+transformer persisted all the way until
+<a href="https://www.mercurial-scm.org/repo/hg/rev/d783f945a701">October 2019</a>, when
+I removed it just before the first non-alpha Python 3 compatible version
+of Mercurial was released.</p>
+<p>A common problem Mercurial faced with making the code base dual Python 2/3 native
+was dealing with standard library differences. Most of the problems stemmed
+from changes between Python 2.7 and 3.5+. But there are changes within the
+versions of Python 3 that we had to wallpaper over as well. In
+<a href="https://www.mercurial-scm.org/repo/hg/rev/6041fb8f2da8">April 2016</a>, the
+<code>mercurial.pycompat</code> module was introduced to export aliases or wrappers around
+standard library functionality to abstract the differences between Python
+versions. This file <a href="https://www.mercurial-scm.org/repo/hg/log/66af68d4c751/mercurial/pycompat.py?revcount=240">grew over time</a>
+and <a href="https://www.mercurial-scm.org/repo/hg/file/66af68d4c751/mercurial/pycompat.py">eventually became</a>
+Mercurial's version of <a href="https://six.readthedocs.io/">six</a>. To be honest, I'm
+not sure if we should have used <code>six</code> from the beginning. <code>six</code> probably would
+have saved some work. But we had to eventually write a lot of shims for
+converting between <code>str</code> and <code>bytes</code> and would have needed to invent a
+<code>pycompat</code> layer in some form anyway. So I'm not sure <code>six</code> would have saved
+enough effort to justify the baggage of integrating a 3rd party package into
+Mercurial. (When Mercurial accepts a 3rd party package, downstream packagers
+like Debian get all hot and bothered and end up making questionable patches
+to our source code. So we prefer to minimize the surface area for
+problems by minimizing dependencies on 3rd party packages.)</p>
+<p>Once we had a source transforming module importer and the <code>pycompat</code>
+compatibility shim, we started to focus in earnest on making core
+functionality actually work on Python 3. We established a convention of
+annotating changesets needed for Python 3 with <code>py3</code>, so a
+<a href="https://www.mercurial-scm.org/repo/hg/log?rev=desc(py3)&amp;revcount=4000">commit message search</a>
+yields a lot of the history. (But it isn't a full history since not every Python 3
+oriented change used this convention). We see from that history that after
+the source importer landed, a lot of porting effort was spent on things
+very early in the <code>hg</code> process lifetime. This included handling environment
+variables, loading config files, and argument parsing. We introduced a
+<a href="https://www.mercurial-scm.org/repo/hg/log/@/tests/test-check-py3-commands.t">test-check-py3-commands.t</a>
+test to track the progress of <code>hg</code> commands working in Python 3. The very early
+history of that file shows the various error messages changing, as underlying
+early process functionality was slowly ported to work on Python 3. By
+<a href="https://www.mercurial-scm.org/repo/hg/rev/2d555d753f0e">December 2016</a>, we
+had <code>hg version</code> working on Python 3!</p>
+<p>With basic <code>hg</code> command dispatch ported to Python 3 at the end of 2016,
+2017 represented an inflection point in the Python 3 porting effort. With the
+early process functionality working, different people could pick up different
+commands and code paths and start making code work with Python 3. By
+<a href="https://www.mercurial-scm.org/repo/hg/rev/52ee1b5ac277">March 2017</a>, basic
+repository opening and <code>hg files</code> worked. Shortly thereafter,
+<a href="https://www.mercurial-scm.org/repo/hg/rev/ed23f929af38">hg init started working as well</a>.
+And <a href="https://www.mercurial-scm.org/repo/hg/rev/935a1b1117c7">hg status</a> and
+<a href="https://www.mercurial-scm.org/repo/hg/rev/aea8ec3f7dd1">hg commit</a> did as well.</p>
+<p>Within a few months, enough of Mercurial's functionality was working with Python
+3 that we started to <a href="https://www.mercurial-scm.org/repo/hg/rev/7a877e569ed6">track which tests passed on Python 3</a>.
+The <a href="https://www.mercurial-scm.org/repo/hg/log/@/contrib/python3-whitelist?revcount=480">evolution of this file</a>
+shows a reasonable history of the porting velocity.</p>
+<p>In <a href="https://www.mercurial-scm.org/repo/hg/rev/bd8875b6473c">November 2017</a>, I
+landed a test harness feature to report exceptions seen during test runs. I
+later <a href="https://www.mercurial-scm.org/repo/hg/rev/8de90e006c78">refined the output</a>
+so the most frequent failures were reported more prominently. This feature
+greatly enabled our ability to target the most common exceptions, allowing
+us to write patches to fix the most prevalent issues on Python 3 and uncover
+previously unknown failures.</p>
+<p>By the end of 2017, we had most of the structural pieces in place to complete
+the port. Essentially all that was required at that point was time and labor.
+We didn't have a formal mechanism in place to target porting efforts. Instead,
+people would pick up a component or test that they wanted to hack on and then
+make incremental changes towards making that work. All the while, we didn't
+have a strict policy on not regressing Python 3 and regressions in Python 3
+porting progress were semi-frequent. Although we did tend to correct
+regressions quickly. And over time, developers saw a flurry of Python 3
+patches and slowly grew awareness of how to accommodate Python 3, and the
+number of Python 3 regressions became less frequent.</p>
+<p>As useful as the source-transforming module importer was, it incurred some
+additional burden for the porting effort. The source transformer effectively
+converted all un-prefixed string literals (<code>''</code>) to bytes literals (<code>b''</code>)
+to preserve string type behavior with Python 2. But various aspects of Python
+3 didn't like the existence of <code>bytes</code>. Various standard library functionality
+now wanted unicode <code>str</code> and didn't accept <code>bytes</code>, even though the Python
+2 implementation used the equivalent of <code>bytes</code>. So our <code>pycompat</code> layer
+grew pretty large to accommodate calling into various standard library
+functionality. Another side-effect which we didn't initially anticipate
+was the <code>**kwargs</code> calling convention. Python allows you to use <code>**</code>
+with a dict with string keys to turn those keys into named arguments
+in a function call. But Python 3 requires these <code>dict</code> keys to be
+<code>str</code> and outright rejects <code>bytes</code> keys, even if the <code>bytes</code> instance
+is ASCII safe and has the same underlying byte representation of the
+string data as the <code>str</code> instance would. So we had to invent support
+functions that would convert <code>dict</code> keys from <code>bytes</code> to <code>str</code> for
+use with <code>**kwargs</code> and another to convert a <code>**kwargs</code> dict from
+<code>str</code> keys to <code>bytes</code> keys so we could use <code>''</code> syntax to access keys
+in our source code! Also on the string type front, we had to sprinkle
+the codebase with raw string literals (<code>r''</code>) to force the use of
+<code>str</code> irregardless of which Python version you were running on (our
+source transformer only changed unprefixed string literals, so existing
+<code>r''</code> strings would be preserved as <code>str</code>).</p>
+<p>By mid 2019, the number of test failures in Python 3 had been whittled
+down to a reasonable, less daunting number. It felt like victory was
+in grasp and inevitable. But a few significant issues lingered.</p>
+<p>One remaining question was around addressing differences between Python
+3 versions. At the time, Python 3.5, 3.6, and 3.7 were released and 3.8
+was scheduled for release by the end of the year. We had a surprising
+number of issues with differences in Python 3 versions. Many of us
+were running Python 3.7, so it had the fewest failures. We had to spend
+extra effort to get Python 3.5 and 3.6 working as well as 3.7. Same for
+3.8.</p>
+<p>Another task we deferred until the second half of 2019 was standing up
+robust CI for Python 3. We had some coverage, but it was minimal. Wanting
+a distraction from PyOxidizer for a bit and wanting to overhaul Mercurial's
+CI system (which is officially built on Buildbot), I cobbled together a
+<em>serverless</em> CI system built on top of AWS DynamoDB and S3 for storage,
+Lambda functions and CloudWatch events for all business logic, and EC2 spot
+instances for job execution. This CI system executed Python 3.5, 3.6, 3.7,
+and 3.8 variants of our test harness on Linux and Python 3.7 on Windows.
+This gave developers insight into version-specific failures. More
+importantly, it also gave insight into Windows failures, which was
+previously not well tested. It was discovered that Python 3 on Windows was
+lagging significantly behind POSIX.</p>
+<p>By the time of the Mercurial developer meetup in October 2019, nearly
+all tests were passing on POSIX platforms and we were confident that
+we could declare Python 3 support as at least beta quality for the
+Mercurial 5.2 release, planned for early November.</p>
+<p>One of our blockers for ripping off the alpha label on Python 3 support
+was removing our source-transforming module importer. It had performance
+implications and it wasn't something we wanted to ship because it felt
+too hacky. A blocker for this was we wanted to automatically format
+our source tree with <a href="https://black.readthedocs.io/en/stable/">black</a>
+because if we removed the source transformer, we'd have to rewrite
+a lot of source code to apply changes the transformer was performing,
+which would necessitate wrapping a lot of lines, which would involve a lot
+of manual effort. We wanted to <em>blacken</em> our code base first so that
+mass rewriting source code wouldn't involve a lot of tedious reformatting
+since <code>black</code> would handle that for us automatically. And rewriting the
+source tree with <code>black</code> was blocked on a specific feature landing in
+<code>black</code>! (We did not agree with <code>black</code>'s behavior of
+unwrapping comma-delimited lists of items if they could fit on a single
+line. So one of our core contributors wrote a patch to <code>black</code> that
+changed its behavior so a trailing <code>,</code> in a list of items will force
+items to be formatted on multiple lines. I personally find the multiple line
+formatting much easier to read. And the behavior is arguably better for
+code review and <em>annotation</em>, which is line based.) Once this feature
+landed in <code>black</code>, we reformatted our source tree and started ripping
+out the source transformations, starting by inserting <code>b''</code> literals
+everywhere. By late October, the source transformer was no more and
+we were ready to release beta quality support for Python 3 (at least
+on UNIX-like platforms).</p>
+<p>Having described a mostly factual overview of Mercurial's port to Python
+3, it is now time to shift gears to the speculative and opinionated
+parts of this post. <strong>I want to underscore that the opinions reflected
+here are my own and do not reflect the overall Mercurial Project or even
+a consensus within it.</strong></p>
+<h2>The Future of Python 3 and Mercurial</h2>
+<p>Mercurial's port to Python 3 is still ongoing. While we've shipped
+Python 3 support and the test harness is clean on Python 3, I view shipping
+as only a milestone - arguably <em>the</em> most important one - in a longer
+journey. There's still a lot of work to do.</p>
+<p>It is now 2020 and Python 2 support is now officially dead from the
+perspective of the Python language maintainers. Linux distributions are
+starting to rip out Python 2. Packages are dropping Python 2 support in
+new versions. The world is moving to Python 3 only. But <strong>Mercurial still
+officially supports Python 2</strong>. And it is still yet to be determined how
+long we will retain support for Python 2 in the code base. We've only had
+one release supporting Python 3. Our users still need to port their
+extensions (implemented in Python). Our users still need to start widely
+using Mercurial with Python 3. Even our own developers need to switch to
+Python 3 (old habits are hard to break).</p>
+<p>I anticipate a long tail of random bugs in Mercurial on Python 3. While
+the tests may pass, our code coverage is not 100%. And even if it were,
+Python is a dynamic language and there are tons of invariants that aren't
+caught at compile time and can only be discovered at run time. <strong>These
+invariants cannot all be detected by tests, no matter how good your test
+coverage is.</strong> This is a <em>feature</em>/<em>limitation</em> of dynamic languages. Our
+users will likely be finding a long tail of miscellaneous bugs on Python
+3 for <em>years</em>.</p>
+<p>At present, our code base is littered with tons of random hacks to bridge
+the gap between Python 2 and 3. Once Python 2 support is dropped, we'll
+need to remove these hacks and make the source tree Python 3 native, with
+minimal shims to wallpaper over differences in Python 3 versions. <strong>Removing
+this Python version bridge code will likely require hundreds of commits and
+will be a non-trivial effort.</strong> It's likely to be deemed a low priority (it
+is glorified busy work after all), and code for the express purpose of
+supporting Python 2 will likely linger for years.</p>
+<p>We are also still shoring up our packaging and distribution story on
+Python 3. This is easier on some platforms than others. I created
+<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> partially because
+of the poor experience I had with Python application packaging and
+distribution through the Mercurial Project. The Mercurial Project has
+already signed off on using PyOxidizer for distributing Mercurial in
+the future. So look for an <em>oxidized</em> Mercurial distribution in the
+near future! (You could argue PyOxidizer is an epic yak shave to better
+support Mercurial. But that's for another post.)</p>
+<p>Then there's Windows support. A Python 3 powered Mercurial on Windows
+still has a handful of known issues. It may require a few more releases
+before we consider Python 3 on Windows to be stable.</p>
+<p>Because we're still on a code base that must support Python 2, our
+adoption of Python 3 features is very limited. The only Python 3
+feature that Mercurial developers seem to almost universally get excited
+about is type annotations. We already have some people playing around
+with <code>pytype</code> using comment-based annotations and <code>pytype</code> has already
+caught a few bugs. We're eager to go all in on type annotations and
+uncover lots of dynamic typing bugs and poorly implemented APIs.
+Beyond type annotations, I can't name any feature that people are screaming
+to adopt and which makes a lot of sense for Mercurial. There's a long
+tail of minor features I'm sure will get utilized. But none of the
+marquee features that define major language releases seem that interesting
+to us. Time will tell.</p>
+<h2>Commentary on Python 3</h2>
+<p>Having described Mercurial's ongoing journey to Python 3, I now want to
+focus more on Python itself. Again, the opinions here are my own and
+don't reflect those of the Mercurial Project.</p>
+<p><strong>Succinctly, my experience porting Mercurial and other projects to
+Python 3 has significantly soured my perceptions of Python. As much as
+I have historically loved Python - from the language to the welcoming
+community - I am still struggling to understand how Python could manage
+to inflict so much hardship on the community by choosing the transition
+plan that they did.</strong> I believe Python's choices represent a terrific
+example of what not to do when managing a large project or ecosystem.
+Maintainers of other largely-deployed systems would benefit from taking
+the time to understand and reflect on Python's missteps.</p>
+<p>Python 3.0 was released on December 3, 2008. And it took the better part of
+a decade for the community to embrace it. <strong>This should be universally
+recognized as a failure.</strong> While hindsight is 20/20, many of the issues
+with Python 3 were obvious at the time and could have been mitigated had
+the language maintainers been more accommodating - and dare I say
+empathetic - to its users.</p>
+<p>Initially, Python 3 had a rather cavalier attitude towards backwards and
+forwards compatibility. In the early years of Python 3, the attitude of
+Python's maintainers was <em>Python 3 is a new, better language: you should
+target it explicitly</em>. There were some tools and methods to ease the
+transition. But nothing super polished, especially in the early years.
+Adoption of Python 3 in the overall community was slow. Python developers
+in the wild justifiably complained that the value proposition of Python 3
+was too weak to justify porting effort. Not helping was that the early
+advice for targeting Python 3 was to rewrite the source code to become
+Python 3 native. This is in contrast with using the same source to run on both
+Python 2 and 3. For library and application maintainers, this potentially
+meant maintaining separate versions of your code or forcing end-users to
+make a giant leap, which would realistically orphan users on an old version,
+fragmenting your user base. Neither of those were great alternatives, so
+you can understand why many projects didn't bite.</p>
+<p>For many projects of non-trivial size, flag day transitions from Python 2 to
+3 were simply not viable: the pathway to Python 3 was to make code dual
+Python 2/3 compatible and gradually switch over the runtime to Python 3.
+But initial versions of Python 3 made this effectively impossible! Let me
+give a few specific examples.</p>
+<p>In Python 2, a string literal <code>''</code> is effectively an array of bytes. In
+Python 3, it is a series of Unicode code points - a fundamentally different
+type! In Python 2, you could write <code>b''</code> to be explicit that a string literal
+was bytes or you could write <code>u''</code> to indicate a Unicode literal, mimicking
+Python 3's behavior. In Python 3, you could write <code>b''</code> to create a <code>bytes</code>
+instance. But for whatever reason, Python 3 initially removed the <code>u''</code> syntax,
+meaning there wasn't as easy way to explicitly denote the type of each
+string literal so that it was consistent between Python 2 and 3! Python 3.3
+(released September 2012) restored <code>u''</code> support, making it more viable to
+write Python source code that worked on both Python 2 and 3. <strong>For nearly 4
+years, Python 3 took away the consistent syntax for denoting bytes/Unicode
+string literals.</strong></p>
+<p>Another feature was <code>%</code> formatting of strings. Python 2 allowed use of the
+<code>%</code> formatting operator on both its string types. But Python 3 initially
+removed the implementation of <code>%</code> from <code>bytes</code>. Why, I have no clue. It
+is perfectly reasonable to splice byte sequences into a buffer via use of
+a formatting string. But the Python language maintainers insisted otherwise.
+And it wasn't until the community complained about its absence loudly enough
+that this feature was
+<a href="https://docs.python.org/3/whatsnew/3.5.html#whatsnew-pep-461">restored in Python 3.5</a>,
+which was released in September 2015. Fun fact: the lack of this feature was
+once considered a blocker for Mercurial moving to Python 3 because
+Mercurial uses <code>bytes</code> almost universally, which meant that nearly every use
+of <code>%</code> would have to be changed to something else. And to this day, Python
+3's <code>bytes</code> still doesn't have a <code>format()</code> method, so the alternative was
+effectively string concatenation, which is a massive step backwards from the
+expressiveness of <code>%</code> formatting.</p>
+<p><strong>The initial approach of Python 3 mirrors a folly that many developers
+and projects make: attempting a rewrite instead of performing incremental
+evolution.</strong> For established projects, large scale rewrites often go poorly.
+And Python 3 is no exception. Yes, from a code level, CPython (and likely
+other Python implementations) were incremental changes over Python 2 using
+the same code base. But from a language and standard library level, the
+differences in Python 3 were significant enough that I - and even Python's
+core maintainers - considered it a new language, and therefore a rewrite.
+When your random project attempts a rewrite and fails, the blast radius of that is
+often contained to that project. Maybe you don't publish a new release
+as soon as you otherwise would. <strong>But when you are powering an ecosystem,
+the ripple effects from a failed rewrite percolate throughout that ecosystem
+and last for years and have many second order effects. We see this with
+Python 3, where poor choices made in the late 2000s are inflicting significant
+hardship still in 2020.</strong></p>
+<p>From the initial restrained adoption of Python 3, it is obvious that the
+Python ecosystem overwhelmingly rejected the initial boil the oceans approach
+of Python 3. Python's maintainers eventually got the message and started
+restoring features like <code>u''</code> and <code>bytes</code> <code>%</code> formatting back into the
+language to placate the community. All the while Python 3 had been accumulating
+new features and the cumulative sum of those features was compelling enough
+to win over users.</p>
+<p>For many projects (including Mercurial), Python 3.4/3.5 was the first viable
+porting target for Python 3. Python 3.5 was released in September 2015, almost
+7 years after Python 3.0 was released in December 2008. <strong>Seven. Years.</strong>
+An ecosystem that falters for that long is generally not healthy. What may have
+saved Python from total collapse here is that Python 2 was still going strong and
+people were generally happy with it. I really do think Python dodged a bullet
+here, because there was a massive window where the language could have
+hemorrhaged a critical amount of its user base and been relegated to an
+afterthought. One could draw an analogy to Perl, which lost out to PHP,
+Python, and Ruby, and whose fall from grace aligned with a lengthy
+transition from Perl 5 to 6.</p>
+<p>If you look back at the early history of Python 3, <strong>I think you are forced
+to conclude that Python effectively kneecapped itself for 5-7 years
+through questionable implementation choices that prevented users from
+incurring incremental transitions between the major language versions. 2008
+to 2013-2015 should be known as the <em>lost years of Python</em> because so much
+opportunity and energy was squandered.</strong> Yes, Python is still healthy today
+and Python 3 is (finally) being adopted at scale. But had earlier versions
+of Python 3 been more <em>empathetic</em> towards Python 2 users porting to it,
+Python and Python 3 in 2020 would be even stronger than it is. The community
+was artificially hindered for years. And we won't know until 2023-2025 what
+things could have looked like in 2020 had the Python core language team
+spent more time paving a smoother road between the major language versions.</p>
+<p>To be clear, I do think Python 3 is generally a better language than Python 2.
+It has fewer warts, more compelling features, and better performance (except
+for startup time, which is still slower than Python 2). I am ecstatic the
+community is finally rallying around Python 3! For my Python coding, it has
+reached the point where I curse under my breath when I need to support
+Python 2 or even older versions of Python 3, like 3.5 or 3.6: I just wish
+the world would move on and adopt the future already!</p>
+<p>But I would be remiss if I failed to mention some of my gripes with Python
+3 beyond the transition shenanigans.</p>
+<p>Perhaps my least favorite <em>feature</em> of Python 3 is its insistence that the
+world is Unicode. In Python 2, the default string type was backed by
+bytes. In Python 3, the default string type is backed by Unicode code
+points. As part of that transition, large parts of the standard library
+now operate in the Unicode space instead of the domain of bytes. I understand
+why Python does this: they want <em>strings</em> to be Unicode and don't want
+users to have to spend that much energy thinking about when to use
+<code>str</code> versus <code>bytes</code>. This approach is admirable and somewhat defensible
+because it takes a stand on a solution that is arguably <em>good enough</em> for
+most users. However, <strong>the approach of assuming the world is Unicode is
+flat out wrong and has significant implications for systems level
+applications</strong> (like version control tools).</p>
+<p>There are a myriad of places in Python's standard library where Python
+insists on using the Unicode-backed <code>str</code> type and rejects <code>bytes</code>. For
+example, various networking modules refuse to accept <code>bytes</code> for hostnames
+or URLs. HTTP libraries won't accept <code>bytes</code> for HTTP header names or values.
+Functions that are proxies to POSIX-defined functions won't accept <code>bytes</code>
+even though the POSIX function it calls into is using <code>char *</code> and isn't
+Unicode aware. Then there's filename handling, where Python assumes the
+existence of a global encoding for filenames and uses this encoding to convert
+between <code>str</code> and <code>bytes</code>. And it does this despite POSIX filesystem paths
+being a bag of bytes where the only rules are that <code>\0</code> terminates the
+filename and <code>/</code> is special.</p>
+<p>In cases like Python refusing to accept <code>bytes</code> for things like HTTP
+header names (which will just be spit out over the wire as bytes), Python's
+pendulum has swung too far towards Unicode only. In my opinion, Python needs
+to be more accommodating and allow <code>bytes</code> when it makes sense. I hope the
+pendulum knocks some sense into people when it swings back towards a more
+reasonable solution that better acknowledges the realities of the world we
+live in.</p>
+<p>For areas like filename handling, the world is more complicated. Python
+is effectively an abstraction layer over the operating system APIs exposing
+this functionality. And there is often an impedance mismatch between operating
+systems. For example, POSIX (Linux) tends to use <code>char *</code> for everything
+and doesn't care about encoding and Windows tends to use 16 bit character
+types where the encoding is... a can of worms.</p>
+<p><strong>The reality here is that it is impossible to abstract over differences
+between operating system behavior without compromises that can result in data
+loss, outright wrong behavior, or loss of functionality. But Python 3 attempts
+to do it anyway, making Python 3 unsuitable (or at least highly undesirable) for
+certain systems level applications that rely on it</strong> (like a version control
+tool).</p>
+<p>In fairness to Python, it isn't the only programming language that gets
+this wrong. The only language I've seen <em>properly</em> implement higher-order
+abstractions on top of operating system facilities is Rust, whose approach can
+be generalized as <em>use Python 3's solution of normalizing to Unicode/UTF-8 by
+default</em>, but expose <em>escape hatches</em> which allow access to the raw underlying
+types and APIs used by the operating system for the advanced consumers who
+require it. For example, Rust's <code>Path</code> type which represents a filesystem path
+<a href="https://doc.rust-lang.org/std/path/struct.Path.html#method.as_os_str">allows access</a>
+to the raw <a href="https://doc.rust-lang.org/std/ffi/struct.OsStr.html">OsStr</a> value
+used by the operating system, not a normalization of it to bytes or Unicode,
+which may be lossy. This allows consumers to e.g. create and retrieve
+OS-native filesystem paths without data loss. This functionality is critical
+in some domains. Python 3's awareness/insistence that the world is
+Unicode (which it isn't universally) reduces Python's applicability in these
+domains.</p>
+<p>Speaking of Rust, at the Mercurial developer meetup in October 2019, we were
+discussing the use of Rust in Mercurial and one of the core maintainers blurted
+out something along the lines of <em>if Rust were at its current state 5 years ago,
+Mercurial would have likely ported from Python 2 to Rust instead of Python 3</em>.
+As crazy as it initially sounded, I think I agree with that assessment. With the
+benefit of hindsight, having been a key player in the Python 3 porting effort,
+seeing all the complications and headaches Python 3 is introducing, and
+having learned Rust and witnessed its benefits for performance, control,
+and correctness firsthand, porting to Rust would likely have been the correct
+move for the project at that point in time. 2020 is not 2014, however, and I'm
+not sure if I would opt for a rewrite in Rust today. (Most rewrites are follies
+after all.) But I know one thing: I certainly wouldn't implement a new version
+control tool in Python 3 and I would probably choose Rust as an implementation
+language for most new projects in the systems level space or with an expected
+shelf life of 10+ years. (I really should blog about how awesome Rust is.)</p>
+<p>Back to the topic of Python itself, <strong>I'm really soured on Python at this
+point in time. The effort required to port to Python 3 was staggering. For
+Mercurial, Python 3 introduces a ton of problems and doesn't really solve
+many. We effectively sludged through mud for several years only to wind
+up in a state that feels strictly worse than where we started. I'm sure it will
+be strictly better in a few years. But at that point, we're talking about a
+5+ year transition. To call the Python 3 transition disruptive and
+distracting for the project would be an understatement. As a project maintainer,
+it's natural to ask what we could have accomplished if we weren't forced
+to carry out this sideshow.</strong></p>
+<p>I can't shake the feeling that a lot of the pain afflicted by the Python 3
+transition could have been avoided had Python's language leadership made
+a different set of decisions and more highly prioritized the transition
+experience. (Like not initially removing features like <code>u''</code> and <code>bytes %</code>
+and not introducing gratuitous backwards compatibility breaks, like with
+<code>items()/iteritems()</code>. I would have also liked to see a feature like
+<code>from __future__</code> - maybe <code>from __past__</code> - that would make it easier for
+Python 3 code to target semantics in earlier versions in order to provide
+a more turnkey on-ramp onto new versions.) I simultaneously see Python 3
+losing its position as a justifiable tool in some domains (like systems
+level tooling) due to ongoing design decisions and poor implementation (like
+startup overhead problems). (In contrast, I see Rust excelling where Python
+is faltering and find Rust code surprisingly expressive to write and maintain
+given how low-level it is and therefore feel that Rust is a compelling
+alternative to Python in a surprisingly large number of domains.)</p>
+<p>Look, I know it is easy for me to armchair quarterback and critique with the
+benefit of hindsight/ignorance. I'm sure there is a lot of nuance here. I'm
+sure there was disagreement within the Python community over a lot of these
+issues. Maintaining a large and successful programming language and community
+like Python's is hard and you aren't going to please all the people all the
+time. And speaking as a maintainer, I have mad respect for the people leading
+such a large community. But niceties aside, everyone knows the Python 3
+transition was rough and could have gone better. It should not have taken 11
+years to get to where we are today.</p>
+<p><strong>I'd like to encourage the Python Project to conduct a thorough postmortem on
+the transition to Python 3.</strong> Identify what went well, what could have gone
+better, and what should be done next time such a large language change is wanted.
+Speaking as a Python user, a maintainer of a Python project, and as someone in
+industry who is now skeptical about use of Python at work due to risks of
+potentially company crippling high-effort migrations in the future, a postmortem
+would help restore my confidence that Python's maintainers learned from the
+various missteps on the road to Python 3 and these potentially ecosystem
+crippling mistakes won't be made again.</p>
+<p>Python had a wildly successful past few decades. And it can continue to
+thrive for several more. But the Python 3 migration was painful for all
+involved. And as much as we need to move on and leave Python 2 behind us,
+there are some important lessons to be learned. I hope the Python community
+takes the opportunity to reflect and am confident it will grow stronger by
+taking the time to do so.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -3105,356 +3683,5 @@ the powers of both of these fantastic programming languages.</p>
 of hacking over the holidays and hope to share updates in the weeks ahead. Until
 then, please leave comments, watch the <a href="https://github.com/indygreg/PyOxidizer">project on GitHub</a>,
 file issues for bugs and feature requests, etc and we'll see where things lead.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Absorbing Commit Changes in Mercurial 4.8]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2018/11/05/absorbing-commit-changes-in-mercurial-4.8" />
-    <id>http://gregoryszorc.com/blog/2018/11/05/absorbing-commit-changes-in-mercurial-4.8</id>
-    <updated>2018-11-05T09:25:00Z</updated>
-    <published>2018-11-05T09:25:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Mercurial" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Absorbing Commit Changes in Mercurial 4.8]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2018/11/05/absorbing-commit-changes-in-mercurial-4.8"><![CDATA[<p>Every so often a tool you use introduces a feature that is so useful
-that you can't imagine how things were before that feature existed.
-The recent 4.8 release of the
-<a href="https://www.mercurial-scm.org/">Mercurial version control tool</a> introduces
-such a feature: the <code>hg absorb</code> command.</p>
-<p><code>hg absorb</code> is a mechanism to automatically and intelligently incorporate
-uncommitted changes into prior commits. Think of it as <em><code>hg histedit</code> or
-<code>git rebase -i</code> with auto squashing</em>.</p>
-<p>Imagine you have a set of changes to prior commits in your working
-directory. <code>hg absorb</code> figures out which changes map to which commits
-and <em>absorbs</em> each of those changes into the appropriate commit. Using
-<code>hg absorb</code>, you can replace cumbersome and often merge conflict ridden
-history editing workflows with a single command that often <em>just works</em>.
-Read on for more details and examples.</p>
-<p>Modern version control workflows often entail having multiple <em>unlanded</em>
-commits in flight. What this looks like varies heavily by the version
-control tool, standards and review workflows employed by the specific
-project/repository, and personal preferences.</p>
-<p>A workflow practiced by a lot of projects is to author your commits
-into a sequence of standalone commits, with each commit representing
-a discrete, logical unit of work. Each commit is then
-reviewed/evaluated/tested on its own as part of a larger series.
-(This workflow is practiced by Firefox, the Git and Mercurial projects,
-and the Linux Kernel to name a few.)</p>
-<p>A common task that arises when working with such a workflow is the need
-to incorporate changes into an old commit. For example, let's say we have
-a stack of the following commits:</p>
-<pre><code>$ hg show stack
-  @  1c114a ansible/hg-web: serve static files as immutable content
-  o  d2cf48 ansible/hg-web: synchronize templates earlier
-  o  c29f28 ansible/hg-web: convert hgrc to a template
-  o  166549 ansible/hg-web: tell hgweb that static files are in /static/
-  o  d46d6a ansible/hg-web: serve static template files from httpd
-  o  37fdad testing: only print when in verbose mode
- /   (stack base)
-o  e44c2e (@) testing: install Mercurial 4.8 final
-</code></pre>
-<p>Contained within this stack are 5 commits changing the way that static
-files are served by hg.mozilla.org (but that's not important).</p>
-<p>Let's say I submit this stack of commits for review. The reviewer spots
-a problem with the second commit (<em>serve static template files from httpd</em>)
-and wants me to make a change.</p>
-<p>How do you go about making that change?</p>
-<p>Again, this depends on the exact tool and workflow you are using.</p>
-<p>A common workflow is to not rewrite the existing commits at all: you simply
-create a new <em>fixup</em> commit on top of the stack, leaving the existing commits
-as-is. e.g.:</p>
-<pre><code>$ hg show stack
-  o  deadad fix typo in httpd config
-  o  1c114a ansible/hg-web: serve static files as immutable content
-  o  d2cf48 ansible/hg-web: synchronize templates earlier
-  o  c29f28 ansible/hg-web: convert hgrc to a template
-  o  166549 ansible/hg-web: tell hgweb that static files are in /static/
-  o  d46d6a ansible/hg-web: serve static template files from httpd
-  o  37fdad testing: only print when in verbose mode
- /   (stack base)
-o  e44c2e (@) testing: install Mercurial 4.8 final
-</code></pre>
-<p>When the entire series of commits is incorporated into the repository,
-the end state of the files is the same, so all is well. But this strategy
-of using <em>fixup commits</em> (while popular - especially with Git-based tooling
-like GitHub that puts a larger emphasis on the end state of changes rather
-than the individual commits) isn't practiced by all projects.
-<strong><code>hg absorb</code> will not help you if this is your workflow.</strong></p>
-<p>A popular variation of this <em>fixup commit</em> workflow is to author a new commit
-then <em>incorporate</em> this commit into a prior commit. This typically involves
-the following actions:</p>
-<pre><code>&lt;save changes to a file&gt;
-
-$ hg commit
-&lt;type commit message&gt;
-
-$ hg histedit
-&lt;manually choose what actions to perform to what commits&gt;
-
-OR
-
-&lt;save changes to a file&gt;
-
-$ git add &lt;file&gt;
-$ git commit
-&lt;type commit message&gt;
-
-$ git rebase --interactive
-&lt;manually choose what actions to perform to what commits&gt;
-</code></pre>
-<p>Essentially, you produce a new commit. Then you run a history editing command.
-You then tell that history editing command what to do (e.g. to <em>squash</em> or
-<em>fold</em> one commit into another), that command performs work and produces a set
-of rewritten commits.</p>
-<p>In simple cases, you may make a simple change to a single file. Things are
-pretty straightforward. You need to know which two commits to <em>squash</em> together.
-This is often trivial. Although it can be cumbersome if there are several
-commits and it isn't clear which one should be receiving the new changes.</p>
-<p>In more complex cases, you may make multiple modifications to multiple files.
-You may even want to <em>squash</em> your <em>fixups</em> into separate commits. And for some
-code reviews, this <em>complex</em> case can be quite common. It isn't uncommon for me
-to be incorporating dozens of reviewer-suggested changes across several commits!</p>
-<p>These complex use cases are where things can get really complicated for version
-control tool interactions. Let's say we want to make multiple changes to a file
-and then incorporate those changes into multiple commits. To keep it simple,
-let's assume 2 modifications in a single file <em>squashing</em> into 2 commits:</p>
-<pre><code>&lt;save changes to file&gt;
-
-$ hg commit --interactive
-&lt;select changes to commit&gt;
-&lt;type commit message&gt;
-
-$ hg commit
-&lt;type commit message&gt;
-
-$ hg histedit
-&lt;manually choose what actions to perform to what commits&gt;
-
-OR
-
-&lt;save changes to file&gt;
-
-$ git add &lt;file&gt;
-$ git add --interactive
-&lt;select changes to stage&gt;
-
-$ git commit
-&lt;type commit message&gt;
-
-$ git add &lt;file&gt;
-$ git commit
-&lt;type commit message&gt;
-
-$ git rebase --interactive
-&lt;manually choose which actions to perform to what commits&gt;
-</code></pre>
-<p>We can see that the number of actions required by users has already increased
-substantially. Not captured by the number of lines is the effort that must go
-into the interactive commands like <code>hg commit --interactive</code>,
-<code>git add --interactive</code>, <code>hg histedit</code>, and <code>git rebase --interactive</code>. For
-these commands, users must tell the VCS tool exactly what actions to take.
-This takes time and requires some cognitive load. This ultimately distracts
-the user from the task at hand, which is bad for concentration and productivity.
-The user just wants to <em>amend</em> old commits: telling the VCS tool what actions
-to take is an obstacle in their way. (A compelling argument can be made that
-the work required with these workflows to produce a <em>clean</em> history is too much
-effort and it is easier to make the trade-off favoring simpler workflows
-versus cleaner history.)</p>
-<p><strong>These kinds of <em>squash fixup</em> workflows are what <code>hg absorb</code> is designed to
-make easier.</strong> When using <code>hg absorb</code>, the above workflow can be reduced to:</p>
-<pre><code>&lt;save changes to file&gt;
-
-$ hg absorb
-&lt;hit y to accept changes&gt;
-
-OR
-
-&lt;save changes to file&gt;
-
-$ hg absorb --apply-changes
-</code></pre>
-<p>Let's assume the following changes are made in the working directory:</p>
-<pre><code>$ hg diff
-diff --git a/ansible/roles/hg-web/templates/vhost.conf.j2 b/ansible/roles/hg-web/templates/vhost.conf.j2
---- a/ansible/roles/hg-web/templates/vhost.conf.j2
-+++ b/ansible/roles/hg-web/templates/vhost.conf.j2
-@@ -76,7 +76,7 @@ LimitRequestFields 1000
-      # Serve static files straight from disk.
-      &lt;Directory /repo/hg/htdocs/static/&gt;
-          Options FollowSymLinks
- -        AllowOverride NoneTypo
- +        AllowOverride None
-          Require all granted
-      &lt;/Directory&gt;
-
-@@ -86,7 +86,7 @@ LimitRequestFields 1000
-      # and URLs are versioned by the v-c-t revision, they are immutable
-      # and can be served with aggressive caching settings.
-      &lt;Location /static/&gt;
- -        Header set Cache-Control "max-age=31536000, immutable, bad"
- +        Header set Cache-Control "max-age=31536000, immutable"
-      &lt;/Location&gt;
-
-      #LogLevel debug
-</code></pre>
-<p>That is, we have 2 separate uncommitted changes to
-<code>ansible/roles/hg-web/templates/vhost.conf.j2</code>.</p>
-<p>Here is what happens when we run <code>hg absorb</code>:</p>
-<pre><code>$ hg absorb
-showing changes for ansible/roles/hg-web/templates/vhost.conf.j2
-        @@ -78,1 +78,1 @@
-d46d6a7 -        AllowOverride NoneTypo
-d46d6a7 +        AllowOverride None
-        @@ -88,1 +88,1 @@
-1c114a3 -        Header set Cache-Control "max-age=31536000, immutable, bad"
-1c114a3 +        Header set Cache-Control "max-age=31536000, immutable"
-
-2 changesets affected
-1c114a3 ansible/hg-web: serve static files as immutable content
-d46d6a7 ansible/hg-web: serve static template files from httpd
-apply changes (yn)?
-&lt;press "y"&gt;
-2 of 2 chunk(s) applied
-</code></pre>
-<p><code>hg absorb</code> automatically figured out that the 2 separate uncommitted changes
-<em>mapped</em> to 2 different changesets (Mercurial's term for <em>commit</em>). It
-print a summary of what lines would be changed in what changesets and
-prompted me to accept its <em>plan</em> for how to proceed. The human effort involved
-is a quick review of the proposed changes and answering a prompt.</p>
-<p>At a technical level, <code>hg absorb</code> finds all uncommitted changes and
-attempts to map each changed line to an unambiguous prior commit. For
-every change that can be mapped cleanly, the uncommitted changes are
-<em>absorbed</em> into the appropriate prior commit. Commits impacted by the
-operation are rebased automatically. If a change cannot be mapped to an
-unambiguous prior commit, it is left uncommitted and users can fall back
-to an existing workflow (e.g. using <code>hg histedit</code>).</p>
-<p>But wait - there's more!</p>
-<p>The automatic rewriting logic of <code>hg absorb</code> is implemented by following
-the history of lines. This is fundamentally different from the approach
-taken by <code>hg histedit</code> or <code>git rebase</code>, which tend to rely on <em>merge
-strategies</em> based on the
-<a href="https://stackoverflow.com/questions/4129049/why-is-a-3-way-merge-advantageous-over-a-2-way-merge">3-way merge</a>
-to derive a new version of a file given multiple input versions. This
-approach combined with the fact that <code>hg absorb</code> skips over changes with
-an ambiguous application commit means that <strong><code>hg absorb</code> will never
-encounter merge conflicts</strong>! Now, you may be thinking <em>if you ignore
-lines with ambiguous application targets, the patch would always apply
-cleanly using a classical 3-way merge</em>. This statement logically sounds
-correct. But it isn't: <code>hg absorb</code> can avoid merge conflicts when the
-merging performed by <code>hg histedit</code> or <code>git rebase -i</code> would fail.</p>
-<p>The above example attempts to exercise such a use case. Focusing on the
-initial change:</p>
-<pre><code>diff --git a/ansible/roles/hg-web/templates/vhost.conf.j2 b/ansible/roles/hg-web/templates/vhost.conf.j2
---- a/ansible/roles/hg-web/templates/vhost.conf.j2
-+++ b/ansible/roles/hg-web/templates/vhost.conf.j2
-@@ -76,7 +76,7 @@ LimitRequestFields 1000
-     # Serve static files straight from disk.
-     &lt;Directory /repo/hg/htdocs/static/&gt;
-         Options FollowSymLinks
--        AllowOverride NoneTypo
-+        AllowOverride None
-         Require all granted
-     &lt;/Directory&gt;
-</code></pre>
-<p>This patch needs to be applied against the commit which introduced it. That
-commit had the following diff:</p>
-<pre><code>diff --git a/ansible/roles/hg-web/templates/vhost.conf.j2 b/ansible/roles/hg-web/templates/vhost.conf.j2
---- a/ansible/roles/hg-web/templates/vhost.conf.j2
-+++ b/ansible/roles/hg-web/templates/vhost.conf.j2
-@@ -73,6 +73,15 @@ LimitRequestFields 1000
-         {% endfor %}
-     &lt;/Location&gt;
-
-+    # Serve static files from templates directory straight from disk.
-+    &lt;Directory /repo/hg/hg_templates/static/&gt;
-+        Options None
-+        AllowOverride NoneTypo
-+        Require all granted
-+    &lt;/Directory&gt;
-+
-+    Alias /static/ /repo/hg/hg_templates/static/
-+
-     #LogLevel debug
-     LogFormat "%h %v %u %t \"%r\" %&gt;s %b %D \"%{Referer}i\" \"%{User-Agent}i\" \"%{Cookie}i\""
-     ErrorLog "/var/log/httpd/hg.mozilla.org/error_log"
-</code></pre>
-<p>But after that commit was another commit with the following change:</p>
-<pre><code>diff --git a/ansible/roles/hg-web/templates/vhost.conf.j2 b/ansible/roles/hg-web/templates/vhost.conf.j2
---- a/ansible/roles/hg-web/templates/vhost.conf.j2
-+++ b/ansible/roles/hg-web/templates/vhost.conf.j2
-@@ -73,14 +73,21 @@ LimitRequestFields 1000
-         {% endfor %}
-     &lt;/Location&gt;
-
--    # Serve static files from templates directory straight from disk.
--    &lt;Directory /repo/hg/hg_templates/static/&gt;
--        Options None
-+    # Serve static files straight from disk.
-+    &lt;Directory /repo/hg/htdocs/static/&gt;
-+        Options FollowSymLinks
-         AllowOverride NoneTypo
-         Require all granted
-     &lt;/Directory&gt;
-
-...
-</code></pre>
-<p>When we use <code>hg histedit</code> or <code>git rebase -i</code> to rewrite this history, the VCS
-would first attempt to re-order commits before squashing 2 commits together.
-When we attempt to reorder the <em>fixup</em> diff immediately after the commit that
-introduces it, there is a good chance your VCS tool would encounter a merge
-conflict. Essentially your VCS is thinking <em>you changed this line but the
-lines around the change in the final version are different from the lines
-in the initial version: I don't know if those other lines matter and therefore
-I don't know what the end state should be, so I'm giving up and letting the
-user choose for me</em>.</p>
-<p>But since <code>hg absorb</code> operates at the line history level, it knows that this
-individual line wasn't actually changed (even though the lines around it did),
-assumes there is no conflict, and offers to <em>absorb</em> the change. So not only
-is <code>hg absorb</code> significantly simpler than today's <code>hg histedit</code> or
-<code>git rebase -i</code> workflows in terms of VCS command interactions, but it can
-also avoid time-consuming merge conflict resolution as well!</p>
-<p>Another feature of <code>hg absorb</code> is that all the rewriting occurs in memory
-and the working directory is not touched when running the command. This means
-that the operation is fast (working directory updates often account for a lot
-of the execution time of <code>hg histedit</code> or <code>git rebase</code> commands). It also means
-that tools looking at the last modified time of files (e.g. build systems
-like GNU Make) won't rebuild extra (unrelated) files that were touched
-as part of updating the working directory to an old commit in order to apply
-changes. This makes <code>hg absorb</code> more friendly to edit-compile-test-commit
-loops and allows developers to be more productive.</p>
-<p>And that's <code>hg absorb</code> in a nutshell.</p>
-<p>When I first saw a demo of <code>hg absorb</code> at a Mercurial developer meetup, my
-jaw - along with those all over the room - hit the figurative floor. I thought
-it was magical and too good to be true. I thought Facebook (the original authors
-of the feature) were trolling us with an impossible demo. But it was all real.
-And now <code>hg absorb</code> is available in the core Mercurial distribution for anyone
-to use.  </p>
-<p>From my experience, <code>hg absorb</code> <em>just works</em> almost all of the time: I run
-the command and it maps all of my uncommitted changes to the appropriate
-commit and there's nothing more for me to do! In a word, it is magical.</p>
-<p>To use <code>hg absorb</code>, you'll need to activate the <code>absorb</code> extension. Simply
-put the following in your <code>hgrc</code> config file:</p>
-<pre><code>[extensions]
-absorb =
-</code></pre>
-<p><code>hg absorb</code> is currently an experimental feature. That means there is
-no commitment to backwards compatibility and some rough edges are
-expected. I also anticipate new features (such as <code>hg absorb --interactive</code>)
-will be added before the experimental label is removed. If you encounter
-problems or want to leave comments, <a href="https://bz.mercurial-scm.org/enter_bug.cgi?product=Mercurial">file a bug</a>,
-make noise in <code>#mercurial</code> on Freenode, or
-<a href="https://www.mercurial-scm.org/wiki/ContributingChanges">submit a patch</a>.
-But don't let the <em>experimental</em> label scare you away from using it:
-<code>hg absorb</code> is being used by some large install bases and also by many
-of the Mercurial core developers. The <em>experimental</em> label is mainly there
-because it is a brand new feature in core Mercurial and the <em>experimental</em>
-label is usually affixed to new features.</p>
-<p>If you practice workflows that frequently require amending old commits, I
-think you'll be shocked at how much easier <code>hg absorb</code> makes these workflows.
-I think you'll find it to be a game changer: once you use <code>hg abosrb</code>, you'll
-soon wonder how you managed to get work done without it.</p>]]></content>
   </entry>
 </feed>

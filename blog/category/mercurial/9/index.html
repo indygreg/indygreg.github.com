@@ -51,6 +51,129 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="reproducing-mozilla's-mercurial-server"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/09/05/reproducing-mozilla's-mercurial-server" rel="bookmark" title="Permanent Link to Reproducing Mozilla's Mercurial Server">Reproducing Mozilla's Mercurial Server</a></h2>
+  <small>September 05, 2014 at 02:50 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Of of my first tasks in my
+<a href="/blog/2014/09/05/new-job-role/">new role</a> as a <em>Developer Productivity
+Engineer</em> is to help make Mozilla's Mercurial server better. Many of the
+awesome things we have planned rely on features in newer versions of
+Mercurial. It's therefore important for us to upgrade our Mercurial
+server to a modern version (we are currently running 2.5.4) and to keep
+our Mercurial server upgraded as time passes.</p>
+<p>There are a few reasons why we haven't historically upgraded our
+Mercurial server. First, as anyone who has maintained high-availability
+systems will tell you, there is the attitude of <em>if it isn't broken,
+don't fix it.</em> In other words, Mercurial 2.5.4 is working fine, so why
+mess with a good thing. This was all fine and dandy - until Mercurial
+started falling over in the last few weeks.</p>
+<p>But the blocker towards upgrading that I want to talk about today is
+systems verification. There has been extreme caution around upgrading
+Mercurial at Mozilla because it is a critical piece of Mozilla's
+infrastructure and if the upgrade were to not go well, the outage
+would be disastrous for developer productivity and could even jeopardize
+an emergency Firefox release.</p>
+<p>As much as I'd like to say that a modern version of Mercurial on the
+server would be a drop-in replacement (Mercurial has a great committment
+to backwards compatibility and has loose coupling between clients and
+servers such that upgrading servers should not impact clients), there is
+always a risk that something will change. And that risk is compounded by
+the amount of custom code we have running on our server.</p>
+<p>The way you protect against unexpected changes is testing. In the ideal
+world, you have a robust test suite that you run against a staging
+instance of a service to validate that any changes have no impact. In
+the absence of testing, you are left with fear, uncertainty, and doubt.
+FUD is an especially horrible philosophy when it comes to managing
+servers.</p>
+<p>Unfortunately, we don't really have a great testing infrastructure for
+Mozilla's Mercurial server. And I want to change that.</p>
+<h2>Reproducing the Server Environment</h2>
+<p>When writing tests, it is important for the thing being tested to be as
+similar as possible to the real thing. This is why so many people have
+an aversion to mocking: every time you alter the test environment, you run
+the risk that those differences from reality will mask changes seen in
+the real environment.</p>
+<p>So, it makes sense that a good first goal for creating a test suite against
+our Mercurial server should be to reproduce the production server and
+environment as closely as possible.</p>
+<p>I'm currently working on a Vagrant environment that attempts to
+reproduce the official environment as closely as possible. It starts
+one virtual machine for the SSH/master server. It starts a separate
+virtual machine for the hgweb/slave servers. The virtual machines are
+booting CentOS. This is different than production, where we run RHEL.
+But they are similar enough (and can share the same packages) that the
+differences shouldn't matter too much, at least for now.</p>
+<h2>Using Puppet</h2>
+<p>In production, Mozilla is using Puppet to manage the Mercurial servers.
+Unfortunately, the actual Puppet configs that Mozilla is running are
+behind a firewall, mainly for security reasons. This is potentially
+a huge setback for my reproducibility effort, as I'd like to have
+my virtual machines use the same exact Puppet configs as whats used
+in production so the environments match as closely as possible. This
+would also save me a lot of work from having to reinvent the wheel.</p>
+<p>Fortunately, Ben Kero has extracted the Mercurial-relevant Puppet
+config files into a
+<a href="https://github.com/bkero/puppet-module-hg">standalone repository</a>.
+Apparently that repository gets rolled into the production Puppet
+configs periodically. So, my virtual machines and production can share
+the same Mercurial Puppet files. Nice!</p>
+<p>It wasn't long after starting to use the standalone Puppet configs that
+I realized this would be a rabbit hole. This first manifests in the
+standalone Puppet code referencing things that exist in the hidden
+Mozilla Puppet files. So the liberation was only partially successful.
+Sad panda.</p>
+<p>So, I'm now in the process of creating a <em>fake Mozilla</em> Puppet
+environment that mimics the base Mozilla environment (from the closed
+repo) and am modifying the shared Puppet Mercurial code to work with
+both versions. This is a royal pain, but it needs to be done if we want
+to reproduce production and maintain peace of mind that test results
+reflect reality.</p>
+<p>Because reproducing runtime environments is important for reproducing
+and solving bugs and for testing, <strong>I call on the maintainers of
+Mozilla's closed Puppet repository to liberate it from behind its
+firewall</strong>. I'd like to see a public Puppet configuration tree available
+for all to use so that anyone anywhere can reproduce the state of a
+server or service operated by Mozilla to within reasonable
+approximation. Had this already been done, it would have saved me hours
+of work. As it stands, I'm reverse engineering systems and trying to
+cobble together understanding of how the Mozilla Puppet configs
+work and what parts of them can safely be ignored to reproduce an
+approximate testing environment.</p>
+<p>Along that vein, I finally got access to Mozilla's internal Puppet
+repository. This took a few meetings and apparently a lot of
+backroom chatter was generated - "developer's don't normally get access,
+oh my!" All I wanted was to see how systems are configured so I can
+help improve them. Instead, getting access felt like pulling teeth.
+This feels like a major roadblock towards productivity, reproducibility,
+and testing.</p>
+<p>Facebook gives its developers access to most production machines and
+trusts them to not be stupid. I know we (Mozilla) like to hold
+ourselves to a high standard of security and privacy. But not giving
+developers access to the configurations for the systems their code
+runs on feels like a very silly policy. I hope Mozilla invests in
+opening up this important code and data, if not to the world, at least
+to its trusted employees.</p>
+<p>Anyway, hopefully I'll soon have a Vagrant environment that allows
+people to build a standalone instance of Mozilla's Mercurial server.
+And once that's in place, I can start writing tests that basic services
+and workflows (including repository syncing) work as expected. Stay
+tuned.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/09/05/reproducing-mozilla's-mercurial-server#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="submit-feedback-about-mercurial"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/08/19/submit-feedback-about-mercurial" rel="bookmark" title="Permanent Link to Submit Feedback about Mercurial">Submit Feedback about Mercurial</a></h2>
   <small>August 19, 2014 at 06:30 PM | categories: 
@@ -305,97 +428,6 @@ world. Stay tuned.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/24/repository-centric-development#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="updates-to-firefoxtree-mercurial-extension"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension" rel="bookmark" title="Permanent Link to Updates to firefoxtree Mercurial extension">Updates to firefoxtree Mercurial extension</a></h2>
-  <small>July 16, 2014 at 07:55 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>My <a href="/blog/2014/06/23/please-stop-using-mq/">Please Stop Using MQ</a> post,
-has been generating a lot of interest for bookmark-based workflows at
-Mozilla. To make adoption easier, I
-<a href="/blog/2014/06/30/track-firefox-repositories-with-local-only-mercurial-tags/">quickly authored</a>
-an <a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/firefoxtree/__init__.py">extension</a>
-to add <em>remote refs</em> of Firefox repositories to Mercurial.</p>
-<p>There was still a bit of confusion and gripes about workflows that I
-thought it would be best to update the extension to make things more
-pleasant.</p>
-<h2>Automatic tree names</h2>
-<p>People wanted an ability to easy pull/aggregate the various Firefox
-trees without additional configuration to an hgrc file.</p>
-<p>With <em>firefoxtree</em>, you can now <em>hg pull central</em> or <em>hg pull inbound</em>
-or <em>hg pull aurora</em> and it just works.</p>
-<p>Pushing with aliases doesn't yet work. It is slightly harder to do in
-the Mercurial API. I have a solution, but I'm validating some code paths
-to ensure it is safe. This feature will likely appear soon.</p>
-<h2>fxheads commands</h2>
-<p>Once people adopted unified repositories with heads from multiple
-repositories, they asked how they could quickly identify the heads of
-the pulled Firefox repositories.</p>
-<p><em>firefoxtree</em> now provides a <em>hg fxheads</em> command that prints a
-concise output of the commits constituting the heads of the Firefox
-repos. e.g.</p>
-<div class="pygments_murphy"><pre><span></span>$ hg fxheads
-<span class="m">224969</span>:0ec0b9ac39f0 aurora <span class="o">(</span>sort of<span class="o">)</span> bug <span class="m">898554</span> - raise expected hazard count <span class="k">for</span> b2g to <span class="m">4</span> <span class="k">until</span> they are fixed, <span class="nv">a</span><span class="o">=</span>bustage+hazbuild-only
-<span class="m">224290</span>:6befadcaa685 beta Tagging /src/mdauto/build/mozilla-beta 1772e55568e4 with FIREFOX_RELEASE_31_BASE <span class="nv">a</span><span class="o">=</span>release CLOSED TREE
-<span class="m">224848</span>:8e8f3ba64655 central Merge inbound to m-c <span class="nv">a</span><span class="o">=</span>merge
-<span class="m">225035</span>:ec7f2245280c fx-team fx-team/default Merge m-c to fx-team
-<span class="m">224877</span>:63c52b7ddc28 inbound Bug <span class="m">1039197</span> - Always build js engine with zlib. <span class="nv">r</span><span class="o">=</span>luke
-<span class="m">225044</span>:1560f67f4f93 release release/default tip Automated checkin: version bump <span class="k">for</span> firefox <span class="m">31</span>.0 release. DONTBUILD CLOSED TREE <span class="nv">a</span><span class="o">=</span>release
-</pre></div>
-
-<p>Please note that the output is based upon local-only knowledge: you'll
-need to pull to ensure data is current.</p>
-<h2>Reject pushing multiple heads</h2>
-<p>People were complaining that bookmark-based workflows resulted in
-Mercurial trying to push multiple heads to a remote. This complaint
-stems from the fact that Mercurial's default push behavior is to find
-all commits missing from the remote and push them. This behavior is
-extremely frustrating for Firefox development because the Firefox repos
-only have a single head and pushing multiple heads will only result in
-a server hook rejecting the push (after wasting a lot of time
-transferring that commit data).</p>
-<p><em>firefoxtree</em> now will refuse to push multiple heads to a known Firefox
-repo before any commit data is sent. In other words, we fail fast so
-your time is saved.</p>
-<p><em>firefoxtree</em> also changes the default behavior of <em>hg push</em> when
-pushing to a Firefox repo. If no <em>-r</em> argument is specified, <em>hg push</em>
-to a Firefox repo will automatically remap to <em>hg push -r .</em>. In other
-words, we attempt to push the working copy's commit by default. This
-change establishes sensible default and likely working behavior when
-typing just <em>hg push</em>.</p>
-<p>I am a bit on the fence about changing the default behavior of <em>hg
-push</em>. On one hand, it makes total sense. On the other, silently
-changing the default behavior of a built-in command is a little
-dangerous. I can easily see this backfiring when people interact with
-non-Firefox repos. I encourage people to get in the habit of typing
-<em>hg push -r <rev></em> because that's what you should be doing.</p>
-<h2>Installing firefoxtree</h2>
-<p>Within the next 48 hours, <em>mach mercurial-setup</em> should prompt to
-install <em>firefoxtree</em>. Until then, clone
-<em>https://hg.mozilla.org/hgcustom/version-control-tools</em> and ensure your
-<em>~/.hgrc</em> file has the following:</p>
-<pre><code>[extensions]
-firefoxtree = /path/to/version-control-tools/hgext/firefoxtree
-</code></pre>
-<p>You likely already have a copy of version-control-tools
-in <em>~/.mozbuild/version-control-tools</em>.</p>
-<p>It is completely safe to install <em>firefoxtree</em> globally: the extension
-will only modify behavior of repositories that are clones of Firefox
-repositories.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2014/07/16/updates-to-firefoxtree-mercurial-extension#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/8">« Previous Page</a>
   --  

@@ -51,6 +51,58 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="changeset-metadata-on-hg.mozilla.org"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to Changeset Metadata on hg.mozilla.org">Changeset Metadata on hg.mozilla.org</a></h2>
+  <small>June 04, 2015 at 01:55 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+ | <a href="http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org#disqus_thread">View Comments</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Just a few minutes ago, I deployed some updates to
+<a href="https://hg.mozilla.org/">hg.mozilla.org</a> to display more
+metadata on changeset pages. See
+<a href="https://hg.mozilla.org/mozilla-central/rev/4b69a62d1905">4b69a62d1905</a>,
+<a href="https://hg.mozilla.org/mozilla-central/rev/dc4023d54436">dc4023d54436</a>,
+and <a href="https://hg.mozilla.org/mozilla-central/rev/b617a57d6bf1">b617a57d6bf1</a>
+for examples of what's shown.</p>
+<p>We currently display:</p>
+<ul>
+<li>More detailed pushlog info. (Before you had to load another page to
+  see things like the date of the push.)</li>
+<li>The list of reviewers, each being a link that searches for other
+  changesets they've reviewed.</li>
+<li>A concise list of bugs referenced in the commit message.</li>
+<li>Links to changesets that were backed out by this changeset.</li>
+<li>On changesets that were backed out, we <em>may</em> also display a message
+  that the changeset was backed out.</li>
+<li>For Firefox repos, we also display the application <em>milestone</em>. This
+  is the Gecko/app version recorded in the <em>config/milestone.txt</em> file
+  in that changeset. The value can be used to quickly answer the
+  question <em>What versions of Firefox have this changeset.</em></li>
+</ul>
+<p>If you notice any issues or have requests for new features, please
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Services&amp;component=Mercurial%3A%20hg.mozilla.org">file a bug</a>.</p>
+<p>This work is built on top of a feature I added to Mercurial 3.4 to make
+it easier to inject extra data into Mercurial's web templates. We just
+deployed Mercurial 3.4.1 to hg.mozilla.org yesterday. It's worth noting
+that this deployment happened in the middle of the day with no
+user-perceived downtime. This is a far cry from where we were a year
+ago, when any server change required a maintenance window. We've
+invested a lot of work into a test suite for this service so we can
+continuously deploy without fear of breaking things. Moving fast feels
+so good.</p>
+
+  </div>
+</div>
+
+
+
+  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/06/04/changeset-metadata-on-hg.mozilla.org#disqus_thread">Read and Post Comments</a></div>
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="faster-cloning-from-hg.mozilla.org-with-server-provided-bundles"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles" rel="bookmark" title="Permanent Link to Faster Cloning from hg.mozilla.org With Server Provided Bundles">Faster Cloning from hg.mozilla.org With Server Provided Bundles</a></h2>
   <small>May 29, 2015 at 11:30 AM | categories: 
@@ -461,45 +513,6 @@ for info on how to upgrade to the latest/greatest Mercurial version.</p>
 
 
   <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/07/dropping-explicit-support-for-mercurial-3.0#disqus_thread">Read and Post Comments</a></div>
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="reporting-mercurial-issues"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/05/04/reporting-mercurial-issues" rel="bookmark" title="Permanent Link to Reporting Mercurial Issues">Reporting Mercurial Issues</a></h2>
-  <small>May 04, 2015 at 01:45 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
- | <a href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues#disqus_thread">View Comments</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I semi-frequently stumble upon conversations in hallways and
-on irc.mozilla.org about issues people are having with Mercurial.
-These conversations periodically involve a legitimate bug with
-Mercurial. Unfortunately, these conversations frequently end
-without an actionable result. Unless someone files a bug, pings me,
-etc, the complaints disappear into ether. That's not good for
-anyone and only results in bugs living longer than they should.</p>
-<p>There are posters around Mozilla offices that say
-<em>if you see something, file something.</em> This advice does not just
-apply to Mozilla projects!</p>
-<p><strong>If you encounter an issue in Mercurial, please take the time
-to report it somewhere meaningful.</strong> The
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/issues.html">Reporting Issues with Mercurial</a>
-page from the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/index.html">Mercurial for Mozillians</a>
-guide tells you how to do this.</p>
-<p>It is OK to complain about something. But if you don't inform
-someone empowered to do something about it, you are part of the
-problem without being part of the solution. Please make the
-incremental effort to be part of the solution.</p>
-
-  </div>
-</div>
-
-
-
-  <div class="after_post"><a href="http://gregoryszorc.com/blog/2015/05/04/reporting-mercurial-issues#disqus_thread">Read and Post Comments</a></div>
   <hr class="interblog" />
  <a href="/blog/category/mercurial/4">« Previous Page</a>
   --  
