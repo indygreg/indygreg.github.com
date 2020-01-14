@@ -100,6 +100,14 @@ everyone would switch from Python 2 to 3. <strong>Mercurial needed a way to run 
 same code (or as much of the same code) on both Python 2 and 3.</strong> We would
 maintain a single code base and users would gradually switch from running with
 Python 2 to Python 3.</p>
+<p>In <a href="https://www.mercurial-scm.org/repo/hg/rev/e1fb276d4619">May 2015</a>,
+Mercurial dropped support for Python 2.4 and 2.5. Dropping support for
+these older Python versions was critical, as it was effectively impossible to
+write Python code that ran on this wide gamut of versions because of
+incompatibilities in syntax and language features. For example, you needed
+Python 2.6 to get <code>print()</code> via <code>from __future__ import print_function</code>.
+The project's late start at a Python 3 port can be significantly attributed
+to Python 2.4 and 2.5 compatibility holding us back.</p>
 <p>The main goal with Mercurial's early porting work was just getting the code base
 to a point where <code>import mercurial</code> would work. There were a myriad of places
 where Mercurial used syntax that was invalid on Python 3 and Python 3
