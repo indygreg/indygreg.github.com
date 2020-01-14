@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2020-01-13T04:31:56Z</updated>
+  <updated>2020-01-14T02:20:34Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -129,7 +129,7 @@ require manual intervention and would significantly slow down porting. And
 a sub-issue of adding all the <code>b</code> prefixes and reformatting code is that it would
 <em>break</em> annotate/blame more than was tolerable. The latter issue was addressed
 by teaching Mercurial's annotate/blame feature to <em>skip</em> revisions. The project
-now has a convention of annotating commit messages with <code># skim-blame &lt;reason&gt;</code>
+now has a convention of annotating commit messages with <code># skip-blame &lt;reason&gt;</code>
 so structural only changes can easily be ignored when performing an
 annotate/blame.</p>
 <p>A stop-gap solution to the <code>b''</code> everywhere issue came in
@@ -199,6 +199,10 @@ And <a href="https://www.mercurial-scm.org/repo/hg/rev/935a1b1117c7">hg status</
 3 that we started to <a href="https://www.mercurial-scm.org/repo/hg/rev/7a877e569ed6">track which tests passed on Python 3</a>.
 The <a href="https://www.mercurial-scm.org/repo/hg/log/@/contrib/python3-whitelist?revcount=480">evolution of this file</a>
 shows a reasonable history of the porting velocity.</p>
+<p>In <a href="https://www.mercurial-scm.org/repo/hg/rev/feb910d2f59b">May 2017</a>, we dropped
+support for Python 2.6. This significantly reduced the complexity of supporting
+Python 3, as there was tons of functionality in Python 2.7 that made it easier
+to target both Python 2 and 3 and now our hands were untied to utilize it.</p>
 <p>In <a href="https://www.mercurial-scm.org/repo/hg/rev/bd8875b6473c">November 2017</a>, I
 landed a test harness feature to report exceptions seen during test runs. I
 later <a href="https://www.mercurial-scm.org/repo/hg/rev/8de90e006c78">refined the output</a>
@@ -239,6 +243,18 @@ the codebase with raw string literals (<code>r''</code>) to force the use of
 <code>str</code> irregardless of which Python version you were running on (our
 source transformer only changed unprefixed string literals, so existing
 <code>r''</code> strings would be preserved as <code>str</code>).</p>
+<p>Blind transformation of all string literals to <code>bytes</code> was less than ideal
+and it did impose some unwanted side-effects. But, again, most <em>strings</em>
+in Mercurial are bytes by design, so we thought it would be easier to
+<em>byteify</em> all strings then selectively undo that where native strings
+were actually warranted (like keys in most <code>dict</code>s) than to take the
+up-front cost to examine every string and make an intelligent determination
+as to what type it should be. I go back and forth as to whether this was the
+correct call. But when you factor in that the source transforming
+module importer unblocked Python 3 porting at a time in the project's
+history when there was so much focus on improving the core product and it
+did so without externalizing many costs onto the people doing the critical
+core product work, I think it was the right call.</p>
 <p>By mid 2019, the number of test failures in Python 3 had been whittled
 down to a reasonable, less daunting number. It felt like victory was
 in grasp and inevitable. But a few significant issues lingered.</p>
