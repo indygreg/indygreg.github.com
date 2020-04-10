@@ -10,10 +10,190 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 14 Jan 2020 02:50:41 GMT</pubDate>
+    <pubDate>Fri, 10 Apr 2020 04:02:31 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>PyOxidizer 0.7</title>
+      <link>http://gregoryszorc.com/blog/2020/04/09/pyoxidizer-0.7</link>
+      <pubDate>Thu, 09 Apr 2020 21:00:00 PDT</pubDate>
+      <category><![CDATA[Python]]></category>
+      <category><![CDATA[PyOxidizer]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2020/04/09/pyoxidizer-0.7</guid>
+      <description>PyOxidizer 0.7</description>
+      <content:encoded><![CDATA[<p>I am very pleased to announce the 0.7 release of
+<a href="https://pyoxidizer.readthedocs.io/en/stable/">PyOxidizer</a>, a modern
+Python application packaging tool.</p>
+<p>There are a host of notable new features in this release. You can
+read all about them in the project
+<a href="https://pyoxidizer.readthedocs.io/en/stable/history.html">history</a>.</p>
+<p>I want to use this blog post to call out the more meaningful ones.</p>
+<p>I started PyOxidizer as a science experiment of sorts: I sat out to
+prove the hypothesis that it was possible to produce high performance
+single file executables embedding Python and all of its resources
+(Python modules, non-module resource files, compiled extensions, etc).
+PyOxidizer has achieved this on Windows, Linux, and macOS since its
+very earliest releases. Hypothesis confirmed!</p>
+<p>In order to actually achieve single file executables, you have to
+fundamentally change aspects of Python's behavior. Some of these
+changes invalidate deeply rooted assumptions about how Python works,
+such as the existence of <code>__file__</code> in modules. As you can imagine,
+these broken assumptions translated to numerous compatibility issues
+and PyOxidizer didn't work with many popular Python packages.</p>
+<p>With the science experiment phase of PyOxidizer out of the way, I
+have been making a concerted effort to broaden the user base of
+PyOxidizer. While single file executables can be an amazing property,
+it isn't critical for many use cases and the issues it was causing
+were preventing people from exploring PyOxidizer.</p>
+<p>This brings us to what I think are the major new features in
+PyOxidizer 0.7.</p>
+<h2>Better Support for Loading Extension Modules</h2>
+<p>Earlier versions of PyOxidizer insisted that you compile Python
+(C) extension modules from source and statically link them into
+a produced binary. This requirement prevented the use of pre-built
+extension modules (commonly found in Python binary wheels available
+on PyPI) with PyOxidizer, forcing people to compile them locally.
+While this often <em>just worked</em> for many extension modules, it
+frequently failed on complex extension modules and it frequently
+failed on Windows.</p>
+<p>PyOxidizer now supports loading compiled extension modules from
+standalone files (typically <code>.so</code> or <code>.pyd</code> files, which are actually
+shared libraries). There are still some sharp edges and known
+deficiencies. But in many cases, if you tell PyOxidizer to run
+<code>pip install</code> and package the result, pre-built wheels can be
+installed and PyOxidizer will pick up the standalone files.</p>
+<p>On Windows, PyOxidizer even supports embedding the shared library
+data into the produced <code>.exe</code> and loading the <code>.pyd</code>/DLL directly
+from memory.</p>
+<h2>Loading Resources from the Filesystem</h2>
+<p>Binaries built with PyOxidizer contain a blob holding an index
+of available Python resources along with their data.</p>
+<p>Earlier versions of PyOxidizer only allowed you to define resources
+as <em>in-memory</em>. If the resource was defined in this blob, it was
+imported from memory. Otherwise it wasn't known to PyOxidizer.
+You could still install files next to the produced binary and
+tell PyOxidizer to enable Python's default filesystem-based
+importer. But PyOxidizer didn't explicitly know about these
+files on the filesystem.</p>
+<p>In PyOxidizer 0.7, the blob index of Python resources is able to
+express different <em>locations</em> for that resource. Currently, a
+resource can have its data made available <em>in-memory</em> or
+<em>filesystem-relative</em>. <em>in-memory</em> works as before: the raw
+data is embedded next to the next in memory and loaded from
+there (using 0-copy). <em>filesystem-relative</em> encodes a filesystem
+path to the resource. During packaging, PyOxidizer will place
+the resource next to the executable (using a typical Python
+file layout scheme) and store the relative path to that resource
+in the resources index.</p>
+<p>The <em>filesystem-relative</em> resource indexing feature has a few
+implications for PyOxidizer.</p>
+<p>First, it is more standard. When PyOxidizer loads a Python
+module from the filesystem, it sets <code>__file__</code>, <code>__path__</code>,
+etc and the module semantics should behave as if the file
+were imported by Python's standard importer. This means that
+if a package is having issues with <em>in-memory</em> importing, you
+can simply fall back to <em>filesystem-relative</em> to get standard
+Python behavior and everything should <em>just work</em>.</p>
+<p>Second, PyOxidizer's filesystem resource loading is faster
+than Python's! When Python's standard importer goes to
+<code>import</code> a module, it needs to <code>stat()</code> various paths to
+first locate the file. It then performs some sanity checking
+and other minor actions before actually importing the module.
+All of this has overhead. Since the goal of PyOxidizer is
+to produce standalone applications and applications should
+be immutable, PyOxidizer can avoid most of this overhead.
+PyOxidizer simply tries to <code>open()</code> and <code>read()</code> the relative
+path baked into the resource index at build time. If that
+works, the resource is loaded. Else there is a failure.
+The code path in PyOxidizer to locate a Python resource
+is effectively a lookup in a Rust <code>HashMap&lt;&amp;str, T&gt;</code>.</p>
+<p>I thought it would be interesting to isolate the performance
+benefits of this new feature. I ran Mercurial's test harness
+with different variants of <code>hg</code> on Linux on my Ryzen 3950X.</p>
+<ul>
+<li><em>traditional</em> - A <code>hg</code> script with a <code>#!/path/to/python3.7</code> shebang.</li>
+<li><em>oxidized</em> - A <code>hg</code> executable built with PyOxidizer, without
+  PyOxidizer's custom module importer.</li>
+<li><em>filesystem</em> - A <code>hg</code> executable built with PyOxidizer using the
+  new filesystem-relative resource index.</li>
+<li><em>in-memory</em> - A <code>hg</code> executable built with PyOxidizer with all
+  resources loaded from memory (how PyOxidizer has traditionally worked).</li>
+</ul>
+<p>The results are quite clear:</p>
+<table border="1">
+  <thead>
+    <tr>
+      <th>Variant</th><th>CPU Time (s)</th><th>Delta (s)</th><th>% Orig</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>traditional</td><td style="text-align: right">11,287</td><td style="text-align: right">-552</td><td style="text-align: right">100</td></tr>
+    <tr><td>oxidized</td><td style="text-align: right">10,735</td><td style="text-align: right">-552</td><td style="text-align: right">95.1</td></tr>
+    <tr><td>filesystem</td><td style="text-align: right">10,186</td><td style="text-align: right">-1,101</td><td style="text-align: right">90.2</td></tr>
+    <tr><td>in-memory</td><td style="text-align: right">9,883</td><td style="text-align: right">-1,404</td><td style="text-align: right">87.6</td></tr>
+  </tbody>
+</table>
+
+<p>We see a nice win just from using a native executable built
+with PyOxidizer (<em>traditional</em> to <em>oxidized</em>).</p>
+<p>Then from <em>oxidized</em> to <em>filesystem</em> we see another jump of
+~5%. This difference is attributed to using PyOxidizer's
+Rust-powered importer with an index of resources available
+on the filesystem. In other words, all that work that Python's
+standard importer is doing to discover files and then operate
+on them is non-trivial!</p>
+<p>Finally, the smaller jump from <em>filesystem</em> to <em>in-memory</em>
+isolates the benefits of importing resource data from
+memory instead of involving filesystem I/O. (Filesystems
+are generally slow.) While I haven't measured explicitly,
+I hypothesize that macOS and Windows will see a bigger
+jump between these two variants, as the filesystem
+performance on these platforms generally isn't as good
+as it is on Linux.</p>
+<h2>PyOxidizer's Future</h2>
+<p>With PyOxidizer now supporting a couple of much-needed
+features to support a broader set of users, I'm hoping that
+future releases of PyOxidizer continue to broaden the utility
+of PyOxidizer.</p>
+<p>The over-arching goal of PyOxidizer is to solve large aspects
+of the Python application packaging and distribution problem.
+So far a lot of focus has been spent on the former. PyOxidizer
+in its current form can materialize files on the filesystem
+that you can copy or package up manually and distribute. But
+I want these processes to be part of PyOxidizer: I want it to
+be possible for PyOxidizer to emit a Windows MSI installer, a
+macOS dmg, a Debian package, etc for a Python application.</p>
+<p>In order to support the aforementioned marquee features
+of this PyOxidizer release, I had to pay down a lot of
+technical debt in the code base left over from the science
+experiment phase of PyOxidizer's inception.</p>
+<p>In the short term, I plan to continue shoring up the code base
+and rounding out support for features requested in the
+issue tracker on GitHub. The next release of PyOxidizer will
+also <a href="https://github.com/indygreg/PyOxidizer/issues/234">likely require</a>
+Python 3.8, as this will improve run-time control over the
+embedded Python interpreter and enable PyOxidizer to better
+support package metadata (<code>importlib.metadata</code>), enabling
+support for features like <em>entry points</em>.</p>
+<p>I've also been thinking about extracting PyOxidizer's custom
+module importer to be usable as a standalone Python extension
+module. I think there's some value in publishing a
+<code>pyoxidizer_importer</code> package on PyPI that you can easily
+add to your installed packages to speed up Python's
+standard filesystem importer by a few percent. If nothing else,
+this may drum up interest in the larger Python community for
+standardizing a format for serializing Python resources in a
+single file. Perhaps we can get other Python packaging tools
+producing the same
+<a href="https://crates.io/crates/python-packed-resources">packed resources data</a>
+blob that PyOxidizer uses so we can all standardize on a
+more efficient mechanism for loading Python modules. Time
+will tell.</p>
+<p>Enjoy the new release. File issues at
+<a href="https://github.com/indygreg/PyOxidizer">https://github.com/indygreg/PyOxidizer</a>
+as you encounter them.</p>]]></content:encoded>
+    </item>
     <item>
       <title>C Extension Support in PyOxidizer</title>
       <link>http://gregoryszorc.com/blog/2019/06/30/c-extension-support-in-pyoxidizer</link>
