@@ -51,6 +51,200 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="cloning-improvements-in-mercurial-3.6"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/10/22/cloning-improvements-in-mercurial-3.6" rel="bookmark" title="Permanent Link to Cloning Improvements in Mercurial 3.6">Cloning Improvements in Mercurial 3.6</a></h2>
+  <small>October 22, 2015 at 05:00 AM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial 3.6 (scheduled for release on or shortly after November 1)
+contains a number of improvements to cloning. In this post, I will
+describe a new feature to help server operators reduce load (while
+enabling clients to clone faster) and some performance work to make
+clone operations faster on the client.</p>
+<p>Cloning repositories can incur a lot of load on servers. For
+<a href="https://hg.mozilla.org/mozilla-central">mozilla-central</a> (the main
+Firefox repository), clones require the server to spend 4+ minutes CPU
+time and send ~1,230 MB over the network. Multiply by thousands of
+clients from build and test automation and developers, and you could
+quickly finding yourself running out of CPU cores or network bandwidth.
+Scaling Mercurial servers (like many services) can therefore be
+challenging. (It's worth noting that Git is in the same boat for
+reasons technically similar to Mercurial's.)</p>
+<p>Mozilla previously implemented a Mercurial extension to
+<a href="/blog/2015/05/29/faster-cloning-from-hg.mozilla.org-with-server-provided-bundles/">seed clones from pre-generated bundle files</a>
+so the Mercurial servers themselves don't have to work very hard for
+an individual clone. (That linked post goes into the technical
+reasons why cloning is expensive). We now offload cloning of frequently
+cloned repositories on <a href="https://hg.mozilla.org/">hg.mozilla.org</a> to
+<a href="/blog/2015/07/08/cloning-from-s3/">Amazon S3</a> and
+<a href="/blog/2015/09/01/serving-mercurial-clones-from-a-cdn/">a CDN</a> and
+are diverting 1+ TB/day and countless hours of CPU work away from the
+hg.mozilla.org servers themselves.</p>
+<p>The positive impact from seeding clones from pre-generated,
+externally-hosted bundles has been immense. Load on hg.mozilla.org
+dropped off a cliff. Clone times on clients became a lot faster (mainly
+because they aren't waiting for a server to dynamically generate/stream
+bits). But there was a problem with this approach: it required the
+cooperation of clients to install an extension in order for clone load
+to be offloaded. It didn't <em>just work</em>.</p>
+<p><strong>I'm pleased to announce that the ability to seed clones from
+server-advertised pre-generated bundles is now a core feature in
+Mercurial 3.6!</strong> Server operators can install the
+<a href="https://selenic.com/repo/hg/file/default/hgext/clonebundles.py">clonebundles extension</a> (it is distributed with Mercurial)
+to advertise the location of pre-generated, externally-hosted bundle
+files. Compatible clients will automatically clone from the
+server-advertised URLs instead of creating potentially excessive load
+on the Mercurial server. The implementation is almost identical to what
+Mozilla has deployed with great success. <strong>If you operate a Mercurial
+server that needs to serve larger repositories (100+ MB) and/or is under
+high load, you should be jumping with joy at the existence of this
+feature, as it should make scaling problems attached to cloning mostly
+go away.</strong></p>
+<p>Documentation for server operators is currently in the extension and
+can be accessed at the aforementioned URL or with
+<em>hg help -e clonebundles</em>. It does require a bit of setup work. But
+if you are at the scale where you could benefit from the feature, the
+results will almost certainly be worth it.</p>
+<p>One caveat is that the feature is currently behind an <em>experimental</em>
+flag on the client. This means that it doesn't <em>just work</em> yet. This
+is because we want to reserve the right to change some behaviors without
+worrying about backwards compatibility. However, I'm pretty confident
+the server parts won't change significantly. Or if they do, I'm pretty
+committed to providing an easy transition path since I'll need one for
+hg.mozilla.org. So, I'm giving server operators a tentative
+green light to deploy this extension. I can't guarantee there won't be a
+few bumps transitioning to a future release. But it shouldn't be a
+break-the-world type of problem. It is my intent to remove the
+experimental flag and have the feature enabled by default in
+Mercurial 3.7. At that point, server operators just need clients to run
+a modern Mercurial release and they can count on drastically reduced
+load from cloning.</p>
+<p>To help with adoption and testing of the <em>clone bundles</em> feature,
+servers advertising bundles will inform compatible clients of the
+existence of the feature when they clone:</p>
+<div class="pygments_murphy"><pre><span></span>$ hg clone https://hg.mozilla.org/mozilla-central
+requesting all changes
+remote: this server supports the experimental &quot;clone bundles&quot; feature that should enable faster and more reliable cloning
+remote: help test it by setting the &quot;experimental.clonebundles&quot; config flag to &quot;true&quot;
+adding changesets
+adding manifests
+adding file changes
+...
+</pre></div>
+
+<p>And if you have the feature enabled, you'll see something like:</p>
+<div class="pygments_murphy"><pre><span></span>$ hg clone https://hg.mozilla.org/mozilla-central
+applying clone bundle from https://hg.cdn.mozilla.net/mozilla-central/daa7d98525e859d32a3b3e97101e129a897192a1.gzip.hg
+adding changesets
+adding manifests
+adding file changes
+added 265986 changesets with 1501210 changes to 223996 files
+finished applying clone bundle
+searching for changes
+adding changesets
+adding manifests
+adding file changes
+added 1 changesets with 1 changes to 1 files
+</pre></div>
+
+<p>This new <em>clone bundles</em> feature is deployed on hg.mozilla.org. Users of
+Mercurial 3.6 can start using it today by cloning from one of the
+<a href="https://hg.cdn.mozilla.net/">repositories with bundles enabled</a>. (If
+you have previously installed the <em>bundleclone</em> extension, please be
+sure your <em>version-control-tools</em> repository is up to date, as the
+extension was recently changed to better interact with the official
+feature.)</p>
+<p>And that's the <em>clone bundles</em> feature. I hope you are as excited about
+it as I am!</p>
+<p>Mercurial 3.6 also contains numerous performance improvements that make
+cloning faster, regardless of whether you are using <em>clone bundles</em>! For
+starters:</p>
+<ul>
+<li><a href="https://selenic.com/repo/hg/rev/836291420d53">Caching just-added entries</a>
+  made changelog writing 25% faster.</li>
+<li><a href="https://selenic.com/repo/hg/rev/39d643252b9f">Reusing file handles</a>
+  when adding revlog entries drastically reduced the number of file
+  opens, closes, and writes.</li>
+<li><a href="https://selenic.com/repo/hg/rev/56a640b0f656">Avoiding excessive file flushing</a>
+  when adding revlog entries drastically reduced system call count.</li>
+</ul>
+<p>These performance enhancements will make all operations that write
+new repository data faster. But it will be felt most on clone and pull
+operations on the client and push operations on the server.</p>
+<p>One of the most impressive performance optimizations was to a Python
+class that converts a generator of raw data chunks to something that
+resembles a file object so it can be read() from.
+<a href="https://selenic.com/repo/hg/rev/6ae14d1ca3aa">Refactoring read()</a>
+to avoid <a href="https://docs.python.org/2/library/collections.html#collections.deque">collections.deque</a>
+operations and an extra string slice and allocation made <em>unbundle</em>
+operations 15-20% faster. Since this function can handle hundreds of
+megabytes or even gigabytes of data across hundreds of thousands of
+calls, small improvements like this can make a huge difference! This
+patch was a stark reminder that function calls, collection mutations,
+string slicing, and object allocation all can have a significant cost
+in a higher-level, garbage collected language like Python.</p>
+<p>The end result of all this performance optimization on applying a
+mozilla-central gzip bundle on Linux on an i7-6700K:</p>
+<ul>
+<li>35-40s wall time faster (~245s to ~205s) (~84% of original)</li>
+<li>write(2) calls reduced from 1,372,411 to 679,045 (~49% of
+  original)</li>
+<li>close(2) calls reduced from 405,147 to 235,039 (~58% of
+  original)</li>
+<li>total system calls reduced from 5,120,893 to 2,938,479 (~57% of
+  original)</li>
+</ul>
+<p>And the same operation on Windows 10 on the same machine:</p>
+<ul>
+<li>~300s wall time faster (933s to 633s) (~68% of original)</li>
+</ul>
+<p>You may have noticed the discrepancy between Linux and Windows wall
+times, where Windows is 2-4x slower than Linux. What gives? The reason
+is closing file handles that have been appended to is slow on Windows.
+For more, read my <a href="/blog/2015/10/22/append-i/o-performance-on-windows/">recent blog post</a>.</p>
+<p>Mercurial writes ~226,000 files during a clone of mozilla-central
+(excluding the working copy). Assuming 2ms per file close operation,
+that comes out to <strong>~450s just for file close operations</strong>! (All
+operations are on the same thread.) The current wall time difference
+between clone times on Windows and Linux is ~428s. So it's fair to say
+that waiting on file closes accounts for most of this.</p>
+<p>Along the same vein, the aforementioned performance work reduced total
+number of file close operations during a mozilla-central clone by
+~165,000. Again assuming 2ms per file close, that comes to ~330s, which
+is in the same ballpark as the ~300s wall time decrease we see on
+Windows in Mercurial 3.6. <strong>Writing - and therefore closing - hundreds
+of thousands of files handles is slower on Windows and accounts for most
+of the performance difference on that platform.</strong></p>
+<p>Empowered by this knowledge, I wrote some patches to move file closing
+to a background thread on Windows. The results were
+<a href="https://selenic.com/pipermail/mercurial-devel/2015-September/073788.html">promising</a>
+(minutes saved when writing 100,000+ files). Unfortunately, I didn't
+have time to finish these patches for Mercurial 3.6. Hopefully they'll
+make it into 3.7. I also have some mad scientist ideas for alternate
+storage mechanisms that don't rely on hundreds of thousands of files.
+This should enable clones to run at 100+ MB/s on all platforms -
+basically as fast as your network and system I/O can keep up (yes,
+Python and Windows are capable of this throughput). Stay tuned.</p>
+<p>And that's a summary of the cloning improvements in Mercurial 3.6!</p>
+<p>Mercurial 3.6 is currently in release candidate. Please help test
+it by downloading the RC at
+<a href="https://www.mercurial-scm.org/">https://www.mercurial-scm.org/</a>.
+Mercurial 3.6 final is due for release on or shortly after November 1.
+There is a large gathering of Mercurial contributors in London this
+weekend. So if a bug is reported, I can pretty much guarantee a lot of
+eyeballs will see it and there's a good chance it will be acted upon.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="append-i/o-performance-on-windows"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/10/22/append-i/o-performance-on-windows" rel="bookmark" title="Permanent Link to Append I/O Performance on Windows">Append I/O Performance on Windows</a></h2>
   <small>October 22, 2015 at 02:15 AM | categories: 
@@ -273,46 +467,6 @@ and I'll see what I can do.</p>
 <p>Thanks go to Steven MacLeod for
 <a href="https://reviewboard.mozilla.org/r/15617/">reviewing</a> the rather large
 series it took to make this happen.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="moz.build-metadata-on-hg.mozilla.org"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/08/04/moz.build-metadata-on-hg.mozilla.org" rel="bookmark" title="Permanent Link to moz.build metadata on hg.mozilla.org">moz.build metadata on hg.mozilla.org</a></h2>
-  <small>August 04, 2015 at 07:55 PM | categories: 
-
-<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Sometime last week we enabled a new API on hg.mozilla.org:
-<em>json-mozbuildinfo</em>. This endpoint will return JSON describing
-moz.build-derived metadata about the files that changed in a commit.</p>
-<p><a href="https://hg.mozilla.org/mozilla-central/json-mozbuildinfo/1164ec236273">Example</a>.
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/mozbuildinfo.html">Docs</a>.</p>
-<p>We plan to eventually leverage this API to do cool things like
-have MozReview automatically file bugs in the appropriate component and
-assign appropriate reviewers given the set of changed files in a commit.</p>
-<p>The API is currently only available on mozilla-central. And, we have
-very conservative resource limits in place. So large commits may cause
-it to error out. As such, the API is considered experimental. Also,
-performance is not as optimal as it could be. You have to start
-somewhere.</p>
-<p>I'd like to thank Guillaume Destuynder (kang) for his help with the
-security side of things. When I started on this project, I didn't think
-I'd be writing
-<a href="https://hg.mozilla.org/hgcustom/version-control-tools/file/02e353037996/testing/docker/builder-hgweb-chroot/mozbuild-eval.c">C code for spawning secure processes</a>,
-but here we are. In the not so distant future, I'll likely be adding
-<a href="http://man7.org/linux/man-pages/man2/seccomp.2.html">seccomp(2)</a>
-into the mix, which will make the execution environment as
-or more secure than the Firefox content process sandbox, depending
-on how it is implemented. The rabbit holes we find ourselves in to
-implement proper security...</p>
 
   </div>
 </div>

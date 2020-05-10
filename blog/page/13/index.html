@@ -51,6 +51,130 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="end-to-end-testing-with-docker"></a>
+  <h2 class="blog_post_title"><a href="/blog/2015/01/24/end-to-end-testing-with-docker" rel="bookmark" title="Permanent Link to End to End Testing with Docker">End to End Testing with Docker</a></h2>
+  <small>January 24, 2015 at 11:10 PM | categories: 
+
+<a href='/blog/category/docker'>Docker</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/testing'>testing</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I've written an extensive testing <em>framework</em> for Mozilla's
+<a href="https://mozilla-version-control-tools.readthedocs.org/">version control tools</a>.
+Despite it being a little rough around the edges, I'm a bit proud of it.</p>
+<p>When you run tests for MozReview, Mozilla's heavily modified
+<a href="https://www.reviewboard.org/">Review Board</a> code review tool, the
+following things happen:</p>
+<ul>
+<li>A MySQL server is started in a Docker container.</li>
+<li>A Bugzilla server (running the same code as
+  <a href="https://bugzilla.mozilla.org/">bugzilla.mozilla.org</a>) is started on
+  an Apache httpd server with mod_perl inside a Docker container.</li>
+<li>A RabbitMQ server mimicking
+  <a href="https://pulse.mozilla.org/">pulse.mozilla.org</a> is started in a Docker
+  container.</li>
+<li>A Review Board Django development server is started.</li>
+<li>A Mercurial HTTP server is started</li>
+</ul>
+<p>In the future, we'll likely also need to add support for various other
+services to support MozReview and other components of version control
+tools:</p>
+<ul>
+<li>The Autoland HTTP service will be started in a Docker container, along
+  with any other requirements it may have.</li>
+<li>An IRC server will be started in a Docker container.</li>
+<li>Zookeeper and Kafka will be started on multiple Docker containers</li>
+</ul>
+<p>The entire setup is pretty cool. You have actual services running on
+your local machine. Mike Conley and Steven MacLeod even did some pair
+coding of MozReview while on a plane last week. I think it's pretty cool
+this is even possible.</p>
+<p>There is very little mocking in the tests. If we need an external
+service, we try to spin up an instance inside a local container.
+This way, we can't have unexpected test successes or failures due to
+bugs in mocking. We have very high confidence that if something works
+against local containers, it will work in production.</p>
+<p>I currently have each test file owning its own set of Docker
+containers and processes. This way, we get full test isolation and can
+run tests concurrently without race conditions. This drastically reduces
+overall test execution time and makes individual tests easier to reason
+about.</p>
+<p>As cool as the test setup is, there's a bunch I wish were better.</p>
+<p>Spinning up and shutting down all those containers and processes takes a
+lot of time. We're currently sitting around 8s startup time and 2s
+shutdown time. 10s overhead per test is unacceptable. When I make a one
+line change, I want the tests to be instantenous. 10s is too long for
+me to sit idly by. Unfortunately, I've already gone to great pains to
+make test overhead as short as possible.
+<a href="http://www.fig.sh/">Fig</a> wasn't good enough for me for various reasons.
+I've reimplemented my own orchestration directly on top of the
+<a href="https://docker-py.readthedocs.org/en/latest/">docker-py package</a> to
+achieve some significant performance wins. Using
+<a href="http://pythonhosted.org//futures/">concurrent.futures</a> to perform
+operations against multiple containers concurrently was a big win.
+<em>Bootstrapping</em> containers (running their first-run entrypoint scripts
+and committing the result to be used later by tests) was a bigger win
+(first run of Bugzilla is 20-25 seconds).</p>
+<p>I'm at the point of optimizing startup where the longest pole is the
+initialization of the services inside Docker containers themselves.
+MySQL takes a few seconds to start accepting connections. Apache +
+Bugzilla has a semi-involved initialization process. RabbitMQ takes
+about 4 seconds to initialize. There are some cascading dependencies in
+there, so the majority of startup time is waiting for processes to
+finish their startup routine.</p>
+<p>Another concern with running all these containers is memory usage. When
+you start running 6+ instances of MySQL + Apache, RabbitMQ, + ..., it
+becomes really easy to exhaust system memory, incur swapping, and have
+performance fall off a cliff. I've spent a non-trivial amount of time
+figuring out the minimal amount of memory I can make services consume
+while still not sacrificing too much performance.</p>
+<p>It is quite an experience having the problem of trying to minimize
+resource usage and startup time for various applications. Searching the
+internet will happily give you recommended settings for applications.
+You can find out how to make a service start in 10s instead of 60s or
+consume 100 MB of RSS instead of 1 GB. But what the internet won't tell
+you is how to make the service start in 2s instead of 3s or consume as
+little memory as possible. I reckon I'm past the point of diminishing
+returns where most people don't care about any further performance wins.
+But, because of how I'm using containers for end-to-end testing and I
+have a surplus of short-lived containers, it is clearly I problem I need
+to solve.</p>
+<p>I might be able to squeeze out a few more seconds of reduction by
+further optimizing startup and shutdown. But, I doubt I'll reduce things
+below 5s. If you ask me, that's still not good enough. I want no more
+than 2s overhead per test. And I don't think I'm going to get that
+unless I start utilizing containers across multiple tests. And I really
+don't want to do that because it sacrifices test purity. Engineering is
+full of trade-offs.</p>
+<p>Another takeaway from implementing this test harness is that the
+pre-built Docker images available from the Docker Registry almost always
+become useless. I eventually make a customization that can't be
+shoehorned into the readily-available image and I find myself having
+to reinvent the wheel. I'm not a fan of the <em>download and run a binary</em>
+model, especially given Docker's less-than-stellar history on the
+security and cryptography fronts (I'll trust Linux distributions to get
+package distribution right, but I'm not going to be trusting the Docker
+Registry quite yet), so it's not a huge loss. I'm at the point where
+I've lost faith in Docker Registry images and my default position is to
+implement my own builder. Containers are supposed to do one thing, so
+it usually isn't that difficult to roll my own images.</p>
+<p>There's a lot to love about Docker and containerized test execution. But
+I feel like I'm foraging into new territory and solving problems
+like startup time minimization that I shouldn't really have to be
+solving. I think I can justify it given the increased accuracy from the
+tests and the increased confidence that brings. I just wish the cost
+weren't so high. Hopefully as others start leaning on containers and
+Docker more for test execution, people start figuring out how to make
+some of these problems disappear.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="bugzilla-and-the-future-of-firefox-development"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/01/16/bugzilla-and-the-future-of-firefox-development" rel="bookmark" title="Permanent Link to Bugzilla and the Future of Firefox Development">Bugzilla and the Future of Firefox Development</a></h2>
   <small>January 16, 2015 at 10:50 AM | categories: 
@@ -558,174 +682,6 @@ as these companies try to capture more of the enterprise market via
 offerings such as GitHub Enterprise that they invest in the features
 and scalability that large projects and organizations like Mozilla and
 Firefox need.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="code-first-and-the-rise-of-the-dvcs-and-github"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/01/10/code-first-and-the-rise-of-the-dvcs-and-github" rel="bookmark" title="Permanent Link to Code First and the Rise of the DVCS and GitHub">Code First and the Rise of the DVCS and GitHub</a></h2>
-  <small>January 10, 2015 at 12:35 PM | categories: 
-
-<a href='/blog/category/git'>Git</a>, <a href='/blog/category/mozilla'>Mozilla</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>The ascendancy of GitHub has very little to do with its namesake tool,
-Git.</p>
-<p>What GitHub did that was so radical for its time and the strategy that
-GitHub continues to execute so well on today is the approach of
-putting <em>code first</em> and enabling change to be a frictionless process.</p>
-<p>In case you weren't around for the pre-GitHub days or don't remember,
-they were not pleasant. Tools around code management were a far cry
-from where they are today (I still argue the tools are pretty bad, but
-that's for another post). Centralized version control systems were
-prevalent (CVS and Subversion in open source, Perforce, ClearCase,
-Team Foundation Server, and others in the corporate world). Tools for
-looking at and querying code had horrible, ugly interfaces and came out
-of a previous era of web design and browser capabilities. It felt like
-a chore to do anything, including committing code. Yes, the world
-had awesome services like <a href="https://sourceforge.net/">SourceForge</a>,
-but they weren't the same as GitHub is today.</p>
-<p>Before I get to my central thesis, I want to highlight some supporting
-reasons for GitHub's success. There were two developments in the second
-half of the 2000s the contributed to the success of GitHub: the rises
-of the distributed version control system (DVCS) and the modern web.</p>
-<p>While distributed version control systems like Sun WorkShop TeamWare and
-BitKeeper existed earlier, it wasn't until the second half of the 2000s
-that DVCS systems took off. You can argue part of the reason for this
-was open source: my recollection is there wasn't a well-known DVCS
-available as free software before 2005. Speaking of 2005, it was a big
-year for DVCS projects: Git, Mercurial, and Bazaar all had initial
-releases. Suddenly, there were old-but-new ideas on how to do source
-control being exposed to new and willing-to-experiment audiences. DVCS
-were a critical leap from traditional version control because they
-(theoretically) impose less process and workflow limitations on users.
-With traditional version control, you needed to be online to commit,
-meaning you were managing patches, not commits, in your local
-development workflow. There were some forms of branching and merging,
-but they were a far cry from what is available today and were often too
-complex for mere mortals to use. As more and more people were exposed to
-<em>distributed</em> version control, they welcomed its less-restrictive and
-more powerful workflows. They realized that source control tools don't
-have to be so limiting. <em>Distributed</em> version control also promised all
-kinds of revamped workflows that could be harnessed. There were
-potential wins all around.</p>
-<p>Around the same time that open source DVCS systems were emerging, web
-browsers were evolving from an application to render static pages to a
-platform for running web <em>applications</em>. Web sites using JavaScript
-to dynamically manipulate web page content (DHTML as it was known back
-then) were starting to hit their stride. I believe it was GMail that
-turned the most heads as to the full power of the <em>modern web</em>
-experience, with its novel-for-its-time extreme reliance on
-XMLHttpRequest for dynamically changing page content. People were
-realizing that powerful, desktop-like applications could be built for
-the web and could run everywhere.</p>
-<p>GitHub launched in April 2008 standing on the shoulders of both the
-emerging interest in the Git content tracking tool and the capabilities
-of modern browsers.</p>
-<p>I wasn't an early user of GitHub. My recollection is that GitHub was
-mostly a Rubyist's playground back then. I wasn't a Ruby programmer, so
-I had little reason to use GitHub in the early stages. But people did
-start using GitHub. And in the spirit of Ruby (on Rails), GitHub moved
-fast, or at least was projecting the notion that they were. While other
-services built on top of DVCS tools - like Bitbucket - did exist back then,
-GitHub seemed to have momentum associated with it. (Look at the archives
-for <a href="https://github.com/blog">GitHub's</a> and
-<a href="https://blog.bitbucket.org/">Bitbucket's</a> respective blogs. GitHub has
-hundreds of blog entries; Bitbucket numbers in the dozens.) Developers
-everywhere up until this point had all been dealing with sub-optimal tools
-and workflows. Some of us realized it. Others hadn't. Many of those who
-did saw GitHub as a beacon of hope: we have all these new ideas and new
-potentials with distributed version control and here is a service under
-active development trying to figure out how to exploit that. Oh, and
-it's free for open source. Sign me up!</p>
-<p>GitHub did capitalize on a market opportunity. They also capitalized on
-the value of marketing and the perception that they were moving fast and
-providing features that people - especially in open source - wanted.
-This captured the early adopters market. But I think what really set
-GitHub apart and led to the success they are enjoying today is their
-<em>code first</em> approach and their desire to make contribution easy, and
-even fun and sociable.</p>
-<p>As developers, our job is to solve problems. We often do that by writing
-and changing code. And this often involves working as part of a team, or
-collaborating. To collaborate, we need tools. You eventually need some
-processes. And as I
-<a href="/blog/2015/01/09/firefox-contribution-process-debt/">recently blogged</a>,
-this can lead to <em>process debt</em> and inefficiencies associated with them.</p>
-<p>Before GitHub, the <em>process debt</em> for contributing to other projects was
-high. You often had to subscribe to mailing lists in order to submit
-patches as emails. Or, you had to create an account on someone's bug
-tracker or code review tool before you could send patches. Then you had
-to figure out how to use these tools and any organization or
-project-specific extensions and workflows attached to them. It was quite
-involved and a lot could go wrong. Many projects and organizations (like
-Mozilla) still practice this traditional methology. Furthermore (and as
-I've
-<a href="/blog/2014/10/27/implications-of-using-bugzilla-for-firefox-patch-development/">written before</a>),
-these traditional, single patch/commit-based tools often aren't
-effective at ensuring the desired output of high quality software.</p>
-<p>Before GitHub solved <em>process debt</em> via commoditization of knowledge via
-market dominance, they took another approach: emphasizing <em>code first</em>
-development.</p>
-<p>GitHub is all about the <strong>code</strong>. You load a project page and you see
-<strong>code</strong>. You may think a README with basic project information would be
-the first thing on a <em>project</em> page. But it isn't. <em>Code</em>, like data,
-is king.</p>
-<p>Collaboration and contribution on GitHub revolve around the <em>pull
-request</em>. It's a way of saying, <em>hey, I made a change, will you take
-it?</em> There's nothing too novel in the concept of the <em>pull request</em>:
-it's fundamentally no different than sending emails with patches to a
-mailing list. But what is so special is GitHub's execution. Gone are
-the days of configuring and using one-off tools and processes. Instead,
-we have the friendly confines of a clean, friendly, and modern web
-experience. While GitHub is built upon the Git tool, you don't even
-need to use Git (a tool
-<a href="http://git-man-page-generator.lokaltog.net/">lampooned</a>
-for its
-<a href="http://stevelosh.com/blog/2013/04/git-koans/">horrible usability and approachability</a>)
-to contribute on GitHub! Instead, you can
-<a href="https://help.github.com/articles/github-flow-in-the-browser/">do everything from your browser</a>.
-That warrants repeating: <strong>you don't need to leave your browser to
-contribute on GitHub</strong>. GitHub has essentially reduced <em>process debt</em>
-to <em>edit a text document</em> territory, and pretty much anybody who has
-used a computer can do that. This has enabled GitHub to dabble into
-non-code territory, such as its
-<a href="https://government.github.com/">GitHub and Government</a> initiative to
-foster community involvement in government. (GitHub is really a platform
-for easily seeing and changing <em>any</em> content or data. But, please, let
-me continue using <em>code</em> as a stand-in, since I want to focus on the
-developer audience.)</p>
-<p>GitHub took an overly-complicated and fragmented world of varying
-contribution processes and made the new world revolve around code and a
-unified and simple process for change - the <em>pull request</em>.</p>
-<p>Yes, there are other reasons for GitHub's success. You can make strong
-arguments that GitHub has capitalized on the social and psychological
-aspects of coding and human desire for success and happiness. I agree.</p>
-<p>You can also argue GitHub succeeded because of Git. That statement is
-more or less technically accurate, but I don't think it is a sound
-argument. Git may have been the most feature complete open source
-DVCS at the time GitHub came into existence. But that doesn't mean there
-is something special about Git that no other DVCS has that makes GitHub
-popular. Had another tool been more feature complete or had the backing
-of a project as large as Linux at the time of GitHub's launch, we could
-very well be looking at a successful service built on something that
-isn't Git. Git had early market advantage and I argue its popularity
-today - a lot of it via GitHub - is largely a result of its early
-advantages over competing tools. And, I would go so far to say that when
-you consider the poor usability of Git and the pain that its users go
-through when first learning it, more accurate statements would be that
-<em>GitHub succeeded in spite of Git</em> and <em>Git owes much of its success to
-GitHub</em>.</p>
-<p>When I look back at the rise of GitHub, I see a service that has
-succeeded by putting people first by allowing them to capitalize
-on more productive workflows and processes. They've done this by
-emphasizing <em>code</em>, not process, as the means for change. Organizations
-and projects should take note.</p>
 
   </div>
 </div>

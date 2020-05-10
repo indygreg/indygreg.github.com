@@ -51,6 +51,114 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="using-rust-to-power-python-importing-with-oxidized_importer"></a>
+  <h2 class="blog_post_title"><a href="/blog/2020/05/10/using-rust-to-power-python-importing-with-oxidized_importer" rel="bookmark" title="Permanent Link to Using Rust to Power Python Importing With oxidized_importer">Using Rust to Power Python Importing With oxidized_importer</a></h2>
+  <small>May 10, 2020 at 01:15 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I'm pleased to announce the availability of the <code>oxidized_importer</code>
+Python package, a standalone version of the custom Python module importer
+used by <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a>.
+<code>oxidized_importer</code> - a Python extension module implemented in Rust - enables
+Python applications to start and run quicker by providing an alternate,
+more efficient mechanism for loading Python resources (such as source
+and bytecode modules).</p>
+<p>Installation instructions and detailed usage information are available
+<a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/oxidized_importer.html">in the official documentation</a>.
+The rest of this post hopefully answers the questions of <em>why are you doing
+this</em> and <em>why should I care</em>.</p>
+<p>In a traditional Python process, Python's module importer inspects the
+filesystem at run-time to find and load resources like Python source and
+bytecode modules. It is highly dynamic in nature and relies on the filesystem
+as a point-in-time source of truth for resource availability.</p>
+<p><code>oxidized_importer</code> takes a different approach to resource loading that is
+more static in nature and more suitable to application environments (where
+Python resources aren't changing). Instead of dynamically probing the
+filesystem for available resources, resources are instead <em>indexed</em> ahead
+of time. When Python goes to resolve a resource (say it is looking to
+<code>import</code> a module), <code>oxidized_importer</code> simply needs to perform a lookup
+in an in-memory data structure to locate said resource. This means
+<code>oxidized_importer</code> only has marginal reliance on the filesystem, <strong>which
+can make it much faster than Python's traditional importer</strong>. (Performance
+benefits of binaries built with PyOxidizer have already been
+<a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/packaging_performance.html">clearly demonstrated</a>.)</p>
+<p>The <code>oxidized_importer</code> Python extension module exposes parts of
+PyOxidizer's packaging and run-time functionality to Python code, <strong>without
+requiring the full use of PyOxidizer for application packaging</strong>.
+Specifically, <code>oxidized_importer</code> allows you to:</p>
+<ul>
+<li>Install a custom, high-performance module importer
+  (<a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/oxidized_importer_oxidized_finder.html">OxidizedFinder</a>)
+  to service Python <code>import</code> statements and resource loading (potentially
+  from memory, using zero-copy).</li>
+<li><a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/oxidized_importer_resource_scanning.html">Scan the filesystem for Python resources</a>
+  (source modules, bytecode files, package resources, distribution metadata,
+  etc) and turn them into Python objects, which can be loaded into
+  <code>OxidizedFinder</code> instances.</li>
+<li>Serialize Python resource data into an efficient binary data structure
+  for loading into an <code>OxidizedFinder</code> instance. This facilitates
+  producing a standalone <em>resources blob</em> that can be distributed with
+  a Python application which contains all the Python modules, bytecode,
+  etc required to power that application. See the docs on
+  <a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/oxidized_importer_freezing_applications.html">freezing an application with oxidized_importer</a>.</li>
+</ul>
+<p><code>oxidized_importer</code> can be thought of as PyOxidizer-lite: it provides just
+enough functionality to allow Python application maintainers to leverage some
+of the technical advancements of PyOxidizer (such as in-memory module imports)
+without using PyOxidizer for application packaging. <strong><code>oxidized_importer</code> can
+work with the Python distribution already installed on your system. You just
+<code>pip install</code> it like any other Python package.</strong></p>
+<p>By releasing <code>oxidized_importer</code> as a standalone Python package, my hope is
+to allow more people to leverage some of the technical achievements and
+performance benefits coming out of PyOxidizer. I also hope that having more
+users of PyOxidizer's underlying code will help uncover bugs and conformance
+issues, raising the quality and viability of the projects.</p>
+<p>I would also like to use <code>oxidized_importer</code> as an opportunity to advance the
+discourse around Python's resource loading mechanism. Filesystem I/O can be
+extremely slow, especially in mobile and embedded environments. Dynamically
+probing the filesystem to service module imports can therefore be slow. (The
+Python standard library has the <code>zipimport</code> module for importing Python resources
+from a zip file. But in my opinion, we can do much better.) <strong>I would like to
+see Python move towards leveraging immutable, serialized data structures for
+loading resources as efficiently as possible.</strong> After all, Python resources
+like the Python standard library are likely not changing between Python process
+invocations. The performance zealot in me cringes thinking of all the overhead
+that Python's filesystem probing approach incurs - all of the excessive <code>stat()</code>
+and other filesystem I/O calls that must be performed to answer questions about
+state that is easily indexed and often doesn't change. <code>oxidized_importer</code>
+represents my vision for what a high-performance Python resource loader should
+look like. I hope it can be successful in steering Python towards a better
+approach for resource loading.</p>
+<p>I plan to release <code>oxidized_importer</code> independently from <code>PyOxidizer</code>. While
+the projects will continue to be developed in the same
+<a href="https://github.com/indygreg/PyOxidizer">repository</a> and will leverage the
+same underlying Rust code, I view them as somewhat independent and serving
+different audiences.</p>
+<p>While <code>oxidized_importer</code> evolved from facilitating PyOxidizer's run-time use
+cases, I'm not opposed to taking it in new directions. For example, I would
+entertain implementing Python's dynamic filesystem probing logic in
+<code>oxidized_importer</code>, allowing it to serve as a functional stand-in for the
+official importer shipped with the Python standard library. I have little
+doubt an importer implemented in 100% Rust would outperform the official
+importer, which is implemented in Python. There's all kinds of possibilities
+here, such as using a background thread to index <code>sys.path</code> outside the
+constraints of the GIL. But I don't want to get ahead of myself...</p>
+<p>If you are a Python application maintainer and want to make your Python
+processes execute a bit faster by leveraging a pre-built index of available
+Python resources and/or taking advantage of in-memory module importing,
+I highly encourage you to take a look at <code>oxidized_importer</code>!</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="pyoxidizer-0.7"></a>
   <h2 class="blog_post_title"><a href="/blog/2020/04/09/pyoxidizer-0.7" rel="bookmark" title="Permanent Link to PyOxidizer 0.7">PyOxidizer 0.7</a></h2>
   <small>April 09, 2020 at 09:00 PM | categories: 
@@ -790,218 +898,6 @@ In other words, I can start building a tool that others will want to use.</p>
 the <a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
 and <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> projects on
 GitHub.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="faster-in-memory-python-module-importing"></a>
-  <h2 class="blog_post_title"><a href="/blog/2018/12/28/faster-in-memory-python-module-importing" rel="bookmark" title="Permanent Link to Faster In-Memory Python Module Importing">Faster In-Memory Python Module Importing</a></h2>
-  <small>December 28, 2018 at 12:40 PM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>, <a href='/blog/category/rust'>Rust</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I <a href="/blog/2018/12/18/distributing-standalone-python-applications/">recently blogged about</a>
-distributing standalone Python applications. In that post, I announced
-<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> - a tool which
-leverages Rust to produce standalone executables embedding Python. One of the
-features of PyOxidizer is the ability to import Python modules embedded
-within the binary using zero-copy.</p>
-<p>I also recently blogged about
-<a href="/blog/2018/10/29/global-kernel-locks-in-apfs/">global kernel locks in APFS</a>,
-which make filesystem operations slower on macOS. This was the latest wrinkle in
-a long battle against Python's slow startup times, which I've posted about
-on the official python-dev mailing list
-<a href="https://mail.python.org/pipermail/python-dev/2014-May/134528.html">over</a>
-<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">the</a>
-<a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">years</a>.</p>
-<p>Since I announced PyOxidizer a few days ago, I've had some productive holiday
-hacking sessions!</p>
-<p>One of the reached milestones is PyOxidizer now supports macOS.</p>
-<p>With that milestone reached, I thought it would be interesting to compare
-the performance of a PyOxidizer executable versus a standard CPython build.</p>
-<p>I produced a <a href="https://gist.github.com/indygreg/be1c229fa41ced5c76d912f7073f9de6">Python script</a>
-that imports almost the entirety of the Python standard library - at least the
-modules implemented in Python. That's 508 <code>import</code> statements. I then
-executed this script using a typical <code>python3.7</code> binary (with the standard
-library on the filesystem) and PyOxidizer-produced standalone executables
-with a module importer that loads Python modules from memory using zero copy.</p>
-<pre><code># Homebrew installed CPython 3.7.2
-
-# Cold disk cache.
-$ sudo purge
-$ time /usr/local/bin/python3.7 &lt; import_stdlib.py
-real   0m0.694s
-user   0m0.354s
-sys    0m0.121s
-
-# Hot disk cache.
-$ time /usr/local/bin/python3.7 &lt; import_stdlib.py
-real   0m0.319s
-user   0m0.263s
-sys    0m0.050s
-
-# PyOxidizer with non-PGO/non-LTO CPython 3.7.2
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.223s
-user   0m0.201s
-sys    0m0.017s
-
-# PyOxidizer with PGO/non-LTO CPython 3.7.2
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.234s
-user   0m0.210s
-sys    0m0.019
-
-# PyOxidizer with PTO+LTO CPython 3.7.2
-$ sudo purge
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.442s
-user   0m0.252s
-sys    0m0.059s
-
-$ time target/release/pyall &lt; import_stdlib.py
-real   0m0.221s
-user   0m0.197s
-sys    0m0.020s
-</code></pre>
-<p>First, the PyOxidizer times are all relatively similar regardless of whether
-PGO or LTO is used to build CPython. That's not too surprising, as I'm
-exercising a very limited subset of CPython (and I suspect the benefits
-of PGO/LTO aren't as pronounced due to the nature of the CPython API).</p>
-<p>But the bigger result is the obvious speedup with PyOxidizer and its
-in-memory importing: <strong>PyOxidizer can import almost the entirety of the
-Python standard library ~100ms faster - or ~70% of original - than a
-typical standalone CPython install</strong> with a hot disk cache! This comes
-out to ~0.19ms per <code>import</code> statement. If we run <code>purge</code> to clear out
-the disk cache, the performance delta increases to 252ms, or ~64% of
-original. All these numbers are on a 2018 6-core 2.9 GHz i9 MacBook Pro,
-which has a pretty decent SSD.</p>
-<p>And on Linux on an i7-6700K running in a Hyper-V VM:</p>
-<pre><code># pyenv installed CPython 3.7.2
-
-# Cold disk cache.
-$ time ~/.pyenv/versions/3.7.2/bin/python &lt; import_stdlib.py
-real   0m0.405s
-user   0m0.165s
-sys    0m0.065s
-
-# Hot disk cache.
-$ time ~/.pyenv/versions/3.7.2/bin/python &lt; import_stdlib.py
-real   0m0.193s
-user   0m0.161s
-sys    0m0.032s
-
-# PyOxidizer with PGO CPython 3.7.2
-
-# Cold disk cache.
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.227s
-user   0m0.145s
-sys    0m0.016s
-
-# Hot disk cache.
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.152s
-user   0m0.136s
-sys    0m0.016s
-</code></pre>
-<p>On a hot disk cache, the run-time improvement of PyOxidizer is ~41ms, or
-~78% of original. This comes out to ~0.08ms per <code>import</code> statement. When
-flushing caches by writing <code>3</code> to <code>/proc/sys/vm/drop_caches</code>, the delta
-increases to ~178ms, or ~56% of original.</p>
-<p>Using <code>dtruss -c</code> to execute the binaries, the breakdown in system calls
-occurring &gt;10 times is clear:</p>
-<pre><code># CPython standalone
-fstatfs64                                      16
-read_nocancel                                  19
-ioctl                                          20
-getentropy                                     22
-pread                                          26
-fcntl                                          27
-sigaction                                      32
-getdirentries64                                34
-fcntl_nocancel                                106
-mmap                                          114
-close_nocancel                                129
-open_nocancel                                 130
-lseek                                         148
-open                                          168
-close                                         170
-read                                          282
-fstat64                                       403
-stat64                                        833
-
-# PyOxidizer
-lseek                                          10
-read                                           12
-read_nocancel                                  14
-fstat64                                        16
-ioctl                                          22
-munmap                                         31
-stat64                                         33
-sysctl                                         33
-sigaction                                      36
-mmap                                          122
-madvise                                       193
-getentropy                                    315
-</code></pre>
-<p>PyOxidizer avoids hundreds of <code>open()</code>, <code>close()</code>, <code>read()</code>,
-<code>fstat64()</code>, and <code>stat64()</code> calls. And by avoiding these calls,
-PyOxidizer not only avoids the userland-kernel overhead intrinsic to them,
-but also any additional overhead that APFS is imposing via its global
-lock(s).</p>
-<p>(Why the PyOxidizer binary is making hundreds of calls to <code>getentropy()</code>
-I'm not sure. It's definitely coming from Python as a side-effect of a
-module import and it is something I'd like to fix, if possible.)</p>
-<p>With this experiment, we finally have the ability to better isolate the
-impact of filesystem overhead on Python module importing and preliminary
-results indicate that the overhead is not insignificant - at least on the
-tested systems (I'll get data for Windows when PyOxidizer supports it).
-While the test is somewhat contrived (I don't think many applications import
-the entirety of the Python standard library), some Python applications do
-import hundreds of modules. And as I've
-<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">written before</a>,
-milliseconds matter. This is especially true if you are invoking Python
-processes hundreds or thousands of times in a build system, when running
-a test suite, for scripting, etc. Cumulatively you can be importing tens
-of thousands of modules. So I think shaving even fractions of a
-millisecond from module importing is important.</p>
-<p>It's worth noting that in addition to the system call overhead, CPython's
-path-based importer runs
-<a href="https://github.com/python/cpython/blob/804a5d94b6b7f8cb8546112aee2bc3af362f28f5/Lib/importlib/_bootstrap_external.py">substantially more</a>
-Python code
-<a href="https://github.com/indygreg/PyOxidizer/blob/c50e63338abd08ebac86746a33d750756d622edc/pyrepackager/src/memoryimporter.py">than PyOxidizer</a>
-and this likely contributes several milliseconds of overhead as well. Because
-PyOxidizer applications are static, the importer can remain simple (finding a
-module in PyOxidizer is essentially a Rust <code>HashMap&lt;String, Vec&lt;u8&gt;</code> lookup).
-While it might be useful to isolate the filesystem overhead from Python code
-overhead, the thing that end-users care about is overall execution time: they
-don't care where that overhead is coming from. So I think it is fair to compare
-PyOxidizer - with its intrinsically simpler import model - with what Python
-typically does (scan <code>sys.path</code> entries and looking for modules on the
-filesystem).</p>
-<p>Another difference is that PyOxidizer is almost completely statically linked.
-By contrast, a typical CPython install has compiled extension modules as
-standalone shared libraries and these shared libraries often link against
-other shared libraries (such as libssl). From <code>dtruss</code> timing information,
-I don't believe this difference contributes to significant overhead, however.</p>
-<p>Finally, I haven't yet optimized PyOxidizer. I still have a few tricks up
-my sleeve that can likely shave off more overhead from Python startup. But
-so far the results are looking <em>very</em> promising. I dare say they are looking
-promising enough that Python distributions themselves might want to look
-into the area more thoroughly and consider distribution defaults that rely
-less on the every-Python-module-is-a-separate-file model.</p>
-<p>Stay tuned for more <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a>
-updates in the near future!</p>
-<p><em>(I updated this post a day after initial publication to add measurements
-for Linux.)</em></p>
 
   </div>
 </div>

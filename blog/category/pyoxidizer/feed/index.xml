@@ -10,10 +10,110 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sat, 11 Apr 2020 03:14:42 GMT</pubDate>
+    <pubDate>Sun, 10 May 2020 20:12:57 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Using Rust to Power Python Importing With oxidized_importer</title>
+      <link>http://gregoryszorc.com/blog/2020/05/10/using-rust-to-power-python-importing-with-oxidized_importer</link>
+      <pubDate>Sun, 10 May 2020 13:15:00 PDT</pubDate>
+      <category><![CDATA[Python]]></category>
+      <category><![CDATA[PyOxidizer]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2020/05/10/using-rust-to-power-python-importing-with-oxidized_importer</guid>
+      <description>Using Rust to Power Python Importing With oxidized_importer</description>
+      <content:encoded><![CDATA[<p>I'm pleased to announce the availability of the <code>oxidized_importer</code>
+Python package, a standalone version of the custom Python module importer
+used by <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a>.
+<code>oxidized_importer</code> - a Python extension module implemented in Rust - enables
+Python applications to start and run quicker by providing an alternate,
+more efficient mechanism for loading Python resources (such as source
+and bytecode modules).</p>
+<p>Installation instructions and detailed usage information are available
+<a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/oxidized_importer.html">in the official documentation</a>.
+The rest of this post hopefully answers the questions of <em>why are you doing
+this</em> and <em>why should I care</em>.</p>
+<p>In a traditional Python process, Python's module importer inspects the
+filesystem at run-time to find and load resources like Python source and
+bytecode modules. It is highly dynamic in nature and relies on the filesystem
+as a point-in-time source of truth for resource availability.</p>
+<p><code>oxidized_importer</code> takes a different approach to resource loading that is
+more static in nature and more suitable to application environments (where
+Python resources aren't changing). Instead of dynamically probing the
+filesystem for available resources, resources are instead <em>indexed</em> ahead
+of time. When Python goes to resolve a resource (say it is looking to
+<code>import</code> a module), <code>oxidized_importer</code> simply needs to perform a lookup
+in an in-memory data structure to locate said resource. This means
+<code>oxidized_importer</code> only has marginal reliance on the filesystem, <strong>which
+can make it much faster than Python's traditional importer</strong>. (Performance
+benefits of binaries built with PyOxidizer have already been
+<a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/packaging_performance.html">clearly demonstrated</a>.)</p>
+<p>The <code>oxidized_importer</code> Python extension module exposes parts of
+PyOxidizer's packaging and run-time functionality to Python code, <strong>without
+requiring the full use of PyOxidizer for application packaging</strong>.
+Specifically, <code>oxidized_importer</code> allows you to:</p>
+<ul>
+<li>Install a custom, high-performance module importer
+  (<a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/oxidized_importer_oxidized_finder.html">OxidizedFinder</a>)
+  to service Python <code>import</code> statements and resource loading (potentially
+  from memory, using zero-copy).</li>
+<li><a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/oxidized_importer_resource_scanning.html">Scan the filesystem for Python resources</a>
+  (source modules, bytecode files, package resources, distribution metadata,
+  etc) and turn them into Python objects, which can be loaded into
+  <code>OxidizedFinder</code> instances.</li>
+<li>Serialize Python resource data into an efficient binary data structure
+  for loading into an <code>OxidizedFinder</code> instance. This facilitates
+  producing a standalone <em>resources blob</em> that can be distributed with
+  a Python application which contains all the Python modules, bytecode,
+  etc required to power that application. See the docs on
+  <a href="https://pyoxidizer.readthedocs.io/en/oxidized_importer-0.1/oxidized_importer_freezing_applications.html">freezing an application with oxidized_importer</a>.</li>
+</ul>
+<p><code>oxidized_importer</code> can be thought of as PyOxidizer-lite: it provides just
+enough functionality to allow Python application maintainers to leverage some
+of the technical advancements of PyOxidizer (such as in-memory module imports)
+without using PyOxidizer for application packaging. <strong><code>oxidized_importer</code> can
+work with the Python distribution already installed on your system. You just
+<code>pip install</code> it like any other Python package.</strong></p>
+<p>By releasing <code>oxidized_importer</code> as a standalone Python package, my hope is
+to allow more people to leverage some of the technical achievements and
+performance benefits coming out of PyOxidizer. I also hope that having more
+users of PyOxidizer's underlying code will help uncover bugs and conformance
+issues, raising the quality and viability of the projects.</p>
+<p>I would also like to use <code>oxidized_importer</code> as an opportunity to advance the
+discourse around Python's resource loading mechanism. Filesystem I/O can be
+extremely slow, especially in mobile and embedded environments. Dynamically
+probing the filesystem to service module imports can therefore be slow. (The
+Python standard library has the <code>zipimport</code> module for importing Python resources
+from a zip file. But in my opinion, we can do much better.) <strong>I would like to
+see Python move towards leveraging immutable, serialized data structures for
+loading resources as efficiently as possible.</strong> After all, Python resources
+like the Python standard library are likely not changing between Python process
+invocations. The performance zealot in me cringes thinking of all the overhead
+that Python's filesystem probing approach incurs - all of the excessive <code>stat()</code>
+and other filesystem I/O calls that must be performed to answer questions about
+state that is easily indexed and often doesn't change. <code>oxidized_importer</code>
+represents my vision for what a high-performance Python resource loader should
+look like. I hope it can be successful in steering Python towards a better
+approach for resource loading.</p>
+<p>I plan to release <code>oxidized_importer</code> independently from <code>PyOxidizer</code>. While
+the projects will continue to be developed in the same
+<a href="https://github.com/indygreg/PyOxidizer">repository</a> and will leverage the
+same underlying Rust code, I view them as somewhat independent and serving
+different audiences.</p>
+<p>While <code>oxidized_importer</code> evolved from facilitating PyOxidizer's run-time use
+cases, I'm not opposed to taking it in new directions. For example, I would
+entertain implementing Python's dynamic filesystem probing logic in
+<code>oxidized_importer</code>, allowing it to serve as a functional stand-in for the
+official importer shipped with the Python standard library. I have little
+doubt an importer implemented in 100% Rust would outperform the official
+importer, which is implemented in Python. There's all kinds of possibilities
+here, such as using a background thread to index <code>sys.path</code> outside the
+constraints of the GIL. But I don't want to get ahead of myself...</p>
+<p>If you are a Python application maintainer and want to make your Python
+processes execute a bit faster by leveraging a pre-built index of available
+Python resources and/or taking advantage of in-memory module importing,
+I highly encourage you to take a look at <code>oxidized_importer</code>!</p>]]></content:encoded>
+    </item>
     <item>
       <title>PyOxidizer 0.7</title>
       <link>http://gregoryszorc.com/blog/2020/04/09/pyoxidizer-0.7</link>
