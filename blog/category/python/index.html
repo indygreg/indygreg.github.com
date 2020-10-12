@@ -51,6 +51,272 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="announcing-the-0.8-release-of-pyoxidizer"></a>
+  <h2 class="blog_post_title"><a href="/blog/2020/10/12/announcing-the-0.8-release-of-pyoxidizer" rel="bookmark" title="Permanent Link to Announcing the 0.8 Release of PyOxidizer">Announcing the 0.8 Release of PyOxidizer</a></h2>
+  <small>October 12, 2020 at 12:45 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I am very excited to announce the 0.8 release of
+<a href="https://pyoxidizer.readthedocs.io/en/stable/">PyOxidizer</a>, a modern
+Python application packaging tool. You can find the full changelog
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/history.html">in the docs</a>.
+First time user? See the
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/getting_started.html">Getting Started</a>
+documentation.</p>
+<p>Foremost, I apologize that this release took so long to publish (0.7 was
+released on 2020-04-09). I fervently believe that frequent releases are
+a healthy software development practice. And 6 months between PyOxidizer
+releases was way too long. Part of the delay was due to world events
+(it has proven difficult to focus on... anything given a global pandemic,
+social unrest, and wildfires further undermining any resemblance of
+lifestyle normalcy in California). Another contributing factor was I was
+waiting on a few 3rd party Rust crates to have new versions published to
+crates.io (you can't release a crate to crates.io unless all your
+dependencies are also published there).</p>
+<p>Release delay and general life hardships aside, the 0.8 release is here
+and it is full of notable improvements!</p>
+<h2>Python 3.8 and 3.9 Support</h2>
+<p><strong>PyOxidizer 0.8 now targets Python 3.8 by default and support for Python
+3.9 is available</strong> by tweaking configuration files. Previously, we only
+supported Python 3.7 and this release drops support for Python 3.7. I feel
+a bit bad for dropping compatibility. But Python 3.8 introduced a
+<a href="https://docs.python.org/3/c-api/init_config.html">new C API</a> for initializing
+Python interpreters (thank you Victor Stinner!) and this makes PyOxidizer's
+run-time code for interfacing with Python interpreters vastly simpler.
+I decided that given the beta nature of PyOxidizer, it wasn't worth
+maintaining complexity to continue to support Python 3.7. I'm optimistic
+that I'll be able to support Python 3.8 as a baseline for a while.</p>
+<h1>Better Default Packaging Settings</h1>
+<p>PyOxidizer started as a science experiment of sorts to see if I could
+achieve the elusive goal of producing a single file executable providing
+a Python application. I was successful in proving this hypothesis. But the
+cost to achieving this outcome was rather high in terms of end-user
+experience: in order to produce single file executables, you had to break
+a lot of assumptions about how Python typically works and this in turn broke
+a lot of Python code and packages in the wild.</p>
+<p>In other words, <strong>PyOxidizer's opinionated defaults of producing a single file
+executable were externalizing hardship on end-users and preventing them from
+using PyOxidizer.</strong></p>
+<p>PyOxidizer 0.8 contains a handful of changes to defaults that should hopefully
+lessen the friction.</p>
+<p>On Windows, the default Python distribution now has a more traditional
+build configuration (using <code>.pyd</code> extension modules and a <code>pythonXY.dll</code>
+file). <strong>This means that PyOxidizer can consume pre-built extension modules
+without having to recompile them from source.</strong> If you publish a Windows
+binary wheel on PyPI, in many cases it will <em>just work</em> with PyOxidizer
+0.8! (There are some notable exceptions to this, such as <em>numpy</em>, which is
+doing wonky things with the location of shared libraries in wheels - but
+I aim to fix this soon.)</p>
+<p>Also on Windows, we no longer attempt to embed Python extension modules
+(<code>.pyd</code> files) and their shared library dependencies in the produced
+binary and load them from memory by default. This is because PyOxidizer's
+from-memory library loader didn't work in all cases. For example, some
+OpenSSL functionality used by the <code>_ssl</code> module in the standard library
+didn't work, preventing Python from establishing TLS connections. The old
+mode enabling you to produce a single file executable on Windows is still
+available. But you have to opt in to it (at the likely cost of more
+packaging and compatibility pain).</p>
+<h2>Starlark Configuration Overhaul</h2>
+<p>PyOxidizer 0.8 contains a <strong>ton</strong> of changes to its Starlark configuration
+files. There are so many changes that you may find it easier to port to
+PyOxidizer 0.8 by creating a new configuration file rather than attempting
+to port an existing one.</p>
+<p>I apologize for this churn and recognize it will be disruptive. However,
+this churn needed to happen for various reasons.</p>
+<p>Much of the old Starlark configuration semantics was rooted in the days
+when configuration files were static TOML files. Now that configuration
+files provide the power of a (Python-inspired) programming language, we
+are free to expose much more flexibility. But that flexibility requires
+refactoring things so the experience feels more <em>native</em>.</p>
+<p>Many changes to Starlark were rooted in necessity. For example,
+the methods for invoking <code>setup.py</code> or <code>pip install</code> used to live on a
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_type_python_distribution.html">Python distribution type</a>
+and have been moved to a
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_type_python_executable.html">type representing executables</a>.
+This is because the binary we are targeting influences how
+packaging actions behave. For example, if the binary only supports
+loading resources from memory (as opposed to standalone files), we need
+to know that when invoking the packaging tool so we can produce files
+(notably Python extension modules) compatible with the destination.</p>
+<p>A major change to Starlark in 0.8 is around resource location handling.
+Before, you could define a static string denoting the <em>resources policy</em>
+for where things should be placed. And there were 10+ methods for
+adding different resource types (source, bytecode, extensions, package
+data) to different load locations (memory, filesystem). This mechanism
+is vastly simplified and more powerful in PyOxidizer 0.8!</p>
+<p>In PyOxidizer 0.8, there is a single
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_type_python_executable.html#pythonexecutable-add-python-resource">add_python_resource()</a>
+method for adding a resource to a binary and the Starlark objects you add
+can denote where they should be added by
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_resource_add_attributes.html">defining attributes on those objects</a>.</p>
+<p>Furthermore, you can
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/packaging_resources.html#using-callbacks-to-influence-resource-attributes">define a Starlark function</a>
+that is called when resource objects are created to apply custom packaging
+<em>rules</em> using custom Starlark code defined in your PyOxidizer config file.
+So rather than having everyone try to abide by a few pre-canned <em>policies</em> for
+packaging resources, you can define a proper function in your config file
+that can be as complex as you want/need it to be! I feel this is vastly simpler
+and more powerful than implementing a custom DSL in static configuration files
+(like TOML, JSON, YAML, etc).</p>
+<p>While the ability to implement your own arbitrarily complex packaging
+policies is useful, there is a new
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_type_python_packaging_policy.html">PythonPackagingPolicy</a>
+Starlark type with enough flexibility to suit most needs.</p>
+<h2>Shipping <code>oxidized_importer</code></h2>
+<p>During the development of PyOxidizer 0.8, I broke out the custom
+Rust-based Python <em>meta-path importer</em> used by PyOxidizer's run-time code
+into a standalone Python package. This sub-project is called
+<code>oxidized_importer</code> and I previously
+<a href="/blog/2020/05/10/using-rust-to-power-python-importing-with-oxidized_importer/">blogged about it</a>.</p>
+<p>PyOxidizer 0.8 ships <code>oxidized_importer</code> and all of its useful APIs
+available to Python. Read more in the
+<a href="https://pyoxidizer.readthedocs.io/v0.8.0/latest/oxidized_importer.html">official docs</a>.
+The new Python APIs should make debugging issues with PyOxidizer-packaged
+applications vastly simpler: I found them invaluable when tracking down
+user-reported bugs!</p>
+<h2>Tons of New Tests and Refactored Code</h2>
+<p>PyOxidizer was my first non-toy Rust project. And the quality of the Rust
+code I produced in early versions of PyOxidizer clearly showed it. And when I
+was in the rapid-prototyping phase of PyOxidizer, I eschewed writing tests
+in favor of short-term progress.</p>
+<p>PyOxidizer 0.8 pays down a ton of technical debt in the code base. Lots of
+Rust code has been refactored and is using somewhat reasonable practices.
+I'm not yet a Rust guru. But I'm at the point where I cringe when I look at
+some of the early code I wrote, which is a good sign. I do have to say that
+Rust has been a dream to work with during this transition. Despite being a
+low-level language, my early <em>misuse</em> of Rust did not result in crashes like
+you would see in languages like C/C++. And Rust's seemingly omniscient compiler
+and IDE tools facilitating refactoring have ensured that code changes aren't
+accompanied by subtle random bugs that would occur in dynamic programming
+languages. I really need to write a dedicated post espousing the virtues of
+Rust...</p>
+<p>There are a <strong>ton</strong> of new tests in PyOxidizer 0.8 and I now feel somewhat
+confident that the <code>main</code> branch of PyOxidizer should be considered
+<em>production-ready</em> at any time assuming the tests pass. This will hopefully
+lead to more rapid releases in the future.</p>
+<p>There are now tests for the <code>pyembed</code> Rust crate, which provides the
+run-time code for PyOxidizer-built binaries. We even have
+<a href="https://github.com/indygreg/PyOxidizer/tree/main/pyembed/src/test">Python-based unit tests</a>
+for validating the Python-exposed APIs behave as expected. These tests have
+been invaluable for ensuring that the run-time code works as expected. So now
+when someone files a bug I can easily write a test to capture it and keep
+the code working as intended through various refactors.</p>
+<p>The packaging-time Rust code has also gained its fair share of tests.
+We now have fairly comprehensive test coverage around how resources
+are added/packaged. Python extension modules have proved to be highly
+nuanced in how they are handled. Tremendously helping testing of extension
+modules is that we're able to run tests for platform non-native extensions!
+While not yet exposed/supported by Starlark configuration files, <strong>I've taught
+PyOxidizer's core Rust code to be cross-compiling aware</strong> so that we can
+e.g. test Windows or macOS behavior from Linux. Before, I'd have to test
+Windows wheel handling on Windows. But after writing a wheel parser in Rust
+and teaching PyOxidizer to use a different Python distribution for the
+host architecture from the target architecture, I'm now able to write
+tests for platform-specific functionality that run on any platform that
+PyOxidizer can run on. This <em>may</em> eventually lead to proper cross-compiling
+support (at least in some configuration). Time will tell. But the foundation
+is definitely there!</p>
+<h2>New Rust Crates</h2>
+<p>As part of the aforementioned refactoring of PyOxidizer's Rust code, I've
+been extracting some useful/generic functionality built as part of
+developing PyOxidizer to their own Rust crates.</p>
+<p>As part of this release, I'm publishing the initial 0.1 release of the
+<a href="https://crates.io/crates/python-packaging">python-packaging</a> crate
+(<a href="https://docs.rs/python-packaging/0.1.0/python_packaging/">docs</a>). This crate
+provides pure Rust code for various Python <em>packaging</em> related functionality.
+This includes:</p>
+<ul>
+<li>Rust types representing Python resource types (source modules, bytecode
+  modules, extension modules, package resources, etc).</li>
+<li>Scanning the filesystem for Python resource files .</li>
+<li>Configuring an embedded Python interpreter.</li>
+<li>Parsing <code>PKG-INFO</code> and related files.</li>
+<li>Parsing wheel files.</li>
+<li>Collecting Python resources and serializing them to a data structure.</li>
+</ul>
+<p>The crate is somewhat PyOxidizer centric. But if others are interested
+in improving its utility, I'll happily accept pull requests!</p>
+<p>PyOxidizer's crates footprint now includes:</p>
+<ul>
+<li><a href="https://crates.io/crates/python-packed-resources">python-packed-resources</a></li>
+<li><a href="https://crates.io/crates/python-packaging">python-packaging</a></li>
+<li><a href="https://crates.io/crates/pyembed">pyembed</a></li>
+<li><a href="https://crates.io/crates/pyoxidizer">pyoxidizer</a></li>
+</ul>
+<h2>Major Documentation Updates</h2>
+<p>I strongly believe that software should be documented thoroughly and I strive
+for PyOxidizer's documentation to be useful and comprehensive.</p>
+<p>There have been a lot of changes to PyOxidizer's documentation since the
+0.7 release.</p>
+<p>All <a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config.html">configuration file documentation</a>
+has been consolidated.</p>
+<p>Likewise, I've attempted to consolidate a lot of the <em>paved road</em> documentation
+for how to use PyOxidizer in the
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/packaging.html">Packaging User Guide</a>
+section of the docs.</p>
+<p>I'll be honest, since I have so much of PyOxidizer's workings internalized,
+it can be difficult for me to empathize with PyOxidizer's users. So if you
+have difficult with the <em>readability</em> of the documentation, please
+<a href="https://github.com/indygreg/PyOxidizer/issues/new">file an issue</a> and report
+what is confusing so the documentation can be improved!</p>
+<h2>Mercurial Shipping With PyOxidizer 0.8</h2>
+<p>PyOxidizer is arguably an epic yak shave of mine to help the
+<a href="https://www.mercurial-scm.org/">Mercurial version control tool</a> transition
+to Python 3 and Rust.</p>
+<p>I'm pleased to report that Mercurial is
+<a href="https://www.mercurial-scm.org/pipermail/mercurial/2020-October/052395.html">now shipping</a>
+PyOxidizer-built distributions on Windows as of the 5.2.2 release a few days
+ago! If a complex Python application like Mercurial can be
+<a href="https://www.mercurial-scm.org/repo/hg/file/0627cd03b1e9/rust/hgcli/pyoxidizer.bzl">configured</a>
+to work with PyOxidizer, chances are your Python application will work as
+well.</p>
+<h2>Whats Next</h2>
+<p>I view PyOxidizer 0.8 as a pivotal release where PyOxidizer is turning the
+corner from a prototyping science experiment to something more generally
+usable. The investments in test coverage and refactoring of the Rust
+internals are paving the way towards future features and bug fixes.</p>
+<p>In upcoming releases, I'd like to close remaining known compatibility
+gaps with popular Python packages (such as <em>numpy</em> and other packages in
+the <em>scientific/data</em> space). I have a general idea of what work needs to
+be done and I've been laying the ground work via various refactorings to
+execute here.</p>
+<p><strong>I want a general theme of future releases to be eliminating reasons why
+people can't use PyOxidizer.</strong> PyOxidizer's historical origin was as a
+science experiment to see if single file Python applications were possible.
+It is clear that achieving this is fundamentally incompatible with
+compatibility with tons of Python packages in the wild. I'd like to find a
+way where PyOxidizer can achieve 99% package compatibility by default
+so new users don't get discouraged when using PyOxidizer. And for the
+subset of users who want single file executables, they can spend the
+magnitude of additional effort to achieve that.</p>
+<p>At some point, I also want to make a pivot towards focusing on producing
+distributable artifacts (Debian/RPM packages, MSI installers, macOS DMG
+files, etc). I'm slightly bummed that I haven't made much progress here.
+But I have a vision in my mind of where I want to go (I'll be making
+a standalone Rust crate + Starlark dialect to facilitate producing
+distributable artifacts for <em>any</em> application) and I'm anticipating
+starting this work in the next few months. In the mean time, PyOxidizer
+0.8 should be able to give people a directory tree that they can coerce
+into distributable artifacts using existing packaging tooling. That's not as
+turnkey as I would like it to be. But the technical problems around
+building a distributable Python application binary still needs some work
+and I view that as the most pressing need for the Python ecosystem. So
+I'll continue to focus there so there is a solid foundation to build upon.</p>
+<p>In conclusion, I hope you enjoy the new release! Please report any issues
+or feedback in the
+<a href="https://github.com/indygreg/PyOxidizer/issues/new">GitHub issue tracker</a>.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="using-rust-to-power-python-importing-with-oxidized_importer"></a>
   <h2 class="blog_post_title"><a href="/blog/2020/05/10/using-rust-to-power-python-importing-with-oxidized_importer" rel="bookmark" title="Permanent Link to Using Rust to Power Python Importing With oxidized_importer">Using Rust to Power Python Importing With oxidized_importer</a></h2>
   <small>May 10, 2020 at 01:15 PM | categories: 
@@ -1006,426 +1272,6 @@ without having to edit a <code>pyoxidizer.toml</code> file!</p>
 As always, please keep
 <a href="https://github.com/indygreg/PyOxidizer/issues">filing issues</a>. I'm particularly
 interested in hearing about packages whose C extensions don't work properly.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="building-standalone-python-applications-with-pyoxidizer"></a>
-  <h2 class="blog_post_title"><a href="/blog/2019/06/24/building-standalone-python-applications-with-pyoxidizer" rel="bookmark" title="Permanent Link to Building Standalone Python Applications with PyOxidizer">Building Standalone Python Applications with PyOxidizer</a></h2>
-  <small>June 24, 2019 at 09:00 AM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>, <a href='/blog/category/rust'>Rust</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Python application distribution is generally considered an unsolved
-problem. At their PyCon 2019 keynote talk, Russel Keith-Magee
-<a href="https://youtu.be/ftP5BQh1-YM?t=2033">identified code distribution</a> as
-a potential <em>black swan</em> - an existential threat for longevity - for
-Python. In their words, <em>Python hasn't ever had a consistent story for
-how I give my code to someone else, especially if that someone else
-isn't a developer and just wants to use my application.</em> I completely
-agree. And I want to add my opinion that unless your target user is a
-Python developer, they shouldn't need to know anything about Python
-packaging, Python itself, or even the existence of Python in order to
-use your application. (And you can replace <em>Python</em> in the previous
-sentence with any programming language or software technology: most
-end-users don't care about the technical implementation, they just
-want to get stuff done.)</p>
-<p>Today, I'm excited to announce the first release of PyOxidizer
-(<a href="https://github.com/indygreg/PyOxidizer">project</a>,
-<a href="https://pyoxidizer.readthedocs.io/en/latest/">documentation</a>), an open
-source utility that aims to solve the Python application distribution
-problem! (The installation instructions are in the docs.)</p>
-<h2>Standalone Single File, No Dependencies Executable Python Applications</h2>
-<p><strong>PyOxidizer's marquee feature is that it can produce a single file
-executable containing a fully-featured Python interpreter, its
-extensions, standard library, and your application's modules and
-resources.</strong> In other words, you can have a single <code>.exe</code> providing
-your application. And unlike other tools in this space which tend to
-be operating system specific, PyOxidizer works across platforms
-(currently Windows, macOS, and Linux - the most popular platforms for
-Python today). Executables built with PyOxidizer have minimal
-dependencies on the host environment nor do they do anything
-complicated at run-time. I believe PyOxidizer is the only open
-source tool to have all these attributes.</p>
-<p><strong>On Linux, it is possible to build a fully statically linked executable.</strong>
-You can drop this executable into a chroot or container where it is the
-only file and it will <em>just work</em>. On macOS and Windows, the only
-library dependencies are on always-present or extremely common
-libraries. More details are
-<a href="https://pyoxidizer.readthedocs.io/en/latest/distributing.html">in the docs</a>.</p>
-<p>At execution time, binaries built with PyOxidizer do not do anything
-special to run the Python interpreter. (Other tools in this space do
-things like create a temporary directory or SquashFS filesystem and
-extract Python to it.) <strong>PyOxidizer loads everything from memory and there
-is no explicit I/O being performed. When you <code>import</code> a Python module,
-the bytecode for that module is being loaded from a memory address in
-the executable using zero-copy.</strong> This makes PyOxidizer executables
-<a href="https://pyoxidizer.readthedocs.io/en/latest/overview.html#faster-python-programs">faster</a>
-to start and <code>import</code> - faster than a <code>python</code> executable itself!</p>
-<h2>Current Release and Future Roadmap</h2>
-<p>Today's release of PyOxidizer is just the first release milestone in
-what I envision is a long and successful project history. While my
-over-arching goal with PyOxidizer is to <em>solve</em> vast swaths of the
-Python application distribution problem, I want to be clear that this
-first release comes nowhere close to doing so. I toiled with what
-features <em>must</em> be in the initial release. I ultimately decided that
-PyOxidizer's current functionality is extremely valuable to <em>some</em>
-audiences and that the project has matured to the point where more
-eyeballs and users would substantially help its development. (I could
-definitely use some help prioritizing which features to work on and
-for that I need users and user feedback.)</p>
-<p>In today's release, PyOxidizer is good at producing executables
-embedding Python. It doesn't yet venture too far into the <em>distribution</em>
-part of the problem (I want it to be trivial to produce MSI installers,
-DMG images, deb/rpm packages, etc). But on Linux, this is already a huge
-step forward because PyOxidizer makes it easy (hopefully!) to produce
-binaries that should <em>just work</em> on other machines. (Anyone who has
-attempted to distribute Linux applications will tell you how painful this
-problem can be.)</p>
-<p>Despite its limitations, I believe today's release of PyOxidizer to
-be a viable tool for some applications. And I believe PyOxidizer can
-start to replace existing tools in this space. (See the
-<a href="https://pyoxidizer.readthedocs.io/en/latest/comparisons.html">Comparisons to Other Tools</a>
-document for how PyOxidizer compares to other Python packaging and
-distribution tools.)</p>
-<p>Using today's release of PyOxidizer, larger user-facing applications
-using Python (like Dropbox, <a href="https://kodi.tv/">Kodi</a>,
-<a href="https://picard.musicbrainz.org/">MusicBrainz Picard</a>, etc) could use
-PyOxidizer to produce self-contained executables. This would likely cut
-down on installer size, decrease install/update time (fewer files means
-faster operations), and hopefully make packaging simpler for application
-maintainers. Maintainers of Python utilities could produce self-contained
-executables, making their utilities faster to start and easier to
-package and distribute.</p>
-<h2>New Possibilities and Reliability for Python</h2>
-<p>By enabling support for self-contained, single file Python applications,
-PyOxidizer opens exciting new doors for Python. Because Python has
-historically required an explicit, separate runtime not part of the
-executable, Python was not viable (or was a hinderance) in many domains.
-For example, if you wanted to use Python to <em>bootstrap</em> a fresh server
-or empty container environment, you had a chicken-and-egg problem because
-you needed to install Python before you could use it.</p>
-<p>Let's take <a href="https://www.ansible.com/">Ansible</a> for example. One of Ansible's
-features is that it remotes into a machine and runs things. The way
-it does this is it dynamically generates Python scripts locally, uploads
-them to the remote machine, and tells the remote to execute them. Those
-Python scripts require the existence of a Python interpreter on the
-remote machine. This means you need to install Python on a machine before
-you can control it with Ansible. Furthermore, because the remote's Python
-isn't under Ansible's control, you can assume very little about its behavior
-and capabilities, making interaction a bit brittle.</p>
-<p>Using PyOxidizer, projects like Ansible could produce a self-contained
-executable containing a Python interpreter. They could transfer that
-single binary to the remote machine and execute it, instantly giving the
-remote machine access to a fully-featured and modern Python interpreter.
-From there, the sky is the limit. In Ansible's case, the executable could
-contain the full Ansible runtime, along with any 3rd party Python
-packages they wanted to leverage. This would allow execution to occur
-(possibly mostly independently) on the remote machine. This architecture
-is simpler, scales better, would likely result in faster operations, and
-would probably improve the quality of life for everyone involved, from
-application developers to its end users.</p>
-<p><strong>Self-contained Python applications built with PyOxidizer essentially
-solve the <em>Python interpreter bootstrapping and reliability</em> problems.</strong>
-By providing a Python interpreter and a known set of Python modules, you
-provide a highly deterministic and reliable execution environment for your
-application. You don't need to fret about which version of Python
-is installed: you <em>know</em> which version of Python you are using.
-You don't need to worry about which Python packages are installed:
-you control explicitly which packages are available. You don't need to
-worry about whether you are running in a virtualenv, what <code>sys.path</code>
-is set to, whether <code>.pth</code> files come into play, whether various
-<code>PYTHON*</code> environment variables can mess up your application, whether
-some Linux distribution packaged Python differently, what to put in your
-script's <em>shebang</em>, etc: executables built with PyOxidizer behave as
-you have instructed them to because they are <em>compiled</em> that way.</p>
-<p>All of the concerns in the previous paragraph contribute to a larger
-problem in the eyes of application maintainers that can be summarized as
-<em>Python isn't reliable</em>. And because <em>Python isn't reliable</em>, many
-people reach the conclusion that <em>Python shouldn't be used</em> (this is the
-<em>black swan</em> that was referred to earlier). With PyOxidizer, the Python
-environment is isolated and highly deterministic making the
-reliability problem largely go away. This makes Python a more viable
-technology choice. And it enables application maintainers to aggressively
-adopt modern Python versions, utilize third party packages fearlessly,
-and spend far less time chasing an extremely long tail of issues related
-to Python environment variance. Succinctly, application developers can
-focus on building great applications instead of toiling with Python
-environment problems.</p>
-<h2>Project Status</h2>
-<p>PyOxidizer is still in its relative infancy. While it is far from
-feature complete, I'm mentally committed to working on the remaining
-major functionality. The <a href="https://pyoxidizer.readthedocs.io/en/latest/status.html">Status</a>
-document lists major missing functionality, lesser missing functionality,
-and potential future value-add functionality.</p>
-<p>I want PyOxidizer to provide a Python application packaging and
-distribution experience that <em>just works</em> with minimal cognitive effort
-from Python application maintainers. I have spent a lot of effort
-documenting PyOxidizer. I care passionately about user experience and want
-everything about PyOxidizer to be simple and frustration free. I
-know things aren't there yet. The problems that PyOxidizer is attempting
-to solve are hard (that's a reason nobody has solved them well yet). I
-know there's details floating around in my head that haven't been
-added to the documentation yet. I know there's missing features and
-bugs in PyOxidizer. I know there are
-<a href="https://pyoxidizer.readthedocs.io/en/latest/packaging_pitfalls.html">Packaging Pitfalls</a>
-yet to be discovered.</p>
-<p>This is where you come in.</p>
-<p><strong>I need your help to make PyOxidizer great.</strong> I encourage Python
-application maintainers reading this to head over to
-<a href="https://pyoxidizer.readthedocs.io/en/latest/getting_started.html">Getting Started</a>
-and the
-<a href="https://pyoxidizer.readthedocs.io/en/latest/packaging.html">Packaging User Guide</a>
-and try to package your applications with PyOxidizer. If things don't
-work, let me know by <a href="https://github.com/indygreg/PyOxidizer/issues">filing an issue</a>.
-If you are confused by lack of or unclear documentation, file an issue.
-If something frustrates you, file an issue. If you want to suggest I
-work on a certain feature or fix a bug, file an issue! Tweet to
-<a href="https://twitter.com/indygreg">@indygreg</a> to engage with me there. Join
-the <a href="https://groups.google.com/forum/#!forum/pyoxidizer-users">pyoxidizer-users mailing list</a>.
-While I feel PyOxidizer is usable today (that's why I'm announcing it),
-<strong>I need your feedback to help guide future prioritization.</strong></p>
-<p>Finally, I know PyOxidizer has significant implications for some
-companies and projects that use Python. While I'm not looking to
-enrich myself or make my livelihood from PyOxidizer, if PyOxidizer is
-useful to you and you'd like to send money my way as appreciation, you
-can do so <a href="https://www.patreon.com/indygreg">on Patreon</a> or
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&amp;business=gregory%2eszorc%40gmail%2ecom&amp;lc=US&amp;item_name=PyOxidizer&amp;currency_code=USD&amp;bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted">PayPal</a>.
-If not, that's totally fine: I wouldn't be making PyOxidizer open source
-if I didn't want to share it with the world for free! And I am
-financially well off as well. I just feel like there should be
-more financial contribution to open source because it would improve
-the health of the ecosystem and I can help achieve that end by
-advocating for it and giving myself.</p>
-<h2>Leveraging Rust</h2>
-<p>The <em>oxidize</em> part of PyOxidizer comes from Rust (See the
-<a href="https://en.wikipedia.org/wiki/Rust">Wikipedia Rust article</a> - for the
-chemical not the programming language - to understand where <em>oxidize</em>
-comes from.) The build time packaging and building functionality is
-implemented in Rust. And the binary that embeds and controls the
-Python interpreter in built applications is Rust code. Rationale for
-these decisions is
-<a href="https://pyoxidizer.readthedocs.io/en/latest/faq.html#why-rust">explained in the FAQ</a>.</p>
-<p>This is my first non-toy project using Rust and I have to say that
-Rust is... incredible! I may have to author a dedicated blog post
-extolling the virtues of Rust. In short, Rust is now my go-to language
-for systems level projects. Unless you need the target platform
-versatility, I don't think C or C++ are defensibles choices in 2019 given
-their security deficiencies. Languages like Go, Java, and various JVM
-or CLR languages are acceptable if you can tolerate having a garbage
-collector and/or a larger runtime. But what makes Rust superior in my
-mind is the ability for the compiler to prevent large classes of
-software bugs (especially those that turn into CVEs) and inefficiencies that
-have plagued our industry for decades. <strong>Rust is the first programming
-language I've used where I feel like the language itself, the compiler,
-the tools around it (cargo, rustfmt, clippy, rustup, etc), and the
-community surrounding it all actually care about and assist me with
-writing high quality software. Nothing else I've used comes even close.</strong></p>
-<p>What I've been most surprised about Rust is how high level it feels
-for a systems level language that isn't garbage collected. When you
-program lower-level languages like C or C++, compared to a higher level
-language like Python, you have to type a lot more and be more explicit
-in nearly everything you do. While Rust is certainly not as expressive
-or compact as say Python, it is far, far closer to Python than I was
-expecting it to be. Yes, you do have to type more and think more about
-your code to appease the Rust compiler's constraints. But the return
-on that investment is the compiler preventing entire classes of bugs
-and C/C++ levels of performance. When I started PyOxidizer, the build
-time logic was implemented in Python and only the run-time pieces were
-in Rust. <strong>After learning a bit more Rust and realizing the obvious
-code quality benefits, I ditched Python and adopted Rust for the build
-time logic.</strong> And as the code base has grown and gone through various
-refactorings, I am so glad I did so! The Rust compiler has caught
-dozens of would-be bugs in Python. Granted, many of these can be
-attributed to having strong typing and compile time type checking and
-Rust is little different than say Java on this front. But a significant
-number of prevented bugs covered invariants in the code because of the
-way Rust's type system often intersects with control flow. e.g. <code>match</code>
-arms must be exhaustive, so you can't have unhandled values/types and
-unchecked <code>Result</code> instances result ina compiler warning. And clippy
-has been just fantastic helping to guide me towards writing more
-<em>acceptable</em> code following community accepted best practices.</p>
-<p><strong>Even though PyOxidizer is implemented in Rust, most end-users shouldn't
-have to care</strong> (beyond having to install a Rust compiler and build
-PyOxidizer from source). The existence of Rust should be abstracted
-away from Python packagers. I did this on purpose because I believe that
-users of an application shouldn't have to care about the technical
-implementation of that application. It is a bit unfortunate that I
-force users to install Rust before using PyOxidizer, but in my defense
-the target audience is technically savvy developers, bootstrapping Rust
-is easy, and PyOxidizer is young, so I think it is acceptble for now.
-If people get hung up on it, I can provide pre-compiled <code>pyoxidizer</code>
-executables.</p>
-<p>But if you do know Rust, PyOxidizer being implemented in Rust opens
-up some exciting possibilities!</p>
-<p><strong>One exciting possibility with PyOxidizer is the ability to add Rust
-code to your Python application.</strong> PyOxidizer works by generating a
-default Rust application (<code>main.rs</code>) that simply instantiates and runs
-an embedded Python interpreter then exits. It essentially does what
-<code>python</code> or a Python script would do. The key takeaway here is your
-<em>Python application</em> is technically a <em>Rust application</em> (in the same
-way that <code>python</code> is technically a <em>C application</em>). And being a
-Rust application means you can add Rust code to that application. You
-can modify the autogenerated <code>main.rs</code> to do things before, during, and
-after the embedded Python interpreter runs. It's a regular Rust program
-and can do anything that Rust programs can do!</p>
-<p>Another possibility - and variant of above - is embedding Python
-in existing Rust projects. PyOxidizer's mechanism for embedding a
-Python interpreter is implemented as a standalone Rust crate. <strong>One
-can add the pyembed crate to an existing Rust project and a little of
-build system magic later, your Rust project can now embed and run
-a Python interpreter!</strong></p>
-<p>There's a lot of potential for hybrid Rust + Python programs. And
-I am <strong>very</strong> excited about the possibilities.</p>
-<p><strong>If you are a Rust programmer, PyOxidizer allows you to easily embed
-Python in your Rust application. If you are a Python programmer,
-PyOxidizer allows your to easily leverage Rust in your Python
-application.</strong> In short, the package ecosystem of the other becomes
-available to you. And if you aren't familiar with Rust, there are some
-potentially crazy possibilities. For example,
-<a href="https://github.com/jwilm/alacritty">Alacritty</a> is a GPU accelerated
-terminal emulator written in Rust and
-<a href="https://github.com/servo/servo">Servo</a> is an entire web browser
-engine written in Rust. With PyOxidizer, you could integrate a
-terminal emulator or browser engine as part of your Python
-application if you really wanted to. And, yes, Rust's packaging
-tools are so good that stuff like this tends to <em>just work</em>. As
-a concrete example, the <code>pyoxidizer</code> CLI tool contains <code>libgit2</code>
-for performing in-process interactions with Git repositories. Adding
-this required a single line change to a <code>Cargo.toml</code> file and it
-<em>just worked</em> on Linux, macOS, and Windows. Stuff like this often
-takes hours to days to integrate in C/C++. It is quite ridiculous
-how easy it is to add (complex) components to Rust projects!</p>
-<p>For years, Python projects have implemented extensions in C to
-realize performance wins. If your Python application is a Rust
-executable, then implementing this functionality in Rust (rather
-than C) seems rationale. So we may see <em>oxidized</em> Python
-applications have their performance critical pieces slowly be
-rewritten in Rust. (Honestly, the Rust crates to interface between
-Rust and the CPython API still leave a bit to be desired, so the
-experience of writing this Rust code still isn't great. But things
-will certainly improve over time.)</p>
-<p>This type of <em>inside-out</em> split language work has been practiced
-in Python for years. What PyOxidizer brings to the table is the
-ability to more easily port code <em>outside-in</em>. For example, you
-could implement performance-criticial, early application logic such
-as config file parsing and command line argument parsing in Rust.
-You could then have Rust service some application functionality
-without Python. Why would you want this? Performance is a valid
-reason. Starting a Python interpreter, importing modules, and running
-code can consume several dozen or even hundreds of milliseconds. If
-you are writing performance sensitive applications, the existence
-of <em>any</em> Python can add enough latency that people no longer perceive
-the interaction as instananeous. This added latency can make Python
-totally inappropriate for some contexts, such as for programs that run
-as part of populating your shell's prompt. Writing such code in Rust
-instead of Python dramatically increases the probability that the
-code is fast and likely delivers stronger correctness guarantees
-courtesy of Rust's compile time validation as well!</p>
-<p>An extreme practice of <em>outside-in</em> porting of Python to Rust would
-be to incrementally rewrite an entire Python application in Rust.
-Rust's ergonomics are exceptional and I do think we'll see people
-choose Rust where they previously would have chosen Python. I've
-done this myself with PyOxidizer and feel it is a very defensible
-decision to reach! I feel a bit conflicted releasing a tool which
-may undermine Python's popularity by encouraging use of Rust over
-Python. But at the end of the day, PyOxidizer increases the utility
-of both Python and Rust by giving each more readily accessible
-access to the other and PyOxidizer improves the overall utility of
-Python by improving the application distribution story. I have no
-doubt PyOxidizer is a net benefit for the Python ecosystem, even if
-it does help usher in more people choosing Rust over Python. If
-I have an ulterior motive in developing PyOxidizer, it is to enable
-Mercurial's official distribution to be a Rust executable and
-for some functionality (like <code>hg status</code>) to be runnable without
-Python (for performance reasons).</p>
-<p>Another possible use of PyOxidizer is as a library. All the build time
-functionality of PyOxidizer exists in a Rust crate. So, you can add
-the <code>pyoxidizer</code> crate to your own Rust project and use its code to
-do things like build a library containing Python, compile Python
-source modules to bytecode, or walk a directory tree and find Python
-resources within. The code is still heavily geared towards PyOxidizer
-and there's no promise of API stability. But this potential for library
-usage exists and if others want to experiment with building custom
-Python binaries not using the <code>pyoxidizer</code> CLI tool, using PyOxidizer
-as a library might save you a lot of time.</p>
-<h2>Standalone Python Distributions</h2>
-<p>One of the most time consuming parts of building PyOxidizer was
-figuring out how to build self-contained Python distributions.
-Typically, a Python build consists of a library, shared libraries for
-various extension modules, shared libraries required by the prior
-items, and a hodgepodge of other files, such as .py files implementing
-the Python standard library. The
-<a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
-project was created to automate creating special builds of Python
-which are self-contained and distributable. This requires doing
-dirty things with build systems. But I don't want to inflict the
-details on you here. What I do think is worth mentioning is how
-those Python distributions are distributed. The output of the
-build is a tarball containing the Python installation, build artifacts
-that can be used to link a custom libpython, and a <code>PYTHON.json</code>
-file describing the contents of the distribution. PyOxidizer reads
-the <code>PYTHON.json</code> file and learns how it should interact with that
-distribution. <strong>If you produce a Python distribution conforming to the
-format that <code>python-build-standalone</code> defines, you can use that
-Python with PyOxidizer.</strong></p>
-<p>While I have no urgency to do so at this time, I could see a future
-where this Python distribution format is standardized. Then maintainers
-of various Python distributions (CPython, PyPy, etc) would independently
-produce their own distributable artifacts conforming to this standard,
-in turn allowing machine consumers of Python distributions (such as
-PyOxidizer) to easily consume different Python distributions and do
-interesting things with them. You could even imagine these Python
-distribution archives being readily available as packages in your
-system's package manager and their locations exposed via the
-<code>sysconfig</code> Python module, making it easy for tools (like PyOxidizer)
-to find and use them.</p>
-<p>Over time, I could see PyOxidizer's functionality rolling up into
-official packaging tools like <code>pip</code>, which would know how to consume
-the distribution archives and produce an executable containing a
-Python interpreter, required Python modules, etc.</p>
-<p>Getting PyOxidizer's functionality rolled into official Python
-packaging tools is likely years away (if it ever happens). But I think
-standardizing a format describing a Python distribution and (optionally)
-contains build artifacts that can be used to <em>repackage</em> it is a
-prerequisite and would be a good place to start this journey. I would
-certainly love for Python distributions (like CPython) to be in charge of
-producing official <em>repackagable</em> distributions because this is not
-something I want to be in the business of doing long term (I'm
-lazy, less equipped to make the correct decisions, and there are
-various trust and security concerns). And while I'm here, I am
-definitely interested in upstreaming some of the
-<code>python-build-standalone</code> functionality into the existing CPython
-build system because coercing CPython's build system to produce
-distributable binaries is currently a major pain and I'd love to enable
-others to do this. I just haven't had time nor do I know if the patches
-would be well received. If a CPython maintainer wants to get in
-touch, I'd love to have a conversation!</p>
-<h2>Conclusion</h2>
-<p>I started hacking on PyOxidizer in November 2018. After months
-of chipping away at it, I think I finally have a useful utility
-for some audiences. There's still a lot of missing features and
-some rough edges. But the core functionality is there and I'm
-convinced that PyOxidizer or its underlying technology could be
-an integral part of solving Python's application distribution
-<em>black swan</em> problem. I'm particularly proud of the hacks I
-concocted to coerce Python into importing module bytecode from
-memory using zero-copy. Those are documented in
-<a href="/blog/2018/12/18/distributing-standalone-python-applications/">this blog post</a>
-and in the
-<a href="https://github.com/indygreg/PyOxidizer/blob/master/pyoxidizer/src/pyembed/lib.rs">pyembed crate docs</a>.</p>
-<p>So what are you waiting for? Head on over to the
-<a href="https://pyoxidizer.readthedocs.io/en/latest/index.html">documentation</a>,
-install PyOxidizer, and let me know how it goes by
-<a href="https://github.com/indygreg/PyOxidizer/issues">filing issues</a>!</p>
-<p>I hope you enjoy <em>oxidizing</em> your Python applications!</p>
 
   </div>
 </div>

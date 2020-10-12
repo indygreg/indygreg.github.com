@@ -51,6 +51,240 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="global-kernel-locks-in-apfs"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/10/29/global-kernel-locks-in-apfs" rel="bookmark" title="Permanent Link to Global Kernel Locks in APFS">Global Kernel Locks in APFS</a></h2>
+  <small>October 29, 2018 at 02:20 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/apple'>Apple</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Over the past several months, a handful of people had been complaining
+that Mercurial's test harness was executing much slower on Macs. But
+this slowdown seemingly wasn't occurring on Linux or Windows. And not
+every Mac user experienced the slowness!</p>
+<p>Before jetting off to the Mercurial 4.8 developer meetup in Stockholm
+a few weeks ago, I sat down with a relatively fresh 6+6 core MacBook Pro
+and experienced the problem firsthand: on my 4+4 core i7-6700K running
+Linux, the Mercurial test harness completes in ~12 minutes, but on this
+MacBook Pro, it was executing in ~38 minutes! On paper, this result
+doesn't make any sense because there's no way that the MacBook Pro should
+be ~3x slower than that desktop machine.</p>
+<p>Looking at Activity Monitor when running the test harness with 12 tests
+in parallel revealed something odd: the system was spending ~75% of overall
+CPU time inside the kernel! When reducing the number of tests that ran in
+parallel, the percentage of CPU time spent in the kernel decreased and
+the overall test harness execution time also decreased. This kind of
+behavior is usually a sign of something very inefficient in kernel land.</p>
+<p>I sample profiled all processes on the system when running the Mercurial
+test harness. Aggregate thread stacks revealed a common pattern:
+<code>readdir()</code> being in the stack.</p>
+<p>Upon closer examination of the stacks, <code>readdir()</code> calls into
+<code>apfs_vnop_readdir()</code>, which calls into some functions with <code>bt</code> or
+<code>btree</code> in their name, which call into <code>lck_mtx_lock()</code>,
+<code>lck_mtx_lock_grab_mutex()</code> and various other functions with
+<code>lck_mtx</code> in their name. And the caller of most <code>readdir()</code> appeared
+to be Python 2.7's module importing mechanism (notably
+<code>import.c:case_ok()</code>).</p>
+<p>APFS refers to the
+<a href="https://en.wikipedia.org/wiki/Apple_File_System">Apple File System</a>,
+which is a filesystem that Apple introduced in 2017 and is the
+default filesystem for new versions of macOS and iOS. If upgrading an
+old Mac to a new macOS, its HFS+ filesystems would be automatically
+converted to APFS.</p>
+<p>While the source code for APFS is not available for me to confirm, the
+profiling results showing excessive time spent in
+<code>lck_mtx_lock_grab_mutex()</code> combined with the fact that execution time
+decreases when the parallel process count decreases leads me to the
+conclusion that <strong>APFS obtains a global kernel lock during read-only
+operations such as <code>readdir()</code></strong>. In other words, APFS slows down when
+attempting to perform parallel read-only I/O.</p>
+<p>This isn't the first time I've encountered such behavior in a
+filesystem: last year I
+<a href="/blog/2017/12/08/good-riddance-to-aufs/">blogged about very similar behavior in AUFS</a>,
+which was making Firefox CI significantly slower.</p>
+<p>Because Python 2.7's module importing mechanism was triggering the
+slowness by calling <code>readdir()</code>, I
+<a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">posted to python-dev</a>
+about the problem, as I thought it was important to notify the larger
+Python community. After all, this is a generic problem that affects
+the performance of starting <em>any</em> Python process when running on APFS.
+i.e. if your build system invokes many Python processes in parallel,
+you could be impacted by this. As part of obtaining data for that post, I
+discovered that Python 3.7 does not call <code>readdir()</code> as part of
+module importing and therefore doesn't exhibit a severe slowdown. (Python's
+module importing code was rewritten significantly in Python 3 and the <em>fix</em>
+was likely introduced well before Python 3.7.)</p>
+<p>I've <a href="https://gist.github.com/indygreg/a50e187f5372807cdcab5ac12bc2feea">produced a gist that can reproduce the problem</a>.
+The script essentially performs a recursive directory walk. It exercises
+the <code>opendir()</code>, <code>readdir()</code>, <code>closedir()</code>, and <code>lstat()</code> functions
+heavily and is essentially a benchmark of the filesystem and filesystem
+cache's ability to return file metadata.</p>
+<p>When you tell it to walk a very large directory tree - say a Firefox
+version control checkout (which has over 250,000 files) - the excessive
+time spent in the kernel is very apparent on macOS 10.13 High Sierra:</p>
+<pre><code>$ time ./slow-readdir.py -l 12 ~/src/firefox
+ran 12 walks across 12 processes in 172.209s
+
+real    2m52.470s
+user    1m54.053s
+sys    23m42.808s
+
+$ time ./slow-readdir.py -l 12 -j 1 ~/src/firefox
+ran 12 walks across 1 processes in 523.440s
+
+real    8m43.740s
+user    1m13.397s
+sys     3m50.687s
+
+$ time ./slow-readdir.py -l 18 -j 18 ~/src/firefox
+ran 18 walks across 18 processes in 210.487s
+
+real    3m30.731s
+user    2m40.216s
+sys    33m34.406s
+</code></pre>
+<p>On the same machine upgraded to macOS 10.14 Mojave, we see a bit of a
+speedup!:</p>
+<pre><code>$ time ./slow-readdir.py -l 12 ~/src/firefox
+ran 12 walks across 12 processes in 97.833s
+
+real    1m37.981s
+user    1m40.272s
+sys    10m49.091s
+
+$ time ./slow-readdir.py -l 12 -j 1 ~/src/firefox
+ran 12 walks across 1 processes in 461.415s
+
+real    7m41.657s
+user    1m05.830s
+sys     3m47.041s
+
+$ time ./slow-readdir.py -l 18 -j 18 ~/src/firefox
+ran 18 walks across 18 processes in 140.474s
+
+real    2m20.727s
+user    3m01.048s
+sys    17m56.228s
+</code></pre>
+<p>Contrast with my i7-6700K Linux machine backed by EXT4:</p>
+<pre><code>$ time ./slow-readdir.py -l 8 ~/src/firefox
+ran 8 walks across 8 processes in 6.018s
+
+real    0m6.191s
+user    0m29.670s
+sys     0m17.838s
+
+$ time ./slow-readdir.py -l 8 -j 1 ~/src/firefox
+ran 8 walks across 1 processes in 33.958s
+
+real    0m34.164s
+user    0m17.136s
+sys     0m13.369s
+
+$ time ./slow-readdir.py -l 12 -j 12 ~/src/firefox
+ran 12 walks across 12 processes in 25.465s
+
+real    0m25.640s
+user    1m4.801s
+sys     1m20.488s
+</code></pre>
+<p>It is apparent that macOS 10.14 Mojave has received performance work
+relative to macOS 10.13! Overall kernel CPU time when performing parallel
+directory walks has decreased substantially - to ~50% of original on some
+invocations! Stacks seem to reveal new code for lock acquisition, so this
+might indicate generic improvements to the kernel's locking mechanism
+rather than APFS specific changes. Changes to file metadata caching could
+also be responsible for performance changes. Although it is difficult to tell
+without access to the APFS source code. Despite those improvements, APFS
+is still spending a lot of CPU time in the kernel. And the kernel CPU time
+is still comparatively very high compared to Linux/EXT4, even for single
+process operation.</p>
+<p>At this time, I haven't conducted a comprehensive analysis of APFS to
+determine what other filesystem operations seem to acquire global kernel
+locks: all I know is <code>readdir()</code> does. A casual analysis of profiled
+stacks when running Mercurial's test harness against Python 3.7 seems
+to show <code>apfs_*</code> functions still on the stack a lot and that seemingly
+indicates more APFS slowness under parallel I/O load. But HFS+ exhibited
+similar problems (it appeared HFS+ used a single I/O thread inside the
+kernel for many operations, making I/O on macOS pretty bad), so I'm
+not sure if these could be considered <em>regressions</em> the way <code>readdir()</code>'s
+new behavior is.</p>
+<p>I've reported this issue to Apple at
+<a href="https://bugreport.apple.com/web/?problemID=45648013">https://bugreport.apple.com/web/?problemID=45648013</a>
+and on OpenRadar at <a href="https://openradar.appspot.com/radar?id=5025294012383232">https://openradar.appspot.com/radar?id=5025294012383232</a>.
+I'm told that issues get more attention from Apple when there are many
+duplicates of the same issue. So please reference this issue if you file your
+own report.</p>
+<p>Now that I've elaborated on the technical details, I'd like to add some
+personal commentary. While this post is about APFS, this issue of global
+kernel locks during common I/O operations is not unique to APFS. I
+<a href="/blog/2017/12/08/good-riddance-to-aufs/">already referenced</a> similar
+issues in AUFS. And I've encountered similar behaviors with Btrfs (although
+I can't recall exactly which operations). And NTFS has its own
+<a href="https://github.com/Microsoft/WSL/issues/873#issuecomment-425272829">bag of problems</a>.</p>
+<p>This seeming pattern of global kernel locks for common filesystem operations
+and slow filesystems is really rubbing me the wrong way. Modern NVMe SSDs
+are capable of reading and writing well over 2 gigabytes per second and
+performing hundreds of thousands of I/O operations per second. We even have
+Intel soon producing
+<a href="https://newsroom.intel.com/editorials/re-architecting-data-center-memory-storage-hierarchy/">persistent solid state storage that plugs into DIMM slots</a>
+because it is that friggin fast.</p>
+<p>Today's storage hardware is capable of ludicrous performance. It is fast enough
+that you will likely saturate multiple CPU cores processing the read or written
+data coming from and going to storage - especially if you are using higher-level,
+non-JITed (read: slower) programming languages (like Python). There has also been
+a trend that systems are growing more CPU cores faster than they are instructions
+per second per core. And SSDs only achieve these ridiculous IOPS numbers if many
+I/O operations are <em>queued</em> and can be more efficiently dispatched within the
+storage device. What this all means is that it probably makes sense to use
+parallel I/O across multiple threads in order to extract all potential
+performance from your persistent storage layer.</p>
+<p>It's also worth noting that we now have solid state storage that outperforms (in
+some dimensions) what DRAM from ~20 years ago was capable of. Put another way I/O
+APIs and even some filesystems were designed in an era when its RAM was slower than
+what today's persistent storage is capable of! While I'm no filesystems or kernel
+expert, it does seem a bit silly to be using APIs and filesystems designed for an
+era when storage was multiple orders of magnitude slower and systems only had a
+single CPU core.</p>
+<p>My takeaway is I can't help but feel that systems-level software (including the
+kernel) is severely limiting the performance potential of modern storage
+devices. If we have e.g. global kernel locks when performing common I/O operations,
+there's no chance we'll come close to harnessing the full potential of today's
+storage hardware. Furthermore, the behavior of filesystems is woefully under
+documented and software developers have little solid advice for how to achieve
+optimal I/O performance. As someone who cares about performance, I want to
+squeeze every iota of potential out of hardware. But the lack of documentation
+telling me which operations acquire locks, which strategies are best for say
+reading or writing 10,000 files using N threads, etc makes this extremely
+difficult. And even if this documentation existed, because of differences in
+behavior across filesystems and operating systems and the difficulty in
+programmatically determining the characteristics of filesystems at run time,
+it is practically impossible to design a <em>one size fits all</em> approach to
+high performance I/O.</p>
+<p>The filesystem is a powerful concept. I want to agree and use the <em>everything is a
+file</em> philosophy. Unfortunately, filesystems don't appear to be scaling very well
+to support the potential of modern day storage technology. We're probably at the
+point where commodity priced solid state storage is far more capable than today's
+software for the majority of applications. Storage hardware manufacturers will
+keep producing faster and faster storage and their marketing teams will keep
+convincing us that we need to buy it. But until software catches up, chances are
+most of us won't come close to realizing the true potential of modern storage
+hardware. And that's even true for specialized applications that do employ tricks
+taking hundreds or thousands of person hours to implement in order to eek out every
+iota of performance potential. The average software developer and application
+using filesystems as they were designed to be used has little to no chance of
+coming close to utilizing the performance potential of modern storage devices.
+That's really a shame. </p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="release-of-python-zstandard-0.9"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/04/09/release-of-python-zstandard-0.9" rel="bookmark" title="Permanent Link to Release of python-zstandard 0.9">Release of python-zstandard 0.9</a></h2>
   <small>April 09, 2018 at 09:30 AM | categories: 
@@ -1054,160 +1288,6 @@ other people and is thus better for productivity. This will come in
 time.</p>
 <p>Report issues in #mozreview or in the Developer Services :: MozReview
 Bugzilla component.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="python-packaging-do's-and-don'ts"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/07/15/python-packaging-do's-and-don'ts" rel="bookmark" title="Permanent Link to Python Packaging Do's and Don'ts">Python Packaging Do's and Don'ts</a></h2>
-  <small>July 15, 2014 at 05:20 PM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Are you someone who casually interacts with Python but don't know the
-inner workings of Python? Then this post is for you. Read on to learn
-why some things are the way they are and how to avoid making some
-common mistakes.</p>
-<h2>Always use Virtualenvs</h2>
-<p>It is an easy trap to view <a href="https://virtualenv.pypa.io/en/latest/virtualenv.html">virtualenvs</a>
-as an obstacle, a distraction towards accomplishing something. People
-see me adding virtualenvs to build instructions and they say <em>I don't
-use virtualenvs, they aren't necessary, why are you doing that?</em></p>
-<p>A virtualenv is effectively an overlay on top of your system Python
-install. Creating a virtualenv can be thought of as copying your system
-Python environment into a local location. When you modify virtualenvs,
-you are modifying an isolated container. Modifying virtualenvs has no
-impact on your system Python.</p>
-<p>A goal of a virtualenv is to isolate your system/global Python install
-from unwanted changes. When you accidentally make a change to a
-virtualenv, you can just delete the virtualenv and start over from
-scratch. When you accidentally make a change to your system Python, it
-can be much, much harder to recover from that.</p>
-<p>Another goal of virtualenvs is to allow different versions of packages
-to exist. Say you are working on two different projects and each
-requires a specific version of Django. With virtualenvs, you install one
-version in one virtualenv and a different version in another virtualenv.
-Things happily coexist because the virtualenvs are independent.
-Contrast with trying to manage both versions of Django in your system
-Python installation. Trust me, it's not fun.</p>
-<p>Casual Python users may not encounter scenarios where virtualenvs make
-their lives better... until they do, at which point they realize their
-system Python install is beyond saving. People who eat, breath, and die
-Python run into these scenarios all the time. We've learned how bad life
-without virtualenvs can be and so we use them everywhere.</p>
-<p>Use of virtualenvs is a best practice. Not using virtualenvs will result
-in something unexpected happening. It's only a matter of time.</p>
-<p>Please use virtualenvs.</p>
-<h2>Never use sudo</h2>
-<p>Do you use sudo to install a Python package? You are doing it wrong.</p>
-<p>If you need to use sudo to install a Python package, that almost
-certainly means you are installing a Python package to your
-system/global Python install. And this means you are modifying your
-system Python instead of isolating it and keeping it pristine.</p>
-<p>Instead of using sudo to install packages, create a virtualenv and
-install things into the virtualenv. There should never be permissions
-issues with virtualenvs - the user that creates a virtualenv has full
-realm over it.</p>
-<h2>Never modify the system Python environment</h2>
-<p>On some systems, such as OS X with Homebrew, you don't need sudo to
-install Python packages because the user has write access to the Python
-directory (<em>/usr/local</em> in Homebrew).</p>
-<p>For the reasons given above, don't muck around with the system Python
-environment. Instead, use a virtualenv.</p>
-<h2>Beware of the package manager</h2>
-<p>Your system's package manager (apt, yum, etc) is likely using root and/or
-installing Python packages into the system Python.</p>
-<p>For the reasons given above, this is bad. Try to use a virtualenv, if
-possible. Try to not use the system package manager for installing
-Python packages.</p>
-<h2>Use pip for installing packages</h2>
-<p>Python packaging has historically been a mess. There are a handful of
-tools and APIs for installing Python packages. As a casual Python user,
-you only need to know of one of them:
-<a href="https://pip.pypa.io/en/latest/">pip</a>.</p>
-<p>If someone says <em>install a package</em>, you should be thinking <em>create a
-virtualenv, activate a virtualenv, <code>pip install &lt;package&gt;</code></em>. <strong>You
-should never run <code>pip install</code> outside of a virtualenv.</strong> (The exception
-is to install virtualenv and pip itself, which you almost certainly want
-in your system/global Python.)</p>
-<p>Running <em>pip install <package></em> will install packages from
-<a href="https://pypi.python.org/pypi">PyPI</a>, the Python Packaging Index by
-default. It's Python's official package repository.</p>
-<p>There are a lot of old and outdated tutorials online about Python
-packaging. Beware of bad content. For example, if you see documentation
-that says <em>use easy_install</em>, you should be thinking, <em>easy_install is
-a legacy package installer that has largely been replaced by pip, I
-should use pip instead</em>. When in doubt, consult the
-<a href="https://python-packaging-user-guide.readthedocs.org/en/latest/index.html">Python packaging user guide</a>
-and do what it recommends.</p>
-<h2>Don't trust the Python in your package manager</h2>
-<p>The more Python programming you do, the more you learn to not trust the
-Python package provided by your system / package manager.</p>
-<p>Linux distributions such as Ubuntu that sit on the forward edge of
-versions are better than others. But I've run into enough problems with
-the OS or package manager maintained Python (especially on OS X), that
-I've learned to distrust them.</p>
-<p>I use <a href="https://github.com/yyuu/pyenv">pyenv</a> for installing and managing
-Python distributions from source. pyenv also installs virtualenv and
-pip for me, packages that I believe should be in all Python installs
-by default. As a more experienced Python programmer, I find pyenv 
-<em>just works</em>.</p>
-<p>If you are just a beginner with Python, it is probably safe to ignore
-this section. Just know that as soon as something weird happens, start
-suspecting your default Python install, especially if you are on OS X.
-If you suspect trouble, use something like pyenv to enforce a buffer so
-the system can have its Python and you can have yours.</p>
-<h2>Recovering from the past</h2>
-<p>Now that you know the preferred way to interact with Python, you are
-probably thinking <em>oh crap, I've been wrong all these years - how do I
-fix it?</em></p>
-<p>The goal is to get a Python install <em>somewhere</em> that is as pristine as
-possible. You have two approaches here: cleaning your existing Python or
-creating a new Python install.</p>
-<p>To clean your existing Python, you'll want to purge it of pretty much
-all packages not installed by the core Python distribution. The
-exception is virtualenv, pip, and setuptools - you almost certainly want
-those installed globally. On Homebrew, you can uninstall everything related to
-Python and blow away your Python directory, typically
-/usr/local/lib/python*. Then, <em>brew install python</em>. On Linux distros,
-this is a bit harder, especially since most Linux distros rely on Python
-for OS features and thus they may have installed extra packages. You
-could try a similar approach on Linux, but I don't think it's worth it.</p>
-<p>Cleaning your system Python and attempting to keep it pure are ongoing
-tasks that are very difficult to keep up with. All it takes is one
-dependency to get pulled in that trashes your system Python. Therefore,
-I shy away from this approach.</p>
-<p>Instead, I install and run Python from my user directory. I use
-<a href="https://github.com/yyuu/pyenv">pyenv</a>. I've also heard great things
-about <a href="http://conda.pydata.org/miniconda.html">Miniconda</a>. With either
-solution, you get a Python in your home directory that starts clean and
-pure. Even better, it is completely independent from your system Python.
-So if your package manager does something funky, there is a buffer. And,
-if things go wrong with your userland Python install, you can always
-nuke it without fear of breaking something in system land. This seems to
-be the best of both worlds.</p>
-<p>Please note that installing packages in the system Python shouldn't be
-evil. When you create virtualenvs, you can - and should - tell
-virtualenv to not use the system site-packages (i.e. <em>don't use
-non-core packages from the system installation</em>). This is the default
-behavior in virtualenv. It should provide an adequate buffer. But from
-my experience, things still manage to bleed through. My userland Python
-install is extra safety. If something wrong happens, I can only blame
-myself.</p>
-<h2>Conclusion</h2>
-<p>Python's long and complicated history of package management makes it
-very easy for you to shoot yourself in the foot. The long list of
-outdated tutorials on The Internet make this a near certainty for casual
-Python users. Using the guidelines in this post, you can adhere to best
-practices that will cut down on surprises and rage and keep your Python
-running smoothly.</p>
 
   </div>
 </div>

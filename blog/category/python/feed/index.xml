@@ -10,10 +10,268 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Sun, 10 May 2020 20:12:57 GMT</pubDate>
+    <pubDate>Mon, 12 Oct 2020 07:45:55 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Announcing the 0.8 Release of PyOxidizer</title>
+      <link>http://gregoryszorc.com/blog/2020/10/12/announcing-the-0.8-release-of-pyoxidizer</link>
+      <pubDate>Mon, 12 Oct 2020 00:45:00 PDT</pubDate>
+      <category><![CDATA[Python]]></category>
+      <category><![CDATA[PyOxidizer]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2020/10/12/announcing-the-0.8-release-of-pyoxidizer</guid>
+      <description>Announcing the 0.8 Release of PyOxidizer</description>
+      <content:encoded><![CDATA[<p>I am very excited to announce the 0.8 release of
+<a href="https://pyoxidizer.readthedocs.io/en/stable/">PyOxidizer</a>, a modern
+Python application packaging tool. You can find the full changelog
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/history.html">in the docs</a>.
+First time user? See the
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/getting_started.html">Getting Started</a>
+documentation.</p>
+<p>Foremost, I apologize that this release took so long to publish (0.7 was
+released on 2020-04-09). I fervently believe that frequent releases are
+a healthy software development practice. And 6 months between PyOxidizer
+releases was way too long. Part of the delay was due to world events
+(it has proven difficult to focus on... anything given a global pandemic,
+social unrest, and wildfires further undermining any resemblance of
+lifestyle normalcy in California). Another contributing factor was I was
+waiting on a few 3rd party Rust crates to have new versions published to
+crates.io (you can't release a crate to crates.io unless all your
+dependencies are also published there).</p>
+<p>Release delay and general life hardships aside, the 0.8 release is here
+and it is full of notable improvements!</p>
+<h2>Python 3.8 and 3.9 Support</h2>
+<p><strong>PyOxidizer 0.8 now targets Python 3.8 by default and support for Python
+3.9 is available</strong> by tweaking configuration files. Previously, we only
+supported Python 3.7 and this release drops support for Python 3.7. I feel
+a bit bad for dropping compatibility. But Python 3.8 introduced a
+<a href="https://docs.python.org/3/c-api/init_config.html">new C API</a> for initializing
+Python interpreters (thank you Victor Stinner!) and this makes PyOxidizer's
+run-time code for interfacing with Python interpreters vastly simpler.
+I decided that given the beta nature of PyOxidizer, it wasn't worth
+maintaining complexity to continue to support Python 3.7. I'm optimistic
+that I'll be able to support Python 3.8 as a baseline for a while.</p>
+<h1>Better Default Packaging Settings</h1>
+<p>PyOxidizer started as a science experiment of sorts to see if I could
+achieve the elusive goal of producing a single file executable providing
+a Python application. I was successful in proving this hypothesis. But the
+cost to achieving this outcome was rather high in terms of end-user
+experience: in order to produce single file executables, you had to break
+a lot of assumptions about how Python typically works and this in turn broke
+a lot of Python code and packages in the wild.</p>
+<p>In other words, <strong>PyOxidizer's opinionated defaults of producing a single file
+executable were externalizing hardship on end-users and preventing them from
+using PyOxidizer.</strong></p>
+<p>PyOxidizer 0.8 contains a handful of changes to defaults that should hopefully
+lessen the friction.</p>
+<p>On Windows, the default Python distribution now has a more traditional
+build configuration (using <code>.pyd</code> extension modules and a <code>pythonXY.dll</code>
+file). <strong>This means that PyOxidizer can consume pre-built extension modules
+without having to recompile them from source.</strong> If you publish a Windows
+binary wheel on PyPI, in many cases it will <em>just work</em> with PyOxidizer
+0.8! (There are some notable exceptions to this, such as <em>numpy</em>, which is
+doing wonky things with the location of shared libraries in wheels - but
+I aim to fix this soon.)</p>
+<p>Also on Windows, we no longer attempt to embed Python extension modules
+(<code>.pyd</code> files) and their shared library dependencies in the produced
+binary and load them from memory by default. This is because PyOxidizer's
+from-memory library loader didn't work in all cases. For example, some
+OpenSSL functionality used by the <code>_ssl</code> module in the standard library
+didn't work, preventing Python from establishing TLS connections. The old
+mode enabling you to produce a single file executable on Windows is still
+available. But you have to opt in to it (at the likely cost of more
+packaging and compatibility pain).</p>
+<h2>Starlark Configuration Overhaul</h2>
+<p>PyOxidizer 0.8 contains a <strong>ton</strong> of changes to its Starlark configuration
+files. There are so many changes that you may find it easier to port to
+PyOxidizer 0.8 by creating a new configuration file rather than attempting
+to port an existing one.</p>
+<p>I apologize for this churn and recognize it will be disruptive. However,
+this churn needed to happen for various reasons.</p>
+<p>Much of the old Starlark configuration semantics was rooted in the days
+when configuration files were static TOML files. Now that configuration
+files provide the power of a (Python-inspired) programming language, we
+are free to expose much more flexibility. But that flexibility requires
+refactoring things so the experience feels more <em>native</em>.</p>
+<p>Many changes to Starlark were rooted in necessity. For example,
+the methods for invoking <code>setup.py</code> or <code>pip install</code> used to live on a
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_type_python_distribution.html">Python distribution type</a>
+and have been moved to a
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_type_python_executable.html">type representing executables</a>.
+This is because the binary we are targeting influences how
+packaging actions behave. For example, if the binary only supports
+loading resources from memory (as opposed to standalone files), we need
+to know that when invoking the packaging tool so we can produce files
+(notably Python extension modules) compatible with the destination.</p>
+<p>A major change to Starlark in 0.8 is around resource location handling.
+Before, you could define a static string denoting the <em>resources policy</em>
+for where things should be placed. And there were 10+ methods for
+adding different resource types (source, bytecode, extensions, package
+data) to different load locations (memory, filesystem). This mechanism
+is vastly simplified and more powerful in PyOxidizer 0.8!</p>
+<p>In PyOxidizer 0.8, there is a single
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_type_python_executable.html#pythonexecutable-add-python-resource">add_python_resource()</a>
+method for adding a resource to a binary and the Starlark objects you add
+can denote where they should be added by
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_resource_add_attributes.html">defining attributes on those objects</a>.</p>
+<p>Furthermore, you can
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/packaging_resources.html#using-callbacks-to-influence-resource-attributes">define a Starlark function</a>
+that is called when resource objects are created to apply custom packaging
+<em>rules</em> using custom Starlark code defined in your PyOxidizer config file.
+So rather than having everyone try to abide by a few pre-canned <em>policies</em> for
+packaging resources, you can define a proper function in your config file
+that can be as complex as you want/need it to be! I feel this is vastly simpler
+and more powerful than implementing a custom DSL in static configuration files
+(like TOML, JSON, YAML, etc).</p>
+<p>While the ability to implement your own arbitrarily complex packaging
+policies is useful, there is a new
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config_type_python_packaging_policy.html">PythonPackagingPolicy</a>
+Starlark type with enough flexibility to suit most needs.</p>
+<h2>Shipping <code>oxidized_importer</code></h2>
+<p>During the development of PyOxidizer 0.8, I broke out the custom
+Rust-based Python <em>meta-path importer</em> used by PyOxidizer's run-time code
+into a standalone Python package. This sub-project is called
+<code>oxidized_importer</code> and I previously
+<a href="/blog/2020/05/10/using-rust-to-power-python-importing-with-oxidized_importer/">blogged about it</a>.</p>
+<p>PyOxidizer 0.8 ships <code>oxidized_importer</code> and all of its useful APIs
+available to Python. Read more in the
+<a href="https://pyoxidizer.readthedocs.io/v0.8.0/latest/oxidized_importer.html">official docs</a>.
+The new Python APIs should make debugging issues with PyOxidizer-packaged
+applications vastly simpler: I found them invaluable when tracking down
+user-reported bugs!</p>
+<h2>Tons of New Tests and Refactored Code</h2>
+<p>PyOxidizer was my first non-toy Rust project. And the quality of the Rust
+code I produced in early versions of PyOxidizer clearly showed it. And when I
+was in the rapid-prototyping phase of PyOxidizer, I eschewed writing tests
+in favor of short-term progress.</p>
+<p>PyOxidizer 0.8 pays down a ton of technical debt in the code base. Lots of
+Rust code has been refactored and is using somewhat reasonable practices.
+I'm not yet a Rust guru. But I'm at the point where I cringe when I look at
+some of the early code I wrote, which is a good sign. I do have to say that
+Rust has been a dream to work with during this transition. Despite being a
+low-level language, my early <em>misuse</em> of Rust did not result in crashes like
+you would see in languages like C/C++. And Rust's seemingly omniscient compiler
+and IDE tools facilitating refactoring have ensured that code changes aren't
+accompanied by subtle random bugs that would occur in dynamic programming
+languages. I really need to write a dedicated post espousing the virtues of
+Rust...</p>
+<p>There are a <strong>ton</strong> of new tests in PyOxidizer 0.8 and I now feel somewhat
+confident that the <code>main</code> branch of PyOxidizer should be considered
+<em>production-ready</em> at any time assuming the tests pass. This will hopefully
+lead to more rapid releases in the future.</p>
+<p>There are now tests for the <code>pyembed</code> Rust crate, which provides the
+run-time code for PyOxidizer-built binaries. We even have
+<a href="https://github.com/indygreg/PyOxidizer/tree/main/pyembed/src/test">Python-based unit tests</a>
+for validating the Python-exposed APIs behave as expected. These tests have
+been invaluable for ensuring that the run-time code works as expected. So now
+when someone files a bug I can easily write a test to capture it and keep
+the code working as intended through various refactors.</p>
+<p>The packaging-time Rust code has also gained its fair share of tests.
+We now have fairly comprehensive test coverage around how resources
+are added/packaged. Python extension modules have proved to be highly
+nuanced in how they are handled. Tremendously helping testing of extension
+modules is that we're able to run tests for platform non-native extensions!
+While not yet exposed/supported by Starlark configuration files, <strong>I've taught
+PyOxidizer's core Rust code to be cross-compiling aware</strong> so that we can
+e.g. test Windows or macOS behavior from Linux. Before, I'd have to test
+Windows wheel handling on Windows. But after writing a wheel parser in Rust
+and teaching PyOxidizer to use a different Python distribution for the
+host architecture from the target architecture, I'm now able to write
+tests for platform-specific functionality that run on any platform that
+PyOxidizer can run on. This <em>may</em> eventually lead to proper cross-compiling
+support (at least in some configuration). Time will tell. But the foundation
+is definitely there!</p>
+<h2>New Rust Crates</h2>
+<p>As part of the aforementioned refactoring of PyOxidizer's Rust code, I've
+been extracting some useful/generic functionality built as part of
+developing PyOxidizer to their own Rust crates.</p>
+<p>As part of this release, I'm publishing the initial 0.1 release of the
+<a href="https://crates.io/crates/python-packaging">python-packaging</a> crate
+(<a href="https://docs.rs/python-packaging/0.1.0/python_packaging/">docs</a>). This crate
+provides pure Rust code for various Python <em>packaging</em> related functionality.
+This includes:</p>
+<ul>
+<li>Rust types representing Python resource types (source modules, bytecode
+  modules, extension modules, package resources, etc).</li>
+<li>Scanning the filesystem for Python resource files .</li>
+<li>Configuring an embedded Python interpreter.</li>
+<li>Parsing <code>PKG-INFO</code> and related files.</li>
+<li>Parsing wheel files.</li>
+<li>Collecting Python resources and serializing them to a data structure.</li>
+</ul>
+<p>The crate is somewhat PyOxidizer centric. But if others are interested
+in improving its utility, I'll happily accept pull requests!</p>
+<p>PyOxidizer's crates footprint now includes:</p>
+<ul>
+<li><a href="https://crates.io/crates/python-packed-resources">python-packed-resources</a></li>
+<li><a href="https://crates.io/crates/python-packaging">python-packaging</a></li>
+<li><a href="https://crates.io/crates/pyembed">pyembed</a></li>
+<li><a href="https://crates.io/crates/pyoxidizer">pyoxidizer</a></li>
+</ul>
+<h2>Major Documentation Updates</h2>
+<p>I strongly believe that software should be documented thoroughly and I strive
+for PyOxidizer's documentation to be useful and comprehensive.</p>
+<p>There have been a lot of changes to PyOxidizer's documentation since the
+0.7 release.</p>
+<p>All <a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/config.html">configuration file documentation</a>
+has been consolidated.</p>
+<p>Likewise, I've attempted to consolidate a lot of the <em>paved road</em> documentation
+for how to use PyOxidizer in the
+<a href="https://pyoxidizer.readthedocs.io/en/v0.8.0/packaging.html">Packaging User Guide</a>
+section of the docs.</p>
+<p>I'll be honest, since I have so much of PyOxidizer's workings internalized,
+it can be difficult for me to empathize with PyOxidizer's users. So if you
+have difficult with the <em>readability</em> of the documentation, please
+<a href="https://github.com/indygreg/PyOxidizer/issues/new">file an issue</a> and report
+what is confusing so the documentation can be improved!</p>
+<h2>Mercurial Shipping With PyOxidizer 0.8</h2>
+<p>PyOxidizer is arguably an epic yak shave of mine to help the
+<a href="https://www.mercurial-scm.org/">Mercurial version control tool</a> transition
+to Python 3 and Rust.</p>
+<p>I'm pleased to report that Mercurial is
+<a href="https://www.mercurial-scm.org/pipermail/mercurial/2020-October/052395.html">now shipping</a>
+PyOxidizer-built distributions on Windows as of the 5.2.2 release a few days
+ago! If a complex Python application like Mercurial can be
+<a href="https://www.mercurial-scm.org/repo/hg/file/0627cd03b1e9/rust/hgcli/pyoxidizer.bzl">configured</a>
+to work with PyOxidizer, chances are your Python application will work as
+well.</p>
+<h2>Whats Next</h2>
+<p>I view PyOxidizer 0.8 as a pivotal release where PyOxidizer is turning the
+corner from a prototyping science experiment to something more generally
+usable. The investments in test coverage and refactoring of the Rust
+internals are paving the way towards future features and bug fixes.</p>
+<p>In upcoming releases, I'd like to close remaining known compatibility
+gaps with popular Python packages (such as <em>numpy</em> and other packages in
+the <em>scientific/data</em> space). I have a general idea of what work needs to
+be done and I've been laying the ground work via various refactorings to
+execute here.</p>
+<p><strong>I want a general theme of future releases to be eliminating reasons why
+people can't use PyOxidizer.</strong> PyOxidizer's historical origin was as a
+science experiment to see if single file Python applications were possible.
+It is clear that achieving this is fundamentally incompatible with
+compatibility with tons of Python packages in the wild. I'd like to find a
+way where PyOxidizer can achieve 99% package compatibility by default
+so new users don't get discouraged when using PyOxidizer. And for the
+subset of users who want single file executables, they can spend the
+magnitude of additional effort to achieve that.</p>
+<p>At some point, I also want to make a pivot towards focusing on producing
+distributable artifacts (Debian/RPM packages, MSI installers, macOS DMG
+files, etc). I'm slightly bummed that I haven't made much progress here.
+But I have a vision in my mind of where I want to go (I'll be making
+a standalone Rust crate + Starlark dialect to facilitate producing
+distributable artifacts for <em>any</em> application) and I'm anticipating
+starting this work in the next few months. In the mean time, PyOxidizer
+0.8 should be able to give people a directory tree that they can coerce
+into distributable artifacts using existing packaging tooling. That's not as
+turnkey as I would like it to be. But the technical problems around
+building a distributable Python application binary still needs some work
+and I view that as the most pressing need for the Python ecosystem. So
+I'll continue to focus there so there is a solid foundation to build upon.</p>
+<p>In conclusion, I hope you enjoy the new release! Please report any issues
+or feedback in the
+<a href="https://github.com/indygreg/PyOxidizer/issues/new">GitHub issue tracker</a>.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Using Rust to Power Python Importing With oxidized_importer</title>
       <link>http://gregoryszorc.com/blog/2020/05/10/using-rust-to-power-python-importing-with-oxidized_importer</link>
@@ -2472,233 +2730,6 @@ the powers of both of these fantastic programming languages.</p>
 of hacking over the holidays and hope to share updates in the weeks ahead. Until
 then, please leave comments, watch the <a href="https://github.com/indygreg/PyOxidizer">project on GitHub</a>,
 file issues for bugs and feature requests, etc and we'll see where things lead.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Global Kernel Locks in APFS</title>
-      <link>http://gregoryszorc.com/blog/2018/10/29/global-kernel-locks-in-apfs</link>
-      <pubDate>Mon, 29 Oct 2018 14:20:00 PDT</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[Mercurial]]></category>
-      <category><![CDATA[Apple]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2018/10/29/global-kernel-locks-in-apfs</guid>
-      <description>Global Kernel Locks in APFS</description>
-      <content:encoded><![CDATA[<p>Over the past several months, a handful of people had been complaining
-that Mercurial's test harness was executing much slower on Macs. But
-this slowdown seemingly wasn't occurring on Linux or Windows. And not
-every Mac user experienced the slowness!</p>
-<p>Before jetting off to the Mercurial 4.8 developer meetup in Stockholm
-a few weeks ago, I sat down with a relatively fresh 6+6 core MacBook Pro
-and experienced the problem firsthand: on my 4+4 core i7-6700K running
-Linux, the Mercurial test harness completes in ~12 minutes, but on this
-MacBook Pro, it was executing in ~38 minutes! On paper, this result
-doesn't make any sense because there's no way that the MacBook Pro should
-be ~3x slower than that desktop machine.</p>
-<p>Looking at Activity Monitor when running the test harness with 12 tests
-in parallel revealed something odd: the system was spending ~75% of overall
-CPU time inside the kernel! When reducing the number of tests that ran in
-parallel, the percentage of CPU time spent in the kernel decreased and
-the overall test harness execution time also decreased. This kind of
-behavior is usually a sign of something very inefficient in kernel land.</p>
-<p>I sample profiled all processes on the system when running the Mercurial
-test harness. Aggregate thread stacks revealed a common pattern:
-<code>readdir()</code> being in the stack.</p>
-<p>Upon closer examination of the stacks, <code>readdir()</code> calls into
-<code>apfs_vnop_readdir()</code>, which calls into some functions with <code>bt</code> or
-<code>btree</code> in their name, which call into <code>lck_mtx_lock()</code>,
-<code>lck_mtx_lock_grab_mutex()</code> and various other functions with
-<code>lck_mtx</code> in their name. And the caller of most <code>readdir()</code> appeared
-to be Python 2.7's module importing mechanism (notably
-<code>import.c:case_ok()</code>).</p>
-<p>APFS refers to the
-<a href="https://en.wikipedia.org/wiki/Apple_File_System">Apple File System</a>,
-which is a filesystem that Apple introduced in 2017 and is the
-default filesystem for new versions of macOS and iOS. If upgrading an
-old Mac to a new macOS, its HFS+ filesystems would be automatically
-converted to APFS.</p>
-<p>While the source code for APFS is not available for me to confirm, the
-profiling results showing excessive time spent in
-<code>lck_mtx_lock_grab_mutex()</code> combined with the fact that execution time
-decreases when the parallel process count decreases leads me to the
-conclusion that <strong>APFS obtains a global kernel lock during read-only
-operations such as <code>readdir()</code></strong>. In other words, APFS slows down when
-attempting to perform parallel read-only I/O.</p>
-<p>This isn't the first time I've encountered such behavior in a
-filesystem: last year I
-<a href="/blog/2017/12/08/good-riddance-to-aufs/">blogged about very similar behavior in AUFS</a>,
-which was making Firefox CI significantly slower.</p>
-<p>Because Python 2.7's module importing mechanism was triggering the
-slowness by calling <code>readdir()</code>, I
-<a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">posted to python-dev</a>
-about the problem, as I thought it was important to notify the larger
-Python community. After all, this is a generic problem that affects
-the performance of starting <em>any</em> Python process when running on APFS.
-i.e. if your build system invokes many Python processes in parallel,
-you could be impacted by this. As part of obtaining data for that post, I
-discovered that Python 3.7 does not call <code>readdir()</code> as part of
-module importing and therefore doesn't exhibit a severe slowdown. (Python's
-module importing code was rewritten significantly in Python 3 and the <em>fix</em>
-was likely introduced well before Python 3.7.)</p>
-<p>I've <a href="https://gist.github.com/indygreg/a50e187f5372807cdcab5ac12bc2feea">produced a gist that can reproduce the problem</a>.
-The script essentially performs a recursive directory walk. It exercises
-the <code>opendir()</code>, <code>readdir()</code>, <code>closedir()</code>, and <code>lstat()</code> functions
-heavily and is essentially a benchmark of the filesystem and filesystem
-cache's ability to return file metadata.</p>
-<p>When you tell it to walk a very large directory tree - say a Firefox
-version control checkout (which has over 250,000 files) - the excessive
-time spent in the kernel is very apparent on macOS 10.13 High Sierra:</p>
-<pre><code>$ time ./slow-readdir.py -l 12 ~/src/firefox
-ran 12 walks across 12 processes in 172.209s
-
-real    2m52.470s
-user    1m54.053s
-sys    23m42.808s
-
-$ time ./slow-readdir.py -l 12 -j 1 ~/src/firefox
-ran 12 walks across 1 processes in 523.440s
-
-real    8m43.740s
-user    1m13.397s
-sys     3m50.687s
-
-$ time ./slow-readdir.py -l 18 -j 18 ~/src/firefox
-ran 18 walks across 18 processes in 210.487s
-
-real    3m30.731s
-user    2m40.216s
-sys    33m34.406s
-</code></pre>
-<p>On the same machine upgraded to macOS 10.14 Mojave, we see a bit of a
-speedup!:</p>
-<pre><code>$ time ./slow-readdir.py -l 12 ~/src/firefox
-ran 12 walks across 12 processes in 97.833s
-
-real    1m37.981s
-user    1m40.272s
-sys    10m49.091s
-
-$ time ./slow-readdir.py -l 12 -j 1 ~/src/firefox
-ran 12 walks across 1 processes in 461.415s
-
-real    7m41.657s
-user    1m05.830s
-sys     3m47.041s
-
-$ time ./slow-readdir.py -l 18 -j 18 ~/src/firefox
-ran 18 walks across 18 processes in 140.474s
-
-real    2m20.727s
-user    3m01.048s
-sys    17m56.228s
-</code></pre>
-<p>Contrast with my i7-6700K Linux machine backed by EXT4:</p>
-<pre><code>$ time ./slow-readdir.py -l 8 ~/src/firefox
-ran 8 walks across 8 processes in 6.018s
-
-real    0m6.191s
-user    0m29.670s
-sys     0m17.838s
-
-$ time ./slow-readdir.py -l 8 -j 1 ~/src/firefox
-ran 8 walks across 1 processes in 33.958s
-
-real    0m34.164s
-user    0m17.136s
-sys     0m13.369s
-
-$ time ./slow-readdir.py -l 12 -j 12 ~/src/firefox
-ran 12 walks across 12 processes in 25.465s
-
-real    0m25.640s
-user    1m4.801s
-sys     1m20.488s
-</code></pre>
-<p>It is apparent that macOS 10.14 Mojave has received performance work
-relative to macOS 10.13! Overall kernel CPU time when performing parallel
-directory walks has decreased substantially - to ~50% of original on some
-invocations! Stacks seem to reveal new code for lock acquisition, so this
-might indicate generic improvements to the kernel's locking mechanism
-rather than APFS specific changes. Changes to file metadata caching could
-also be responsible for performance changes. Although it is difficult to tell
-without access to the APFS source code. Despite those improvements, APFS
-is still spending a lot of CPU time in the kernel. And the kernel CPU time
-is still comparatively very high compared to Linux/EXT4, even for single
-process operation.</p>
-<p>At this time, I haven't conducted a comprehensive analysis of APFS to
-determine what other filesystem operations seem to acquire global kernel
-locks: all I know is <code>readdir()</code> does. A casual analysis of profiled
-stacks when running Mercurial's test harness against Python 3.7 seems
-to show <code>apfs_*</code> functions still on the stack a lot and that seemingly
-indicates more APFS slowness under parallel I/O load. But HFS+ exhibited
-similar problems (it appeared HFS+ used a single I/O thread inside the
-kernel for many operations, making I/O on macOS pretty bad), so I'm
-not sure if these could be considered <em>regressions</em> the way <code>readdir()</code>'s
-new behavior is.</p>
-<p>I've reported this issue to Apple at
-<a href="https://bugreport.apple.com/web/?problemID=45648013">https://bugreport.apple.com/web/?problemID=45648013</a>
-and on OpenRadar at <a href="https://openradar.appspot.com/radar?id=5025294012383232">https://openradar.appspot.com/radar?id=5025294012383232</a>.
-I'm told that issues get more attention from Apple when there are many
-duplicates of the same issue. So please reference this issue if you file your
-own report.</p>
-<p>Now that I've elaborated on the technical details, I'd like to add some
-personal commentary. While this post is about APFS, this issue of global
-kernel locks during common I/O operations is not unique to APFS. I
-<a href="/blog/2017/12/08/good-riddance-to-aufs/">already referenced</a> similar
-issues in AUFS. And I've encountered similar behaviors with Btrfs (although
-I can't recall exactly which operations). And NTFS has its own
-<a href="https://github.com/Microsoft/WSL/issues/873#issuecomment-425272829">bag of problems</a>.</p>
-<p>This seeming pattern of global kernel locks for common filesystem operations
-and slow filesystems is really rubbing me the wrong way. Modern NVMe SSDs
-are capable of reading and writing well over 2 gigabytes per second and
-performing hundreds of thousands of I/O operations per second. We even have
-Intel soon producing
-<a href="https://newsroom.intel.com/editorials/re-architecting-data-center-memory-storage-hierarchy/">persistent solid state storage that plugs into DIMM slots</a>
-because it is that friggin fast.</p>
-<p>Today's storage hardware is capable of ludicrous performance. It is fast enough
-that you will likely saturate multiple CPU cores processing the read or written
-data coming from and going to storage - especially if you are using higher-level,
-non-JITed (read: slower) programming languages (like Python). There has also been
-a trend that systems are growing more CPU cores faster than they are instructions
-per second per core. And SSDs only achieve these ridiculous IOPS numbers if many
-I/O operations are <em>queued</em> and can be more efficiently dispatched within the
-storage device. What this all means is that it probably makes sense to use
-parallel I/O across multiple threads in order to extract all potential
-performance from your persistent storage layer.</p>
-<p>It's also worth noting that we now have solid state storage that outperforms (in
-some dimensions) what DRAM from ~20 years ago was capable of. Put another way I/O
-APIs and even some filesystems were designed in an era when its RAM was slower than
-what today's persistent storage is capable of! While I'm no filesystems or kernel
-expert, it does seem a bit silly to be using APIs and filesystems designed for an
-era when storage was multiple orders of magnitude slower and systems only had a
-single CPU core.</p>
-<p>My takeaway is I can't help but feel that systems-level software (including the
-kernel) is severely limiting the performance potential of modern storage
-devices. If we have e.g. global kernel locks when performing common I/O operations,
-there's no chance we'll come close to harnessing the full potential of today's
-storage hardware. Furthermore, the behavior of filesystems is woefully under
-documented and software developers have little solid advice for how to achieve
-optimal I/O performance. As someone who cares about performance, I want to
-squeeze every iota of potential out of hardware. But the lack of documentation
-telling me which operations acquire locks, which strategies are best for say
-reading or writing 10,000 files using N threads, etc makes this extremely
-difficult. And even if this documentation existed, because of differences in
-behavior across filesystems and operating systems and the difficulty in
-programmatically determining the characteristics of filesystems at run time,
-it is practically impossible to design a <em>one size fits all</em> approach to
-high performance I/O.</p>
-<p>The filesystem is a powerful concept. I want to agree and use the <em>everything is a
-file</em> philosophy. Unfortunately, filesystems don't appear to be scaling very well
-to support the potential of modern day storage technology. We're probably at the
-point where commodity priced solid state storage is far more capable than today's
-software for the majority of applications. Storage hardware manufacturers will
-keep producing faster and faster storage and their marketing teams will keep
-convincing us that we need to buy it. But until software catches up, chances are
-most of us won't come close to realizing the true potential of modern storage
-hardware. And that's even true for specialized applications that do employ tricks
-taking hundreds or thousands of person hours to implement in order to eek out every
-iota of performance potential. The average software developer and application
-using filesystems as they were designed to be used has little to no chance of
-coming close to utilizing the performance potential of modern storage devices.
-That's really a shame. </p>]]></content:encoded>
     </item>
   </channel>
 </rss>
