@@ -7,12 +7,135 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2020-10-12T07:45:55Z</updated>
+  <updated>2020-10-19T05:16:45Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Announcing the 0.9 Release of PyOxidizer]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2020/10/18/announcing-the-0.9-release-of-pyoxidizer" />
+    <id>http://gregoryszorc.com/blog/2020/10/18/announcing-the-0.9-release-of-pyoxidizer</id>
+    <updated>2020-10-18T22:00:00Z</updated>
+    <published>2020-10-18T22:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Python" />
+    <category scheme="http://gregoryszorc.com/blog" term="PyOxidizer" />
+    <summary type="html"><![CDATA[Announcing the 0.9 Release of PyOxidizer]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2020/10/18/announcing-the-0.9-release-of-pyoxidizer"><![CDATA[<p>I have decided to make up for the 6 month lull between PyOxidizer's
+0.7 and 0.8 releases by releasing
+<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/">PyOxidizer</a> 0.9 just 1 week
+after 0.8!</p>
+<p>The full 0.9 changelog is found
+<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/history.html#version-0-9-0">in the docs</a>.
+First time user? See the
+<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/getting_started.html">Getting Started</a>
+documentation.</p>
+<p>While the 0.9 release is far smaller in terms of features compared to 0.8,
+it is an important release because of progress closing compatibility gaps.</p>
+<h2>Build a <code>python</code> Executable</h2>
+<p>PyOxidizer 0.8 quietly shipped the ability to build executables that
+behave like <code>python</code> executables via enhancements to the configurability of
+embedded Python interpreters.</p>
+<p>PyOxidizer 0.9 made some minor changes to make this scenario work better
+and there is even
+<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/packaging_python_executable.html">official documentation</a>
+on how to achieve this. So now you can emit a <code>python</code> executable next to your
+application's executable. Or you could use PyOxidizer to build a highly portable,
+self-contained <code>python</code> executable and ship your Python scripts next to it,
+using PyOxidizer's <code>python</code> in your <code>#!</code>.</p>
+<h2>Support Packaging Files as Files for Maximum Compatibility</h2>
+<p>There is a long-tail of Python packages that don't <em>just work</em> with
+PyOxidizer. A subset of these packages don't work because of bugs with how
+PyOxidizer attempts to classify files as specific types of Python resources.</p>
+<p>The way that normal Python works is you materialize a bunch of files on
+the filesystem and at run-time the filesystem-based importer <code>stat()</code>s a
+bunch of paths until it finds a candidate file satisfying the <code>import</code>
+request. This works of course. But it is inefficient. Since PyOxidizer has
+awareness of every resource being packaged at build time, it attempts to
+index all known resources and serialize them to an efficient data structure
+so finding and loading a resource can be extremely quick (effectively just a
+hashmap lookup in Rust code to resolve the memory address of data).</p>
+<p>PyOxidizer's approach does work in the majority of cases. But there are
+edge cases. For example, NumPy's binary wheels have installed file paths
+like <code>numpy.libs/libopenblasp-r0-ae94cfde.3.9.dev.so</code>. The <code>numpy.libs</code>
+directory is not a valid Python package directory since it has a <code>.</code> and
+since it doesn't have an <code>__init__.py[c]</code> file. This is a case where
+PyOxidizer's code for turning files into <em>resources</em> is currently confused.</p>
+<p>It is tempting to argue that file layouts like NumPy's are <em>wrong</em>. But
+there doesn't seem to be any formal specification preventing the use of
+such layouts. The arbiter of truth here is what Python packaging tools
+accept and the current code for installing <em>wheels</em> gladly accepts file
+layouts like these. So I've accepted that PyOxidizer is just going to have
+to support edge cases like this. (I've captured more details about this
+particular issue
+<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/technotes.html#ambiguous-file-classification">in the docs</a>).</p>
+<p>Anyway, PyOxidizer 0.9 ships a new, simpler mode for handling files:
+<em>files mode</em>. In <a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/packaging_resources.html#classified-resources-versus-files">files mode</a>,
+PyOxidizer disables its code for <em>classifying</em> files as typed Python
+resources (like module sources and extension modules) and instead treats
+a file as... a file.</p>
+<p>When in files mode, actions that invoke Python packaging tools return
+files objects instead of classified resources. If you then add these files
+for packaging, those files are materialized on the filesystem next to your
+built executable. You can then use Python's standard filesystem importer
+to load these files at run-time.</p>
+<p>This allows you to use PyOxidizer with packages like NumPy that were
+previously incompatible due to bugs with file/resource classification.
+In fact, getting NumPy working with PyOxidizer is
+<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/packaging_additional_files.html#installing-unclassified-files-on-the-filesystem">now in the official documentation</a>!</p>
+<p><em>Files mode</em> is still in its infancy. There exists code for embedding
+files data in the produced executable. I plan to eventually teach PyOxidizer's
+run-time code to extract these embedded files to a temporary directory,
+SquashFS FUSE filesystem, etc. This is the approach that other Python
+packaging tools like PyInstaller and XAR use. While it is less efficient, this
+approach is highly compatible with Python code in the wild since you sidestep
+issues with <code>__file__</code> and other assumptions about installed file layouts. So
+it makes sense for PyOxidizer to provide support for this so you can still
+achieve the friendliness of a self-contained executable without worrying
+about compatibility. Look for improvements to <em>files mode</em> in future releases.</p>
+<p>And to help debug issues with PyOxidizer's file handling and resource
+classification, the new
+<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/managing_projects.html#debugging-resource-scanning-and-identification-with-find-resources">pyoxidizer find-resources</a>
+command can be used to invoke PyOxidizer's code for scanning and classifying
+files. Hopefully this makes it easier to diagnose bugs in this critical
+component of PyOxidizer!</p>
+<h2>Some Important Bug Fixes</h2>
+<p>PyOxidizer 0.8 shipped with some pretty annoying bugs and behavior quirks.</p>
+<p>The ability to set custom <code>sys.path</code> values via Starlark was broken. How I
+managed to ship that, I'm not sure. But it is fixed in 0.9.</p>
+<p>Another bug I can't believe I shipped was
+the <code>PythonExecutable.read_virtualenv()</code> Starlark method being broken due to
+a typo. You can read from virtualenvs again in PyOxidizer 0.9.</p>
+<p>Another important improvement is in the default Python interpreter
+configuration. We now automatically initialize Python's locales configuration
+by default. Without this, the encoding of filesystem paths and <code>sys.argv</code> may
+not have been correct. If someone passed a non-ASCII argument, the Python <code>str</code>
+value was likely mangled. PyOxidizer built binaries should behave reasonably
+by default now. The <a href="https://github.com/indygreg/PyOxidizer/issues/294">issue</a>
+is a good read if the subtle behaviors of how encodings work in Python and on
+different operating systems is interesting to you.</p>
+<h2>Better Binary Portability Documentation</h2>
+<p>The documentation on
+<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/packaging_binary_compatibility.html">binary portability</a>
+has been overhauled. Hopefully it is much more clear about the capabilities
+of PyOxidizer to produce a binary that <em>just works</em> on other machines.</p>
+<p>I eventually want to get PyOxidizer to a point where users don't have to
+think about binary portability. But until PyOxidizer starts generating
+installers and providing the ability to run builds in deterministic and
+reproducible environments, it is sadly a problem that is being externalized
+to end users.</p>
+<h2>In Conclusion</h2>
+<p>PyOxidizer 0.9 is a small release representing just 1 week of work. But
+it contains some notable features that I wanted to get out the door.</p>
+<p>As always, please report any issues or feedback in the
+<a href="https://github.com/indygreg/PyOxidizer/issues/new">GitHub issue tracker</a>
+or the <a href="https://groups.google.com/forum/#!forum/pyoxidizer-users">users mailing list</a>.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -3316,190 +3439,5 @@ know what life at the frontier is like. And maybe, just maybe, I
 can cause the smart people who actually maintain Python distributions
 to think about the issues I've had in more detail and provide
 improvements to mitigate them.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Seeking Employment]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2019/01/07/seeking-employment" />
-    <id>http://gregoryszorc.com/blog/2019/01/07/seeking-employment</id>
-    <updated>2019-01-07T15:25:00Z</updated>
-    <published>2019-01-07T15:25:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Personal" />
-    <category scheme="http://gregoryszorc.com/blog" term="Mozilla" />
-    <summary type="html"><![CDATA[Seeking Employment]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2019/01/07/seeking-employment"><![CDATA[<p>After almost seven and a half years as an employee of Mozilla Corporation,
-I'm moving on. I have already worked my final day as an employee.</p>
-<p>This post is the first time that I've publicly acknowledged my departure.
-To any Mozillians reading this, I regret that I did not send out a
-farewell email before I left. But the circumstances of my departure weren't
-conducive to doing so. I've been drafting a proper farewell blog post. But
-it has been very challenging to compose. Furthermore, each passing day
-brings with it new insights into my time at Mozilla and a new wrinkle to
-integrate into the reflective story I want to tell in that post. I vow to
-eventually publish a proper goodbye that serves as the bookend to my
-employment at Mozilla. Until then, just let me say that I'm already missing
-working with many of you. I've connected with several people since I left
-and still owe responses or messages to many more. If you want to get in
-touch, my contact info is in my <a href="/resume.pdf">résumé</a>.</p>
-<p>I left Mozilla without new employment lined up. That leads me to the
-subject line of this post: I'm seeking employment. The remainder of this
-post is thus tailored to potential employers.</p>
-<p>My <a href="/resume.pdf">résumé</a> has been updated. But that two page summary
-only scratches the surface of my experience and set of skills. The
-<a href="/work.html">Body of Work</a> page of my website is a more detailed record
-of the work I've done. But even it is not complete!</p>
-<p>Perusing through my posts on this blog will reveal even more about the
-work I've done and how I go about it. My résumé links to a few posts
-that I think are great examples of the level of understanding and detail
-that I'm capable of harnessing.</p>
-<p>As far as the kind of work I want to do or the type of company I want
-to work for, I'm trying to keep an open mind. But I do have some biases.</p>
-<p>I prefer established companies to early start-ups for various reasons.
-Dan Luu's <a href="https://danluu.com/startup-tradeoffs/">Big companies v. startups</a>
-is aligned pretty well with my thinking.</p>
-<p>One of the reasons I worked for Mozilla was because of my personal
-alignment with the
-<a href="https://www.mozilla.org/en-US/about/manifesto/">Mozilla Manifesto</a>. So
-I gravitate towards employers that share those principles and am
-somewhat turned off by those that counteract them. But I recognize that
-the world is complex and that competing perspectives aren't intrinsically
-evil. In other words, I try to maintain an open mind.</p>
-<p>I'm attracted to employers that align their business with improving the
-well-being of the planet, especially the people on it. The link
-between the business and well-being can be tenuous: a B2B business for
-example is presumably selling something that helps people, and that helping
-is what matters to me. The tighter the link between the business and
-improving the world will increase my attraction to a employer.</p>
-<p>I started my university education as a biomedical engineer because I
-liked the idea of being at the intersection of technology and medicine.
-And part of me really wants to return to this space because there
-are few things more noble than helping a fellow human being in need.</p>
-<p>As for the kind of role or technical work I want to do, I could go in
-any number of directions. I still enjoy doing individual contributor type
-work and believe I could be an asset to an employer doing that work. But
-I also crave working on a team, performing technical mentorship, and being
-a leader of technical components. I enjoy participating in high-level
-planning as well as implementing the low-level aspects. I recognize that
-while my individual output can be substantial (I can provide data showing
-that I was one of the most prolific technical contributors at Mozilla
-during my time there) I can be more valuable to an employer when I
-bestow skills and knowledge unto others through teaching, mentorship,
-setting an example, etc.</p>
-<p>I have what I would consider expertise in a few domains that may be
-attractive to employers.</p>
-<p>I was a technical maintainer of Firefox's build system and initiated a
-transition away from an architecture that had been in place since the
-Netscape days. I definitely geek out way too much on build systems.</p>
-<p>I am a contributor to the Mercurial version control tool. I know way
-too much about the internals of Mercurial, Git, and other version
-control tools. I am intimately aware of scaling problems with these
-tools. Some of the scaling work I did for Mercurial saved Mozilla tens
-of thousands of dollars in direct operational costs and probably
-hundreds of thousands of dollars in saved people time due to fewer
-service disruptions and faster operations.</p>
-<p>I have exposure to both client and server side work and the problems
-encountered within each domain. I've dabbled in lots of technologies,
-operating systems, and tools. I'm not afraid to learn something new.
-Although as my experience increases, so does my skepticism of shiny
-new things (I've been burned by technical fads too many times).</p>
-<p>I have a keen fascination with optimization and scaling, whether it
-be on a technical level or in terms of workflows and human behavior.
-I like to ask <em>and then what</em> so I'm thinking a few steps out and am
-prepared for the next problem or consequence of an immediate action.</p>
-<p>I seem to have a knack for caring about user experience and interfaces.
-(Although my own visual design skills aren't the greatest - see my
-website design for proof.) I'm pretty passionate that tools that people
-use should be simple and usable. Cognitive dissonance, latency, and
-distractions are real and as an industry we don't do a great job
-minimizing these disruptions so focus and productivity can be
-maximized. I'm not saying I would be a good product manager or
-UI designer. But it's something I've thought about because not many
-engineers seem to exhibit the passion for good user experience that
-I do and that intersection of skills could be valuable.</p>
-<p>My favorite time at Mozilla was when I was working on a unified
-<em>engineering productivity</em> team. The team controlled most of the tools
-and infrastructure that Firefox developers interacted with in order
-to do their jobs. I absolutely loved taking a whole-world view of
-that problem space and identifying the high-level problems - and
-low-hanging fruit - to improve the overall Firefox development
-experience. I derived a lot of satisfaction from identifying pain
-points, equating them to a dollar cost by extrapolating people time
-wasted due to them, justifying working on them, and finally
-celebrating - along with the overall engineering team - when improvements
-were made. I think I would be a tremendous asset to a company working
-in this space. And if my experience at Mozilla is any indicator, I
-would more than offset my total employment cost by doing this kind
-of work.</p>
-<p>I've been entertaining the idea of contracting for a while before
-I resume full-time employment with a single employer. However, I've
-never contracted before and need to do some homework before I commit
-to that. (Please leave a comment or email me if you have recommendations
-on reading material.)</p>
-<p>My dream contract gig would likely be to finish the Mercurial wire
-protocol and storage work I started last year. I would need to type
-up a formal proposal, but the gist of it is the work I started has the
-potential to leapfrog Git in terms of both client-side and server-side
-performance and scalability. Mercurial would be able to open Git
-repositories on the local filesystem as well as consume them via the
-Git wire protocol. Transparent Git interoperability would enable
-Mercurial to be used as a drop-in replacement for Git, which would
-benefit users who don't have control over the server (such as projects
-that live on GitHub). Mercurial's new wire protocol is designed with
-global scalability and distribution in mind. The goal is to enable
-server operators to deploy scalable VCS servers in a turn-key manner
-by relying on scalable key-value stores and content distribution
-networks as much as possible (Mercurial and Git today require servers
-to perform way too much work and aren't designed with modern distributed
-systems best practices, which is why scaling them is hard). The new
-protocol is being designed such that a <em>Mercurial</em> server could expose
-Git data. It would then be possible to teach a Git client to speak the
-<em>Mercurial</em> wire protocol, which would result in Mercurial being a more
-scalable Git server than Git is today. If my vision is achieved, this
-would make server-side VCS scaling problems go away and would eliminate
-the religious debate between Git and Mercurial (the answer would be
-<em>deploy a Mercurial server, allow data to be exposed to Git, and let
-consumers choose</em>). I conservatively estimate that the benefits to
-industry would be in the millions of dollars. How I would structure
-a contract to deliver aspects of this, I'm not sure. But if you are
-willing to invest six figures towards this bet, let's talk. A good
-foundation of this work is already implemented in Mercurial and the
-Mercurial core development team is already on-board with many aspects
-of the vision, so I'm not spewing vapor.</p>
-<p>Another potential contract opportunity would be funding
-<a href="https://gregoryszorc.com/blog/category/pyoxidizer/">PyOxidizer</a>.
-I started the project a few months back as a side-project as an
-excuse to learn Rust while solving a <em>fun</em> problem that I thought
-needed solving. I was hoping for the project to be useful for
-Mercurial and Mozilla one day. But if social media activity is any
-indication, there seems to be somewhat widespread interest in this
-project. I have no doubt that once complete, companies will be using
-PyOxidizer to ship products that generate revenue and that PyOxidizer
-will save them engineering resources. I'd very much like to recapture
-some of that value into my pockets, if possible. Again, I'm somewhat
-naive about how to write contracts since I've never contracted, but I
-imagine <em>deliver a tool that allows me to ship product X as a
-standalone binary to platforms Y and Z</em> is definitely something that
-could be structured as a contract. </p>
-<p>As for the timeline, I was at Mozilla for what feels like an eternity
-in Silicon Valley. And Mozilla's way of working is substantially
-different from many companies. I need some time to decompress and
-unlearn some Mozilla habits. My future employer will inherit a happier
-and more productive employee by allowing me to take some much-needed
-time off.</p>
-<p>I'm looking to resume full-time work no sooner than March 1. I'd like
-to figure out what the next step in my career is by the end of January.
-Then I can sign some papers, pack up my skiis, and become a ski bum
-for the month of February: if I don't use this unemployment opportunity
-to have at least 20 days on the slopes this season and visit some new
-mountains, I will be very disappointed in myself!</p>
-<p>If you want to get in touch, my contact info is in my
-<a href="/resume.pdf">résumé</a>. I tend not to answer incoming calls from
-unknown numbers, so email is preferred. But if you leave a voicemail,
-I'll try to get back to you.</p>
-<p>I look forward to working for a great engineering organization in the
-near future!</p>]]></content>
   </entry>
 </feed>

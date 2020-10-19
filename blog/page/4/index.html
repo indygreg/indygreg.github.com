@@ -51,6 +51,240 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="global-kernel-locks-in-apfs"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/10/29/global-kernel-locks-in-apfs" rel="bookmark" title="Permanent Link to Global Kernel Locks in APFS">Global Kernel Locks in APFS</a></h2>
+  <small>October 29, 2018 at 02:20 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/apple'>Apple</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Over the past several months, a handful of people had been complaining
+that Mercurial's test harness was executing much slower on Macs. But
+this slowdown seemingly wasn't occurring on Linux or Windows. And not
+every Mac user experienced the slowness!</p>
+<p>Before jetting off to the Mercurial 4.8 developer meetup in Stockholm
+a few weeks ago, I sat down with a relatively fresh 6+6 core MacBook Pro
+and experienced the problem firsthand: on my 4+4 core i7-6700K running
+Linux, the Mercurial test harness completes in ~12 minutes, but on this
+MacBook Pro, it was executing in ~38 minutes! On paper, this result
+doesn't make any sense because there's no way that the MacBook Pro should
+be ~3x slower than that desktop machine.</p>
+<p>Looking at Activity Monitor when running the test harness with 12 tests
+in parallel revealed something odd: the system was spending ~75% of overall
+CPU time inside the kernel! When reducing the number of tests that ran in
+parallel, the percentage of CPU time spent in the kernel decreased and
+the overall test harness execution time also decreased. This kind of
+behavior is usually a sign of something very inefficient in kernel land.</p>
+<p>I sample profiled all processes on the system when running the Mercurial
+test harness. Aggregate thread stacks revealed a common pattern:
+<code>readdir()</code> being in the stack.</p>
+<p>Upon closer examination of the stacks, <code>readdir()</code> calls into
+<code>apfs_vnop_readdir()</code>, which calls into some functions with <code>bt</code> or
+<code>btree</code> in their name, which call into <code>lck_mtx_lock()</code>,
+<code>lck_mtx_lock_grab_mutex()</code> and various other functions with
+<code>lck_mtx</code> in their name. And the caller of most <code>readdir()</code> appeared
+to be Python 2.7's module importing mechanism (notably
+<code>import.c:case_ok()</code>).</p>
+<p>APFS refers to the
+<a href="https://en.wikipedia.org/wiki/Apple_File_System">Apple File System</a>,
+which is a filesystem that Apple introduced in 2017 and is the
+default filesystem for new versions of macOS and iOS. If upgrading an
+old Mac to a new macOS, its HFS+ filesystems would be automatically
+converted to APFS.</p>
+<p>While the source code for APFS is not available for me to confirm, the
+profiling results showing excessive time spent in
+<code>lck_mtx_lock_grab_mutex()</code> combined with the fact that execution time
+decreases when the parallel process count decreases leads me to the
+conclusion that <strong>APFS obtains a global kernel lock during read-only
+operations such as <code>readdir()</code></strong>. In other words, APFS slows down when
+attempting to perform parallel read-only I/O.</p>
+<p>This isn't the first time I've encountered such behavior in a
+filesystem: last year I
+<a href="/blog/2017/12/08/good-riddance-to-aufs/">blogged about very similar behavior in AUFS</a>,
+which was making Firefox CI significantly slower.</p>
+<p>Because Python 2.7's module importing mechanism was triggering the
+slowness by calling <code>readdir()</code>, I
+<a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">posted to python-dev</a>
+about the problem, as I thought it was important to notify the larger
+Python community. After all, this is a generic problem that affects
+the performance of starting <em>any</em> Python process when running on APFS.
+i.e. if your build system invokes many Python processes in parallel,
+you could be impacted by this. As part of obtaining data for that post, I
+discovered that Python 3.7 does not call <code>readdir()</code> as part of
+module importing and therefore doesn't exhibit a severe slowdown. (Python's
+module importing code was rewritten significantly in Python 3 and the <em>fix</em>
+was likely introduced well before Python 3.7.)</p>
+<p>I've <a href="https://gist.github.com/indygreg/a50e187f5372807cdcab5ac12bc2feea">produced a gist that can reproduce the problem</a>.
+The script essentially performs a recursive directory walk. It exercises
+the <code>opendir()</code>, <code>readdir()</code>, <code>closedir()</code>, and <code>lstat()</code> functions
+heavily and is essentially a benchmark of the filesystem and filesystem
+cache's ability to return file metadata.</p>
+<p>When you tell it to walk a very large directory tree - say a Firefox
+version control checkout (which has over 250,000 files) - the excessive
+time spent in the kernel is very apparent on macOS 10.13 High Sierra:</p>
+<pre><code>$ time ./slow-readdir.py -l 12 ~/src/firefox
+ran 12 walks across 12 processes in 172.209s
+
+real    2m52.470s
+user    1m54.053s
+sys    23m42.808s
+
+$ time ./slow-readdir.py -l 12 -j 1 ~/src/firefox
+ran 12 walks across 1 processes in 523.440s
+
+real    8m43.740s
+user    1m13.397s
+sys     3m50.687s
+
+$ time ./slow-readdir.py -l 18 -j 18 ~/src/firefox
+ran 18 walks across 18 processes in 210.487s
+
+real    3m30.731s
+user    2m40.216s
+sys    33m34.406s
+</code></pre>
+<p>On the same machine upgraded to macOS 10.14 Mojave, we see a bit of a
+speedup!:</p>
+<pre><code>$ time ./slow-readdir.py -l 12 ~/src/firefox
+ran 12 walks across 12 processes in 97.833s
+
+real    1m37.981s
+user    1m40.272s
+sys    10m49.091s
+
+$ time ./slow-readdir.py -l 12 -j 1 ~/src/firefox
+ran 12 walks across 1 processes in 461.415s
+
+real    7m41.657s
+user    1m05.830s
+sys     3m47.041s
+
+$ time ./slow-readdir.py -l 18 -j 18 ~/src/firefox
+ran 18 walks across 18 processes in 140.474s
+
+real    2m20.727s
+user    3m01.048s
+sys    17m56.228s
+</code></pre>
+<p>Contrast with my i7-6700K Linux machine backed by EXT4:</p>
+<pre><code>$ time ./slow-readdir.py -l 8 ~/src/firefox
+ran 8 walks across 8 processes in 6.018s
+
+real    0m6.191s
+user    0m29.670s
+sys     0m17.838s
+
+$ time ./slow-readdir.py -l 8 -j 1 ~/src/firefox
+ran 8 walks across 1 processes in 33.958s
+
+real    0m34.164s
+user    0m17.136s
+sys     0m13.369s
+
+$ time ./slow-readdir.py -l 12 -j 12 ~/src/firefox
+ran 12 walks across 12 processes in 25.465s
+
+real    0m25.640s
+user    1m4.801s
+sys     1m20.488s
+</code></pre>
+<p>It is apparent that macOS 10.14 Mojave has received performance work
+relative to macOS 10.13! Overall kernel CPU time when performing parallel
+directory walks has decreased substantially - to ~50% of original on some
+invocations! Stacks seem to reveal new code for lock acquisition, so this
+might indicate generic improvements to the kernel's locking mechanism
+rather than APFS specific changes. Changes to file metadata caching could
+also be responsible for performance changes. Although it is difficult to tell
+without access to the APFS source code. Despite those improvements, APFS
+is still spending a lot of CPU time in the kernel. And the kernel CPU time
+is still comparatively very high compared to Linux/EXT4, even for single
+process operation.</p>
+<p>At this time, I haven't conducted a comprehensive analysis of APFS to
+determine what other filesystem operations seem to acquire global kernel
+locks: all I know is <code>readdir()</code> does. A casual analysis of profiled
+stacks when running Mercurial's test harness against Python 3.7 seems
+to show <code>apfs_*</code> functions still on the stack a lot and that seemingly
+indicates more APFS slowness under parallel I/O load. But HFS+ exhibited
+similar problems (it appeared HFS+ used a single I/O thread inside the
+kernel for many operations, making I/O on macOS pretty bad), so I'm
+not sure if these could be considered <em>regressions</em> the way <code>readdir()</code>'s
+new behavior is.</p>
+<p>I've reported this issue to Apple at
+<a href="https://bugreport.apple.com/web/?problemID=45648013">https://bugreport.apple.com/web/?problemID=45648013</a>
+and on OpenRadar at <a href="https://openradar.appspot.com/radar?id=5025294012383232">https://openradar.appspot.com/radar?id=5025294012383232</a>.
+I'm told that issues get more attention from Apple when there are many
+duplicates of the same issue. So please reference this issue if you file your
+own report.</p>
+<p>Now that I've elaborated on the technical details, I'd like to add some
+personal commentary. While this post is about APFS, this issue of global
+kernel locks during common I/O operations is not unique to APFS. I
+<a href="/blog/2017/12/08/good-riddance-to-aufs/">already referenced</a> similar
+issues in AUFS. And I've encountered similar behaviors with Btrfs (although
+I can't recall exactly which operations). And NTFS has its own
+<a href="https://github.com/Microsoft/WSL/issues/873#issuecomment-425272829">bag of problems</a>.</p>
+<p>This seeming pattern of global kernel locks for common filesystem operations
+and slow filesystems is really rubbing me the wrong way. Modern NVMe SSDs
+are capable of reading and writing well over 2 gigabytes per second and
+performing hundreds of thousands of I/O operations per second. We even have
+Intel soon producing
+<a href="https://newsroom.intel.com/editorials/re-architecting-data-center-memory-storage-hierarchy/">persistent solid state storage that plugs into DIMM slots</a>
+because it is that friggin fast.</p>
+<p>Today's storage hardware is capable of ludicrous performance. It is fast enough
+that you will likely saturate multiple CPU cores processing the read or written
+data coming from and going to storage - especially if you are using higher-level,
+non-JITed (read: slower) programming languages (like Python). There has also been
+a trend that systems are growing more CPU cores faster than they are instructions
+per second per core. And SSDs only achieve these ridiculous IOPS numbers if many
+I/O operations are <em>queued</em> and can be more efficiently dispatched within the
+storage device. What this all means is that it probably makes sense to use
+parallel I/O across multiple threads in order to extract all potential
+performance from your persistent storage layer.</p>
+<p>It's also worth noting that we now have solid state storage that outperforms (in
+some dimensions) what DRAM from ~20 years ago was capable of. Put another way I/O
+APIs and even some filesystems were designed in an era when its RAM was slower than
+what today's persistent storage is capable of! While I'm no filesystems or kernel
+expert, it does seem a bit silly to be using APIs and filesystems designed for an
+era when storage was multiple orders of magnitude slower and systems only had a
+single CPU core.</p>
+<p>My takeaway is I can't help but feel that systems-level software (including the
+kernel) is severely limiting the performance potential of modern storage
+devices. If we have e.g. global kernel locks when performing common I/O operations,
+there's no chance we'll come close to harnessing the full potential of today's
+storage hardware. Furthermore, the behavior of filesystems is woefully under
+documented and software developers have little solid advice for how to achieve
+optimal I/O performance. As someone who cares about performance, I want to
+squeeze every iota of potential out of hardware. But the lack of documentation
+telling me which operations acquire locks, which strategies are best for say
+reading or writing 10,000 files using N threads, etc makes this extremely
+difficult. And even if this documentation existed, because of differences in
+behavior across filesystems and operating systems and the difficulty in
+programmatically determining the characteristics of filesystems at run time,
+it is practically impossible to design a <em>one size fits all</em> approach to
+high performance I/O.</p>
+<p>The filesystem is a powerful concept. I want to agree and use the <em>everything is a
+file</em> philosophy. Unfortunately, filesystems don't appear to be scaling very well
+to support the potential of modern day storage technology. We're probably at the
+point where commodity priced solid state storage is far more capable than today's
+software for the majority of applications. Storage hardware manufacturers will
+keep producing faster and faster storage and their marketing teams will keep
+convincing us that we need to buy it. But until software catches up, chances are
+most of us won't come close to realizing the true potential of modern storage
+hardware. And that's even true for specialized applications that do employ tricks
+taking hundreds or thousands of person hours to implement in order to eek out every
+iota of performance potential. The average software developer and application
+using filesystems as they were designed to be used has little to no chance of
+coming close to utilizing the performance potential of modern storage devices.
+That's really a shame. </p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="benefits-of-clone-offload-on-version-control-hosting"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/07/27/benefits-of-clone-offload-on-version-control-hosting" rel="bookmark" title="Permanent Link to Benefits of Clone Offload on Version Control Hosting">Benefits of Clone Offload on Version Control Hosting</a></h2>
   <small>July 27, 2018 at 03:48 PM | categories: 
@@ -630,218 +864,6 @@ the job.</p>
 <p>I'm not sure exactly what I'll replace Docker with for my simpler use cases.
 If you have experiences you'd like to share, sharing them in the comments
 will be greatly appreciated.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="release-of-python-zstandard-0.9"></a>
-  <h2 class="blog_post_title"><a href="/blog/2018/04/09/release-of-python-zstandard-0.9" rel="bookmark" title="Permanent Link to Release of python-zstandard 0.9">Release of python-zstandard 0.9</a></h2>
-  <small>April 09, 2018 at 09:30 AM | categories: 
-
-<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mozilla'>Mozilla</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I have just released
-<a href="https://pypi.python.org/pypi/zstandard/0.9.0">python-zstandard 0.9.0</a>. You can
-install the latest release by running <code>pip install zstandard==0.9.0</code>.</p>
-<p><a href="http://facebook.github.io/zstd/">Zstandard</a> is a highly tunable and therefore
-flexible compression algorithm with support for modern features such as
-multi-threaded compression and <em>dictionaries</em>. Its performance is remarkable
-and if you use it as a drop-in replacement for zlib, bzip2, or other common
-algorithms, you'll frequently see more than a doubling in performance.</p>
-<p>python-zstandard provides rich bindings to the zstandard C library without
-sacrificing performance, safety, features, or a Pythonic feel. The bindings
-run on Python 2.7, 3.4, 3.5, 3.6, 3.7 using either a C extension or CFFI
-bindings, so it works with CPython and PyPy.</p>
-<p>I can make a compelling argument that python-zstandard is one of the
-richest compression packages available to Python programmers. Using it, you
-will be able to leverage compression in ways you couldn't with other packages
-(especially those in the standard library) all while achieving ridiculous
-performance. Due to my focus on performance, python-zstandard is able to
-outperform Python bindings to other compression libraries that <em>should</em> be
-faster. This is because python-zstandard is very diligent about minimizing
-memory allocations and copying, minimizing Python object creation, reusing
-state, etc.</p>
-<p>While python-zstandard is formally marked as a beta-level project and hasn't
-yet reached a 1.0 release, it is suitable for production usage.
-python-zstandard 0.8 shipped with Mercurial and is in active production
-use there. I'm also aware of other consumers using it in production, including
-at Facebook and Mozilla.</p>
-<p>The sections below document some of the new features of python-zstandard 0.9.</p>
-<h2>File Object Interface for Reading</h2>
-<p>The 0.9 release contains a <code>stream_reader()</code> API on the compressor and
-decompressor objects that allows you to treat those objects as readable file
-objects. This means that you can pass a <code>ZstdCompressor</code> or <code>ZstdDecompressor</code>
-around to things that accept file objects and things generally <em>just work</em>.
-e.g.:</p>
-<div class="pygments_murphy"><pre><span></span>   <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">compressed_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ifh</span><span class="p">:</span>
-       <span class="n">cctx</span> <span class="o">=</span> <span class="n">zstd</span><span class="o">.</span><span class="n">ZstdDecompressor</span><span class="p">()</span>
-       <span class="k">with</span> <span class="n">cctx</span><span class="o">.</span><span class="n">stream_reader</span><span class="p">(</span><span class="n">ifh</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-           <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
-               <span class="n">chunk</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">32768</span><span class="p">)</span>
-               <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="p">:</span>
-                   <span class="k">break</span>
-</pre></div>
-
-<p>This is probably the most requested python-zstandard feature.</p>
-<p>While the feature is usable, it isn't complete. Support for <code>readline()</code>,
-<code>readinto()</code>, and a few other APIs is not yet implemented. In addition,
-you can't use these <em>reader</em> objects for opening zstandard compressed
-tarball files because Python's <code>tarfile</code> package insists on doing
-backward seeks when reading. The current implementation doesn't support
-backwards seeking because that requires buffering decompressed output and that
-is not trivial to implement. I recognize that all these features are useful
-and I will try to work them into a subsequent release of 0.9.</p>
-<h2>Negative Compression Levels</h2>
-<p>The 1.3.4 release of zstandard (which python-zstandard 0.9 bundles) supports
-negative compression levels. I won't go into details, but negative compression
-levels disable extra compression features and allow you to trade compression
-ratio for more speed.</p>
-<p>When compressing a 6,472,921,921 byte uncompressed bundle of the Firefox
-Mercurial repository, the previous fastest we could go with level 1 was
-~510 MB/s (measured on the input side) yielding a 1,675,227,803 file (25.88%
-of original).</p>
-<p>With level <code>-1</code>, we compress to 1,934,253,955 (29.88% of original) at
-~590 MB/s. With level <code>-5</code>, we compress to 2,339,110,873 bytes (36.14% of
-original) at ~720 MB/s.</p>
-<p>On the decompress side, level 1 decompresses at ~1,150 MB/s (measured at
-the output side), -1 at ~1,320 MB/s, and -5 at ~1,350 MB/s (generally speaking,
-zstandard's decompression speeds are relatively similar - and fast - across
-compression levels).</p>
-<p>And that's just with a single thread. zstandard supports using multiple
-threads to compress a single input and python-zstandard makes this feature
-easy to use. Using 8 threads on my 4+4 core i7-6700K, level 1 compresses
-at ~2,000 MB/s (3.9x speedup), -1 at ~2,300 MB/s (3.9x speedup), and -5
-at ~2,700 MB/s (3.75x speedup).</p>
-<p>That's with a large input. What about small inputs?</p>
-<p>If we take 456,599 Mercurial commit objects spanning 298,609,254 bytes from
-the Firefox repository and compress them individually, at level 1 we yield
-a total of 133,457,198 bytes (44.7% of original) at ~112 MB/s. At level -1,
-we compress to 161,241,797 bytes (54.0% of original) at ~215 MB/s. And at
-level -5, we compress to 185,885,545 bytes (62.3% of original) at ~395 MB/s.</p>
-<p>On the decompression side, level 1 decompresses at ~260 MB/s, -1 at
-~1,000 MB/s, and -5 at ~1,150 MB/s.</p>
-<p>Again, that's 456,599 operations on a single thread with Python.</p>
-<p>python-zstandard has an <em>experimental</em> API where you can pass in a collection
-of inputs and it batch compresses or decompresses them in a single operation.
-It releases and GIL and uses multiple threads. It puts the results in shared
-buffers in order to minimize the overhead of memory allocations and Python
-object creation and garbage collection. Using this mode with 8 threads on
-my 4+4 core i7-6700K, level 1 compresses at ~525 MB/s, -1 at ~1,070 MB/s,
-and -5 at ~1,930 MB/s. On the decompression side, level 1 is ~1,320 MB/s,
--1 at ~3,800 MB/s, and -5 at ~4,430 MB/s.</p>
-<p>So, my consumer grade desktop i7-6700K is capable of emitting decompressed
-data at over 4 GB/s with Python. That's pretty good if you ask me. (Full
-disclosure: the timings were taken just around the compression operation
-itself: overhead of loading data into memory was not taken into account. See
-the <code>bench.py</code> script in the
-<a href="https://github.com/indygreg/python-zstandard">source repository</a> for more.</p>
-<h2>Long Distance Matching Mode</h2>
-<p>Negative compression levels take zstandard into performance territory that
-has historically been reserved for compression formats like lz4 that are
-optimized for that domain. <em>Long distance matching</em> takes zstandard in the
-other direction, towards compression formats that aim to achieve optimal
-compression ratios at the expense of time and memory usage.</p>
-<p>python-zstandard 0.9 supports long distance matching and all the configurable
-parameters exposed by the zstandard API.</p>
-<p>I'm not going to capture many performance numbers here because python-zstandard
-performs about the same as the C implementation because <em>LDM</em> mode spends
-most of its time in zstandard C code. If you are interested in numbers, I
-recommend reading the zstandard
-<a href="https://github.com/facebook/zstd/releases/tag/v1.3.2">1.3.2</a>
-and <a href="https://github.com/facebook/zstd/releases/tag/v1.3.4">1.3.4</a> release notes.</p>
-<p>I will, however, underscore that zstandard can achieve close to lzma's
-compression ratios (what the <code>xz</code> utility uses) while completely smoking
-lzma on decompression speed. For a bundle of the Firefox Mercurial repository,
-zstandard level 19 with a long distance window size of 512 MB using 8 threads
-compresses to 1,033,633,309 bytes (16.0%) in ~260s wall, 1,730s CPU.
-<code>xz -T8 -8</code> compresses to 1,009,233,160 (15.6%) in ~367s wall, ~2,790s CPU.</p>
-<p>On the decompression side, zstandard takes ~4.8s and runs at ~1,350 MB/s as
-measured on the output side while <code>xz</code> takes ~54s and runs at ~114 MB/s.
-Zstandard, however, does use a lot more memory than <code>xz</code> for decompression,
-so that performance comes with a cost (512 MB versus 32 MB for this
-configuration).</p>
-<h2>Other Notable Changes</h2>
-<p>python-zstandard now uses the <em>advanced</em> compression and decompression APIs
-everywhere. All tunable compression and decompression parameters are available
-to python-zstandard. This includes support for disabling magic headers in frames
-(saves 4 bytes per frame - this can matter for very small inputs, especially when
-using dictionary compression).</p>
-<p>The full dictionary training API is exposed. Dictionary training can now use
-multiple threads.</p>
-<p>There are a handful of utility functions for inspecting zstandard frames,
-querying the state of compressors, etc.</p>
-<p>Lots of work has gone into shoring up the code base. We now build with warnings
-as errors in CI. I performed a number of focused auditing passes to fix
-various classes of deficiencies in the C code. This includes use of the
-<em>buffer protocol</em>: python-zstandard is now able to accept <em>any</em> Python
-object that provides a view into its underlying raw data.</p>
-<p>Decompression contexts can now be constructed with a max memory threshold
-so attempts to decompress something that would require more memory will
-result in error.</p>
-<p>See the
-<a href="https://github.com/indygreg/python-zstandard/releases/tag/0.9.0">full release notes</a>
-for more.</p>
-<h2>Conclusion</h2>
-<p>Since I last released a major version of python-zstandard, a lot has changed in
-the zstandard world. As I
-<a href="/blog/2017/03/07/better-compression-with-zstandard/">blogged last year</a>,
-zstandard circa early 2017 was a very compelling compression format: it already
-outperformed popular compression formats like zlib and bzip2 across the board.
-As a <em>general purpose</em> compression format, it made a compelling case for itself.
-In my mind, <em>brotli</em> was its only real challenger.</p>
-<p>As I wrote then, zstandard isn't perfect. (Nothing is.) But a year later, it
-is refreshing to see advancements.</p>
-<p>A criticism one year ago was zstandard was pretty good as a general purpose
-compression format but it wasn't great if you live at the fringes. If you were
-a speed freak, you'd probably use lz4. If you cared about compression ratios,
-you'd probably use lzma. But recent releases of zstandard have made huge strides
-into the territory of these niche formats. Negative compression levels allow
-zstandard to flirt with lz4's performance. Long distance matching allows
-zstandard to achieve close to lzma's compression ratios. <strong>This is a big friggin
-deal because it makes it much, much harder to justify a domain-specific compression
-format over zstandard.</strong> I think lzma still has a significant edge for ultra
-compression ratios when memory utilization is a concern. But for many consumers,
-memory is readily available and it is easy to justify trading potentially hundreds
-of megabytes of memory to achieve a 10x speedup for decompression. Even if you
-aren't willing to sacrifice more memory, the ability to tweak compression
-parameters is huge. You can do things like store multiple versions of a
-compressed document and conditionally serve the one most appropriate for the
-client, all while running the same zstandard-only code on the client. That's
-huge.</p>
-<p>A year later, zstandard continues to impress me for its set of features and its
-versatility. The library is continuing to evolve - all while maintaining
-backwards compatibility on the decoding side. (That's a sign of a good
-format design if you ask me.) I was honestly shocked to see that zstandard
-was able to change its compression settings in a way that allowed it to compete
-with lz4 and lzma without requiring a format change.</p>
-<p>The more I use zstandard, the more I think that <em>everyone should use this</em> and
-that popular compression formats just aren't cut out for modern computing any
-more. Every time I download a zlib/gz or bzip2 compressed archive, I'm thinking
-<em>if only they used zstandard this archive would be smaller, it would have
-decompressed already, and I wouldn't be thinking about how annoying it is
-to wait for compression operations to complete</em>. In my mind, zstandard is such
-an obvious advancement over the status quo and is such a versatile format -
-now covering the gamut of super fast compression to ultra ratios - that it is
-bordering on negligent to not use zstandard. With the removal of the controversial
-patent rights grant license clause in zstandard 1.3.1, that justifiable
-resistance to widespread adoption of zstandard has been eliminated. Zstandard
-is objectively superior for many workloads and I heavily encourage its use. I
-believe python-zstandard provides a high-quality interface to zstandard and
-I encourage you to give it and zstandard a try the next time you compress data.</p>
-<p>If you run into any problems or want to get involved with development,
-python-zstandard lives at
-<a href="https://github.com/indygreg/python-zstandard">indygreg/python-zstandard</a> on
-GitHub.</p>
-<p>*(I updated the post on 2018-05-16 to remove a paragraph about zstandard
-competition. In the original post, I unfairly compared zstandard to Snappy
-instead of Brotli and made some inaccurate statements around that comparison.)</p>
 
   </div>
 </div>
