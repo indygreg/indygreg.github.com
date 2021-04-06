@@ -7,12 +7,700 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2020-10-19T05:16:45Z</updated>
+  <updated>2021-04-06T04:26:02Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Surprisingly Slow]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2021/04/06/surprisingly-slow" />
+    <id>http://gregoryszorc.com/blog/2021/04/06/surprisingly-slow</id>
+    <updated>2021-04-06T07:00:00Z</updated>
+    <published>2021-04-06T07:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Programming" />
+    <summary type="html"><![CDATA[Surprisingly Slow]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2021/04/06/surprisingly-slow"><![CDATA[<p>I have an affinity for performance optimization and making software as
+efficient as possible. Over the years, I've encountered specific instances
+and common patterns that make software or computers slow. In this post,
+I'll shine a spotlight on some of them.</p>
+<p>I'm titling this post <em>Surprisingly Slow</em> because the slowness was either
+surprising to me or the sub-optimal practices leading to slowness are
+prevalent enough that I think many programmers would be surprised by
+their existence.</p>
+<p>The sections below are largely independent. So feel free to cherry pick
+the ones that interest you.</p>
+<h1>Environment Detection in Build Systems (e.g. configure and cmake)</h1>
+<p>This is the topic that inspired this post.</p>
+<p>Build systems often feature an <em>environment detection</em> / <em>configuration</em>
+phase before the <em>build phase</em>. In UNIX land, autoconf generated <code>configure</code>
+scripts are prevalent. CMake is also popular. These tools run a bunch of code
+to probe the state of the current system so that the build configuration is
+appropriate for the current build environment. For example, they'll probe for
+which compiler to use, its version, and what bugs and capabilities it has.</p>
+<p>This environment detection and configuration is a necessary evil because
+machines and environments often vary substantially and you need to account
+for those variances.</p>
+<p><strong>The problem is that this configuration step often takes longer to run than
+the build itself!</strong> Build systems for small programs or libraries will often
+spend 10+ seconds running <code>configure</code> and complete the actual compilation
+and linking in a fraction of that time. In other words, the setup to perform
+the build takes longer than the build itself!</p>
+<p>Depending on how many CPU cores you have, the discrepancy may not be obvious.
+But I have a 16 core / 32 thread Ryzen 5950X as my primary PC and the relative
+slowness of the configuration step is painful to observe.</p>
+<p><strong>What I find even more shocking is that <em>configuration</em> time often still
+eclipses actual build time even for large projects.</strong> I'm not sure if this
+is still true, but a few years ago Mozilla observed that building LLVM/Clang
+on a 96 vCPU EC2 instance resulted in more time spent in cmake/configuring
+than compiling and linking! And that's a very large C++ project with thousands
+of source files being compiled!</p>
+<p>Build configuration is often a discrete step that executes serially before
+what most people consider the actual build. To improve efficiency, build
+configuration needs to be parallelized. Even better, it should be integrated
+into the main build DAG itself so parts of the build can start running without
+having to wait for all build configuration. Unfortunately, many common tools
+performing build configuration can't easily be adapted to this model. So there's
+not much many of us can do.</p>
+<p>Another solution to this problem is avoiding the problem of environment detection
+in the first place. If you have deterministic and reproducible build
+environments, you can take a lot of shortcuts to skip environment detection
+that just isn't needed any more. This is more or less the approach of modern
+build tools like Bazel. I do wonder how much of the speed gains from tools
+like Bazel are due to eliminating environment configuration. I suspect it is
+a lot!</p>
+<h1>New Process Overhead on Windows</h1>
+<p>New processes on Windows can't be spawned as quickly as they can on POSIX
+based operating systems, like Linux. On Windows, assume a new process will
+take 10-30ms to spawn. On Linux, new processes (often via <code>fork()</code> + <code>exec()</code>
+will take single digit milliseconds to spawn, if that).</p>
+<p>However, thread creation on Windows is very fast (~dozens of microseconds).</p>
+<p>These
+<a href="https://stackoverflow.com/questions/10710912/what-is-the-process-creation-overhead-in-windows">Stack</a>
+<a href="https://stackoverflow.com/questions/47845/why-is-creating-a-new-process-more-expensive-on-windows-than-linux">Overflow</a>
+have some more details.</p>
+<p>A few dozen milliseconds is an eternity in CPU time. And it is long enough
+that it eats into a large percentage of the time budget for people to perceive
+something as instantaneous. So this may contribute to the perception that
+<em>Windows is slower than Linux</em>.</p>
+<p>If your program architecture consists of spawning new processes left and
+right (this is common in UNIX land), this can pose performance problems on
+Windows, as the overhead of new process creation on Windows can really add
+up:</p>
+<ul>
+<li>10ms * 1,000 invocations = 10s</li>
+<li>20ms * 10,000 invocations = 200s</li>
+<li>30ms * 100,000 invocations = 3,000s</li>
+</ul>
+<p>Using the example of configure above, configure files are often shell
+scripts. And shell scripts often do a lot of their work by spawning other
+processes like <code>grep</code>, <code>sed</code>, and <code>sort</code>. Even the <code>[</code> operator could be a
+new process (seriously: there's probably a <code>/usr/bin/[</code> executable in your
+POSIX environment). (Although <code>[</code> might be a shell built-in.) Command
+pipe chains (e.g. <code>command | grep | awk</code>) spawn multiple processes serially
+and can be visually slow to run. Anyway, it is not uncommon for a configure
+script to spawn thousands of new processes. Assuming 10ms per process, at
+1,000 invocations that is 10s of overhead just spawning new processes! This
+further exacerbates the problem in the previous section!</p>
+<p>If your software runs on Windows, consider the impact that relatively
+slow process spawning will have. Consider a multi-threaded architecture
+or using longer-lived daemon/background processes instead.</p>
+<h1>Closing File Handles on Windows</h1>
+<p>Many years ago I was profiling Mercurial to help improve the working
+directory checkout speed on Windows, as users were observing that checkout
+times on Windows were much slower than on Linux, even on the same machine.</p>
+<p>I thought I could chalk this up to NTFS versus Linux filesystems or
+general kernel/OS level efficiency differences. What I actually learned
+was much more surprising.</p>
+<p>When I started profiling Mercurial on Windows, I observed that most I/O
+APIs were completing in a few dozen microseconds, maybe a single millisecond
+or two ever now and then. Windows/NTFS performance seemed great!</p>
+<p>Except for <code>CloseHandle()</code>. These calls were often taking 1-10+ milliseconds
+to complete. It seemed odd to me that file writes - even sustained file writes
+that were sufficient to blow past any write buffering capacity - were fast
+but closes slow. It was even more perplexing that <code>CloseHandle()</code> was slow
+even if you were using completion ports (i.e. async I/O). This behavior for
+completion ports was counter to what the MSDN documentation said should happen
+(the function should return immediately and its status can be retrieved later).</p>
+<p>While I didn't realize it at the time, the cause for this was/is Windows
+Defender. Windows Defender (and other anti-virus / scanning software)
+typically work on Windows by installing what's called a filesystem filter
+driver. This is a kernel driver that essentially hooks itself into the kernel
+and receives callbacks on I/O and filesystem events. It turns out the <em>close
+file</em> callback triggers scanning of written data. And this scanning appears
+to occur synchronously, blocking <code>CloseHandle()</code> from returning. This adds
+milliseconds of overhead. The net effect is that file mutation I/O on Windows
+is drastically reduced by Windows Defender and other A/V scanners.</p>
+<p>As far as I can tell, as long as Windows Defender (and presumably other A/V
+scanners) are running, there's no way to make the Windows I/O APIs consistently
+fast. You can disable A/V scanning (at your own peril). But the trick that
+Mercurial <a href="https://www.mercurial-scm.org/repo/hg/rev/2fdbf22a1b63f7b4c94393dbf45ad417da257fe0">employs</a>
+(which has later been emulated by rustup among other tools) is to use a
+thread pool for calling <code>CloseHandle()</code>. Even if you perform all file
+open and write I/O on a single thread and use a background thread pool only
+for calling <code>CloseHandle()</code>, you can see a &gt;3x speedup in time to write files.
+<strong>This optimization should ideally be employed by any software that creates
+or mutates as little as a few hundred files on Windows.</strong> This includes
+version control tools, installers, and archive extraction tools. Fun fact:
+<code>rustup</code> can extract tar files on Windows faster than open source and commercial
+<em>fast</em> extraction/copy tools because it employs this trick and more. I believe
+<code>rustup</code> on Windows is actually faster at extracting tar archives than it is
+on Linux!</p>
+<p>The artificial I/O latency added by scanning software such as Windows Defender
+is super annoying. But the performance gains from working around it by using
+a thread pool for background is often worth the complexity. I have no doubt
+that if this optimization were baked into popular Windows tools (namely
+installers), people would be shocked by how much faster things could be.</p>
+<h1>Writing to Terminals</h1>
+<p>As a maintainer of Firefox's build system, I fielded a handful of reports
+from people complaining about builds being slower than their peers on
+identical hardware. While there are many causes for this, one of the most
+surprising was the impact the terminal has on build performance.</p>
+<p>Writing to the terminal is usually fast. Until it isn't.</p>
+<p>What I learned is that writing tons of output or getting clever with
+writing to the terminal (e.g. writing colors, moving the cursor position
+to write over existing content) can drastically slow down applications.</p>
+<p>Writing to the terminal via stderr/stdout is likely performed via blocking
+I/O. So if the thing handling your <code>write()</code> (the terminal emulator) doesn't
+finish its handling promptly, your process just sits around waiting on
+the terminal to do its thing.</p>
+<p>We discovered that different terminals have their own quirks. Historically,
+the Windows Command Prompt and the built-in Terminal.app on macOS were
+very slow at handling tons of output. I remember (but can't find the bug or
+commit to Firefox) when we made the build system quiet by default and that
+reduced build times by <em>minutes</em> in some configurations.</p>
+<p>A few years ago, npm infamously had a
+<a href="https://github.com/npm/npm/issues/11283">performance sucking progress spinner</a>.
+While I'm not sure how much of this was terminal slowness versus calling
+progress update code too frequently, the terminal likely played a part because
+terminals do have a limit to how often they can accept input to draw.</p>
+<p>I've found that modern terminals are better about writing a ton of plain text
+than they were in ~2012, when I was tackling these problems in Firefox's build
+system. But I would still exercise extreme caution when doing fancy things
+with the terminal, like coloring text, drawing footers, etc. Always use buffered
+I/O to minimize the number of <code>write()</code> actually going to the terminal, flushing
+as needed (hopefully sparingly). Consider using an async thread for writing to
+stdout/stderr. Record the total time spent in blocking I/O to stdout/stderr so you
+can measure terminal I/O latency. And periodically compare the wall time delta
+between stdout/stderr connected to a terminal and /dev/null when running your
+program to see if there is a discrepancy worth caring about. Finally, consider
+throttling writes to the terminal. Instead of writing a footer after every line
+of output, consider buffering lines for a few milliseconds and emitting all
+lines plus the new footer in batches. If drawing a progress bar or spinner or
+something of that nature, I would limit drawing to ~10 Hz to minimize
+terminal overhead.</p>
+<h1>Thermal Throttling / ACPI C/P-States / Processor Throttling Behavior</h1>
+<p>We like to think that a computer and its processors are either on or off.
+If only things were that simple.</p>
+<p>Processors are constantly changing their operating envelope as they are
+running. The following statements are all true (although not every item applies
+to all machines or CPU models):</p>
+<ul>
+<li>The MHz each CPU core is running at can fluctuate wildly from 1 second to
+  the next.</li>
+<li>CPU cores may go to sleep or enter a very low power mode, even if others are
+  running.</li>
+<li>Cores may underclock significantly if temperature goes beyond a threshold.
+  They may refuse to run faster until the temperature drops. Faulty sensors
+  can lead to premature behavior.</li>
+<li>Cores may only reach their maximum frequency if other cores are also
+  running. The physical proximity of that other core may matter.</li>
+<li>It could take dozens, hundreds, or even thousands of milliseconds for an
+  idling core to ramp up to its full speed.</li>
+<li>The behavior of power scaling can vary substantially depending on whether
+  a machine is connected to external power or running off the battery.</li>
+<li>The behavior of power scaling can vary substantially depending on whether
+  the battery is fully charged or nearly empty.</li>
+<li>Apple laptops may exhibit thermal throttling when
+  <a href="https://apple.stackexchange.com/questions/363337/how-to-find-cause-of-high-kernel-task-cpu-usage">charging from the left side</a>.
+  (Yes, seriously: always charge your MacBook Pro from the right. And if
+  your employees use Apple laptops for CPU heavy tasks, consider an awareness
+  campaign to encourage charging from the right side. Even better, deploy
+  software that checks for left side charging and alert accordingly. Although
+  I have yet to find any software or API to detect this.)</li>
+<li>A core may slow down in order to process certain instructions (like
+  <a href="https://travisdowns.github.io/blog/2020/01/17/avxfreq1.html">AVX-512</a>).</li>
+</ul>
+<p>Modern CPUs are really dynamic beasts and their operating behavior is often
+seemingly unpredictable. Furthermore, CPU models can vary from one to the
+next. For example, an EPYC or Xeon processor will likely behave differently
+from a Ryzen or Core i7/i9 which will behave differently depending on
+whether you are running in a desktop or laptop. (I observed a few years ago
+that Xeon cores won't turbo as <em>easily</em> as consumer grade CPUs.)</p>
+<p>Power fluctuations and their impact on performance are one of the reasons
+why it is extremely difficult to conduct proper benchmarks. When
+benchmarking, you need to control the power variable or at least report its
+state so results are qualified appropriately. I am very skeptical of benchmark
+results that don't report the power configuration/methodology (this is
+most of them, sadly) and especially of benchmarks conducted on laptops, as
+battery operated devices are much more susceptible to power throttling than
+desktops or servers.</p>
+<p>I have personally had a MacBook Pro become thermal throttled because an
+internal screw came loose and blocked a fan from spinning. macOS didn't
+warn me: all I knew was that my Firefox builds become 2-3x slower for no
+apparent reason! I have also observed my MacBook Pro becoming hot due to
+left side charging. Charging from the right magically made things faster.</p>
+<p>At Mozilla, when we started rolling out Xeon desktops to employees,
+we had reports of wildly varying build speeds. On some operating systems
+(Mozilla had very lax central machine provisioning and allowed people full
+domain of their company issued hardware), the default ACPI C/P-States were
+such that CPU cores were scaling differently.</p>
+<p>What we observed was the <em>compile</em> phase of the build was fine. But some
+people were reporting linking times 2-4x longer (dozens of seconds to minutes)
+than others on equivalent configurations! This was a big deal because the wall
+time of an incremental/non-full build is dominated by linking time. We
+eventually discovered that on the slow machines, the CPU core doing the linking
+was only running at 25-50% of its potential. Think 1.0-1.5 GHz. But if you
+started additional CPU heavy tasks, that core ramped up. We discovered that
+different operating systems had different defaults for the ACPI C/P-States.
+The more conservative settings would result in CPU cores not scaling their
+frequency unless there was sufficient CPU load to merit it. Changing to more
+aggressive power settings ensured better and consistent results.</p>
+<p>Laptops are highly susceptible to thermal throttling and aggressive power
+throttling to conserve battery. I hold the general opinion that laptops are
+just too variable to have reliable performance. Given the choice, I want
+CPU heavy workloads running in controlled and observed desktops or server
+environments.</p>
+<p>But servers aren't immune: their ACPI C-State and P-State settings can
+drastically impact performance. Dialing these up to max so all the cores
+run at full (or are ready to run at full in a few milliseconds) is possible.
+However, this may greatly increase your power consumption. You can do this
+on some cloud providers (like AWS) for no additional direct cost to you.
+However, higher energy consumption is bad for the environment. Data centers
+already have a
+<a href="https://www.datacenterknowledge.com/energy/study-data-centers-responsible-1-percent-all-electricity-consumed-worldwide">carbon footprint about the size of the airline industry</a>
+(during non-pandemic times) and that footprint is growing. So think about
+your ethical responsibilities to the environment before having your server
+fleet consume potentially megawatts more power.</p>
+<h1>Python, Node.js, Ruby, and other Interpreter Startup Overhead</h1>
+<p>Complex systems will often execute Python, Node.js, and other interpreters
+thousands or more times during their execution. For example, the Firefox
+build system invokes thousands of Python processes performing common tasks,
+such as wrapping the compiler invocation. And the Mercurial test harness invokes
+thousands of Python processes by running <code>hg</code> as part of its testing. I've
+heard of similar stories involving Node.js, Ruby, and other interpreters,
+often in the context of use in build systems.</p>
+<p>An oft ignored fact about launching a new interpreter process is that each
+invocation often takes single to dozens of milliseconds to initialize the
+interpreter. i.e. the new process spends time at the beginning of process
+execution just getting to the code you are telling it to run. Sometimes the
+new process overhead is so bad that the slowdown is obvious and rules out
+the use of a technology. The JVM historically has been notorious for this,
+which is why use of Java typically entails fewer, longer-running processes
+over more, domain-limited processes.</p>
+<p>I've <a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">written</a>
+<a href="https://mail.python.org/pipermail/python-dev/2014-May/134528.html">about</a>
+Python's startup overhead before. In 2014 I measured that Mercurial's test
+harness spends 10-18% of its total CPU time just getting to the point where
+the interpreter/process can run custom bytecode and 30-38% of its total CPU
+time getting to the point where Mercurial performs command dispatch
+(additional time here is mostly module importing overhead).</p>
+<p>You may think that a few milliseconds of overhead can't matter that much.
+But if you multiply by 1,000, 10,000, 100,000 or more, milliseconds matter:</p>
+<ul>
+<li>1ms * 1,000 invocations = 1s</li>
+<li>10ms * 10,000 invocations = 100s</li>
+<li>100ms * 100,000 invocations = 10,000s (2.77 hours)</li>
+</ul>
+<p>On Windows, this problem is compounded because of it relatively slow new
+process startup (see section above).</p>
+<p>Programmers need to think long and hard about your process invocation model.
+Consider the use of fewer processes and/or consider alternative programming
+languages that don't have significant startup overhead if this could become
+a problem (anything that compiles down to assembly is usually fine).</p>
+<h1>Pretty Much all Storage I/O</h1>
+<p>Of my general affinity for performance optimization, I have a special
+affinity for I/O optimization. I think the main reason is that the disconnect
+between the potential for modern storage devices and what is actually
+achieved is so wide. On paper, software should be getting ~10x the
+performance from modern storage devices than what we typically see.</p>
+<p>Modern storage devices are absurdly fast. The NVMe storage in my primary
+PC can sustain reads at &gt;3 GB/s (&gt;6 GB/s sequential), writes at ~1
+GB/s (4+ GB/s sequential), can perform &gt;500,000 I/O operations per
+second, and can service many I/O operations in the ~10 microsecond latency
+range. Modern NVMe storage is roughly on par with the performance of DDR2
+DRAM (launched in 2003) in terms of throughput (latency still trails but
+~10us is nothing to scoff at).</p>
+<p>For comparison, the 1 TB Western Digital Caviar Black spinning disk I
+retired from my PC a few weeks ago can only do ~90 MB/s sequential reads
+and writes, 1-2 MB/s random reads and writes, ~12 ms access times. I'm unsure
+what IOPS is, but considering ~12 ms access times and the physical
+nature of spinning disks, it can't be more than a few hundred.</p>
+<p>Modern NVMe storage is 1.5-3 <strong>magnitudes</strong> faster than the best
+spinning disks from little over a decade ago. So why isn't all storage
+I/O ~instantaneous?</p>
+<p>The short answer is that most software fails to utilize the potential
+of modern storage devices or even worse actively undermines it through
+bad practices.</p>
+<p>For the former, I'll refer you to the excellent
+<a href="https://itnext.io/modern-storage-is-plenty-fast-it-is-the-apis-that-are-bad-6a68319fbc1a">Modern Storage is Plenty Fast. It is the APIs That are Bad</a>.
+tl;dr you can harness the full power of your modern storage device
+if you bypass the standard OS/kernel I/O primitives and issue I/O
+operations directly against the device. So, software abstractions in
+the OS/kernel are eating a lot of potential.</p>
+<p>For the software undermining storage device potential aspect, I'll briefly
+touch on the <code>fsync()</code> POSIX function. By calling this function, you effectively
+say <em>be sure the state of this file descriptor is persisted to the storage
+device</em> or <em>I don't want to lose any changes I've made</em>.</p>
+<p>Data consistency and durability are important. But the cost to achieving
+them can be absurdly high. And as it turns out, it is also subtly difficult
+to do correctly in practice. I'll refer you to Dan Luu's excellent
+<a href="https://danluu.com/file-consistency/">Files are Hard</a>. The papers linked
+offer a sobering assessment. I'll reinforce the message with
+<a href="https://lwn.net/Articles/752063/">PostgreSQL's fsync() surprise</a>, which
+chronicles how PostgreSQL maintainers learned about how Linux can flat
+out drop errors when performing device I/O, leading to data corruption.
+Yikes!</p>
+<p>Anyway, about <code>fsync()</code>. The concept of <code>fsync()</code> is sound: <em>ensure this
+thing is persisted to the storage device</em>. But the implementation is often
+a pile of inefficiency leading to slowness.</p>
+<p>On many Linux filesystems (including ext4), the implementation of <code>fsync()</code>
+is such that upon calls, <em>all</em> unflushed writes are persisted to storage.
+So if process A writes out a 1 GB file and process B writes 1 byte to another
+file and calls <code>fsync()</code> on that single byte write, Linux/ext4 will need to
+write 1 GB to the storage device, not 1 byte. So on Linux/ext4, all it takes
+is a random process somewhere to issue <code>fsync()</code> and all dirty page cache
+entries need to be flushed. On most systems, there's usually something
+continuously incurring write I/O, so the amount of storage device I/O incurred
+by <code>fsync()</code> is almost always larger than just the mutated file/directory
+you actually want persisted.</p>
+<p>This behavior can cause a ton of problems. For starters, it artificially
+increases I/O latency. You'd think that calling <code>fsync()</code> after a minimal
+change would be ~instantaneous. But if there are lots of dirty pages to be
+flushed, it could take seconds. At my current employer, we ran into this
+exact problem with GitHub Enterprise, which has a monolithic architecture.
+A MySQL database was running off the same ext4 filesystem as the Git
+repositories. MySQL will call <code>fsync()</code> frequently to ensure transactions and
+the transaction journal are persisted to storage. But if a Git GC were running
+and Git just finished writing a multi-gigabyte packfile, MySQL's <code>fsync()</code> would
+be stuck waiting on Git's large write to finish persisting. This led to
+slowness of future MySQL transactions and even some application-level timeouts.
+When people say databases and other stores should be isolated to their own
+volumes/filesystems, <code>fsync()</code>'s wonky behavior is a big reason why.</p>
+<p>Fortunately, newer versions of Linux/ext4 contain a
+<a href="https://lwn.net/Articles/842385/">fast commits feature</a> that changes
+behavior and enables more granular flushing of <code>fsync()</code> to storage, just
+like it is documented to do. But as the feature is pretty new, it could
+take a while to stabilize and make its way to distros. I can't wait for
+it though!</p>
+<p>Another problem with <code>fsync()</code> is that it is called more often than it
+needs to be. Now, if you have mission critical data and need consistency
+and durability, you should absolutely be calling <code>fsync()</code> appropriately.
+But the reality is that many data workloads and machine environments don't
+actually need strong data guarantees!</p>
+<p>Take for example Kubernetes pods or CI runners. Or even servers for a
+<em>stateless</em> service. Ask yourself, <em>what's the worst that could happen if
+the machine loses power and there is data loss on the local filesystem?</em> In a
+lot of scenarios the answer is <em>nothing</em>. You've designed your system to be
+stateless and fault tolerant. You manage your servers as cattle. You treat local
+filesystems as ephemeral. So if a machine fails, you provision a new one to
+replace it. In these scenarios, <code>fsync()</code> buys you little to nothing but
+can cost you a lot!</p>
+<p>The cost of avoidable <code>fsync()</code> can be substantial. Combined with the
+inefficient global flushing behavior of Linux/ext4, it can be a performance
+sapper, especially on slower storage devices. Fortunately, there are
+options. Many databases and other popular software has a way to prevent
+the issuance of <code>fsync()</code>. If your data is ephemeral, consider disabling
+<code>fsync()</code> for a likely significant performance boost! For software that
+doesn't support disabling <code>fsync()</code>, the aptly named
+<a href="https://www.flamingspork.com/projects/libeatmydata/">eatmydata</a> tool and
+LD_PRELOAD library can be used to nerf <code>fsync()</code> and other similar
+functionality by intercepting the function calls and making them no-op.
+Last but not least, for ephemeral machines, consider building a patched
+Linux kernel that turns <code>fsync()</code> and friends into no-ops. (I'm not sure
+of anyone who does this. But I've considered it because getting eatmydata
+to work in places like launched containers can be a bit of a pain.)</p>
+<p>I'll close this section with a link to my favorite commit to the Firefox
+repository: <a href="https://hg.mozilla.org/mozilla-central/rev/6b064f9f6e10b25bf2edc916b1b9a8b78cff0465">Disable Places during reftests, preventing 50 GB of I/O</a>.
+While this commit goes beyond disabling <code>fsync()</code>, <code>fsync()</code> (and its
+Windows equivalent) was responsible for some of the performance loss.
+Excessive I/O and needless persisting of changes to device can really
+sap performance. Storage software usually errors on the side of consistency
+(this is the correct default in my opinion). Given the costs that consistency
+imposes, you should seriously consider nerfing the guarantees and speeding
+up I/O when that option is viable for you.</p>
+<h1>Data Compression</h1>
+<p>I could write an entire post on the topic of data compression and its
+widespread suboptimal use. Here is the concise version.</p>
+<p>At its core, data compression is a trade-off between CPU and I/O usage.
+Typically it involves one of the following scenarios:</p>
+<ol>
+<li>I/O (either storage or network) is the bottleneck, so we want to trade
+   more CPU to reduce I/O throughput.</li>
+<li>At rest storage is expensive, so we want to trade more CPU for lower
+   storage utilization/costs.</li>
+</ol>
+<p>Since the early days of computing, a maxim has been that storage is
+slow and expensive compared to CPU. So trading CPU to reduce storage
+utilization seemed like a solid bet.</p>
+<p>Fast forward to 2021.</p>
+<p>As I wrote in the previous section, modern storage I/O is absurdly fast.
+It is also historically cheap.</p>
+<p>Networks have also gotten faster. 1 gbps (125 MB/s) is pretty universal at
+this point. 2.5 gbps (312 MB/s) is getting deployed in consumer and office
+environments. 10 gbps (1250 MB/s) is common in data centers. And faster than
+10 gbps is possible.</p>
+<p>Meanwhile CPUs have somewhat plateaued in their single core <em>performance</em>
+in the past decade. We've been <em>stuck</em> at ~4 GHz for years. All of the
+performance gains from CPUs have come from adding more CPU cores to the package
+and instructions per cycle (IPC) efficiency wins (we've also gotten some
+agonizing security vulnerabilities like Spectre and Meltdown out of this IPC
+work as well).</p>
+<p>What this all means is that the relative performance difference between
+CPUs and I/O has compressed significantly (pardon my pun). ~30 years ago,
+CPUs ran at ~100 MHz and Internet was using dial-up at say 50 kbps, or 0.05 mbps,
+or 6.25 kBps. That's 16,000 cycles per byte. Today, we're at ~4 GHz with say 1
+Gbps / 125 MB/s networks. That's 32 cycles per byte, a decrease of 500x. (In
+fairness, the ratio closes when you consider that we likely have &gt;1 CPU core
+competing for I/O and factor in IPC gains. But we're still talking about the
+relative difference in CPU and I/O decreasing by 1-1.5 magnitudes.) <strong>Years ago,
+trading CPU to lessen the I/O load was often <em>obviously correct</em>. Today,
+because of the advancements in I/O performance relative to CPU and a
+substantially reduced cycles per I/O byte budget, the answer is a lot murkier.</strong></p>
+<p>Not helping is the prevalence of ancient compression algorithms. DEFLATE - the
+algorithm behind the ubiquitous zlib library and gzip data format - is ~30
+years old. DEFLATE was designed in an era when computers had like 1 MB RAM and
+100 MB hard drives. Different times.</p>
+<p>DEFLATE/zlib became very popular in a world where I/O was much slower and
+compression was often a necessity. Not using compression on a dial-up modem
+resulted in massive performance differences! And because of its popularity in
+the early days of the Internet, DEFLATE/zlib is available in the standard library
+of many programming languages. It seems to be the first compression format people
+reach for when someone says/thinks <em>add compression</em>.</p>
+<p>The ubiquity of zlib is good from a dependency perspective: <em>everyone can read
+zlib/gzip</em>. But for scenarios where you control the reader and writer, <strong>use of
+zlib in 2021 constitutes negligence because its performance lags contemporary
+solutions</strong>. Modern compression libraries (<a href="https://github.com/facebook/zstd">zstandard</a>
+is my favorite) can yield substantially faster compression and decompression speed
+while delivering better compression ratios in most data sets. My
+2017 <a href="https://gregoryszorc.com/blog/2017/03/07/better-compression-with-zstandard/">Better Compression with Zstandard</a>
+post dives into the numbers. (I've been meaning to revisit that post since zstandard
+has since seen multiple 10+% speedups in subsequent releases, making it even more
+compelling.) If you don't need the ubiquity of zlib (e.g. you control the writers
+and readers), there's little reason to use zlib over something more modern.
+Compared to zlib, modern compression libraries like zstandard are the closest thing to
+magical pixie dust that you can sprinkle on your software for free performance.</p>
+<p>If you are using compression (especially zlib) for real-time compression (sending
+compressed data somewhere where it will be decompressed immediately), you need
+to measure the line speed of the compressor and decompressor. Then compare that
+to the uncompressed line speed. Are you bottlenecked by I/O in the uncompressed
+case? If not, do you need the bandwidth or I/O capacity being saved by
+compression? If not, why are you using compression at all? You just measured that
+all compression did was artificially slow down your software for no reason!
+Given that zlib compression will often fail to saturate a 1 gbps link, there's
+a very real chance your use of compression introduces an artificial CPU bottleneck!</p>
+<p>If you are using compression (especially zlib) for data archiving (storing
+compressed data somewhere where it will be decompressed eventually), you need
+to measure and compare compression ratios and line speeds of different compression
+formats and their settings. Like the real-time compression scenario, if
+decompression reduces your line speed from uncompressed, you are artificially
+slowing down access to your data. Maybe that's justified to save on storage costs.
+But in many cases, you can swap in a different compression library and get
+similar to better compression ratios while achieving better (de)compression speeds.
+Who wouldn't want free performance and storage cost reductions?</p>
+<p>As an aside, one of the reasons I love zstandard is it can be tuned from something
+that is screaming fast (GB/s at compression and decompression ends) to something
+that is very slow on the compression side but yields terrific compression ratios,
+while still preserving GB/s decompression speeds. This enables you to use the same
+format for vastly different use cases. You can also dynamically change the storage
+characteristics of your data. For example, you can initially write data with a <em>fast</em>
+setting so you aren't CPU constrained on the writer. Then you can have some batch
+job come around and recompress your data with more aggressive settings, making it
+much smaller. It's not like zlib where the range of compression settings goes from
+<em>kinda slow and not very good compression ratios</em> to <em>pretty slow and still not very
+good compression ratios</em>.</p>
+<p><strong>When you know to look for it, inefficiency due to unjustified use of compression or
+failure to leverage modern compression libraries is everywhere.</strong> Here are some common
+operations in my daily workflow that are bottlenecked by use of slow compression
+formats and could be made faster by using a different compression format:</p>
+<ul>
+<li>Installing Apt packages (packages are gzip compressed). (Fun fact, installing apt
+  packages is also subject to <code>fsync()</code> slowness as described above because the package
+  manager will issue an <code>fsync()</code> at least once for each package.)</li>
+<li>Installing Homebrew packages (packages are gzip compressed).</li>
+<li>Installing Python packages via pip (source archives are gzip tarballs and wheels are
+  zip files, which use zlib compression).</li>
+<li>Pushing/pulling Docker images (layers inside Docker images are gzip compressed).</li>
+<li>Git (wire protocol data exchange and on-disk storage is using zlib). (When I added
+  zstandard support to Mercurial, it reduced the transfer size from servers to ~89%
+  of original while using ~60% of the server-side CPU.)</li>
+</ul>
+<p>In the corporate world, there's probably multiple petabyte scale data warehouses,
+data lakes, data coliseums (I can't keep up with what we're calling them now) storing
+data in gzip. Dozens of terabytes could likely be shaved by moving to something
+like zstandard. If using LZMA (which has extremely slow decompression speeds),
+storage costs are cheap, but data access is extremely slow, making your
+data querying slow. I haven't had the opportunity to measure it, but I suspect
+some of the reputation Hadoop and other Big Data systems have for being slow is
+because they are CPU constrained by suboptimal use of compression.</p>
+<p>My experience is that many programmers don't understand the trade-offs and
+nuances of compression and/or lack knowledge about the existence of more modern,
+superior compression libraries. Instead, the collective opinion is <em>compression
+is good, use [zlib] compression</em>. Like many things in software, the real world
+is complex and nuanced. The dynamics of the relative power and cost of computer
+components has shifted the pendulum towards compression adding more cost than
+it saves. And it hasn't helped that industry still widely uses a ~30 year old
+compression format (DEFLATE/zlib) that is far from ideal for modern computers.
+If you take the time to measure, I'm sure you'll find many cases where use of
+compression is either ill-advised or would benefit from a more modern compression
+library (like zstandard).</p>
+<h1>x86_64 Binaries in Linux Distribution Packages</h1>
+<p>Linux distributions often provide pre-built binaries to install via
+packaging tools (e.g. <code>apt install</code> or <code>yum install</code>).</p>
+<p>To keep things simpler and to ensure maximum compatibility, these pre-built
+binaries are built such that they run on as many computers as possible.
+Currently, many Linux distributions (including RHEL and Debian) have binary
+compatibility with the <em>first</em> x86_64 processor, the AMD K8, launched in 2003.
+These processors featured <em>modern</em> instruction sets, like MMX, 3DNow!, SSE,
+and SSE2.</p>
+<p>What this means is that by default, binaries provided by many Linux
+distributions won't contain instructions from modern Instruction Set
+Architectures (ISAs). No SSE4. No AVX. No AVX2. And more. (Well,
+technically binaries can contain newer instructions. But they likely won't
+be in default code paths and there will likely be run-time dispatching
+code to opt into using them.)</p>
+<p>Furthermore, C/C++ compilers (like Clang and GCC) will also target an
+ancient microarchitecture level by default. So if you compile your own
+code and don't specify settings like <code>-march</code> or <code>-mtune</code> to change the
+default targeting settings, your compiled binaries won't leverage SSE4, AVX,
+etc. That's nearly 20 years of ISA work and efficiency gains from
+more powerful ISAs (like superlinear vectorized instructions) left on the
+table.</p>
+<p>Truth be told, I'm unsure how much of a performance impact this ISA
+backwards compatibility sacrifices. It will vary heavily from workload
+to workload. But I have no doubt there are some very large datacenters
+running CPU intensive workloads that could see massive efficiency gains
+by leveraging modern ISAs. If you are running thousands of servers and your
+CPU load isn't coming from a JIT'ed language like Java (JITs can emit
+instructions for the machine they are running on... because they compile
+<em>just in time</em>), it might very well be worth compiling CPU heavy packages
+(and their dependencies of course) from source targeting a modern
+microarchitecture level so you don't leave the benefits of modern ISAs on
+the table. And be forewarned: use of modern ISAs isn't a silver bullet!
+Some instructions can actually result in the CPU underclocking in order to
+run them, making code using those instructions fast but other code slow.</p>
+<p>Maintaining binary compatibility with a vanishingly small number of ancient
+CPUs at the expense of performance on modern CPUs seems... questionable.
+Fortunately, Linux distributions and Clang/GCC are paying attention.</p>
+<p>GCC 11 and Clang 12 define <code>x86_64-{v2, v3, v4}</code> architecture levels targeting
+~Nehalem (released 2008), ~Haswell (released 2013), and AVX-512 (~2015),
+respectively. So you can add e.g. <code>-march=x86_64-v3</code> to target Haswell era
+and newer and have the compiler emit SSE4, AVX, AVX2, and other modern
+instructions.</p>
+<p>RHEL9 will be raising their minimum architecture requirement from
+<code>x86_64</code> to <code>x86_64-v2</code>, effectively requiring CPUs from 2008+ instead of 2003+.</p>
+<p>If you'd like to learn more about this topic, start at
+<a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=RHEL-9-x86-64-v2-Plans">this Pharonix article</a>
+and follow the links to other articles and mailing list discussions.</p>
+<p>It's worth noting that at the time I write this, AWS 4th generation EC2 instances
+(<code>c4</code>, <code>m4</code>, and <code>r4</code>) all support AVX2 and I believe are compatible with
+GCC/Clang's <code>x86_64-v3</code> target. And 5th generation Intel instances have AVX-512,
+presumably making them compatible with <code>x86_64-v4</code>. So even if your distribution
+targets <code>x86_64-v2</code>, there is still potential <em>free</em> performance from newer ISAs on
+the table.</p>
+<p>If I were operating a server fleet consisting of thousands of machines,
+I would be very tempted to compile all packages from source targeting a modern
+microarchitecture level. This would be costly in terms of complexity. But
+for some workloads, the performance gains could be worth the effort.</p>
+<p>Read the next section for an example of where failure to leverage modern
+ISAs translates to a performance loss.</p>
+<h1>Many Implementations of Meyers Diff and Other Line Based Diffing Algorithms</h1>
+<p>This one is rather domain specific but I find it an illustrious example
+because the behavior is quite counter-intuitive!</p>
+<p>Various classes of software need to take two text documents and emit
+a textual <em>diff</em> of their contents. Think what <code>git diff</code> displays.</p>
+<p>There are various algorithms for generating a diff of text. Meyers Diff
+is probably the most famous. The run-time of the algorithms is proportional
+to the number of lines. Probably <code>O(nlog(n))</code> or <code>O(nd)</code>/<code>O(n^2)</code>.</p>
+<p>These text-based diffing algorithms often operate at the line level (rather than
+say the byte or codepoint level) because it drastically limits the search
+space and minimizes <code>n</code> to keep the algorithm run-time in check.</p>
+<p>Over the years, various people have realized that when diffing two text
+documents, large parts of the inputs are often identical (why would you diff
+unrelated content after all). So most implementations of diff algorithms have
+a myriad of <em>optimizations</em> to limit the number of lines compared. Two common
+optimizations are to identify and exclude the common prefix and suffix of the
+input.</p>
+<p>This is over-simplified, but text-based diffing algorithms often do the
+following:</p>
+<ol>
+<li>Split the input into lines.</li>
+<li>Hash each line to facilitate fast line equivalence testing (comparing a
+   <code>u32</code> or <code>u64</code> checksum is a <strong>ton</strong> faster than <code>memcmp()</code> or <code>strcmp()</code>).</li>
+<li>Identity and exclude common prefix and suffix lines.</li>
+<li>Feed remaining lines into diffing algorithm.</li>
+</ol>
+<p>The idea is that steps 1-3 - which should be <code>O(n)</code> - reduce work for an
+algorithm (step 4) with run-time complexity worse than <code>O(n)</code>. Sounds good
+on paper.</p>
+<p>So what actually happens?</p>
+<p>If you profile a number of these diff implementations, you find that steps
+1-3 actually take <em>more</em> time than the supposedly slow/expensive algorithm!
+How can this be?!</p>
+<p>One culprit is the line splitting. Even assuming we can use memory 0-copy /
+references for storing the line contents (as opposed to allocating a new
+string to hold each parsed line, which can be much less efficient), splitting
+text into lines can be grossly inefficient!</p>
+<p>There are various reasons for this. Maybe you are decoding the text into
+code points rather than operate in the domain of bytes (you shouldn't need
+to decode the entire input to search for newlines). Maybe you are traversing
+the file one character/byte at a time looking for LF.</p>
+<p>An efficient solution to this problem employs the use of vectorized CPU
+instructions (like AVX/AVX2) which can scan several bytes at a time looking
+for a sentinel value or matching a byte mask. So instead of 1 instruction
+per input byte, you have 1/n. Your C runtime library probably has assembly
+implementations of <code>memchr()</code>, <code>strchr()</code>, and similar functions and
+automatically chooses the newest/fastest assembly/instructions supported
+by the run-time CPU (glibc does).</p>
+<p>In theory, compilers recognize such patterns and emit modern vectorized
+instructions automagically. In reality, because the default target ISA of
+compilers is relatively ancient compared to what your CPU is capable of
+(see previous section), you are stuck with <em>old</em> instructions and linear
+scanning. Your best bet is to stick with functions in the C runtime that
+are probably backed by assembly. (Although watch out for function call
+overhead.)</p>
+<p>Another culprit causing inefficiency is hashing each line. The hashing is
+performed to reduce equivalence testing to a <code>u32</code>/<code>u64</code> compare rather than
+<code>strcmp()</code>. Many implementations don't seem to give much consideration to
+the hashing algorithm, using something like crc32 or djb2. An inefficiency here
+is many older hashing algorithms operate at the byte level: you need to feed in
+1 byte at a time, update state (XOR if often employed), then feed in the next
+byte. This is inefficient because it throws away the instruction pipelining
+and superscalar properties of modern CPUs. A better approach is to use a
+hashing algorithm that digests 4, 8, or more bytes at a time. Again, this
+lowers run-time from <em>~n</em> cycles per byte to <em>~1/n</em>.</p>
+<p>Another common inefficiency is computing the lines and hashes of content in
+the common prefix and suffix. Use of <code>memcmp()</code> (or even better: hand-rolled
+assembly to give you the offset of the first divergence) is more efficient, as
+again, your C runtime library probably has assembly implementations of
+<code>memcmp()</code> which can compare input at near native memory speed.</p>
+<p>I quite enjoy this example because it demonstrates that something that is
+seemingly <code>O(n)</code> is slower than <code>O(nd)</code> or <code>O(nlog(n))</code>. This is because often
+the result of the optimization reduces the <code>n</code> of the expensive algorithm to
+such a small value that the computational complexity is trivial. Compilers
+targeting ancient microarchitectures and failing to leverage vectorized
+instructions which unlock superlinear performance further shift the time
+towards the <code>O(n)</code> optimizations.</p>
+<h1>Conclusion</h1>
+<p>Computers and software can be surprisingly slow for surprising reasons. While
+this post was long and touched on a number of topics, it only scratched the
+surface of potential topics. I could easily find another 10 topics to write
+about. But that will have to be for another post.</p>
+<p>Before I go, if you find inaccuracies in this post, please shoot me an email
+(address in resume in site header) so I can correct the post, as I don't want
+to unintentionally mislead others.</p>
+<p>Also, computers and software are complex. When it comes to performance and
+optimizations, always be measuring. The issues I described could be manifesting
+in your software and environments but the effort to address them may not be worth
+the reward. Computers and software, like life, are full of trade-offs.
+Performance is just one trade-off. Please don't cargo cult my advice without
+measuring and applying critical thinking first.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -3064,380 +3752,5 @@ the diversity and inclusivity of our field by biasing towards people
 with strong computer science backgrounds. I think it is time we
 examine the role of algorithms and data structures in interviews and
 consider focusing on other areas instead.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[What I've Learned About Optimizing Python]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2019/01/10/what-i've-learned-about-optimizing-python" />
-    <id>http://gregoryszorc.com/blog/2019/01/10/what-i've-learned-about-optimizing-python</id>
-    <updated>2019-01-10T15:00:00Z</updated>
-    <published>2019-01-10T15:00:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Python" />
-    <summary type="html"><![CDATA[What I've Learned About Optimizing Python]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2019/01/10/what-i've-learned-about-optimizing-python"><![CDATA[<p>I've used Python more than any other programming language in the past
-4-5 years. Python is the lingua franca for Firefox's build, test, and
-CI tooling. Mercurial is written in mostly Python. Many of my
-side-projects are in Python.</p>
-<p>Along the way, I've accrued a bit of knowledge about Python
-performance and how to optimize Python. This post is about sharing
-that knowledge with the larger community.</p>
-<p>My experience with Python is mostly with the CPython interpreter,
-specifically CPython 2.7. Not all observations apply to all Python
-distributions or have the same characteristics across Python versions.
-I'll try to call this out when relevant. And this post is in no
-way a thorough survey of the Python performance landscape. I mainly
-want to highlight areas that have particularly plagued me.</p>
-<h2>Startup and Module Importing Overhead</h2>
-<p>Starting a Python interpreter and importing Python modules is
-relatively slow if you care about milliseconds.</p>
-<p>If you need to start hundreds or thousands of Python processes
-as part of a workload, this overhead will amount to several seconds
-of overhead.</p>
-<p>If you use Python to provide CLI tools, the overhead can cause
-enough lag to be noticeable by people. If you want <em>instantaneous</em>
-CLI tools, launching a Python interpreter on every invocation will
-make it very difficult to achieve that with a sufficiently complex
-tool.</p>
-<p>I've written about this problem extensively. My
-<a href="https://mail.python.org/pipermail/python-dev/2014-May/134528.html">2014 post on python-dev</a>
-outlines the problem. Posts in
-<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">May 2018</a>
-and <a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">October 2018</a>
-restate and refine it.</p>
-<p>There's not much you can do to alleviate interpreter startup overhead:
-fixing this mostly resides with the maintainers of the Python
-interpreter because they control the code that is taking precious
-milliseconds to complete. About the best you can do is
-<a href="https://docs.python.org/3/using/cmdline.html#id3">disable the site import</a>
-in your shebangs and invocations to avoid some extra Python code
-running at startup. However, many applications rely on functionality
-provided by <code>site.py</code>, so use at your own risk.</p>
-<p>Related to this is the problem of module importing. What good is a
-Python interpreter if it doesn't have code to run! And the way code
-is made available to the interpreter is often through importing
-modules.</p>
-<p>There are multiple steps to importing modules. And there are sources
-of overhead in each one.</p>
-<p>There is overhead in finding modules and reading their data. As
-I've <a href="/blog/2019/01/06/pyoxidizer-support-for-windows/">demonstrated with PyOxidizer</a>,
-replacing the default <em>find and load a module from the filesystem</em>
-with an architecturally simpler solution of <em>read the module data
-from an in-memory data structure</em> makes importing the Python standard
-library take 70-80% of its original time! Having a single module
-per filesystem file introduces filesystem overhead and can slow
-down Python applications in the critical first milliseconds of
-execution. Solutions like PyOxidizer can mitigate this. And hopefully
-the Python community sees the overhead in the current approach
-and considers moving towards module distribution mechanisms that
-don't rely so much on separate files per module.</p>
-<p>Another source of module importing overhead is executing code in
-that module at import time. Some modules have code in the module
-scope outside of functions and classes that runs when the module
-is imported. This code execution can add overhead to importing. A
-mitigation for this is to not run as much code at import time: only
-run code as needed. Python 3.7 supports a module <code>__getattr__</code>
-that will be called when a module attribute is not found. This can
-be used to lazily populate module attributes on first access.</p>
-<p>Another workaround for module importing slowness is lazy module
-importing. Instead of actually loading a module when it is imported,
-you register a custom module importer that returns a <em>stub</em> for
-that module instead. When that stub is first accessed, it will
-load the actual module and mutate itself to be that module.</p>
-<p>By avoiding the filesystem and module running overhead for unused
-modules (modules are typically imported globally and then only
-used by certain functions in a module), you can easily shave
-dozens of milliseconds from applications importing several dozens
-of modules.</p>
-<p>But lazy module importers are a bit fragile. Lots of modules
-have a pattern where they <code>try: import foo; except ImportError:</code>.
-A lazy module importer may never raise <code>ImportError</code> here because
-to do so, it would need to search the filesystem for a module
-to know if it exists and searching the filesystem would add overhead,
-so they don't do it! You work around this by accessing an attribute
-on the imported module. This forces the <code>ImportError</code> to be raised
-if the module doesn't exist but undermines the laziness of the module
-import! This problem is quite nasty. Mercurial's lazy module
-importer has to maintain a list of modules that are known to not
-be lazy importable to work around it. Another issue is the
-<code>from foo import x, y</code> syntax, which also undermines lazy module
-importing in cases where <code>foo</code> is a module (as opposed to a package)
-because in order to return a reference to <code>x</code> and <code>y</code>, the module
-has to be imported.</p>
-<p>PyOxidizer, having a fixed set of modules <em>frozen</em> into the binary,
-can be efficient about raising <code>ImportError</code>. And Python 3.7's
-module <code>__getattr__</code> provides additional flexibility for lazy
-module importers. I hope to integrate a robust lazy module importer
-into <code>PyOxidizer</code> so these gains are realized automatically.</p>
-<p>The best solution to avoiding the interpreter startup and module
-import overhead problem is to run a persistent Python process.
-If you run Python in a daemon process (say for a web server), you
-pretty much get this for free. Mercurial's solution to this is to
-run a persistent Python process in the background which exposes a
-<a href="https://www.mercurial-scm.org/wiki/CommandServer">command server</a>
-protocol. <code>hg</code> is aliased to a C (or now Rust) executable
-which connects to that persistent process and dispatches a
-command. The command server approach is a lot of work and can
-be a bit fragile and has security concerns. I'm exploring the
-idea of shipping a command server with <code>PyOxidizer</code> so
-executable can easily gain its benefits and the cost to solving
-the problem only needs to be paid in one central place: the
-<code>PyOxidizer</code> project.</p>
-<h2>Function Call Overhead</h2>
-<p>Function calls in Python are relatively slow. (This observation
-applies less to PyPy, which can JIT code execution.)</p>
-<p>I've seen literally dozens of patches to Mercurial where we inline
-code or combine Python functions in order to avoid function
-call overhead. In the current development cycle, some effort was
-made to reduce the number of functions called when updating
-progress bars. (We try to use progress bars for any operation
-that could take a while so users know what is going on.) The
-old progress bar update code would dispatch to a handful of
-functions.
-<a href="https://www.mercurial-scm.org/repo/hg/rev/6603de284b0a">Caching function call results</a>
-and <a href="https://www.mercurial-scm.org/repo/hg/rev/963462786f6e">avoiding simple lookups via functions</a>
-shaves dozens to hundreds of milliseconds off execution when we're
-talking about 1 million executions.</p>
-<p>If you have tight loops or recursive functions in Python where
-hundreds of thousands or more function calls could be in play, you
-need to be aware of the overhead of calling an individual function,
-as it can add up quickly! Consider in-lining simple functions
-and combining functions to avoid the overhead.</p>
-<h2>Attribute Lookup Overhead</h2>
-<p>This problem is similar to function call overhead because it
-can actually be the same problem!</p>
-<p>Resolving an attribute in Python can be relatively slow. (Again,
-this observation applies less to PyPy.)</p>
-<p>Again, working around this issue is something we do a lot in
-Mercurial.</p>
-<p>Say you have the following code:</p>
-<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
-<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">member</span><span class="p">):</span>
-    <span class="n">total</span> <span class="o">+=</span> <span class="n">obj</span><span class="o">.</span><span class="n">member</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-</pre></div>
-
-<p>Ignoring that there are better ways to write this example
-(<code>total = sum(obj.member)</code> should work), as written, the loop
-here will need to resolve <code>obj.member</code> on every iteration.
-Python has a relatively complex mechanism for
-<a href="https://docs.python.org/3/reference/datamodel.html">resolving attributes</a>.
-For simple types, it can be quite fast. But for complex types,
-that attribute access can silently be invoking <code>__getattr__</code>,
-<code>__getattribute__</code>, various other <em>dunder</em> methods, and even
-custom <code>@property</code> functions. What looks like it should be
-a fast attribute lookup can silently be several function calls,
-leading to function call overhead! And this overhead can compound
-if you are doing things like <code>obj.member1.member2.member3</code> etc.</p>
-<p>Each attribute lookup adds overhead. And since nearly everything
-in Python is a dictionary, it is somewhat accurate to equate
-each attribute lookup as a dictionary lookup. And we know from
-basic data structures that dictionary lookups are intrinsically not
-as fast as having say a pointer. Yes, there are some tricks in
-CPython to avoid the dictionary lookup overhead. But the general
-theme I want to get across is that each attribute lookup is a
-potential performance sink.</p>
-<p>For tight loops - especially those over potentially hundreds of
-thousands of iterations - you can avoid this measurable attribute
-lookup overhead by aliasing the value to a local. We would write the
-example above as:</p>
-<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
-<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="n">member</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">member</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">len</span><span class="p">(</span><span class="n">member</span><span class="p">):</span>
-    <span class="n">total</span> <span class="o">+=</span> <span class="n">member</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-</pre></div>
-
-<p>Of course, this is only safe when the aliased item isn't
-replaced inside the loop! If that happens, your iterator will
-hold a reference to the old item and things may blow up.</p>
-<p>The same trick can be used when calling a method of an object.
-Instead of:</p>
-<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
-
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">):</span>
-    <span class="n">obj</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-</pre></div>
-
-<p>Do the following:</p>
-<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
-<span class="n">fn</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">process</span>
-
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">:)</span>
-    <span class="n">fn</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-</pre></div>
-
-<p>It's also worth noting that in cases where the attribute lookup
-is used to call a method (such as the previous example),
-Python 3.7 is
-<a href="https://bugs.python.org/issue26110">significantly faster</a>
-than previous releases. But I'm pretty sure this is due to
-dispatch overhead to the method function itself, not attribute
-lookup overhead. So things will be faster yet by avoiding the
-attribute lookup.</p>
-<p>Finally, unless attribute lookup is calling functions to
-resolve the attribute, attribute lookup is generally less of
-a problem than function call overhead. And it generally requires
-eliminating a lot of attribute lookups for you to notice a
-meaningful improvement. That being said, once you add up all
-attribute accesses inside a loop, you may be talking about
-10 or 20 attributes in the loop alone - before function calls.
-And loops with only thousands or low tens of thousands of iterations
-can quickly provide hundreds of thousands or millions of attribute
-lookups. So be on the lookout!</p>
-<h2>Object Overhead</h2>
-<p>From the perspective of the Python interpreter, every value is
-an object. In CPython, each value is a <code>PyObject</code> struct. Each
-object managed by the interpreter is on the heap and needs to have
-its own memory holding its reference count, its type, and other
-state. Every object is garbage collected. This means that each
-new object introduces overhead for the reference counting / garbage
-collection mechanism to process. (Again, PyPy can avoid some of
-this overhead by being more intelligent about the <em>lifetimes</em> of
-short-lived values.)</p>
-<p>As a general rule of thumb, the more unique Python values/objects
-you create, the slower things are.</p>
-<p>For example, say you are iterating over a collection of 1 million
-objects. You call a function to process that object into a tuple:</p>
-<div class="pygments_murphy"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">my_collection</span><span class="p">:</span>
-    <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">process</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-</pre></div>
-
-<p>In this example, <code>process()</code> returns an <code>8-tuple</code>. It doesn't
-matter of we destructure the return value or not: this tuple requires
-the creation of at least 9 Python values: 1 for the tuple itself
-and 8 for its inner members. OK, in reality there could be fewer
-values if <code>process()</code> returns a reference to an existing value.
-Or there could be more if the types aren't simple types and require
-multiple <code>PyObject</code> to represent. My point is that under the hood
-the interpreter is having to juggle multiple objects to represent
-things.</p>
-<p>From my experience, this overhead is only relevant for operations
-that benefit from speedups when implemented in a native language
-like C or Rust. The reason is the CPython interpreter is just
-unable to execute bytecode fast enough for object overhead itself
-to matter. Instead, you will likely hit performance issues with
-function call overhead, processing overhead, etc long before
-object overhead. But there are some exceptions to this, such as
-constructing tuples or dicts with several members.</p>
-<p>As a concrete example of this overhead, Mercurial has C code for
-parsing some of the lower-level data structures. In terms of
-raw parsing speed, the C code runs on an order of two magnitudes
-faster than CPython. But once we have that C code create
-<code>PyObject</code> to present the result, the speedup drops to just a
-few times faster, if that. In other words, the overhead is coming
-from creating and managing Python values so they can be used
-by Python code.</p>
-<p>A workaround for this is to produce fewer Python values. If you
-only need to access a single value, have a function return that
-single value instead of say a tuple or dict with N values. However,
-watch out for function call overhead!</p>
-<p>When you have a lot of speedup code using the CPython C API and
-values need to be shared across different modules, pass around Python
-types that expose data as C structs and have the compiled code
-access those C structs instead of going through the CPython
-C API. By avoiding the Python C API for data access, you will
-be avoiding most of its overhead.</p>
-<p>Treating values as data (instead of having functions for accessing
-everything) is more Pythonic. So another workaround for compiled
-code is is to lazily create
-<code>PyObject</code> instances. If you create a custom Python
-type (<code>PyTypeObject</code>) to represent your complex values, you
-can define the
-<a href="https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_members">tp_members</a>
-and/or <a href="https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getset">tp_getset</a>
-fields to register custom C functions to resolve the value for
-an attribute. If you are say writing a parser and you know that
-consumers will only access a subset of the parsed fields, you can
-quickly construct a type holding the raw data, return that type,
-and have the Python attribute lookup call a C function which
-resolves the <code>PyObject</code>. You can even defer parsing until this
-function is called, saving additional overhead if a parse is
-never required! This technique is quite rare (because it requires
-writing a non-trivial amount of code against the Python C API).
-But it can result in substantial wins.</p>
-<h2>Pre-Sizing Collections</h2>
-<p>This one applies to the CPython C API.</p>
-<p>When creating collections like lists or dicts, use e.g.
-<code>PyList_New()</code> + <code>PyList_SET_ITEM()</code> to populate new
-collections when their size is known at collection creation
-time. This will pre-size the collection to have capacity to hold
-the final number of elements. And it skips checks when inserting
-elements that the collection is large enough to hold them. When
-creating collections of thousands of elements, this can save a
-bit of overhead!</p>
-<h2>Using Zero-copy in the C API</h2>
-<p>The CPython C API really likes to make copies of things rather
-than return references. For example,
-<a href="https://docs.python.org/3.7/c-api/bytes.html#c.PyBytes_FromStringAndSize">PyBytes_FromStringAndSize()</a>
-copies a <code>char*</code> to memory <em>owned</em> by Python. If you are doing
-this for a large number of values or sufficiently large data,
-we could be talking about gigabytes of memory I/O and associated
-allocator overhead.</p>
-<p>If writing high-performance code against the C API, you'll want
-to become familiar with the
-<a href="https://docs.python.org/3.7/c-api/buffer.html">buffer protocol</a>
-and related types, like
-<a href="https://docs.python.org/3.7/c-api/memoryview.html">memoryview</a>.</p>
-<p>The <em>buffer protocol</em> is implemented by Python types and allows
-the Python interpreter to <em>cast</em> a type to/from bytes. It essentially
-allows the interpreter's C code to get a handle on a
-<code>void*</code> of certain size representing the object. This allows you
-to associate any address in memory with a <code>PyObject</code>. Many
-functions operating on binary data transparently accept any
-object implementing the <em>buffer protocol</em>. And if you are coding
-against the C API and want to accept any object that can be
-treated as bytes, you should be using the
-<code>s*</code>, <code>y*</code> or <code>w*</code>
-<a href="https://docs.python.org/3/c-api/arg.html#strings-and-buffers">format units</a>
-when parsing function arguments.</p>
-<p>By using the buffer protocol, you give the interpreter the
-best opportunity possible to be using zero-copy operations and
-avoiding having to copy bytes around in memory.</p>
-<p>By using Python types like
-<a href="https://docs.python.org/3.7/library/stdtypes.html#memoryview">memoryview</a>,
-you are also allowing Python to reference slices of memory by
-reference instead of by copy.</p>
-<p>When you have gigabytes of data flowing through your Python
-program, astute use of Python types that support zero-copy can
-make a world of difference on performance. I once measured
-that <a href="https://github.com/indygreg/python-zstandard">python-zstandard</a>
-was faster than some Python LZ4 bindings (LZ4 should be faster
-than zstandard) because I made heavy use of the buffer protocol
-and avoiding excessive memory I/O in python-zstandard!</p>
-<h2>Conclusion</h2>
-<p>This post has outlined some of the things I've learned optimizing
-Python programs over the years. This post is by no means
-a comprehensive overview of Python performance techniques and
-gotchas. I recognize that my use of Python is probably more
-demanding than most and that the recommendations I made are
-not applicable to many Python programs. <strong>You should not
-mass update your Python code to e.g. inline functions and
-remove attribute lookups after reading this post.</strong> As always,
-when it comes to performance optimization, measure first and
-optimize where things are observed to be slow. I highly recommend
-<a href="https://github.com/benfred/py-spy">py-spy</a> for profiling Python
-applications. That being said, it's hard to attach a time value
-to low-level activity in the Python interpreter such as calling
-functions and looking up attributes. So if you e.g. have a loop 
-that you know is tight, experiment with suggestions in this post,
-and see if you can measure an improvement!</p>
-<p>Finally this post should not be interpreted as a dig against Python
-or its performance properties. Yes, you can make arguments that
-Python should or shouldn't be used in particular areas because of
-performance properties. But Python is extremely versatile -
-especially with PyPy delivering exceptional performance for a
-dynamic programming language. The performance of Python is probably
-<em>good enough</em> for most people. For better or worse, I have used
-Python for uses cases that often feel like outliers across all
-users. And I wanted to share my experiences such that others
-know what life at the frontier is like. And maybe, just maybe, I
-can cause the smart people who actually maintain Python distributions
-to think about the issues I've had in more detail and provide
-improvements to mitigate them.</p>]]></content>
   </entry>
 </feed>

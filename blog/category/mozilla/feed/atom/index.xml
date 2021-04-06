@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2020-10-19T05:16:45Z</updated>
+  <updated>2021-04-06T04:26:02Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -1172,7 +1172,7 @@ e.g.:</p>
 <div class="pygments_murphy"><pre><span></span>   <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">compressed_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ifh</span><span class="p">:</span>
        <span class="n">cctx</span> <span class="o">=</span> <span class="n">zstd</span><span class="o">.</span><span class="n">ZstdDecompressor</span><span class="p">()</span>
        <span class="k">with</span> <span class="n">cctx</span><span class="o">.</span><span class="n">stream_reader</span><span class="p">(</span><span class="n">ifh</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-           <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+           <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                <span class="n">chunk</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">32768</span><span class="p">)</span>
                <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="p">:</span>
                    <span class="k">break</span>

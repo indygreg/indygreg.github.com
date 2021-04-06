@@ -95,7 +95,7 @@ e.g.:</p>
 <div class="pygments_murphy"><pre><span></span>   <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">compressed_file</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ifh</span><span class="p">:</span>
        <span class="n">cctx</span> <span class="o">=</span> <span class="n">zstd</span><span class="o">.</span><span class="n">ZstdDecompressor</span><span class="p">()</span>
        <span class="k">with</span> <span class="n">cctx</span><span class="o">.</span><span class="n">stream_reader</span><span class="p">(</span><span class="n">ifh</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-           <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+           <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                <span class="n">chunk</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">32768</span><span class="p">)</span>
                <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="p">:</span>
                    <span class="k">break</span>
@@ -280,6 +280,7 @@ instead of Brotli and made some inaccurate statements around that comparison.)</
                 <li><a href="/blog/category/mozreview">MozReview</a></li>
                 <li><a href="/blog/category/mozilla">Mozilla</a></li>
                 <li><a href="/blog/category/personal">Personal</a></li>
+                <li><a href="/blog/category/programming">Programming</a></li>
                 <li><a href="/blog/category/puppet">Puppet</a></li>
                 <li><a href="/blog/category/pyoxidizer">PyOxidizer</a></li>
                 <li><a href="/blog/category/python">Python</a></li>

@@ -226,16 +226,16 @@ into Git commit</em> function that was taking all the time, I started there.</p>
     <span class="c1"># https://github.com/jelmer/dulwich/blob/2a8548be3b1fd4a1ae7d0436dce91611112c47c2/dulwich/index.py#L298</span>
     <span class="n">tree_builder</span> <span class="o">=</span> <span class="n">TreeBuilder</span><span class="p">()</span>
 
-    <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">changeset</span><span class="o">.</span><span class="n">manifest</span><span class="p">:</span>
-        <span class="n">blob_id</span> <span class="o">=</span> <span class="n">already_converted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">changeset</span><span class="o">.</span><span class="n">manifest</span><span class="p">:</span>
+        <span class="n">blob_id</span> <span class="o">=</span> <span class="n">already_converted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">blob_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">blob</span> <span class="o">=</span> <span class="n">Blob</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">data</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">blob_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">blob</span> <span class="o">=</span> <span class="n">Blob</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">data</span><span class="p">())</span>
             <span class="n">git</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">blob</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">blob</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-            <span class="n">already_converted</span><span class="p">[</span><span class="nb">file</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">already_converted</span><span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
             <span class="n">blob_id</span> <span class="o">=</span> <span class="n">blob</span><span class="o">.</span><span class="n">id</span>
 
-        <span class="n">tree_builder</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="nb">file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">blob_id</span><span class="p">,</span> <span class="nb">file</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        <span class="n">tree_builder</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">blob_id</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">tree_builder</span><span class="o">.</span><span class="n">all_trees</span><span class="p">():</span>
         <span class="n">git</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
@@ -528,6 +528,7 @@ tool.</p>
                 <li><a href="/blog/category/mozreview">MozReview</a></li>
                 <li><a href="/blog/category/mozilla">Mozilla</a></li>
                 <li><a href="/blog/category/personal">Personal</a></li>
+                <li><a href="/blog/category/programming">Programming</a></li>
                 <li><a href="/blog/category/puppet">Puppet</a></li>
                 <li><a href="/blog/category/pyoxidizer">PyOxidizer</a></li>
                 <li><a href="/blog/category/python">Python</a></li>
