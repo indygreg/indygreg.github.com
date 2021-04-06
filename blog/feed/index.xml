@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 06 Apr 2021 04:26:02 GMT</pubDate>
+    <pubDate>Tue, 06 Apr 2021 17:00:34 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -561,12 +561,20 @@ technically binaries can contain newer instructions. But they likely won't
 be in default code paths and there will likely be run-time dispatching
 code to opt into using them.)</p>
 <p>Furthermore, C/C++ compilers (like Clang and GCC) will also target an
-ancient microarchitecture level by default. So if you compile your own
-code and don't specify settings like <code>-march</code> or <code>-mtune</code> to change the
-default targeting settings, your compiled binaries won't leverage SSE4, AVX,
-etc. That's nearly 20 years of ISA work and efficiency gains from
-more powerful ISAs (like superlinear vectorized instructions) left on the
-table.</p>
+ancient x86_64 microarchitecture level by default (this is where the
+distribution's binary compatibility defaults come from). So if you compile
+your own code and don't specify settings like <code>-march</code> or <code>-mtune</code> to
+change the default targeting settings, your compiled binaries won't
+leverage SSE4, AVX, etc. You can still force your application to emit
+these instructions in dynamic code paths without <code>-march</code>/<code>-mtune</code>
+overrides. But you have to opt in and add additional code complexity to
+do that.</p>
+<p>Because of the conservative microarchitecture targeting settings of compilers
+and distribution binaries by extension, that's nearly 20 years of ISA work
+and efficiency gains from more powerful ISAs (like superlinear vectorized
+instructions) left on the table. And here I get frustrated when my PRs linger
+unreviewed for more than a day. Imagine what it is like to be an AMD or
+Intel engineer and have your ISA work take ~decades to be adopted at scale!</p>
 <p>Truth be told, I'm unsure how much of a performance impact this ISA
 backwards compatibility sacrifices. It will vary heavily from workload
 to workload. But I have no doubt there are some very large datacenters
@@ -602,17 +610,21 @@ the table.</p>
 <p>If I were operating a server fleet consisting of thousands of machines,
 I would be very tempted to compile all packages from source targeting a modern
 microarchitecture level. This would be costly in terms of complexity. But
-for some workloads, the performance gains could be worth the effort.</p>
+for some workloads, the performance gains could be worth the effort. And
+this conservative targeting approach <em>may</em> provide justification for running
+modern-optimized Linux distributions or cloud vendor specific Linux
+distributions (e.g. Amazon Linux). I'm unsure if distributions like Amazon
+Linux take advantage of this. If not, they should look into it!</p>
 <p>Read the next section for an example of where failure to leverage modern
 ISAs translates to a performance loss.</p>
-<h1>Many Implementations of Meyers Diff and Other Line Based Diffing Algorithms</h1>
+<h1>Many Implementations of Myers Diff and Other Line Based Diffing Algorithms</h1>
 <p>This one is rather domain specific but I find it an illustrious example
 because the behavior is quite counter-intuitive!</p>
 <p>Various classes of software need to take two text documents and emit
 a textual <em>diff</em> of their contents. Think what <code>git diff</code> displays.</p>
-<p>There are various algorithms for generating a diff of text. Meyers Diff
+<p>There are various algorithms for generating a diff of text. Myers Diff
 is probably the most famous. The run-time of the algorithms is proportional
-to the number of lines. Probably <code>O(nlog(n))</code> or <code>O(nd)</code>/<code>O(n^2)</code>.</p>
+to the number of lines. Probably <code>O(nlog(n))</code> or <code>O(n^2)</code>.</p>
 <p>These text-based diffing algorithms often operate at the line level (rather than
 say the byte or codepoint level) because it drastically limits the search
 space and minimizes <code>n</code> to keep the algorithm run-time in check.</p>
@@ -676,7 +688,7 @@ assembly to give you the offset of the first divergence) is more efficient, as
 again, your C runtime library probably has assembly implementations of
 <code>memcmp()</code> which can compare input at near native memory speed.</p>
 <p>I quite enjoy this example because it demonstrates that something that is
-seemingly <code>O(n)</code> is slower than <code>O(nd)</code> or <code>O(nlog(n))</code>. This is because often
+seemingly <code>O(n)</code> is slower than <code>O(nlog(n))</code>/<code>O(n^2)</code>. This is because often
 the result of the optimization reduces the <code>n</code> of the expensive algorithm to
 such a small value that the computational complexity is trivial. Compilers
 targeting ancient microarchitectures and failing to leverage vectorized
