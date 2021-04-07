@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2021-04-07T15:57:26Z</updated>
+  <updated>2021-04-07T16:13:59Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -142,6 +142,14 @@ CI system can do), that means that CI systems are redundant with sufficiently
 advanced build systems. So going beyond the section title: CI systems aren't
 too complex: they shouldn't need to exist. Your CI functionality should be an
 extension of the build system.</strong></p>
+<p>In addition to the redundancy argument, I think unified systems are more
+user friendly. By integrating your CI system into your build system
+(which by definition can be driven locally as part of regular development
+workflows), you can expose the full power of the CI system to developers
+more easily. Think running ad-hoc CI jobs without having to push your changes
+to a remote server first, just like you can with <em>local</em> builds or tests. This
+is huge for ergonomics and can drastically compress the cycle time for changes
+to these systems (which are often brittle to change/test).</p>
 <p>Don't get me wrong, aspects of CI systems not traditionally found in build
 systems (such as centralized results reporting and a UI/API for (re)triggering
 jobs) absolutely need to exist. Instead, it is the remote compute and work
