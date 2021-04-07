@@ -51,6 +51,48 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mach-sub-commands"></a>
+  <h2 class="blog_post_title"><a href="/blog/2014/12/18/mach-sub-commands" rel="bookmark" title="Permanent Link to mach sub-commands">mach sub-commands</a></h2>
+  <small>December 18, 2014 at 09:45 AM | categories: 
+
+<a href='/blog/category/mozilla'>Mozilla</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p><a href="https://pypi.python.org/pypi/mach/">mach</a> - the generic command line
+dispatching tool that powers the <strong>mach</strong> command to aid Firefox
+development - now has support for sub-commands.</p>
+<p>You can now create simple and intuitive user interfaces involving
+sub-actions. e.g.</p>
+<pre><code>mach device sync
+mach device run
+mach device delete
+</code></pre>
+<p>Before, to do something like this would require a universal argument
+parser or separate mach commands. Both constitute a poor user
+experience (confusing array of available arguments or proliferation of
+top-level commands). Both result in <em>mach help</em> being difficult to
+comprehend. And that's not good for usability and approachability.</p>
+<p>Nothing in Firefox currently uses this feature. Although there is an
+in-progress patch in
+<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1108293">bug 1108293</a>
+for providing a mach command to analyze C/C++ build dependencies.
+It is my hope that others write useful commands and functionality
+on top of this feature.</p>
+<p>The documentation for mach has also been rewritten. It is now
+<a href="https://ci.mozilla.org/job/mozilla-central-docs/Tree_Documentation/python/mach/index.html">exposed</a>
+as part of the in-tree Sphinx documentation.</p>
+<p>Everyone should thank <a href="https://mozillians.org/en-US/u/ahal/">Andrew Halberstadt</a>
+for promptly reviewing the changes!</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="a-crazy-day"></a>
   <h2 class="blog_post_title"><a href="/blog/2014/12/04/a-crazy-day" rel="bookmark" title="Permanent Link to A Crazy Day">A Crazy Day</a></h2>
   <small>December 04, 2014 at 11:34 PM | categories: 
@@ -420,31 +462,6 @@ should go a long way to dropping load on the server.</p>
 
 
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="soft-launch-of-mozreview"></a>
-  <h2 class="blog_post_title"><a href="/blog/2014/10/30/soft-launch-of-mozreview" rel="bookmark" title="Permanent Link to Soft Launch of MozReview">Soft Launch of MozReview</a></h2>
-  <small>October 30, 2014 at 11:15 AM | categories: 
-
-<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>, <a href='/blog/category/code-review'>code review</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>We performed a soft launch of MozReview: Mozilla's new code review tool
-yesterday!</p>
-<p>What does that mean? How do I use it? What are the features?
-How do I get in touch or contribute? These are all great questions.
-The answers to those and more can all be found in the
-<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview.html">MozReview documentation</a>.
-If they aren't, it's a bug in the documentation. File a bug or submit a
-patch. Instructions to do that are in the documentation.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
  <a href="../15">« Previous Page</a>
   --  
  <a href="../17">Next Page »</a>
@@ -458,6 +475,7 @@ patch. Instructions to do that are in the documentation.</p>
               <ul>
                 <li><a href="/blog/category/apple">Apple</a></li>
                 <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/ci">CI</a></li>
                 <li><a href="/blog/category/clang">Clang</a></li>
                 <li><a href="/blog/category/docker">Docker</a></li>
                 <li><a href="/blog/category/firefox">Firefox</a></li>
