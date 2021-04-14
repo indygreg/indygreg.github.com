@@ -1,0 +1,194 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Pure Rust Implementation of Apple Code Signing
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="pure-rust-implementation-of-apple-code-signing"></a>
+  <h2 class="blog_post_title"><a href="/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing" rel="bookmark" title="Permanent Link to Pure Rust Implementation of Apple Code Signing">Pure Rust Implementation of Apple Code Signing</a></h2>
+  <small>April 14, 2021 at 01:45 PM | categories: 
+
+<a href='/blog/category/pyoxidizer'>PyOxidizer</a>, <a href='/blog/category/rust'>Rust</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A few weeks ago I (foolishly?) set out to implement Apple code signing
+(what Apple's <code>codesign</code> tool does) in pure Rust.</p>
+<p>I wanted to quickly announce on this blog the existence of the project and
+the news that as of a few minutes ago, the <code>tugger-apple-codesign</code> crate
+implementing the code signing functionality is now
+<a href="https://crates.io/crates/tugger-apple-codesign">published on crates.io</a>!</p>
+<p>So, you can now sign Apple binaries and bundles on non-Apple hardware by
+doing something like this:</p>
+<pre><code>$ cargo install tugger-apple-codesign
+$ rcodesign sign /path/to/input /path/to/output
+</code></pre>
+<p>Current features include:</p>
+<ul>
+<li>Robust support for parsing embedded signatures and most related data
+  structures. <code>rcodesign extract</code> can be used to extract various signature
+  data in raw or human readable form.</li>
+<li>Parse and verify RFC 5652 Cryptographic Message Syntax (CMS) signature
+  data.</li>
+<li>Sign binaries. If a code signing certificate key pair is provided,
+  a CMS signature will be created. This includes support for Time-Stamp Protocol
+  (TSP) / RFC 3161 tokens. If no key pair is provided, you get an ad-hoc
+  signature.</li>
+<li>Signing bundles. Nested bundles and binaries will automatically be signed.
+  Non-code resources will be digested and a <code>CodeResources</code> XML file will be
+  produced.</li>
+</ul>
+<p>The most notable missing features are:</p>
+<ul>
+<li>No support for obtaining signing keys from keychains. If you want to sign
+  with a cryptographic key pair, you'll need to point the tool at a PEM encoded
+  key pair and CA chain.</li>
+<li>No support for parsing the Code Signing Requirements language. We can parse the
+  binary encoding produced by <code>csreq -b</code> and convert it back to this DSL. But we
+  don't parse the human friendly language.</li>
+<li>No support for notarization.</li>
+</ul>
+<p>All of these could likely be implemented. However, I am not actively working on
+any of these features. If you would like to contribute support, make noise in
+the <a href="https://github.com/indygreg/PyOxidizer/issues">GitHub issue tracker</a>.</p>
+<p>The Rust API, CLI, and documentation are still a bit rough around the edges. I
+haven't performed thorough QA on aspects of the functionality. However, the
+tool is able to produce signed binaries that Apple's canonical <code>codesign</code> tool
+says are well-formed. So I'm reasonably confident some of the functionality
+works as intended. If you find bugs or missing features, please
+<a href="https://github.com/indygreg/PyOxidizer/issues">report them on GitHub</a>. Or even
+better: submit pull requests!</p>
+<p>As part of this project, I also created and published the
+<a href="https://crates.io/crates/cryptographic-message-syntax">cryptographic-message-syntax</a>
+crate, which is a pure Rust partial implementation of RFC 5652, which defines
+the cryptographic message signing mechanism. This RFC is a bit dated and seems
+to have been superseded by RPKI. So you may want to look elsewhere before
+inventing new signing mechanisms that use this format.</p>
+<p>Finally, it appears the Windows code signing mechanism (Authenticode) also uses
+RFC 5652 (or a variant thereof) for cryptographic signatures. So by implementing
+Apple code signatures, I believe I've done most of the legwork to implement
+Windows/PE signing! I'll probably implement Windows signing in a new crate whenever
+I hook up automatic code signing to PyOxidizer, which was the impetus for this work
+(I want to make it possible to build distributable Apple programs without Apple
+hardware, using as many open source Rust components as possible).</p>
+
+  </div>
+</div>
+
+
+
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/apple">Apple</a></li>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/ci">CI</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozreview">MozReview</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/personal">Personal</a></li>
+                <li><a href="/blog/category/programming">Programming</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/pyoxidizer">PyOxidizer</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/rust">Rust</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012- Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

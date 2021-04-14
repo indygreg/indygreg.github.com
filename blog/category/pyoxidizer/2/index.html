@@ -51,6 +51,69 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="c-extension-support-in-pyoxidizer"></a>
+  <h2 class="blog_post_title"><a href="/blog/2019/06/30/c-extension-support-in-pyoxidizer" rel="bookmark" title="Permanent Link to C Extension Support in PyOxidizer">C Extension Support in PyOxidizer</a></h2>
+  <small>June 30, 2019 at 04:40 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>The <a href="/blog/2019/06/24/building-standalone-python-applications-with-pyoxidizer/">initial release</a>
+of PyOxidizer generated a bit of excitement across the Internet! The post was
+commented on heavily in various forums and my phone was constantly buzzing from
+all the Twitter activity. There has been a steady stream of
+<a href="https://github.com/indygreg/PyOxidizer/issues">GitHub Issues</a> for the project,
+which I consider a good sign. So thank you everybody for the support and
+encouragement! And especially thank you to everyone who filed an issue or
+submitted a pull request!</p>
+<p>While I don't usually read the comments, I was looking at various forums
+posting about PyOxidizer to see what reactions were like. A common negative
+theme was the lack of C extension support in PyOxidizer. People seemed
+dismissive of PyOxidizer because it didn't support C extensions. Despite the
+documentation stating that the feature was planned and that I had an idea for
+how to implement it, people seemed pessimistic. Perhaps I didn't adequately
+communicate that making C extensions work is actually a subset of the
+already-solved <em>single file executable</em> problem and therefore was already
+a <em>solved problem</em> at the technical level (only the integration with the
+Python and PyOxidizer <em>build systems</em> was missing). So in my mind C
+extension support was only a matter of time and the only open question was
+how many hacks would be needed to make it work, not <em>whether</em> it would work.</p>
+<p>Well, I'm pleased to report that <strong>the just-released version 0.2 of PyOxidizer
+supports C extensions on Windows, macOS, and Linux</strong>. If you install a Python
+package through a <code>pip-install-simple</code>, <code>pip-requirements-file</code>, or
+<code>setup-py-install</code> packaging rule, C extensions will be compiled in a special
+way that enables them to be embedded in the same binary containing Python
+itself. I've tested it with the <code>zope.interface</code>, <code>zstandard</code>, and
+<code>mercurial</code> packages and it seems to work (although Mercurial has other
+issues that prevent it from being packaged as a PyOxidizer application - but
+the C extensions do compile).</p>
+<p>There are some
+<a href="https://pyoxidizer.readthedocs.io/en/latest/status.html#native-extension-modules">limitations</a>
+to the support, however. I'm pretty confident the limitations can be eliminated
+given enough time. Given how many people were hung up on the lack of C extensions
+and were seemingly writing off PyOxidizer thinking it was snake oil or something,
+I wanted to deliver basic C extension support to curtail this line of criticism.
+Perfect is the enemy of good and hopefully basic C extension support is good
+enough to ease concerns about PyOxidizer's viability.</p>
+<p>Also in PyOxidizer 0.2 are some minor new features, like the <code>--pip-install</code> and
+<code>--python-code</code> flags to <code>pyoxidizer init</code>. These allow you to generate a
+<code>pyoxidizer.toml</code> file pre-configured to install some packages from pip and run
+custom Python code. So now applications can be created and built with a one-liner
+without having to edit a <code>pyoxidizer.toml</code> file!</p>
+<p>The full release notes <a href="https://pyoxidizer.readthedocs.io/en/latest/history.html">are available</a>.
+As always, please keep
+<a href="https://github.com/indygreg/PyOxidizer/issues">filing issues</a>. I'm particularly
+interested in hearing about packages whose C extensions don't work properly.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="building-standalone-python-applications-with-pyoxidizer"></a>
   <h2 class="blog_post_title"><a href="/blog/2019/06/24/building-standalone-python-applications-with-pyoxidizer" rel="bookmark" title="Permanent Link to Building Standalone Python Applications with PyOxidizer">Building Standalone Python Applications with PyOxidizer</a></h2>
   <small>June 24, 2019 at 09:00 AM | categories: 

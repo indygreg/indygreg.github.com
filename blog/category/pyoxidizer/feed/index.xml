@@ -10,10 +10,78 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 13 Apr 2021 15:19:58 GMT</pubDate>
+    <pubDate>Wed, 14 Apr 2021 20:49:45 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Pure Rust Implementation of Apple Code Signing</title>
+      <link>http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing</link>
+      <pubDate>Wed, 14 Apr 2021 13:45:00 PDT</pubDate>
+      <category><![CDATA[PyOxidizer]]></category>
+      <category><![CDATA[Rust]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing</guid>
+      <description>Pure Rust Implementation of Apple Code Signing</description>
+      <content:encoded><![CDATA[<p>A few weeks ago I (foolishly?) set out to implement Apple code signing
+(what Apple's <code>codesign</code> tool does) in pure Rust.</p>
+<p>I wanted to quickly announce on this blog the existence of the project and
+the news that as of a few minutes ago, the <code>tugger-apple-codesign</code> crate
+implementing the code signing functionality is now
+<a href="https://crates.io/crates/tugger-apple-codesign">published on crates.io</a>!</p>
+<p>So, you can now sign Apple binaries and bundles on non-Apple hardware by
+doing something like this:</p>
+<pre><code>$ cargo install tugger-apple-codesign
+$ rcodesign sign /path/to/input /path/to/output
+</code></pre>
+<p>Current features include:</p>
+<ul>
+<li>Robust support for parsing embedded signatures and most related data
+  structures. <code>rcodesign extract</code> can be used to extract various signature
+  data in raw or human readable form.</li>
+<li>Parse and verify RFC 5652 Cryptographic Message Syntax (CMS) signature
+  data.</li>
+<li>Sign binaries. If a code signing certificate key pair is provided,
+  a CMS signature will be created. This includes support for Time-Stamp Protocol
+  (TSP) / RFC 3161 tokens. If no key pair is provided, you get an ad-hoc
+  signature.</li>
+<li>Signing bundles. Nested bundles and binaries will automatically be signed.
+  Non-code resources will be digested and a <code>CodeResources</code> XML file will be
+  produced.</li>
+</ul>
+<p>The most notable missing features are:</p>
+<ul>
+<li>No support for obtaining signing keys from keychains. If you want to sign
+  with a cryptographic key pair, you'll need to point the tool at a PEM encoded
+  key pair and CA chain.</li>
+<li>No support for parsing the Code Signing Requirements language. We can parse the
+  binary encoding produced by <code>csreq -b</code> and convert it back to this DSL. But we
+  don't parse the human friendly language.</li>
+<li>No support for notarization.</li>
+</ul>
+<p>All of these could likely be implemented. However, I am not actively working on
+any of these features. If you would like to contribute support, make noise in
+the <a href="https://github.com/indygreg/PyOxidizer/issues">GitHub issue tracker</a>.</p>
+<p>The Rust API, CLI, and documentation are still a bit rough around the edges. I
+haven't performed thorough QA on aspects of the functionality. However, the
+tool is able to produce signed binaries that Apple's canonical <code>codesign</code> tool
+says are well-formed. So I'm reasonably confident some of the functionality
+works as intended. If you find bugs or missing features, please
+<a href="https://github.com/indygreg/PyOxidizer/issues">report them on GitHub</a>. Or even
+better: submit pull requests!</p>
+<p>As part of this project, I also created and published the
+<a href="https://crates.io/crates/cryptographic-message-syntax">cryptographic-message-syntax</a>
+crate, which is a pure Rust partial implementation of RFC 5652, which defines
+the cryptographic message signing mechanism. This RFC is a bit dated and seems
+to have been superseded by RPKI. So you may want to look elsewhere before
+inventing new signing mechanisms that use this format.</p>
+<p>Finally, it appears the Windows code signing mechanism (Authenticode) also uses
+RFC 5652 (or a variant thereof) for cryptographic signatures. So by implementing
+Apple code signatures, I believe I've done most of the legwork to implement
+Windows/PE signing! I'll probably implement Windows signing in a new crate whenever
+I hook up automatic code signing to PyOxidizer, which was the impetus for this work
+(I want to make it possible to build distributable Apple programs without Apple
+hardware, using as many open source Rust components as possible).</p>]]></content:encoded>
+    </item>
     <item>
       <title>Announcing the 0.9 Release of PyOxidizer</title>
       <link>http://gregoryszorc.com/blog/2020/10/18/announcing-the-0.9-release-of-pyoxidizer</link>

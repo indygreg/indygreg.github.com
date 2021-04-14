@@ -7,12 +7,85 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2021-04-13T15:19:58Z</updated>
+  <updated>2021-04-14T20:49:45Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Pure Rust Implementation of Apple Code Signing]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing" />
+    <id>http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing</id>
+    <updated>2021-04-14T13:45:00Z</updated>
+    <published>2021-04-14T13:45:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="PyOxidizer" />
+    <category scheme="http://gregoryszorc.com/blog" term="Rust" />
+    <summary type="html"><![CDATA[Pure Rust Implementation of Apple Code Signing]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing"><![CDATA[<p>A few weeks ago I (foolishly?) set out to implement Apple code signing
+(what Apple's <code>codesign</code> tool does) in pure Rust.</p>
+<p>I wanted to quickly announce on this blog the existence of the project and
+the news that as of a few minutes ago, the <code>tugger-apple-codesign</code> crate
+implementing the code signing functionality is now
+<a href="https://crates.io/crates/tugger-apple-codesign">published on crates.io</a>!</p>
+<p>So, you can now sign Apple binaries and bundles on non-Apple hardware by
+doing something like this:</p>
+<pre><code>$ cargo install tugger-apple-codesign
+$ rcodesign sign /path/to/input /path/to/output
+</code></pre>
+<p>Current features include:</p>
+<ul>
+<li>Robust support for parsing embedded signatures and most related data
+  structures. <code>rcodesign extract</code> can be used to extract various signature
+  data in raw or human readable form.</li>
+<li>Parse and verify RFC 5652 Cryptographic Message Syntax (CMS) signature
+  data.</li>
+<li>Sign binaries. If a code signing certificate key pair is provided,
+  a CMS signature will be created. This includes support for Time-Stamp Protocol
+  (TSP) / RFC 3161 tokens. If no key pair is provided, you get an ad-hoc
+  signature.</li>
+<li>Signing bundles. Nested bundles and binaries will automatically be signed.
+  Non-code resources will be digested and a <code>CodeResources</code> XML file will be
+  produced.</li>
+</ul>
+<p>The most notable missing features are:</p>
+<ul>
+<li>No support for obtaining signing keys from keychains. If you want to sign
+  with a cryptographic key pair, you'll need to point the tool at a PEM encoded
+  key pair and CA chain.</li>
+<li>No support for parsing the Code Signing Requirements language. We can parse the
+  binary encoding produced by <code>csreq -b</code> and convert it back to this DSL. But we
+  don't parse the human friendly language.</li>
+<li>No support for notarization.</li>
+</ul>
+<p>All of these could likely be implemented. However, I am not actively working on
+any of these features. If you would like to contribute support, make noise in
+the <a href="https://github.com/indygreg/PyOxidizer/issues">GitHub issue tracker</a>.</p>
+<p>The Rust API, CLI, and documentation are still a bit rough around the edges. I
+haven't performed thorough QA on aspects of the functionality. However, the
+tool is able to produce signed binaries that Apple's canonical <code>codesign</code> tool
+says are well-formed. So I'm reasonably confident some of the functionality
+works as intended. If you find bugs or missing features, please
+<a href="https://github.com/indygreg/PyOxidizer/issues">report them on GitHub</a>. Or even
+better: submit pull requests!</p>
+<p>As part of this project, I also created and published the
+<a href="https://crates.io/crates/cryptographic-message-syntax">cryptographic-message-syntax</a>
+crate, which is a pure Rust partial implementation of RFC 5652, which defines
+the cryptographic message signing mechanism. This RFC is a bit dated and seems
+to have been superseded by RPKI. So you may want to look elsewhere before
+inventing new signing mechanisms that use this format.</p>
+<p>Finally, it appears the Windows code signing mechanism (Authenticode) also uses
+RFC 5652 (or a variant thereof) for cryptographic signatures. So by implementing
+Apple code signatures, I believe I've done most of the legwork to implement
+Windows/PE signing! I'll probably implement Windows signing in a new crate whenever
+I hook up automatic code signing to PyOxidizer, which was the impetus for this work
+(I want to make it possible to build distributable Apple programs without Apple
+hardware, using as many open source Rust components as possible).</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -4867,65 +4940,5 @@ play with the integration of pull requests and <em>integration requests</em>. An
 if you are someone in a position to design or implement a better
 <em>integration request</em> or tooling around them (including in version control
 tools themselves), hopefully it gave you some good ideas or where to go next.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[C Extension Support in PyOxidizer]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2019/06/30/c-extension-support-in-pyoxidizer" />
-    <id>http://gregoryszorc.com/blog/2019/06/30/c-extension-support-in-pyoxidizer</id>
-    <updated>2019-06-30T16:40:00Z</updated>
-    <published>2019-06-30T16:40:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Python" />
-    <category scheme="http://gregoryszorc.com/blog" term="PyOxidizer" />
-    <summary type="html"><![CDATA[C Extension Support in PyOxidizer]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2019/06/30/c-extension-support-in-pyoxidizer"><![CDATA[<p>The <a href="/blog/2019/06/24/building-standalone-python-applications-with-pyoxidizer/">initial release</a>
-of PyOxidizer generated a bit of excitement across the Internet! The post was
-commented on heavily in various forums and my phone was constantly buzzing from
-all the Twitter activity. There has been a steady stream of
-<a href="https://github.com/indygreg/PyOxidizer/issues">GitHub Issues</a> for the project,
-which I consider a good sign. So thank you everybody for the support and
-encouragement! And especially thank you to everyone who filed an issue or
-submitted a pull request!</p>
-<p>While I don't usually read the comments, I was looking at various forums
-posting about PyOxidizer to see what reactions were like. A common negative
-theme was the lack of C extension support in PyOxidizer. People seemed
-dismissive of PyOxidizer because it didn't support C extensions. Despite the
-documentation stating that the feature was planned and that I had an idea for
-how to implement it, people seemed pessimistic. Perhaps I didn't adequately
-communicate that making C extensions work is actually a subset of the
-already-solved <em>single file executable</em> problem and therefore was already
-a <em>solved problem</em> at the technical level (only the integration with the
-Python and PyOxidizer <em>build systems</em> was missing). So in my mind C
-extension support was only a matter of time and the only open question was
-how many hacks would be needed to make it work, not <em>whether</em> it would work.</p>
-<p>Well, I'm pleased to report that <strong>the just-released version 0.2 of PyOxidizer
-supports C extensions on Windows, macOS, and Linux</strong>. If you install a Python
-package through a <code>pip-install-simple</code>, <code>pip-requirements-file</code>, or
-<code>setup-py-install</code> packaging rule, C extensions will be compiled in a special
-way that enables them to be embedded in the same binary containing Python
-itself. I've tested it with the <code>zope.interface</code>, <code>zstandard</code>, and
-<code>mercurial</code> packages and it seems to work (although Mercurial has other
-issues that prevent it from being packaged as a PyOxidizer application - but
-the C extensions do compile).</p>
-<p>There are some
-<a href="https://pyoxidizer.readthedocs.io/en/latest/status.html#native-extension-modules">limitations</a>
-to the support, however. I'm pretty confident the limitations can be eliminated
-given enough time. Given how many people were hung up on the lack of C extensions
-and were seemingly writing off PyOxidizer thinking it was snake oil or something,
-I wanted to deliver basic C extension support to curtail this line of criticism.
-Perfect is the enemy of good and hopefully basic C extension support is good
-enough to ease concerns about PyOxidizer's viability.</p>
-<p>Also in PyOxidizer 0.2 are some minor new features, like the <code>--pip-install</code> and
-<code>--python-code</code> flags to <code>pyoxidizer init</code>. These allow you to generate a
-<code>pyoxidizer.toml</code> file pre-configured to install some packages from pip and run
-custom Python code. So now applications can be created and built with a one-liner
-without having to edit a <code>pyoxidizer.toml</code> file!</p>
-<p>The full release notes <a href="https://pyoxidizer.readthedocs.io/en/latest/history.html">are available</a>.
-As always, please keep
-<a href="https://github.com/indygreg/PyOxidizer/issues">filing issues</a>. I'm particularly
-interested in hearing about packages whose C extensions don't work properly.</p>]]></content>
   </entry>
 </feed>
