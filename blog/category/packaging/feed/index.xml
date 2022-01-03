@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+     >
+  <channel>
+    <title>Gregory Szorc's Digital Home</title>
+    <link>http://gregoryszorc.com/blog</link>
+    <description>Rambling on</description>
+    <pubDate>Mon, 03 Jan 2022 23:33:40 GMT</pubDate>
+    <generator>Blogofile</generator>
+    <sy:updatePeriod>hourly</sy:updatePeriod>
+    <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Rust Implementation of Debian Packaging Primitives</title>
+      <link>http://gregoryszorc.com/blog/2022/01/03/rust-implementation-of-debian-packaging-primitives</link>
+      <pubDate>Mon, 03 Jan 2022 16:00:00 PST</pubDate>
+      <category><![CDATA[packaging]]></category>
+      <category><![CDATA[Rust]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2022/01/03/rust-implementation-of-debian-packaging-primitives</guid>
+      <description>Rust Implementation of Debian Packaging Primitives</description>
+      <content:encoded><![CDATA[<p>Does your Linux distribution use tools with <code>apt</code> in their name to manage
+system packages? If so, your system packages are using Debian packaging.</p>
+<p>Most tools interfacing with Debian packages (<code>.deb</code> files) and repositories
+use functionality provided by the <a href="https://salsa.debian.org/apt-team/apt">apt</a>
+repository. This repository provides libraries like <code>libapt</code> as well as
+tools like <code>apt-get</code> and <code>apt</code>. Most of the functionality is implemented in
+C++.</p>
+<p>I wanted to raise awareness that I've begun implementing Debian packaging
+primitives in pure Rust. The <code>debian-packaging</code> crate is
+<a href="https://crates.io/crates/debian-packaging">published on crates.io</a>. For
+now, it is developed inside the
+<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer repository</a> (because I
+like monorepos).</p>
+<p>So far, a handful of useful functionality is implemented:</p>
+<ul>
+<li>Parsing and serializing <a href="https://www.debian.org/doc/debian-policy/ch-controlfields.html">control files</a></li>
+<li>Reading repository indices files and parsing their content.</li>
+<li>Reading HTTP hosted repositories.</li>
+<li>Publishing repositories to the filesystem and S3.</li>
+<li>Writing changelog files.</li>
+<li>Reading and writing <code>.deb</code> files.</li>
+<li>Copying repositories.</li>
+<li>Creating repositories.</li>
+<li>PGP signing and verification operations.</li>
+<li>Parsing and sorting version strings.</li>
+<li>Dependency syntax parsing.</li>
+<li>Dependency resolution.</li>
+</ul>
+<p>Hopefully the <a href="https://docs.rs/debian-packaging/0.9.0/debian_packaging/">documentation</a>
+contains all you would want to know for how to use the crate.</p>
+<p>The crate is designed to be used as a library so any Rust program can
+(hopefully) easily tap the power of the Debian packaging ecosystem.</p>
+<p>As with most software, there are likely several bugs and many features not yet
+implemented. But I have bulk downloaded the entirety of some distribution's
+repositories without running into obvious parse/reading failures. So I'm
+reasonably confident that important parts of the code (like control file parsing,
+repository indices file handling, and <code>.deb</code> file reading) work as advertised.</p>
+<p>Hopefully someone out there finds this work useful!</p>]]></content:encoded>
+    </item>
+  </channel>
+</rss>

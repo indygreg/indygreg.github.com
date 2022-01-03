@@ -51,6 +51,56 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="hg.mozilla.org-replication-updates"></a>
+  <h2 class="blog_post_title"><a href="/blog/2016/01/05/hg.mozilla.org-replication-updates" rel="bookmark" title="Permanent Link to hg.mozilla.org replication updates">hg.mozilla.org replication updates</a></h2>
+  <small>January 05, 2016 at 03:00 PM | categories: 
+
+<a href='/blog/category/mercurial'>Mercurial</a>, <a href='/blog/category/mozilla'>Mozilla</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A few minutes ago, I formally enabled a new replication system
+for <a href="https://hg.mozilla.org/">hg.mozilla.org</a>. For the curious,
+<a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmo/replication.html">technical details</a>
+are available.</p>
+<p>This impacts you because pushes to hg.mozilla.org should now be
+significantly faster. For example, pushes to mozilla-inbound
+that used to take 15s now take 2s. Pushes to Try that used to
+take 45s now take 10s. (Yes, the old replication system really
+added a lot of overhead.) Pushes to hg.mozilla.org are still not
+as fast as they could be due to us running the service on 5 year
+old hardware (we plan to buy new servers this year) and due to the
+use of NFS on the server. However, I believe push latency is now
+reasonable for every repo except Try.</p>
+<p>The new replication system opens the door to a number of future
+improvements. We'd like to stand up mirrors in multiple data
+centers - perhaps even offices - so clients have the fastest
+connectivity and so we have a better disaster recovery story.
+The new replication system facilitates this.</p>
+<p>The new replication log is effectively a unified pushlog -
+something people have wanted for years. While there is not yet
+a public API for it, one could potentially be exposed, perhaps
+indirectly via Pulse.</p>
+<p>It is now trivial for us to stand up new consumers of the
+replication log that react to repository events merely milliseconds
+after they occur. This should eventually result in downstream
+systems like build automation and conversion to Git repos starting
+and thus completing faster.</p>
+<p>Finally, the new replication system has been running unofficially for
+a few weeks, so you likely won't notice anything different today
+(other than removal of some printed messages when you push). What
+changed today is the new system is enabled by default and we have
+no plans to continue supporting or operating the legacy system.
+Good riddance.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="mozilla-mercurial-extension-updates"></a>
   <h2 class="blog_post_title"><a href="/blog/2015/12/16/mozilla-mercurial-extension-updates" rel="bookmark" title="Permanent Link to Mozilla Mercurial Extension Updates">Mozilla Mercurial Extension Updates</a></h2>
   <small>December 16, 2015 at 05:40 PM | categories: 
@@ -461,41 +511,6 @@ the performance hot spots are or aren't at the OS level.</p>
 
 
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="lowering-the-barrier-to-pushing-to-mozreview"></a>
-  <h2 class="blog_post_title"><a href="/blog/2015/10/14/lowering-the-barrier-to-pushing-to-mozreview" rel="bookmark" title="Permanent Link to Lowering the Barrier to Pushing to MozReview">Lowering the Barrier to Pushing to MozReview</a></h2>
-  <small>October 14, 2015 at 12:30 PM | categories: 
-
-<a href='/blog/category/mozreview'>MozReview</a>, <a href='/blog/category/mozilla'>Mozilla</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>Starting today, a Mozilla LDAP account with Mercurial SSH access is no
-longer required to <em>hg push</em> into
-<a href="https://reviewboard.mozilla.org">MozReview</a> to initiate code review
-with Mozilla projects.</p>
-<p>The <a href="https://mozilla-version-control-tools.readthedocs.org/en/latest/mozreview/install.html">instructions for configuring your client to use MozReview</a>
-have been updated to reflect how you can now push to MozReview over HTTP
-using a Bugzilla API Key for authentication.</p>
-<p>This change effectively enables first-time contributors to use MozReview
-for code review. Before, you had to obtain an LDAP account and configure
-your SSH client, both of which could be time consuming processes and
-therefore discourage people from contributing. (Or you could just use
-Bugzilla/Splinter and not get the benefits of MozReview, which many
-did.)</p>
-<p><strong>I encourage others to update contribution docs to start nudging people
-towards MozReview over Bugzilla/patch-based workflows</strong> (such as
-bzexport).</p>
-<p><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1195856">Bug 1195856</a>
-tracked this feature.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
  <a href="../7">« Previous Page</a>
   --  
  <a href="../9">Next Page »</a>
@@ -536,6 +551,7 @@ tracked this feature.</p>
                 <li><a href="/blog/category/make">make</a></li>
                 <li><a href="/blog/category/misc">misc</a></li>
                 <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/packaging">packaging</a></li>
                 <li><a href="/blog/category/pymake">pymake</a></li>
                 <li><a href="/blog/category/security">security</a></li>
                 <li><a href="/blog/category/sysadmin">sysadmin</a></li>

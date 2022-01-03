@@ -1,0 +1,174 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Rust Implementation of Debian Packaging Primitives
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="rust-implementation-of-debian-packaging-primitives"></a>
+  <h2 class="blog_post_title"><a href="/blog/2022/01/03/rust-implementation-of-debian-packaging-primitives" rel="bookmark" title="Permanent Link to Rust Implementation of Debian Packaging Primitives">Rust Implementation of Debian Packaging Primitives</a></h2>
+  <small>January 03, 2022 at 04:00 PM | categories: 
+
+<a href='/blog/category/packaging'>packaging</a>, <a href='/blog/category/rust'>Rust</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Does your Linux distribution use tools with <code>apt</code> in their name to manage
+system packages? If so, your system packages are using Debian packaging.</p>
+<p>Most tools interfacing with Debian packages (<code>.deb</code> files) and repositories
+use functionality provided by the <a href="https://salsa.debian.org/apt-team/apt">apt</a>
+repository. This repository provides libraries like <code>libapt</code> as well as
+tools like <code>apt-get</code> and <code>apt</code>. Most of the functionality is implemented in
+C++.</p>
+<p>I wanted to raise awareness that I've begun implementing Debian packaging
+primitives in pure Rust. The <code>debian-packaging</code> crate is
+<a href="https://crates.io/crates/debian-packaging">published on crates.io</a>. For
+now, it is developed inside the
+<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer repository</a> (because I
+like monorepos).</p>
+<p>So far, a handful of useful functionality is implemented:</p>
+<ul>
+<li>Parsing and serializing <a href="https://www.debian.org/doc/debian-policy/ch-controlfields.html">control files</a></li>
+<li>Reading repository indices files and parsing their content.</li>
+<li>Reading HTTP hosted repositories.</li>
+<li>Publishing repositories to the filesystem and S3.</li>
+<li>Writing changelog files.</li>
+<li>Reading and writing <code>.deb</code> files.</li>
+<li>Copying repositories.</li>
+<li>Creating repositories.</li>
+<li>PGP signing and verification operations.</li>
+<li>Parsing and sorting version strings.</li>
+<li>Dependency syntax parsing.</li>
+<li>Dependency resolution.</li>
+</ul>
+<p>Hopefully the <a href="https://docs.rs/debian-packaging/0.9.0/debian_packaging/">documentation</a>
+contains all you would want to know for how to use the crate.</p>
+<p>The crate is designed to be used as a library so any Rust program can
+(hopefully) easily tap the power of the Debian packaging ecosystem.</p>
+<p>As with most software, there are likely several bugs and many features not yet
+implemented. But I have bulk downloaded the entirety of some distribution's
+repositories without running into obvious parse/reading failures. So I'm
+reasonably confident that important parts of the code (like control file parsing,
+repository indices file handling, and <code>.deb</code> file reading) work as advertised.</p>
+<p>Hopefully someone out there finds this work useful!</p>
+
+  </div>
+</div>
+
+
+
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/apple">Apple</a></li>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/ci">CI</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozreview">MozReview</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/personal">Personal</a></li>
+                <li><a href="/blog/category/programming">Programming</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/pyoxidizer">PyOxidizer</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/rust">Rust</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/packaging">packaging</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012- Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+

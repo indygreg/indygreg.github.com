@@ -51,6 +51,611 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="mercurial's-journey-to-and-reflections-on-python-3"></a>
+  <h2 class="blog_post_title"><a href="/blog/2020/01/13/mercurial's-journey-to-and-reflections-on-python-3" rel="bookmark" title="Permanent Link to Mercurial's Journey to and Reflections on Python 3">Mercurial's Journey to and Reflections on Python 3</a></h2>
+  <small>January 13, 2020 at 08:45 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/mercurial'>Mercurial</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>Mercurial 5.2 was released on November 5, 2019. It is the first version
+of Mercurial that supports Python 3. This milestone comes nearly 11 years
+after Python 3.0 was first released on December 3, 2008.</p>
+<p>Speaking as a maintainer of Mercurial and an avid user of Python, I
+feel like the experience of making Mercurial work with Python 3 is
+worth sharing because there are a number of lessons to be learned.</p>
+<p>This post is logically divided into two sections: a mostly factual recount
+of Mercurial's Python 3 porting effort and a more opinionated commentary
+of the transition to Python 3 and the Python language ecosystem as a whole.
+Those who don't care about the mechanics of porting a large Python project
+to Python 3 may want to skip the next section or two.</p>
+<h2>Porting Mercurial to Python 3</h2>
+<p>Let's start with a brief history lesson of Mercurial's support for
+Python 3 as told by its own commit history.</p>
+<p>The Mercurial version control tool was first released in April 2005
+(the same month that Git was initially released). Version 1.0 came out
+in March 2008. The first reference to Python 3 I found in the code base
+was in <a href="https://www.mercurial-scm.org/repo/hg/rev/8fee8ff13d37">September 2008</a>.
+Then not much happens for a while until
+<a href="https://www.mercurial-scm.org/repo/hg/rev/4494fb02d549">June 2010</a>, when
+someone authors a bunch of changes to make the Python C extensions
+start to recognize Python 3. Then things were again quiet for a while
+until <a href="https://www.mercurial-scm.org/repo/hg/rev/56ef99fbd6f2">January 2013</a>,
+when a handful of changes landed to remove 2 argument <code>raise</code>. There were
+a handful of commits in 2014 but nothing worth calling out.</p>
+<p>Mercurial's meaningful journey to Python 3 started in 2015. In code,
+the work started in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/af6e6a0781d7">April 2015</a>, with
+effort to make Mercurial's test harness run with Python 3. Part of
+this was a <a href="https://www.mercurial-scm.org/repo/hg/rev/fefc72523491">decision</a>
+that Python 3.5 (to be released several months later in September 2015)
+would be the minimum Python 3 version that Mercurial would support.</p>
+<p>Once the Mercurial Project decided it wanted to port to Python 3 (as opposed
+to another language), one of the earliest decisions was how to perform that
+port. <strong>Mercurial's code base was too large to attempt a flag day conversion</strong>
+where there would be a Python 2 version and a Python 3 version and one day
+everyone would switch from Python 2 to 3. <strong>Mercurial needed a way to run the
+same code (or as much of the same code) on both Python 2 and 3.</strong> We would
+maintain a single code base and users would gradually switch from running with
+Python 2 to Python 3.</p>
+<p>In <a href="https://www.mercurial-scm.org/repo/hg/rev/e1fb276d4619">May 2015</a>,
+Mercurial dropped support for Python 2.4 and 2.5. Dropping support for
+these older Python versions was critical, as it was effectively impossible to
+write Python code that ran on this wide gamut of versions because of
+incompatibilities in syntax and language features. For example, you needed
+Python 2.6 to get <code>print()</code> via <code>from __future__ import print_function</code>.
+The project's late start at a Python 3 port can be significantly attributed
+to Python 2.4 and 2.5 compatibility holding us back.</p>
+<p>The main goal with Mercurial's early porting work was just getting the code base
+to a point where <code>import mercurial</code> would work. There were a myriad of places
+where Mercurial used syntax that was invalid on Python 3 and Python 3
+couldn't even parse the source code, let alone compile it to bytecode and
+execute it.</p>
+<p>This effort began in earnest in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/e93036747902">June 2015</a>
+with global source code rewrites like using modern octal syntax,
+modern exception catching syntax (<code>except Exception as e</code> instead of
+<code>except Exception, e</code>), <code>print()</code> instead of <code>print</code>, and a
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1a6a117d0b95">modern import convention</a>
+along with the use of <code>from __future__ import absolute_import</code>.</p>
+<p>In the early days of the port, our first goal was to get all source code
+parsing as valid Python 3. The next step was to get all the modules <code>import</code>ing
+cleanly. This entailed fixing code that ran at <code>import</code> time to work on
+Python 3. Our thinking was that we would need the code base to be <code>import</code>
+clean on Python 3 before seriously thinking about run-time behavior. In reality,
+we quickly ported a lot of modules to <code>import</code> cleanly and then moved on
+to higher-level porting, leaving a long-tail of modules with <code>import</code> failures.</p>
+<p>This initial porting effort played out over months. There weren't many
+people working on it in the early days: a few people would basically hack on
+Python 3 as a form of itch scratching and most of the project's energy was
+focused on improving the existing Python 2 based product. You can get a rough
+idea of the timeline and participation in the early porting effort through the
+<a href="https://www.mercurial-scm.org/repo/hg/log/081a77df7bc6/tests/test-check-py3-compat.t?revcount=960">history of test-check-py3-compat.t</a>.
+We see the test being added in <a href="https://www.mercurial-scm.org/repo/hg/rev/40eb385f798f">December 2015</a>,
+By June 2016, most of the code base was ported to our modern import convention
+and we were ready to move on to more meaningful porting.</p>
+<p>One of the biggest early hurdles in our porting effort was how to overcome
+the string literals type mismatch between Python 2 and 3. In Python 2, a
+<code>''</code> string literal is a sequence of bytes. In Python 3, a <code>''</code> string literal
+is a sequence of Unicode code points. These are fundamentally different types.
+And in Mercurial's code base, <strong>most of our <em>string</em> types are binary by design:
+use of a Unicode based <code>str</code> for representing data is flat out wrong for our use
+case</strong>. We knew that Mercurial would need to eventually switch many string
+literals from <code>''</code> to <code>b''</code> to preserve type compatibility. But doing so would
+be problematic.</p>
+<p>In the early days of Mercurial's Python 3 port in 2015, Mercurial's project
+maintainer (Matt Mackall) set a ground rule that the Python 3 port shouldn't overly
+disrupt others: he wanted the Python 3 port to more or less happen in the background
+and not require every developer to be aware of Python 3's low-level behavior in order
+to get work done on the existing Python 2 code base. This may seem like a questionable
+decision (and I probably disagreed with him to some extent at the time because I was
+doing Python 3 porting work and the decision constrained this work). But it was the
+correct decision. Matt knew that it would be years before the Python 3 port was either
+necessary or resulted in a meaningful return on investment (the value proposition of
+Python 3 has always been weak to Mercurial because Python 3 doesn't demonstrate a
+compelling advantage over Python 2 for our use case). What Matt was trying to do was
+minimize the externalized costs that a Python 3 port would inflict on the project.
+He correctly recognized that maintaining the existing product and supporting
+existing users was more important than a long-term bet in its infancy.</p>
+<p>This ground rule meant that a mass insertion of <code>b''</code> prefixes everywhere
+was not desirable, as that would require developers to think about whether
+a type was a <code>bytes</code> or <code>str</code>, a distinction they didn't have to worry about
+on Python 2 because we practically never used the Unicode-based string type in
+Mercurial.</p>
+<p>In addition, there were some other practical issues with doing a bulk <code>b''</code>
+prefix insertion. One was that the added <code>b</code> characters would cause a lot of lines
+to grow beyond our length limits and we'd have to reformat code. That would
+require manual intervention and would significantly slow down porting. And
+a sub-issue of adding all the <code>b</code> prefixes and reformatting code is that it would
+<em>break</em> annotate/blame more than was tolerable. The latter issue was addressed
+by teaching Mercurial's annotate/blame feature to <em>skip</em> revisions. The project
+now has a convention of annotating commit messages with <code># skip-blame &lt;reason&gt;</code>
+so structural only changes can easily be ignored when performing an
+annotate/blame.</p>
+<p>A stop-gap solution to the <code>b''</code> everywhere issue came in
+<a href="https://www.mercurial-scm.org/repo/hg/rev/1c22400db72d">July 2016</a>, when I
+introduced a custom Python module importer that rewrote source code as part
+of <code>import</code> when running on Python 3. (I have
+<a href="/blog/2017/03/13/from-__past__-import-bytes_literals/">previously blogged</a>
+about this hack.) What this did was transparently add <code>b''</code> prefixes to all
+un-prefixed string literals as well as modify how a few common functions were
+called so that we wouldn't need to modify source code so things would run natively
+on Python 3. The source transformer allowed us to have the benefits of progressing
+in our Python 3 port without having to rewrite tens of thousands of lines of
+source code. The solution was hacky. But it enabled us to make significant
+progress on the Python 3 port without externalizing a lot of cost onto others.</p>
+<p>I thought the source transformer would be relatively short-lived and would be
+removed shortly after the project inevitably decided to go all in on Python 3.
+To my surprise, others built additional transforms over the years and the source
+transformer persisted all the way until
+<a href="https://www.mercurial-scm.org/repo/hg/rev/d783f945a701">October 2019</a>, when
+I removed it just before the first non-alpha Python 3 compatible version
+of Mercurial was released.</p>
+<p>A common problem Mercurial faced with making the code base dual Python 2/3 native
+was dealing with standard library differences. Most of the problems stemmed
+from changes between Python 2.7 and 3.5+. But there are changes within the
+versions of Python 3 that we had to wallpaper over as well. In
+<a href="https://www.mercurial-scm.org/repo/hg/rev/6041fb8f2da8">April 2016</a>, the
+<code>mercurial.pycompat</code> module was introduced to export aliases or wrappers around
+standard library functionality to abstract the differences between Python
+versions. This file <a href="https://www.mercurial-scm.org/repo/hg/log/66af68d4c751/mercurial/pycompat.py?revcount=240">grew over time</a>
+and <a href="https://www.mercurial-scm.org/repo/hg/file/66af68d4c751/mercurial/pycompat.py">eventually became</a>
+Mercurial's version of <a href="https://six.readthedocs.io/">six</a>. To be honest, I'm
+not sure if we should have used <code>six</code> from the beginning. <code>six</code> probably would
+have saved some work. But we had to eventually write a lot of shims for
+converting between <code>str</code> and <code>bytes</code> and would have needed to invent a
+<code>pycompat</code> layer in some form anyway. So I'm not sure <code>six</code> would have saved
+enough effort to justify the baggage of integrating a 3rd party package into
+Mercurial. (When Mercurial accepts a 3rd party package, downstream packagers
+like Debian get all hot and bothered and end up making questionable patches
+to our source code. So we prefer to minimize the surface area for
+problems by minimizing dependencies on 3rd party packages.)</p>
+<p>Once we had a source transforming module importer and the <code>pycompat</code>
+compatibility shim, we started to focus in earnest on making core
+functionality actually work on Python 3. We established a convention of
+annotating changesets needed for Python 3 with <code>py3</code>, so a
+<a href="https://www.mercurial-scm.org/repo/hg/log?rev=desc(py3)&amp;revcount=4000">commit message search</a>
+yields a lot of the history. (But it isn't a full history since not every Python 3
+oriented change used this convention). We see from that history that after
+the source importer landed, a lot of porting effort was spent on things
+very early in the <code>hg</code> process lifetime. This included handling environment
+variables, loading config files, and argument parsing. We introduced a
+<a href="https://www.mercurial-scm.org/repo/hg/log/@/tests/test-check-py3-commands.t">test-check-py3-commands.t</a>
+test to track the progress of <code>hg</code> commands working in Python 3. The very early
+history of that file shows the various error messages changing, as underlying
+early process functionality was slowly ported to work on Python 3. By
+<a href="https://www.mercurial-scm.org/repo/hg/rev/2d555d753f0e">December 2016</a>, we
+had <code>hg version</code> working on Python 3!</p>
+<p>With basic <code>hg</code> command dispatch ported to Python 3 at the end of 2016,
+2017 represented an inflection point in the Python 3 porting effort. With the
+early process functionality working, different people could pick up different
+commands and code paths and start making code work with Python 3. By
+<a href="https://www.mercurial-scm.org/repo/hg/rev/52ee1b5ac277">March 2017</a>, basic
+repository opening and <code>hg files</code> worked. Shortly thereafter,
+<a href="https://www.mercurial-scm.org/repo/hg/rev/ed23f929af38">hg init started working as well</a>.
+And <a href="https://www.mercurial-scm.org/repo/hg/rev/935a1b1117c7">hg status</a> and
+<a href="https://www.mercurial-scm.org/repo/hg/rev/aea8ec3f7dd1">hg commit</a> did as well.</p>
+<p>Within a few months, enough of Mercurial's functionality was working with Python
+3 that we started to <a href="https://www.mercurial-scm.org/repo/hg/rev/7a877e569ed6">track which tests passed on Python 3</a>.
+The <a href="https://www.mercurial-scm.org/repo/hg/log/@/contrib/python3-whitelist?revcount=480">evolution of this file</a>
+shows a reasonable history of the porting velocity.</p>
+<p>In <a href="https://www.mercurial-scm.org/repo/hg/rev/feb910d2f59b">May 2017</a>, we dropped
+support for Python 2.6. This significantly reduced the complexity of supporting
+Python 3, as there was tons of functionality in Python 2.7 that made it easier
+to target both Python 2 and 3 and now our hands were untied to utilize it.</p>
+<p>In <a href="https://www.mercurial-scm.org/repo/hg/rev/bd8875b6473c">November 2017</a>, I
+landed a test harness feature to report exceptions seen during test runs. I
+later <a href="https://www.mercurial-scm.org/repo/hg/rev/8de90e006c78">refined the output</a>
+so the most frequent failures were reported more prominently. This feature
+greatly enabled our ability to target the most common exceptions, allowing
+us to write patches to fix the most prevalent issues on Python 3 and uncover
+previously unknown failures.</p>
+<p>By the end of 2017, we had most of the structural pieces in place to complete
+the port. Essentially all that was required at that point was time and labor.
+We didn't have a formal mechanism in place to target porting efforts. Instead,
+people would pick up a component or test that they wanted to hack on and then
+make incremental changes towards making that work. All the while, we didn't
+have a strict policy on not regressing Python 3 and regressions in Python 3
+porting progress were semi-frequent. Although we did tend to correct
+regressions quickly. And over time, developers saw a flurry of Python 3
+patches and slowly grew awareness of how to accommodate Python 3, and the
+number of Python 3 regressions became less frequent.</p>
+<p>As useful as the source-transforming module importer was, it incurred some
+additional burden for the porting effort. The source transformer effectively
+converted all un-prefixed string literals (<code>''</code>) to bytes literals (<code>b''</code>)
+to preserve string type behavior with Python 2. But various aspects of Python
+3 didn't like the existence of <code>bytes</code>. Various standard library functionality
+now wanted unicode <code>str</code> and didn't accept <code>bytes</code>, even though the Python
+2 implementation used the equivalent of <code>bytes</code>. So our <code>pycompat</code> layer
+grew pretty large to accommodate calling into various standard library
+functionality. Another side-effect which we didn't initially anticipate
+was the <code>**kwargs</code> calling convention. Python allows you to use <code>**</code>
+with a dict with string keys to turn those keys into named arguments
+in a function call. But Python 3 requires these <code>dict</code> keys to be
+<code>str</code> and outright rejects <code>bytes</code> keys, even if the <code>bytes</code> instance
+is ASCII safe and has the same underlying byte representation of the
+string data as the <code>str</code> instance would. So we had to invent support
+functions that would convert <code>dict</code> keys from <code>bytes</code> to <code>str</code> for
+use with <code>**kwargs</code> and another to convert a <code>**kwargs</code> dict from
+<code>str</code> keys to <code>bytes</code> keys so we could use <code>''</code> syntax to access keys
+in our source code! Also on the string type front, we had to sprinkle
+the codebase with raw string literals (<code>r''</code>) to force the use of
+<code>str</code> irregardless of which Python version you were running on (our
+source transformer only changed unprefixed string literals, so existing
+<code>r''</code> strings would be preserved as <code>str</code>).</p>
+<p>Blind transformation of all string literals to <code>bytes</code> was less than ideal
+and it did impose some unwanted side-effects. But, again, most <em>strings</em>
+in Mercurial are bytes by design, so we thought it would be easier to
+<em>byteify</em> all strings then selectively undo that where native strings
+were actually warranted (like keys in most <code>dict</code>s) than to take the
+up-front cost to examine every string and make an intelligent determination
+as to what type it should be. I go back and forth as to whether this was the
+correct call. But when you factor in that the source transforming
+module importer unblocked Python 3 porting at a time in the project's
+history when there was so much focus on improving the core product and it
+did so without externalizing many costs onto the people doing the critical
+core product work, I think it was the right call.</p>
+<p>By mid 2019, the number of test failures in Python 3 had been whittled
+down to a reasonable, less daunting number. It felt like victory was
+in grasp and inevitable. But a few significant issues lingered.</p>
+<p>One remaining question was around addressing differences between Python
+3 versions. At the time, Python 3.5, 3.6, and 3.7 were released and 3.8
+was scheduled for release by the end of the year. We had a surprising
+number of issues with differences in Python 3 versions. Many of us
+were running Python 3.7, so it had the fewest failures. We had to spend
+extra effort to get Python 3.5 and 3.6 working as well as 3.7. Same for
+3.8.</p>
+<p>Another task we deferred until the second half of 2019 was standing up
+robust CI for Python 3. We had some coverage, but it was minimal. Wanting
+a distraction from PyOxidizer for a bit and wanting to overhaul Mercurial's
+CI system (which is officially built on Buildbot), I cobbled together a
+<em>serverless</em> CI system built on top of AWS DynamoDB and S3 for storage,
+Lambda functions and CloudWatch events for all business logic, and EC2 spot
+instances for job execution. This CI system executed Python 3.5, 3.6, 3.7,
+and 3.8 variants of our test harness on Linux and Python 3.7 on Windows.
+This gave developers insight into version-specific failures. More
+importantly, it also gave insight into Windows failures, which was
+previously not well tested. It was discovered that Python 3 on Windows was
+lagging significantly behind POSIX.</p>
+<p>By the time of the Mercurial developer meetup in October 2019, nearly
+all tests were passing on POSIX platforms and we were confident that
+we could declare Python 3 support as at least beta quality for the
+Mercurial 5.2 release, planned for early November.</p>
+<p>One of our blockers for ripping off the alpha label on Python 3 support
+was removing our source-transforming module importer. It had performance
+implications and it wasn't something we wanted to ship because it felt
+too hacky. A blocker for this was we wanted to automatically format
+our source tree with <a href="https://black.readthedocs.io/en/stable/">black</a>
+because if we removed the source transformer, we'd have to rewrite
+a lot of source code to apply changes the transformer was performing,
+which would necessitate wrapping a lot of lines, which would involve a lot
+of manual effort. We wanted to <em>blacken</em> our code base first so that
+mass rewriting source code wouldn't involve a lot of tedious reformatting
+since <code>black</code> would handle that for us automatically. And rewriting the
+source tree with <code>black</code> was blocked on a specific feature landing in
+<code>black</code>! (We did not agree with <code>black</code>'s behavior of
+unwrapping comma-delimited lists of items if they could fit on a single
+line. So one of our core contributors wrote a patch to <code>black</code> that
+changed its behavior so a trailing <code>,</code> in a list of items will force
+items to be formatted on multiple lines. I personally find the multiple line
+formatting much easier to read. And the behavior is arguably better for
+code review and <em>annotation</em>, which is line based.) Once this feature
+landed in <code>black</code>, we reformatted our source tree and started ripping
+out the source transformations, starting by inserting <code>b''</code> literals
+everywhere. By late October, the source transformer was no more and
+we were ready to release beta quality support for Python 3 (at least
+on UNIX-like platforms).</p>
+<p>Having described a mostly factual overview of Mercurial's port to Python
+3, it is now time to shift gears to the speculative and opinionated
+parts of this post. <strong>I want to underscore that the opinions reflected
+here are my own and do not reflect the overall Mercurial Project or even
+a consensus within it.</strong></p>
+<h2>The Future of Python 3 and Mercurial</h2>
+<p>Mercurial's port to Python 3 is still ongoing. While we've shipped
+Python 3 support and the test harness is clean on Python 3, I view shipping
+as only a milestone - arguably <em>the</em> most important one - in a longer
+journey. There's still a lot of work to do.</p>
+<p>It is now 2020 and Python 2 support is now officially dead from the
+perspective of the Python language maintainers. Linux distributions are
+starting to rip out Python 2. Packages are dropping Python 2 support in
+new versions. The world is moving to Python 3 only. But <strong>Mercurial still
+officially supports Python 2</strong>. And it is still yet to be determined how
+long we will retain support for Python 2 in the code base. We've only had
+one release supporting Python 3. Our users still need to port their
+extensions (implemented in Python). Our users still need to start widely
+using Mercurial with Python 3. Even our own developers need to switch to
+Python 3 (old habits are hard to break).</p>
+<p>I anticipate a long tail of random bugs in Mercurial on Python 3. While
+the tests may pass, our code coverage is not 100%. And even if it were,
+Python is a dynamic language and there are tons of invariants that aren't
+caught at compile time and can only be discovered at run time. <strong>These
+invariants cannot all be detected by tests, no matter how good your test
+coverage is.</strong> This is a <em>feature</em>/<em>limitation</em> of dynamic languages. Our
+users will likely be finding a long tail of miscellaneous bugs on Python
+3 for <em>years</em>.</p>
+<p>At present, our code base is littered with tons of random hacks to bridge
+the gap between Python 2 and 3. Once Python 2 support is dropped, we'll
+need to remove these hacks and make the source tree Python 3 native, with
+minimal shims to wallpaper over differences in Python 3 versions. <strong>Removing
+this Python version bridge code will likely require hundreds of commits and
+will be a non-trivial effort.</strong> It's likely to be deemed a low priority (it
+is glorified busy work after all), and code for the express purpose of
+supporting Python 2 will likely linger for years.</p>
+<p>We are also still shoring up our packaging and distribution story on
+Python 3. This is easier on some platforms than others. I created
+<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> partially because
+of the poor experience I had with Python application packaging and
+distribution through the Mercurial Project. The Mercurial Project has
+already signed off on using PyOxidizer for distributing Mercurial in
+the future. So look for an <em>oxidized</em> Mercurial distribution in the
+near future! (You could argue PyOxidizer is an epic yak shave to better
+support Mercurial. But that's for another post.)</p>
+<p>Then there's Windows support. A Python 3 powered Mercurial on Windows
+still has a handful of known issues. It may require a few more releases
+before we consider Python 3 on Windows to be stable.</p>
+<p>Because we're still on a code base that must support Python 2, our
+adoption of Python 3 features is very limited. The only Python 3
+feature that Mercurial developers seem to almost universally get excited
+about is type annotations. We already have some people playing around
+with <code>pytype</code> using comment-based annotations and <code>pytype</code> has already
+caught a few bugs. We're eager to go all in on type annotations and
+uncover lots of dynamic typing bugs and poorly implemented APIs.
+Beyond type annotations, I can't name any feature that people are screaming
+to adopt and which makes a lot of sense for Mercurial. There's a long
+tail of minor features I'm sure will get utilized. But none of the
+marquee features that define major language releases seem that interesting
+to us. Time will tell.</p>
+<h2>Commentary on Python 3</h2>
+<p>Having described Mercurial's ongoing journey to Python 3, I now want to
+focus more on Python itself. Again, the opinions here are my own and
+don't reflect those of the Mercurial Project.</p>
+<p><strong>Succinctly, my experience porting Mercurial and other projects to
+Python 3 has significantly soured my perceptions of Python. As much as
+I have historically loved Python - from the language to the welcoming
+community - I am still struggling to understand how Python could manage
+to inflict so much hardship on the community by choosing the transition
+plan that they did.</strong> I believe Python's choices represent a terrific
+example of what not to do when managing a large project or ecosystem.
+Maintainers of other largely-deployed systems would benefit from taking
+the time to understand and reflect on Python's missteps.</p>
+<p>Python 3.0 was released on December 3, 2008. And it took the better part of
+a decade for the community to embrace it. <strong>This should be universally
+recognized as a failure.</strong> While hindsight is 20/20, many of the issues
+with Python 3 were obvious at the time and could have been mitigated had
+the language maintainers been more accommodating - and dare I say
+empathetic - to its users.</p>
+<p>Initially, Python 3 had a rather cavalier attitude towards backwards and
+forwards compatibility. In the early years of Python 3, the attitude of
+Python's maintainers was <em>Python 3 is a new, better language: you should
+target it explicitly</em>. There were some tools and methods to ease the
+transition. But nothing super polished, especially in the early years.
+Adoption of Python 3 in the overall community was slow. Python developers
+in the wild justifiably complained that the value proposition of Python 3
+was too weak to justify porting effort. Not helping was that the early
+advice for targeting Python 3 was to rewrite the source code to become
+Python 3 native. This is in contrast with using the same source to run on both
+Python 2 and 3. For library and application maintainers, this potentially
+meant maintaining separate versions of your code or forcing end-users to
+make a giant leap, which would realistically orphan users on an old version,
+fragmenting your user base. Neither of those were great alternatives, so
+you can understand why many projects didn't bite.</p>
+<p>For many projects of non-trivial size, flag day transitions from Python 2 to
+3 were simply not viable: the pathway to Python 3 was to make code dual
+Python 2/3 compatible and gradually switch over the runtime to Python 3.
+But initial versions of Python 3 made this effectively impossible! Let me
+give a few specific examples.</p>
+<p>In Python 2, a string literal <code>''</code> is effectively an array of bytes. In
+Python 3, it is a series of Unicode code points - a fundamentally different
+type! In Python 2, you could write <code>b''</code> to be explicit that a string literal
+was bytes or you could write <code>u''</code> to indicate a Unicode literal, mimicking
+Python 3's behavior. In Python 3, you could write <code>b''</code> to create a <code>bytes</code>
+instance. But for whatever reason, Python 3 initially removed the <code>u''</code> syntax,
+meaning there wasn't as easy way to explicitly denote the type of each
+string literal so that it was consistent between Python 2 and 3! Python 3.3
+(released September 2012) restored <code>u''</code> support, making it more viable to
+write Python source code that worked on both Python 2 and 3. <strong>For nearly 4
+years, Python 3 took away the consistent syntax for denoting bytes/Unicode
+string literals.</strong></p>
+<p>Another feature was <code>%</code> formatting of strings. Python 2 allowed use of the
+<code>%</code> formatting operator on both its string types. But Python 3 initially
+removed the implementation of <code>%</code> from <code>bytes</code>. Why, I have no clue. It
+is perfectly reasonable to splice byte sequences into a buffer via use of
+a formatting string. But the Python language maintainers insisted otherwise.
+And it wasn't until the community complained about its absence loudly enough
+that this feature was
+<a href="https://docs.python.org/3/whatsnew/3.5.html#whatsnew-pep-461">restored in Python 3.5</a>,
+which was released in September 2015. Fun fact: the lack of this feature was
+once considered a blocker for Mercurial moving to Python 3 because
+Mercurial uses <code>bytes</code> almost universally, which meant that nearly every use
+of <code>%</code> would have to be changed to something else. And to this day, Python
+3's <code>bytes</code> still doesn't have a <code>format()</code> method, so the alternative was
+effectively string concatenation, which is a massive step backwards from the
+expressiveness of <code>%</code> formatting.</p>
+<p><strong>The initial approach of Python 3 mirrors a folly that many developers
+and projects make: attempting a rewrite instead of performing incremental
+evolution.</strong> For established projects, large scale rewrites often go poorly.
+And Python 3 is no exception. Yes, from a code level, CPython (and likely
+other Python implementations) were incremental changes over Python 2 using
+the same code base. But from a language and standard library level, the
+differences in Python 3 were significant enough that I - and even Python's
+core maintainers - considered it a new language, and therefore a rewrite.
+When your random project attempts a rewrite and fails, the blast radius of that is
+often contained to that project. Maybe you don't publish a new release
+as soon as you otherwise would. <strong>But when you are powering an ecosystem,
+the ripple effects from a failed rewrite percolate throughout that ecosystem
+and last for years and have many second order effects. We see this with
+Python 3, where poor choices made in the late 2000s are inflicting significant
+hardship still in 2020.</strong></p>
+<p>From the initial restrained adoption of Python 3, it is obvious that the
+Python ecosystem overwhelmingly rejected the initial boil the oceans approach
+of Python 3. Python's maintainers eventually got the message and started
+restoring features like <code>u''</code> and <code>bytes</code> <code>%</code> formatting back into the
+language to placate the community. All the while Python 3 had been accumulating
+new features and the cumulative sum of those features was compelling enough
+to win over users.</p>
+<p>For many projects (including Mercurial), Python 3.4/3.5 was the first viable
+porting target for Python 3. Python 3.5 was released in September 2015, almost
+7 years after Python 3.0 was released in December 2008. <strong>Seven. Years.</strong>
+An ecosystem that falters for that long is generally not healthy. What may have
+saved Python from total collapse here is that Python 2 was still going strong and
+people were generally happy with it. I really do think Python dodged a bullet
+here, because there was a massive window where the language could have
+hemorrhaged a critical amount of its user base and been relegated to an
+afterthought. One could draw an analogy to Perl, which lost out to PHP,
+Python, and Ruby, and whose fall from grace aligned with a lengthy
+transition from Perl 5 to 6.</p>
+<p>If you look back at the early history of Python 3, <strong>I think you are forced
+to conclude that Python effectively kneecapped itself for 5-7 years
+through questionable implementation choices that prevented users from
+incurring incremental transitions between the major language versions. 2008
+to 2013-2015 should be known as the <em>lost years of Python</em> because so much
+opportunity and energy was squandered.</strong> Yes, Python is still healthy today
+and Python 3 is (finally) being adopted at scale. But had earlier versions
+of Python 3 been more <em>empathetic</em> towards Python 2 users porting to it,
+Python and Python 3 in 2020 would be even stronger than it is. The community
+was artificially hindered for years. And we won't know until 2023-2025 what
+things could have looked like in 2020 had the Python core language team
+spent more time paving a smoother road between the major language versions.</p>
+<p>To be clear, I do think Python 3 is generally a better language than Python 2.
+It has fewer warts, more compelling features, and better performance (except
+for startup time, which is still slower than Python 2). I am ecstatic the
+community is finally rallying around Python 3! For my Python coding, it has
+reached the point where I curse under my breath when I need to support
+Python 2 or even older versions of Python 3, like 3.5 or 3.6: I just wish
+the world would move on and adopt the future already!</p>
+<p>But I would be remiss if I failed to mention some of my gripes with Python
+3 beyond the transition shenanigans.</p>
+<p>Perhaps my least favorite <em>feature</em> of Python 3 is its insistence that the
+world is Unicode. In Python 2, the default string type was backed by
+bytes. In Python 3, the default string type is backed by Unicode code
+points. As part of that transition, large parts of the standard library
+now operate in the Unicode space instead of the domain of bytes. I understand
+why Python does this: they want <em>strings</em> to be Unicode and don't want
+users to have to spend that much energy thinking about when to use
+<code>str</code> versus <code>bytes</code>. This approach is admirable and somewhat defensible
+because it takes a stand on a solution that is arguably <em>good enough</em> for
+most users. However, <strong>the approach of assuming the world is Unicode is
+flat out wrong and has significant implications for systems level
+applications</strong> (like version control tools).</p>
+<p>There are a myriad of places in Python's standard library where Python
+insists on using the Unicode-backed <code>str</code> type and rejects <code>bytes</code>. For
+example, various networking modules refuse to accept <code>bytes</code> for hostnames
+or URLs. HTTP libraries won't accept <code>bytes</code> for HTTP header names or values.
+Functions that are proxies to POSIX-defined functions won't accept <code>bytes</code>
+even though the POSIX function it calls into is using <code>char *</code> and isn't
+Unicode aware. Then there's filename handling, where Python assumes the
+existence of a global encoding for filenames and uses this encoding to convert
+between <code>str</code> and <code>bytes</code>. And it does this despite POSIX filesystem paths
+being a bag of bytes where the only rules are that <code>\0</code> terminates the
+filename and <code>/</code> is special.</p>
+<p>In cases like Python refusing to accept <code>bytes</code> for things like HTTP
+header names (which will just be spit out over the wire as bytes), Python's
+pendulum has swung too far towards Unicode only. In my opinion, Python needs
+to be more accommodating and allow <code>bytes</code> when it makes sense. I hope the
+pendulum knocks some sense into people when it swings back towards a more
+reasonable solution that better acknowledges the realities of the world we
+live in.</p>
+<p>For areas like filename handling, the world is more complicated. Python
+is effectively an abstraction layer over the operating system APIs exposing
+this functionality. And there is often an impedance mismatch between operating
+systems. For example, POSIX (Linux) tends to use <code>char *</code> for everything
+and doesn't care about encoding and Windows tends to use 16 bit character
+types where the encoding is... a can of worms.</p>
+<p><strong>The reality here is that it is impossible to abstract over differences
+between operating system behavior without compromises that can result in data
+loss, outright wrong behavior, or loss of functionality. But Python 3 attempts
+to do it anyway, making Python 3 unsuitable (or at least highly undesirable) for
+certain systems level applications that rely on it</strong> (like a version control
+tool).</p>
+<p>In fairness to Python, it isn't the only programming language that gets
+this wrong. The only language I've seen <em>properly</em> implement higher-order
+abstractions on top of operating system facilities is Rust, whose approach can
+be generalized as <em>use Python 3's solution of normalizing to Unicode/UTF-8 by
+default</em>, but expose <em>escape hatches</em> which allow access to the raw underlying
+types and APIs used by the operating system for the advanced consumers who
+require it. For example, Rust's <code>Path</code> type which represents a filesystem path
+<a href="https://doc.rust-lang.org/std/path/struct.Path.html#method.as_os_str">allows access</a>
+to the raw <a href="https://doc.rust-lang.org/std/ffi/struct.OsStr.html">OsStr</a> value
+used by the operating system, not a normalization of it to bytes or Unicode,
+which may be lossy. This allows consumers to e.g. create and retrieve
+OS-native filesystem paths without data loss. This functionality is critical
+in some domains. Python 3's awareness/insistence that the world is
+Unicode (which it isn't universally) reduces Python's applicability in these
+domains.</p>
+<p>Speaking of Rust, at the Mercurial developer meetup in October 2019, we were
+discussing the use of Rust in Mercurial and one of the core maintainers blurted
+out something along the lines of <em>if Rust were at its current state 5 years ago,
+Mercurial would have likely ported from Python 2 to Rust instead of Python 3</em>.
+As crazy as it initially sounded, I think I agree with that assessment. With the
+benefit of hindsight, having been a key player in the Python 3 porting effort,
+seeing all the complications and headaches Python 3 is introducing, and
+having learned Rust and witnessed its benefits for performance, control,
+and correctness firsthand, porting to Rust would likely have been the correct
+move for the project at that point in time. 2020 is not 2014, however, and I'm
+not sure if I would opt for a rewrite in Rust today. (Most rewrites are follies
+after all.) But I know one thing: I certainly wouldn't implement a new version
+control tool in Python 3 and I would probably choose Rust as an implementation
+language for most new projects in the systems level space or with an expected
+shelf life of 10+ years. (I really should blog about how awesome Rust is.)</p>
+<p>Back to the topic of Python itself, <strong>I'm really soured on Python at this
+point in time. The effort required to port to Python 3 was staggering. For
+Mercurial, Python 3 introduces a ton of problems and doesn't really solve
+many. We effectively sludged through mud for several years only to wind
+up in a state that feels strictly worse than where we started. I'm sure it will
+be strictly better in a few years. But at that point, we're talking about a
+5+ year transition. To call the Python 3 transition disruptive and
+distracting for the project would be an understatement. As a project maintainer,
+it's natural to ask what we could have accomplished if we weren't forced
+to carry out this sideshow.</strong></p>
+<p>I can't shake the feeling that a lot of the pain afflicted by the Python 3
+transition could have been avoided had Python's language leadership made
+a different set of decisions and more highly prioritized the transition
+experience. (Like not initially removing features like <code>u''</code> and <code>bytes %</code>
+and not introducing gratuitous backwards compatibility breaks, like with
+<code>items()/iteritems()</code>. I would have also liked to see a feature like
+<code>from __future__</code> - maybe <code>from __past__</code> - that would make it easier for
+Python 3 code to target semantics in earlier versions in order to provide
+a more turnkey on-ramp onto new versions.) I simultaneously see Python 3
+losing its position as a justifiable tool in some domains (like systems
+level tooling) due to ongoing design decisions and poor implementation (like
+startup overhead problems). (In contrast, I see Rust excelling where Python
+is faltering and find Rust code surprisingly expressive to write and maintain
+given how low-level it is and therefore feel that Rust is a compelling
+alternative to Python in a surprisingly large number of domains.)</p>
+<p>Look, I know it is easy for me to armchair quarterback and critique with the
+benefit of hindsight/ignorance. I'm sure there is a lot of nuance here. I'm
+sure there was disagreement within the Python community over a lot of these
+issues. Maintaining a large and successful programming language and community
+like Python's is hard and you aren't going to please all the people all the
+time. And speaking as a maintainer, I have mad respect for the people leading
+such a large community. But niceties aside, everyone knows the Python 3
+transition was rough and could have gone better. It should not have taken 11
+years to get to where we are today.</p>
+<p><strong>I'd like to encourage the Python Project to conduct a thorough postmortem on
+the transition to Python 3.</strong> Identify what went well, what could have gone
+better, and what should be done next time such a large language change is wanted.
+Speaking as a Python user, a maintainer of a Python project, and as someone in
+industry who is now skeptical about use of Python at work due to risks of
+potentially company crippling high-effort migrations in the future, a postmortem
+would help restore my confidence that Python's maintainers learned from the
+various missteps on the road to Python 3 and these potentially ecosystem
+crippling mistakes won't be made again.</p>
+<p>Python had a wildly successful past few decades. And it can continue to
+thrive for several more. But the Python 3 migration was painful for all
+involved. And as much as we need to move on and leave Python 2 behind us,
+there are some important lessons to be learned. I hope the Python community
+takes the opportunity to reflect and am confident it will grow stronger by
+taking the time to do so.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="problems-with-pull-requests-and-how-to-fix-them"></a>
   <h2 class="blog_post_title"><a href="/blog/2020/01/07/problems-with-pull-requests-and-how-to-fix-them" rel="bookmark" title="Permanent Link to Problems with Pull Requests and How to Fix Them">Problems with Pull Requests and How to Fix Them</a></h2>
   <small>January 07, 2020 at 12:10 PM | categories: 
@@ -1835,385 +2440,6 @@ consider focusing on other areas instead.</p>
 
 
   <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="what-i've-learned-about-optimizing-python"></a>
-  <h2 class="blog_post_title"><a href="/blog/2019/01/10/what-i've-learned-about-optimizing-python" rel="bookmark" title="Permanent Link to What I've Learned About Optimizing Python">What I've Learned About Optimizing Python</a></h2>
-  <small>January 10, 2019 at 03:00 PM | categories: 
-
-<a href='/blog/category/python'>Python</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>I've used Python more than any other programming language in the past
-4-5 years. Python is the lingua franca for Firefox's build, test, and
-CI tooling. Mercurial is written in mostly Python. Many of my
-side-projects are in Python.</p>
-<p>Along the way, I've accrued a bit of knowledge about Python
-performance and how to optimize Python. This post is about sharing
-that knowledge with the larger community.</p>
-<p>My experience with Python is mostly with the CPython interpreter,
-specifically CPython 2.7. Not all observations apply to all Python
-distributions or have the same characteristics across Python versions.
-I'll try to call this out when relevant. And this post is in no
-way a thorough survey of the Python performance landscape. I mainly
-want to highlight areas that have particularly plagued me.</p>
-<h2>Startup and Module Importing Overhead</h2>
-<p>Starting a Python interpreter and importing Python modules is
-relatively slow if you care about milliseconds.</p>
-<p>If you need to start hundreds or thousands of Python processes
-as part of a workload, this overhead will amount to several seconds
-of overhead.</p>
-<p>If you use Python to provide CLI tools, the overhead can cause
-enough lag to be noticeable by people. If you want <em>instantaneous</em>
-CLI tools, launching a Python interpreter on every invocation will
-make it very difficult to achieve that with a sufficiently complex
-tool.</p>
-<p>I've written about this problem extensively. My
-<a href="https://mail.python.org/pipermail/python-dev/2014-May/134528.html">2014 post on python-dev</a>
-outlines the problem. Posts in
-<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">May 2018</a>
-and <a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">October 2018</a>
-restate and refine it.</p>
-<p>There's not much you can do to alleviate interpreter startup overhead:
-fixing this mostly resides with the maintainers of the Python
-interpreter because they control the code that is taking precious
-milliseconds to complete. About the best you can do is
-<a href="https://docs.python.org/3/using/cmdline.html#id3">disable the site import</a>
-in your shebangs and invocations to avoid some extra Python code
-running at startup. However, many applications rely on functionality
-provided by <code>site.py</code>, so use at your own risk.</p>
-<p>Related to this is the problem of module importing. What good is a
-Python interpreter if it doesn't have code to run! And the way code
-is made available to the interpreter is often through importing
-modules.</p>
-<p>There are multiple steps to importing modules. And there are sources
-of overhead in each one.</p>
-<p>There is overhead in finding modules and reading their data. As
-I've <a href="/blog/2019/01/06/pyoxidizer-support-for-windows/">demonstrated with PyOxidizer</a>,
-replacing the default <em>find and load a module from the filesystem</em>
-with an architecturally simpler solution of <em>read the module data
-from an in-memory data structure</em> makes importing the Python standard
-library take 70-80% of its original time! Having a single module
-per filesystem file introduces filesystem overhead and can slow
-down Python applications in the critical first milliseconds of
-execution. Solutions like PyOxidizer can mitigate this. And hopefully
-the Python community sees the overhead in the current approach
-and considers moving towards module distribution mechanisms that
-don't rely so much on separate files per module.</p>
-<p>Another source of module importing overhead is executing code in
-that module at import time. Some modules have code in the module
-scope outside of functions and classes that runs when the module
-is imported. This code execution can add overhead to importing. A
-mitigation for this is to not run as much code at import time: only
-run code as needed. Python 3.7 supports a module <code>__getattr__</code>
-that will be called when a module attribute is not found. This can
-be used to lazily populate module attributes on first access.</p>
-<p>Another workaround for module importing slowness is lazy module
-importing. Instead of actually loading a module when it is imported,
-you register a custom module importer that returns a <em>stub</em> for
-that module instead. When that stub is first accessed, it will
-load the actual module and mutate itself to be that module.</p>
-<p>By avoiding the filesystem and module running overhead for unused
-modules (modules are typically imported globally and then only
-used by certain functions in a module), you can easily shave
-dozens of milliseconds from applications importing several dozens
-of modules.</p>
-<p>But lazy module importers are a bit fragile. Lots of modules
-have a pattern where they <code>try: import foo; except ImportError:</code>.
-A lazy module importer may never raise <code>ImportError</code> here because
-to do so, it would need to search the filesystem for a module
-to know if it exists and searching the filesystem would add overhead,
-so they don't do it! You work around this by accessing an attribute
-on the imported module. This forces the <code>ImportError</code> to be raised
-if the module doesn't exist but undermines the laziness of the module
-import! This problem is quite nasty. Mercurial's lazy module
-importer has to maintain a list of modules that are known to not
-be lazy importable to work around it. Another issue is the
-<code>from foo import x, y</code> syntax, which also undermines lazy module
-importing in cases where <code>foo</code> is a module (as opposed to a package)
-because in order to return a reference to <code>x</code> and <code>y</code>, the module
-has to be imported.</p>
-<p>PyOxidizer, having a fixed set of modules <em>frozen</em> into the binary,
-can be efficient about raising <code>ImportError</code>. And Python 3.7's
-module <code>__getattr__</code> provides additional flexibility for lazy
-module importers. I hope to integrate a robust lazy module importer
-into <code>PyOxidizer</code> so these gains are realized automatically.</p>
-<p>The best solution to avoiding the interpreter startup and module
-import overhead problem is to run a persistent Python process.
-If you run Python in a daemon process (say for a web server), you
-pretty much get this for free. Mercurial's solution to this is to
-run a persistent Python process in the background which exposes a
-<a href="https://www.mercurial-scm.org/wiki/CommandServer">command server</a>
-protocol. <code>hg</code> is aliased to a C (or now Rust) executable
-which connects to that persistent process and dispatches a
-command. The command server approach is a lot of work and can
-be a bit fragile and has security concerns. I'm exploring the
-idea of shipping a command server with <code>PyOxidizer</code> so
-executable can easily gain its benefits and the cost to solving
-the problem only needs to be paid in one central place: the
-<code>PyOxidizer</code> project.</p>
-<h2>Function Call Overhead</h2>
-<p>Function calls in Python are relatively slow. (This observation
-applies less to PyPy, which can JIT code execution.)</p>
-<p>I've seen literally dozens of patches to Mercurial where we inline
-code or combine Python functions in order to avoid function
-call overhead. In the current development cycle, some effort was
-made to reduce the number of functions called when updating
-progress bars. (We try to use progress bars for any operation
-that could take a while so users know what is going on.) The
-old progress bar update code would dispatch to a handful of
-functions.
-<a href="https://www.mercurial-scm.org/repo/hg/rev/6603de284b0a">Caching function call results</a>
-and <a href="https://www.mercurial-scm.org/repo/hg/rev/963462786f6e">avoiding simple lookups via functions</a>
-shaves dozens to hundreds of milliseconds off execution when we're
-talking about 1 million executions.</p>
-<p>If you have tight loops or recursive functions in Python where
-hundreds of thousands or more function calls could be in play, you
-need to be aware of the overhead of calling an individual function,
-as it can add up quickly! Consider in-lining simple functions
-and combining functions to avoid the overhead.</p>
-<h2>Attribute Lookup Overhead</h2>
-<p>This problem is similar to function call overhead because it
-can actually be the same problem!</p>
-<p>Resolving an attribute in Python can be relatively slow. (Again,
-this observation applies less to PyPy.)</p>
-<p>Again, working around this issue is something we do a lot in
-Mercurial.</p>
-<p>Say you have the following code:</p>
-<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
-<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">member</span><span class="p">):</span>
-    <span class="n">total</span> <span class="o">+=</span> <span class="n">obj</span><span class="o">.</span><span class="n">member</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-</pre></div>
-
-<p>Ignoring that there are better ways to write this example
-(<code>total = sum(obj.member)</code> should work), as written, the loop
-here will need to resolve <code>obj.member</code> on every iteration.
-Python has a relatively complex mechanism for
-<a href="https://docs.python.org/3/reference/datamodel.html">resolving attributes</a>.
-For simple types, it can be quite fast. But for complex types,
-that attribute access can silently be invoking <code>__getattr__</code>,
-<code>__getattribute__</code>, various other <em>dunder</em> methods, and even
-custom <code>@property</code> functions. What looks like it should be
-a fast attribute lookup can silently be several function calls,
-leading to function call overhead! And this overhead can compound
-if you are doing things like <code>obj.member1.member2.member3</code> etc.</p>
-<p>Each attribute lookup adds overhead. And since nearly everything
-in Python is a dictionary, it is somewhat accurate to equate
-each attribute lookup as a dictionary lookup. And we know from
-basic data structures that dictionary lookups are intrinsically not
-as fast as having say a pointer. Yes, there are some tricks in
-CPython to avoid the dictionary lookup overhead. But the general
-theme I want to get across is that each attribute lookup is a
-potential performance sink.</p>
-<p>For tight loops - especially those over potentially hundreds of
-thousands of iterations - you can avoid this measurable attribute
-lookup overhead by aliasing the value to a local. We would write the
-example above as:</p>
-<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
-<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="n">member</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">member</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">len</span><span class="p">(</span><span class="n">member</span><span class="p">):</span>
-    <span class="n">total</span> <span class="o">+=</span> <span class="n">member</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-</pre></div>
-
-<p>Of course, this is only safe when the aliased item isn't
-replaced inside the loop! If that happens, your iterator will
-hold a reference to the old item and things may blow up.</p>
-<p>The same trick can be used when calling a method of an object.
-Instead of:</p>
-<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
-
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">):</span>
-    <span class="n">obj</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-</pre></div>
-
-<p>Do the following:</p>
-<div class="pygments_murphy"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">MyObject</span><span class="p">()</span>
-<span class="n">fn</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">process</span>
-
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">:)</span>
-    <span class="n">fn</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-</pre></div>
-
-<p>It's also worth noting that in cases where the attribute lookup
-is used to call a method (such as the previous example),
-Python 3.7 is
-<a href="https://bugs.python.org/issue26110">significantly faster</a>
-than previous releases. But I'm pretty sure this is due to
-dispatch overhead to the method function itself, not attribute
-lookup overhead. So things will be faster yet by avoiding the
-attribute lookup.</p>
-<p>Finally, unless attribute lookup is calling functions to
-resolve the attribute, attribute lookup is generally less of
-a problem than function call overhead. And it generally requires
-eliminating a lot of attribute lookups for you to notice a
-meaningful improvement. That being said, once you add up all
-attribute accesses inside a loop, you may be talking about
-10 or 20 attributes in the loop alone - before function calls.
-And loops with only thousands or low tens of thousands of iterations
-can quickly provide hundreds of thousands or millions of attribute
-lookups. So be on the lookout!</p>
-<h2>Object Overhead</h2>
-<p>From the perspective of the Python interpreter, every value is
-an object. In CPython, each value is a <code>PyObject</code> struct. Each
-object managed by the interpreter is on the heap and needs to have
-its own memory holding its reference count, its type, and other
-state. Every object is garbage collected. This means that each
-new object introduces overhead for the reference counting / garbage
-collection mechanism to process. (Again, PyPy can avoid some of
-this overhead by being more intelligent about the <em>lifetimes</em> of
-short-lived values.)</p>
-<p>As a general rule of thumb, the more unique Python values/objects
-you create, the slower things are.</p>
-<p>For example, say you are iterating over a collection of 1 million
-objects. You call a function to process that object into a tuple:</p>
-<div class="pygments_murphy"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">my_collection</span><span class="p">:</span>
-    <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">process</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-</pre></div>
-
-<p>In this example, <code>process()</code> returns an <code>8-tuple</code>. It doesn't
-matter of we destructure the return value or not: this tuple requires
-the creation of at least 9 Python values: 1 for the tuple itself
-and 8 for its inner members. OK, in reality there could be fewer
-values if <code>process()</code> returns a reference to an existing value.
-Or there could be more if the types aren't simple types and require
-multiple <code>PyObject</code> to represent. My point is that under the hood
-the interpreter is having to juggle multiple objects to represent
-things.</p>
-<p>From my experience, this overhead is only relevant for operations
-that benefit from speedups when implemented in a native language
-like C or Rust. The reason is the CPython interpreter is just
-unable to execute bytecode fast enough for object overhead itself
-to matter. Instead, you will likely hit performance issues with
-function call overhead, processing overhead, etc long before
-object overhead. But there are some exceptions to this, such as
-constructing tuples or dicts with several members.</p>
-<p>As a concrete example of this overhead, Mercurial has C code for
-parsing some of the lower-level data structures. In terms of
-raw parsing speed, the C code runs on an order of two magnitudes
-faster than CPython. But once we have that C code create
-<code>PyObject</code> to present the result, the speedup drops to just a
-few times faster, if that. In other words, the overhead is coming
-from creating and managing Python values so they can be used
-by Python code.</p>
-<p>A workaround for this is to produce fewer Python values. If you
-only need to access a single value, have a function return that
-single value instead of say a tuple or dict with N values. However,
-watch out for function call overhead!</p>
-<p>When you have a lot of speedup code using the CPython C API and
-values need to be shared across different modules, pass around Python
-types that expose data as C structs and have the compiled code
-access those C structs instead of going through the CPython
-C API. By avoiding the Python C API for data access, you will
-be avoiding most of its overhead.</p>
-<p>Treating values as data (instead of having functions for accessing
-everything) is more Pythonic. So another workaround for compiled
-code is is to lazily create
-<code>PyObject</code> instances. If you create a custom Python
-type (<code>PyTypeObject</code>) to represent your complex values, you
-can define the
-<a href="https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_members">tp_members</a>
-and/or <a href="https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getset">tp_getset</a>
-fields to register custom C functions to resolve the value for
-an attribute. If you are say writing a parser and you know that
-consumers will only access a subset of the parsed fields, you can
-quickly construct a type holding the raw data, return that type,
-and have the Python attribute lookup call a C function which
-resolves the <code>PyObject</code>. You can even defer parsing until this
-function is called, saving additional overhead if a parse is
-never required! This technique is quite rare (because it requires
-writing a non-trivial amount of code against the Python C API).
-But it can result in substantial wins.</p>
-<h2>Pre-Sizing Collections</h2>
-<p>This one applies to the CPython C API.</p>
-<p>When creating collections like lists or dicts, use e.g.
-<code>PyList_New()</code> + <code>PyList_SET_ITEM()</code> to populate new
-collections when their size is known at collection creation
-time. This will pre-size the collection to have capacity to hold
-the final number of elements. And it skips checks when inserting
-elements that the collection is large enough to hold them. When
-creating collections of thousands of elements, this can save a
-bit of overhead!</p>
-<h2>Using Zero-copy in the C API</h2>
-<p>The CPython C API really likes to make copies of things rather
-than return references. For example,
-<a href="https://docs.python.org/3.7/c-api/bytes.html#c.PyBytes_FromStringAndSize">PyBytes_FromStringAndSize()</a>
-copies a <code>char*</code> to memory <em>owned</em> by Python. If you are doing
-this for a large number of values or sufficiently large data,
-we could be talking about gigabytes of memory I/O and associated
-allocator overhead.</p>
-<p>If writing high-performance code against the C API, you'll want
-to become familiar with the
-<a href="https://docs.python.org/3.7/c-api/buffer.html">buffer protocol</a>
-and related types, like
-<a href="https://docs.python.org/3.7/c-api/memoryview.html">memoryview</a>.</p>
-<p>The <em>buffer protocol</em> is implemented by Python types and allows
-the Python interpreter to <em>cast</em> a type to/from bytes. It essentially
-allows the interpreter's C code to get a handle on a
-<code>void*</code> of certain size representing the object. This allows you
-to associate any address in memory with a <code>PyObject</code>. Many
-functions operating on binary data transparently accept any
-object implementing the <em>buffer protocol</em>. And if you are coding
-against the C API and want to accept any object that can be
-treated as bytes, you should be using the
-<code>s*</code>, <code>y*</code> or <code>w*</code>
-<a href="https://docs.python.org/3/c-api/arg.html#strings-and-buffers">format units</a>
-when parsing function arguments.</p>
-<p>By using the buffer protocol, you give the interpreter the
-best opportunity possible to be using zero-copy operations and
-avoiding having to copy bytes around in memory.</p>
-<p>By using Python types like
-<a href="https://docs.python.org/3.7/library/stdtypes.html#memoryview">memoryview</a>,
-you are also allowing Python to reference slices of memory by
-reference instead of by copy.</p>
-<p>When you have gigabytes of data flowing through your Python
-program, astute use of Python types that support zero-copy can
-make a world of difference on performance. I once measured
-that <a href="https://github.com/indygreg/python-zstandard">python-zstandard</a>
-was faster than some Python LZ4 bindings (LZ4 should be faster
-than zstandard) because I made heavy use of the buffer protocol
-and avoiding excessive memory I/O in python-zstandard!</p>
-<h2>Conclusion</h2>
-<p>This post has outlined some of the things I've learned optimizing
-Python programs over the years. This post is by no means
-a comprehensive overview of Python performance techniques and
-gotchas. I recognize that my use of Python is probably more
-demanding than most and that the recommendations I made are
-not applicable to many Python programs. <strong>You should not
-mass update your Python code to e.g. inline functions and
-remove attribute lookups after reading this post.</strong> As always,
-when it comes to performance optimization, measure first and
-optimize where things are observed to be slow. I highly recommend
-<a href="https://github.com/benfred/py-spy">py-spy</a> for profiling Python
-applications. That being said, it's hard to attach a time value
-to low-level activity in the Python interpreter such as calling
-functions and looking up attributes. So if you e.g. have a loop 
-that you know is tight, experiment with suggestions in this post,
-and see if you can measure an improvement!</p>
-<p>Finally this post should not be interpreted as a dig against Python
-or its performance properties. Yes, you can make arguments that
-Python should or shouldn't be used in particular areas because of
-performance properties. But Python is extremely versatile -
-especially with PyPy delivering exceptional performance for a
-dynamic programming language. The performance of Python is probably
-<em>good enough</em> for most people. For better or worse, I have used
-Python for uses cases that often feel like outliers across all
-users. And I wanted to share my experiences such that others
-know what life at the frontier is like. And maybe, just maybe, I
-can cause the smart people who actually maintain Python distributions
-to think about the issues I've had in more detail and provide
-improvements to mitigate them.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
  <a href="../2">« Previous Page</a>
   --  
  <a href="../4">Next Page »</a>
@@ -2254,6 +2480,7 @@ improvements to mitigate them.</p>
                 <li><a href="/blog/category/make">make</a></li>
                 <li><a href="/blog/category/misc">misc</a></li>
                 <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/packaging">packaging</a></li>
                 <li><a href="/blog/category/pymake">pymake</a></li>
                 <li><a href="/blog/category/security">security</a></li>
                 <li><a href="/blog/category/sysadmin">sysadmin</a></li>
