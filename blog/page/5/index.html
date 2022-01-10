@@ -51,6 +51,482 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="distributing-standalone-python-applications"></a>
+  <h2 class="blog_post_title"><a href="/blog/2018/12/18/distributing-standalone-python-applications" rel="bookmark" title="Permanent Link to Distributing Standalone Python Applications">Distributing Standalone Python Applications</a></h2>
+  <small>December 18, 2018 at 03:35 PM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>, <a href='/blog/category/rust'>Rust</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <h2>The Problem</h2>
+<p>Packaging and application distribution is a hard problem on multiple
+dimensions. For Python, large aspects of this problem space are more or
+less solved if you are distributing open source Python libraries and your
+target audience is developers (<em>use pip and PyPI</em>). But if you are distributing
+Python <em>applications</em> - standalone executables that use Python - your
+world can be much more complicated.</p>
+<p>One of the primary reasons why distributing Python applications is difficult
+is because of the complex and often sensitive relationship between a Python
+application and the environment it runs in.</p>
+<p>For starters we have the Python interpreter itself. If your application doesn't
+distribute the Python interpreter, you are at the whims of the Python
+interpreter provided by the host machine. You may want to target Python 3.7
+only. But because Python 3.5 or 3.6 is the most recent version installed by
+many Linux distros, you are forced to support older Python versions and all
+their quirks and lack of features.</p>
+<p>Going down the rabbit hole, even the presence of a supposedly compatible
+version of the Python interpreter isn't a guarantee for success! For example,
+the Python interpreter could have a built-in extension that links against
+an old version of a library. Just last week I was encountering weird SQlite
+bugs in Firefox's automation because Python was using an old version of
+SQLite with known bugs. Installing a modern SQLite fixed the problems. Or
+the interpreter could have modifications or extra installed packages
+interfering with the operation of your application. There are never-ending
+corner cases. And I can tell you from my experience with having to support
+the Firefox build system (which uses Python heavily) that you will encounter
+these corner cases given a broad enough user base.</p>
+<p>And even if the Python interpreter on the target machine is fully compatible,
+getting your code to run on that interpreter could be difficult! Several
+Python applications leverage compiled extensions linking against Python's
+C API. Distributing the precompiled form of the extension can be challenging,
+especially when your code needs to link against 3rd party libraries, which
+may conflict with something on the target system. And, the precompiled
+extensions need to be built in a very delicate manner to ensure they can
+run on as many target machines as possible. But not distributing pre-built
+binaries requires the end-user be able to compile Python extensions. Not
+every user has such an environment and forcing this requirement on them is
+not user friendly.</p>
+<p><strong>From an application developer's point of view, distributing a copy of the
+Python interpreter along with your application is the only reliable way of
+guaranteeing a more uniform end-user experience.</strong> Yes, you will still
+have variability because every machine is different. But you've eliminated
+the the Python interpreter from the set of unknowns and that is a huge win.
+(Unfortunately, distributing a Python interpreter comes with a host of other
+problems such as size bloat, security/patching concerns, poking the OS
+packaging bears, etc. But those problems are for another post.)</p>
+<h2>Existing Solutions</h2>
+<p>There are tons of existing tools for <em>solving</em> the Python application
+distribution problem.</p>
+<p>The approach that tools like <a href="https://shiv.readthedocs.io/en/latest/">Shiv</a>
+and <a href="https://github.com/pantsbuild/pex">PEX</a> take is to leverage Python's
+built-in support for <em>running</em> zip files. Essentially, if there is a zip
+file containing a <code>__main__.py</code> file and you execute <code>python file.zip</code>
+(or have a zip file with a <code>#!/usr/bin/env python</code> shebang), Python
+can load modules in that zip file and execute an application within. Pretty
+cool!</p>
+<p>This approach works great if your execution environment supports shebangs
+(Windows doesn't) and the Python interpreter is suitable. But if you need
+to support Windows or don't have control over the execution environment
+and can't guarantee the Python interpreter is <em>good</em>, this approach isn't
+suitable.</p>
+<p>As stated above, we want to distribute the Python interpreter with our
+application to minimize variability. Let's talk about tools that do that.</p>
+<p><a href="https://github.com/facebookincubator/xar/">XAR</a> is a pretty cool offering
+from Facebook. XAR files are executables that contain
+<a href="https://en.wikipedia.org/wiki/SquashFS">SquashFS</a> filesystems. Upon running
+the executable, SquashFS filesystems are created. For Python applications,
+the XAR contains a copy of the Python interpreter and all your Python modules.
+At run-time, these files are <em>extracted</em> to SquashFS filesystems and the
+Python interpreter is executed. If you squint hard enough, it is kind of
+like a pre-packaged, executable virtualenv which also contains the Python
+interpreter.</p>
+<p>XARs are pretty cool (and aren't limited to Python). However, because XARs
+rely on SquashFS, they have a run-time requirement on the target machine.
+This is great if you only need to support Linux and macOS and your target
+machines support FUSE and SquashFS. But if you need to support Windows or
+a general user population without SquashFS support, XARs won't help you.</p>
+<p>Zip files and XARs are great for enterprises that have tightly controlled
+environments. But for a general end-user population, we need something
+more robust against variance among target machines.</p>
+<p>There are a handful of tools for packaging Python applications along with
+the Python interpreter in more resilient manners.</p>
+<p><a href="http://nuitka.net/pages/overview.html">Nuitka</a> <em>converts</em> Python source
+to C code then compiles and links that C code against libpython. You can
+perform a static link and compile everything down to a single executable.
+If you do the compiling properly, that executable should <em>just work</em> on
+pretty much every target machine. That's pretty cool and is exactly the
+kind of solution application distributors are looking for: you can't get
+much simpler than a self-contained executable! While I'd love to vouch
+for Nuitka and recommend using it, I haven't used it so can't. And I'll
+be honest, the prospect of compiling Python source to C code kind of
+terrifies me. That effectively makes Nuitka a new Python implementation
+and I'm not sure I can (yet) place the level of trust in Nuitka that I
+have for e.g. CPython and PyPy.</p>
+<p>And that leads us to our final category of tools:
+<a href="https://docs.python-guide.org/shipping/freezing/">freezing your code</a>. There
+are a handful of tools like <a href="https://www.pyinstaller.org/">PyInstaller</a>
+which automate the process of building your Python application (often via
+standard <code>setup.py</code> mechanisms), assembling all the requisite bits of
+the Python interpreter, and producing an artifact that can be distributed
+to end users. There are even tools that produce Windows installers, RPMs,
+DEBs, etc that you can sign and distribute.</p>
+<p>These <em>freezing</em> tools are arguably the state of the art for Python
+application distribution to general user populations. On first glance
+it seems like all the needed tools are available here. But there are
+cracks below the surface.</p>
+<h2>Issues with Freezing</h2>
+<p>A common problem with freezing is it often relies on the Python interpreter
+used to build the frozen application. For example, when building a frozen
+application on Linux, it will bundle the system's Python interpreter with
+the frozen application. And that interpreter may link against libraries
+or libc symbol versions not available on all target machines. So, the
+build environment has to be <em>just right</em> in order for the binaries to
+run on as many target systems as possible. This isn't an insurmountable
+problem. But it adds overhead and complexity to application maintainers.</p>
+<p>Another limitation is how these frozen applications handle importing
+Python modules.</p>
+<p>Multiple tools take the approach of embedding an archive (usually a zip file)
+in the executable containing the Python <em>standard library</em> bits not part of
+libpython. This includes C extensions (compiled to <code>.so</code> or <code>.pyd</code> files)
+and Python source (<code>.py</code>) or bytecode (<code>.pyc</code>) files. There is typically
+a step - either at application start time or at module import time - where a
+file is extracted to the filesystem such that Python's filesystem-based
+importer can load it from there.</p>
+<p>For example, PyInstaller <a href="https://pyinstaller.readthedocs.io/en/stable/operating-mode.html#how-the-one-file-program-works">extracts the standard library to a temporary directory
+at application start time</a>
+(at least when running in single file mode). This can add significant overhead
+to the startup time of applications - more than enough to blow through people's
+ability to perceive something as <em>instantaneous</em>. This is acceptable for
+long-running applications. But for applications (like CLI tools or support
+tools for build systems), the overhead can be a non-starter. And, the mere
+fact that you are doing filesystem write I/O establishes a requirement that
+the application have write access to the filesystem and that write I/O can
+perform reasonably well lest application performance suffer. These can be
+difficult pills to swallow!</p>
+<p>Another limitation is that these tools often assume the executable being
+produced is only a Python application. Sometimes Python is <em>part of</em> a
+larger application. It would be useful to produce a library that can
+easily be embedded within a larger application.</p>
+<h2>Improving the State of the Art</h2>
+<p>Existing Python application distribution mechanisms don't tick all the
+requirements boxes for me. We have tools that are suitable for internal
+distribution in well-defined <em>enterprise</em> environments. And we have tools
+that target general user populations, albeit with a burden on application
+maintainers and often come with a performance hit and/or limited flexibility.</p>
+<p>I want something that allows me to produce a standalone, single file executable
+containing a Python interpreter, the Python standard library (or a subset of
+it), and all the custom code and resources my application needs. That
+executable should not require any additional library dependencies beyond what is
+already available on most target machines (e.g. libc). That executable should
+not require any special filesystem providers (e.g. FUSE/SquashFS) nor should
+it require filesystem write access nor perform filesystem write I/O at run-time.
+I should be able to embed a Python interpreter within a larger application,
+without the overhead of starting the Python interpreter if it isn't needed.</p>
+<p>No existing solution ticks all of these boxes.</p>
+<p>So I set out to build one.</p>
+<p>One problem is producing a Python interpreter that is portable and
+fully-featured. You can't punt on this problem because if the core Python
+interpreter isn't produced in just the right way, your application will
+depend on libraries or symbol versions not available in all environments.</p>
+<p>I've created the <a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
+project for automating the process of building Python interpreters suitable
+for use with standalone, distributable Python applications. The project
+produces (and has available for download) binary artifacts including a
+pre-compiled Python interpreter and object files used for compiling that
+interpreter. The Python interpreter is compiled with PGO/LTO using a modern
+Clang, helping to ensure that Python code runs as fast as it can. All of
+Python's dependencies are compiled from source with the modern toolchain and
+everything is aggressively statically linked to avoid external dependencies.
+The toolchain and pre-built distribution are available for downstream
+consumers to compile Python extensions with/against.</p>
+<p>It's worth noting that use of a modern Clang toolchain is likely sufficiently
+different from what you use today. When producing <em>manylinux</em> wheels, it is
+recommended to use the <a href="https://github.com/pypa/manylinux">pypa/manylinux</a>
+Docker images. These Docker images are based on CentOS 5 (for maximum libc
+and other system library compatibility). While they do install a custom
+toolchain, Python and any extensions compiled in that environment are compiled
+with GCC 4.8.2 (as of this writing). That's a GCC from 2013. A lot has
+changed in compilers since 2013 and building Python and extensions with a
+compiler released in 2018 should result in various benefits (faster code,
+better warnings, etc).</p>
+<p>If producing custom CPython builds for standalone distribution interests
+you, you should take a look at how I coerced CPython to statically link
+all extensions. Spoiler: it involves producing a custom-tailored
+<code>Modules/Setup.local</code> file that bypasses <code>setup.py</code>, along with some
+<code>Makefile</code> hacks. Because the build environment is deterministic and isolated
+in a container, we can get away with some ugly hacks.</p>
+<p>A statically linked <code>libpython</code> from which you can produce a standalone
+binary embedding Python is only the first layer in the onion. The next layer
+is how to handle the Python standard library.</p>
+<p><code>libpython</code> only contains the code needed to run the core bits of the Python
+interpreter. If we attempt to run a statically linked <code>python</code> executable
+without the standard library in the filesystem, things fail pretty fast:</p>
+<pre><code>$ rm -rf lib
+$ bin/python
+Could not find platform independent libraries &lt;prefix&gt;
+Could not find platform dependent libraries &lt;exec_prefix&gt;
+Consider setting $PYTHONHOME to &lt;prefix&gt;[:&lt;exec_prefix&gt;]
+Fatal Python error: initfsencoding: Unable to get the locale encoding
+ModuleNotFoundError: No module named 'encodings'
+
+Current thread 0x00007fe9a3432740 (most recent call first):
+Aborted (core dumped)
+</code></pre>
+<p>I'll spare you the details for the moment, but initializing the CPython
+interpreter (via <code>Py_Initialize()</code> <em>requires</em> that parts of the Python
+standard library be available). This means that in order to fulfill our dream
+of a single file executable, we will need custom code that teaches the
+embedded Python interpreter to load the standard library from within the
+binary... somehow.</p>
+<p>As far as I know, efficient embedded standard library handling without run-time
+requirements does not exist in the current Python packaging/distribution
+ecosystem. So, I had to devise something new.</p>
+<p>Enter <a href="https://github.com/indygreg/pyoxidizer">PyOxidizer</a>. PyOxidizer is
+a collection of Rust crates that facilitate building an embeddable Python
+library, which can easily be added to an executable. We need <em>native</em> code
+to interface with the Python C APIs in order to influence Python interpreter
+startup. It is 2018 and Rust is a better C/C++, so I chose Rust for this
+<em>driver</em> functionality instead of C. Plus, Rust's integrated build system
+makes it easier to automate the integration of the custom Python interpreter
+files into binaries.</p>
+<p>The role of PyOxidizer is to take the pre-built Python interpreter files from
+<a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>,
+combine those files with any other Python files needed to run an application,
+and marry them to a Rust crate. This Rust crate can trivially be turned into
+a self-contained executable containing a Python application. Or, it can be
+combined with another Rust project. Or it can be emitted as a library and
+integrated with a non-Rust application. There's a lot of flexibility by design.</p>
+<p>The mechanism I used for embedding the Python standard library into a single
+file executable without incurring explicit filesystem access at run-time is
+(I believe) new, novel, and somewhat crazy. Let me explain how it works.</p>
+<p>First, there are no <code>.so</code>/<code>.pyd</code> shared library compiled Python extensions
+to worry about. This is because all compiled extensions are statically linked
+into the Python interpreter. To the interpreter, they exist as
+<a href="https://docs.python.org/3.7/library/importlib.html#importlib.machinery.BuiltinImporter">built-in modules</a>.
+Typically, a CPython build will have some modules like <code>_abc</code>, <code>_io</code>, and
+<code>sys</code> provided by <em>built-in modules</em>. Modules like <code>_json</code> exist as standalone
+shared libraries that are loaded on demand. <code>python-build-standalone</code>'s
+modifications to CPython's build system converts all these would-be standalone
+shared libraries into <em>built-in modules</em>. (Because we distribute the object
+files that compose the eventual <code>libpython</code>, it is possible to filter out
+unwanted modules to cut down on binary size if you don't want to ship a
+fully-featured Python interpreter.) Because there are no standalone shared
+libraries providing Python modules, we don't have the problem of needing to
+load a shared library to load a module, which would undermine our goal of
+<em>no filesystem access to import modules</em>. And that's a good thing, too,
+because <code>dlopen()</code> requires a path: you can't load a shared library from
+a memory address. (Fun fact: there are hacks like
+<a href="https://sourceware.org/bugzilla/show_bug.cgi?id=11767">dlopen_with_offset()</a>
+that provide an API to load a library from memory, but they require a custom
+libc. Google uses this approach for their internal single-file Python
+application solution.)</p>
+<p>From the <code>python-build-standalone</code> artifacts, PyOxidizer collects all files
+belonging to the Python standard library (notably <code>.py</code> and <code>.pyc</code> files).
+It also collects other source, bytecode, and resource files needed to run
+a custom application.</p>
+<p>The relevant files are assembled and serialized into data structures which
+contain the names of the resources and their raw content. These data structures
+are made available to Rust as <code>&amp;'static [u8]</code> variables (essentially a
+<code>static void*</code> if you don't speak Rust).</p>
+<p>Using the <a href="https://github.com/dgrunwald/rust-cpython">rust-cpython</a> crate,
+PyOxidizer defines a custom Python extension module implemented purely in Rust.
+When loaded, the module parses the data structures containing available
+Python resource names and data into <code>HashMap&lt;&amp;str, &amp;[u8]&gt;</code> instances. In other
+words, it builds a native mapping from resource name to a pointer to its raw
+data. The Rust-implemented module exports to Python an API for accessing that
+data. From the Python side, you do the equivalent of <code>MODULES.get_code('foo')</code>
+to request the bytecode for a named Python module. When called, the Rust code
+will perform the lookup and return a <code>memoryview</code> instance pointing to the
+raw data. (The use of <code>&amp;[u8]</code> and <code>memoryview</code> means that embedded resource
+data is loaded from its static, read-only memory location instead of copied
+into a data structure managed by Python. This zero copy approach translates to
+less overhead for importing modules. Although, the memory needs to be paged
+in by the operating system. So on slow filesystems, reducing I/O and e.g.
+compressing module data might be a worthwhile optimization. This can be a
+future feature.) </p>
+<p>Making data embedded within a binary available to a Python module is relatively
+easy. I'm definitely not the first person to come up with this idea. What is
+hard - and what I <em>might</em> be the first person to actually do - is how you make
+the Python module importing mechanism load <em>all</em> standard library modules via
+such a mechanism.</p>
+<p>With a custom extension module built-in to the binary exposing module data,
+it should <em>just</em> be a matter of registering a custom
+<a href="https://docs.python.org/3.7/library/sys.html#sys.meta_path">sys.meta_path</a>
+importer that knows how to load modules from that custom location. This
+problem turns out to be quite hard!</p>
+<p>The initialization of a CPython interpreter is - as I've learned - a bit
+complex. A CPython interpreter must be initialized via <code>Py_Initialize()</code>
+before any Python code can run. That means in order to modify <code>sys.meta_path</code>,
+<code>Py_Initialize()</code> must finish.</p>
+<p>A lot of activity occurs under the hood during initialization. Applications
+embedding Python have very little control over what happens during
+<code>Py_Initialize()</code>. You can change some superficial things like what
+filesystem paths to use to bootstrap <code>sys.path</code> and what encodings to use
+for stdio descriptors. But you can't really influence the core actions that are
+being performed. And there's no mechanism to directly influence
+<code>sys.meta_path</code> before an <code>import</code> is performed. (Perhaps there should be?)</p>
+<p>During <code>Py_Initialize()</code>, the interpreter needs to configure the encodings
+for the filesystem and the stdio descriptors. Encodings are loaded from
+Python modules provided by the standard library. So, during the course of
+<code>Py_Initialize()</code>, the interpreter needs to import some modules originally
+backed by <code>.py</code> files. This creates a dilemma: if <code>Py_Initialize()</code>
+needs to <code>import</code> modules in the standard library, the standard library
+is backed by memory and isn't available to known importing mechanisms, and
+there's no opportunity to configure a custom <code>sys.meta_path</code> importer
+before <code>Py_Initialize()</code> runs, how do you teach the interpreter about
+your custom module importer and the location of the standard library modules
+needed by <code>Py_Initialize()</code>?</p>
+<p>This is an extremely gnarly problem and it took me some hours and many false
+leads to come up with a solution.</p>
+<p>My first attempt involved the esoteric
+<a href="https://docs.python.org/3/c-api/import.html#c.PyImport_FrozenModules">frozen modules</a>
+feature. (This work predated the use of a custom data structure and module
+containing modules data.) The Python interpreter has a
+<code>const struct _frozen* PyImport_FrozenModules</code> data structure defining an
+array of <em>frozen</em> modules. A <em>frozen</em> module is defined by its module
+name and precompiled bytecode data (roughly equivalent to <code>.pyc</code> file
+content). Partway through <code>Py_Initialize()</code>, the Python interpreter is able
+to import modules. And one of the built-in importers that is automatically
+registered knows how to load modules if they are in <code>PyImport_FrozenModules</code>!</p>
+<p>I attempted to audit Python interpreter startup and find all modules
+that were imported during <code>Py_Initialize()</code>. I then defined a custom
+<code>PyImport_FrozenModules</code> containing these modules. In theory, the import
+of these modules during <code>Py_Initialize()</code> would be handled by the
+<a href="https://docs.python.org/3.7/library/importlib.html#importlib.machinery.FrozenImporter">FrozenImporter</a>
+and everything would <em>just work</em>: if I were able to get <code>Py_Initialize()</code> to
+complete, I'd be able to register a custom <code>sys.meta_path</code> importer
+immediately afterwards and we'd be set.</p>
+<p>Things did not go as planned.</p>
+<p><code>FrozenImporter</code> doesn't fully conform to the
+<a href="https://www.python.org/dev/peps/pep-0451/">PEP 451</a> requirements for
+setting specific attributes on modules. Without these attributes, the
+<code>from . import aliases</code> statement in <code>encodings/__init__.py</code> fails
+because the importer is unable to resolve the relative module name. Derp.
+One would think CPython's built-in importers would comply with PEP 451
+and that all of Python's standard library could be imported as frozen modules.
+But this is not the case! I was able to hack around this particular failure
+by using an absolute import. But I hit another failure and did not want to
+excavate that rabbit hole. Once I realized that <code>FrozenImporter</code> was lacking
+mandated module attributes, I concluded that attempting to use <em>frozen modules</em>
+as a general import-from-memory mechanism was not viable. Furthermore, the
+C code backing <code>FrozenImporter</code> walks the <code>PyImport_FrozenModules</code> array and
+does a string compare on the module name to find matches. While I didn't
+benchmark, I was concerned that un-indexed scanning at import time would
+add considerable overhead when hundreds of modules were in play. (The C code
+backing <code>BuiltinImporter</code> uses the same approach and I do worry CPython's
+imports of built-in extension modules is causing measurable overhead.)</p>
+<p>With <em>frozen modules</em> off the table, I needed to find another way to inject
+a custom module importer that was usable during <code>Py_Initialize()</code>. Because
+we control the source Python interpreter, modifications to the source code
+or even link-time modifications or run-time hacks like trampolines weren't
+off the table. But I <strong>really</strong> wanted things to work out of the box because
+I don't want to be in the business of maintaining patches to Python
+interpreters.</p>
+<p>My foray into <em>frozen modules</em> enlightened me to the craziness that is
+the bootstrapping of Python's importing mechanism.</p>
+<p>I remember hearing that the Python module importing mechanism used to be
+written in C and was rewritten in Python. And I knew that the
+<a href="https://docs.python.org/3.7/library/importlib.html">importlib</a> package
+defined interfaces allowing you to implement your own importers, which
+could be registered on
+<a href="https://docs.python.org/3.7/library/sys.html#sys.meta_path">sys.meta_path</a>.
+But I didn't know how all of this worked at the interpreter level.</p>
+<p>The internal <a href="https://github.com/python/cpython/blob/08c2ba0717089662132af69bf5948d82277a8a69/Python/pylifecycle.c#L178">initimport()</a>
+C function is responsible for initializing the module importing mechanism. It
+does the equivalent of <code>import _frozen_importlib</code>, but using the
+<a href="https://docs.python.org/3/c-api/import.html#c.PyImport_ImportFrozenModuleObject">PyImport_ImportFrozenModule()</a>
+API. It then manipulates some symbols and calls <code>_frozen_importlib.install()</code>
+with references to the <code>sys</code> and <code>imp</code> built-in modules. Later (in
+<code>initexternalimport()</code>), a <code>_frozen_importlib_external</code> module is imported
+and has code within it executed.</p>
+<p>I was initially very confused by this because - while there are references
+to <code>_frozen_importlib</code> and <code>_frozen_importlib_external</code> all over the
+CPython code base, I couldn't figure out where the code for those modules
+actually lived! Some sleuthing of the build directory eventually revealed
+that the files <a href="https://github.com/python/cpython/blob/08c2ba0717089662132af69bf5948d82277a8a69/Lib/importlib/_bootstrap.py">Lib/importlib/_bootstrap.py</a>
+and <a href="https://github.com/python/cpython/blob/08c2ba0717089662132af69bf5948d82277a8a69/Lib/importlib/_bootstrap_external.py">Lib/importlib/_bootstrap_external.py</a>
+were <em>frozen</em> to the module names <code>_frozen_importlib</code> and
+<code>_frozen_importlib_external</code>, respectively.</p>
+<p>Essentially what is happening is the bulk of Python's import <em>machinery</em> is
+implemented in Python (rather than C). But there's a chicken-and-egg
+problem where you can't run just any Python code (including any <code>import</code>
+statement) until the interpreter is partially or fully initialized.</p>
+<p>When building CPython, the Python source code for <code>importlib._bootstrap</code>
+and <code>importlib._bootstrap_external</code> are compiled to bytecode. This
+bytecode is emitted to <code>.h</code> files, where it is exposed as a
+<code>static char *</code>. This bytecode is eventually referenced by the
+default <code>PyImport_FrozenModules</code> array, allowing the modules to be
+imported via the frozen importer's C API, which bypasses the higher-level
+importing mechanism, allowing it to work before the full importing
+mechanism is initialized.</p>
+<p><code>initimport()</code> and <code>initexternalimport()</code> both call Python functions in
+the frozen modules. And we can clearly look at the source of the
+corresponding modules and see the Python code do things like
+<a href="https://github.com/python/cpython/blob/08c2ba0717089662132af69bf5948d82277a8a69/Lib/importlib/_bootstrap.py#L1158">register the default importers on <code>sys.meta_path</code></a>.</p>
+<p>Whew, that was a long journey into the bowels of CPython's internals. How
+does all this help with single file Python executables?</p>
+<p>Well, the predicament that led us down this rabbit hole was there was no
+way to register a custom module importer before <code>Py_Initialize()</code>
+completes and before an <code>import</code> is attempted during said <code>Py_Initialize()</code>.</p>
+<p>It took me a while, but I finally realized the frozen
+<code>importlib._bootstrap_external</code> module provided the window I needed!
+<code>importlib._bootstrap_external</code>/<code>_frozen_importlib_external</code> is <em>always</em>
+executed during <code>Py_Initialize()</code>. So if you can modify this module's code,
+you can run arbitrary code during <code>Py_Initialize()</code> and influence Python
+interpreter configuration. And since <code>_frozen_importlib_external</code> is a frozen
+module and the <code>PyImport_FrozenModules</code> array is writable and can be modified
+before <code>Py_Initialize()</code> is called, all one needs to do is replace the
+<code>_frozen_importlib</code> / <code>_frozen_importlib_external</code> bytecode in
+<code>PyImport_FrozenModules</code> and you can run arbitrary code during Python
+interpreter startup, before <code>Py_Initialize()</code> completes and before any
+standard library imports are performed!</p>
+<p>My solution to this problem is to concatenate some custom Python code to
+<code>importlib/_bootstrap_external.py</code>. This custom code defines a
+<code>sys.meta_path</code> importer that knows how to use our Rust-backed built-in
+extension module to find and load module data. It redefines the <code>_install()</code>
+function so that this custom importer is registered on <code>sys.meta_path</code>
+when the function is called during <code>Py_Initialize()</code>. The <em>new</em> Python
+source is compiled to bytecode and the <code>PyImport_FrozenModules</code> array is
+modified at run-time to point to the modified <code>_frozen_importlib_external</code>
+implementation. When <code>Py_Initialize()</code> executes its first standard library
+import, module data is provided by the custom <code>sys.meta_path</code> importer,
+which grabs it from a Rust extension module, which reads it from a
+read-only data structure in the executable binary, which is converted
+to a Python <code>memoryview</code> instance and sent back to Python for processing.</p>
+<p>There's a bit of <em>magic</em> happening behind the scenes to make all of this
+work. PyOxidizer attempts to hide as much of the gory details as possible.
+From the perspective of an application maintainer, you just need to define
+a minimal config file and it handles most of the low-level details. And there's
+even a higher-level Rust API for configuring the embedded Python interpreter,
+should you need it.</p>
+<p><code>python-build-standalone</code> and <code>PyOxidizer</code> are still in their infancy.
+They are very much alpha quality. I consider them technology previews more
+than usable software at this point. But I think enough is there to demonstrate
+the viability of using Rust as the build system and run-time glue to build
+and distribute standalone applications embedding Python.</p>
+<p>Time will tell if my utopian vision of zero-copy, no explicit filesystem
+I/O for Python module imports will pan out. Others who have ventured into
+this space have warned me that lots of Python modules rely on <code>__file__</code>
+to derive paths to other resources, which are later <code>stat()</code>d and
+<code>open()</code>d. <code>__file__</code> for in-memory modules doesn't exactly make sense
+and can't be operated on like normal paths/files. I'm not sure what the
+inevitable struggles to support these modules will lead to. Maybe we'll have
+to extract things to temporary directories like other standalone Python
+applications. Maybe <code>PyOxidizer</code> will take off and people will start using
+the <a href="https://docs.python.org/3.7/library/importlib.html#importlib.abc.ResourceReader">ResourceReader</a>
+API, which is apparently the proper way to do these things these days.
+(Caveat: <code>PyOxidizer</code> doesn't yet implement this API but support is planned.)
+Time will tell. I'm not opposed to gross hacks or writing more code as
+needed.</p>
+<p>Producing highly distributable and performant Python applications has been far
+too difficult for far too long. My primary goal for PyOxidizer is to lower these
+barriers. By leveraging Rust, I also hope to bring Python and Rust closer
+together. I want to enable applications and libraries to effortlessly harness
+the powers of both of these fantastic programming languages.</p>
+<p>Again, <code>PyOxidizer</code> is still in its infancy. I anticipate a significant amount
+of hacking over the holidays and hope to share updates in the weeks ahead. Until
+then, please leave comments, watch the <a href="https://github.com/indygreg/PyOxidizer">project on GitHub</a>,
+file issues for bugs and feature requests, etc and we'll see where things lead.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="absorbing-commit-changes-in-mercurial-4.8"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/11/05/absorbing-commit-changes-in-mercurial-4.8" rel="bookmark" title="Permanent Link to Absorbing Commit Changes in Mercurial 4.8">Absorbing Commit Changes in Mercurial 4.8</a></h2>
   <small>November 05, 2018 at 09:25 AM | categories: 
@@ -792,220 +1268,6 @@ Hommey's - we can now say <em>Firefox builds deterministically</em>!</p>
 <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=885777">fx-reproducible-build</a> bug
 tracks ongoing efforts to further improve the reproducibility story of
 Firefox. (~300 bugs in its dependency tree have already been resolved!)</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="scaling-firefox-development-workflows"></a>
-  <h2 class="blog_post_title"><a href="/blog/2018/05/16/scaling-firefox-development-workflows" rel="bookmark" title="Permanent Link to Scaling Firefox Development Workflows">Scaling Firefox Development Workflows</a></h2>
-  <small>May 16, 2018 at 04:10 PM | categories: 
-
-<a href='/blog/category/mozilla'>Mozilla</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>One of the central themes of my time at Mozilla has been my pursuit
-of making it easier to contribute to and hack on Firefox.</p>
-<p>I vividly remember my first day at Mozilla in 2011 when I went to
-build Firefox for the first time. I thought the entire experience -
-from obtaining the source code, installing build dependencies, building,
-running tests, submitting patches for review, etc was quite... lacking.
-When I asked others if they thought this was an issue, many rightfully
-identified problems (like the build system being slow). But there was
-a significant population who seemed to be naive and/or apathetic to
-the breadth of the user experience shortcomings. This is totally
-understandable: the scope of the problem is immense and various
-people don't have the perspective, are blinded/biased by personal
-experience, and/or don't have the product design or UX experience
-necessary to comprehend the problem.</p>
-<p><strong>When it comes to contributing to Firefox, I think the problems have
-as much to do with user experience (UX) as they do with technical
-matters.</strong> As I
-<a href="/blog/2012/05/07/improving-the-mozilla-build-system-experience/">wrote in 2012</a>,
-<em>user experience matters and developers are people too.</em> You can have
-a technically superior product, but if the UX is bad, you will have a
-hard time attracting and retaining new users. And existing users won't
-be as happy. These are the kinds of problems that a product manager or
-designer deals with. A difference is that in the case of Firefox
-development, the target audience is a very narrow and highly
-technically-minded subset of the larger population - much smaller than
-what your typical product targets. The total addressable population is
-(realistically) in the thousands instead of millions. But this doesn't
-mean you ignore the principles of good product design when designing
-developer tooling. <strong>When it comes to developer tooling and workflows, I
-think it is important to have a <em>product manager</em> mindset and treat it
-not as a collection of tools for technically-minded individuals, but as
-a product having an overall experience.</strong> You only have to look as far as
-the Firefox Developer Tools to see this approach applied and the positive
-results it has achieved.</p>
-<p>Historically, Mozilla has lacked a formal team with the domain expertise
-and mandate to treat Firefox contribution as a <em>product</em>. We didn't have
-anything close to this until a few years ago. Before we had such a team,
-I took on some of these problems individually. In 2012, I wrote <code>mach</code> - a
-generic CLI command dispatch tool - to provide a central, convenient,
-and easy-to-use command to discover development actions and to run them.
-(Read the <a href="/blog/2012/09/26/mach-has-landed/">announcement blog post</a> for
-some historical context.) I also
-<a href="/blog/2012/09/18/bootstrap-your-system-to-build-firefox/">introduced</a>
-a one-line bootstrap tool (now <code>mach bootstrap</code>) to make it easier to
-configure your machine for building Firefox. A few months later, I
-was responsible for
-<a href="/blog/2013/02/28/moz.build-files-and-the-firefox-build-system/">introducing moz.build files</a>,
-which paved the way for countless optimizations and for rearchitecting
-the Firefox build system to use modern tools - a project that is still
-ongoing (digging out from ~two decades of technical debt is a massive
-effort). And a few months after that, I started going down the version
-control rabbit hole and improving matters there. And I was also heavily
-involved with MozReview for improving the code review experience.</p>
-<p>Looking back, I was responsible for and participated in a ton of
-foundational changes to how Firefox is developed. Of course, dozens of
-others have contributed to getting us to where we are today and I can't
-and won't take credit for the hard work of others. Nor will I claim I was the
-only person coming up with good ideas or transforming them into reality. I
-can name several projects (like Taskcluster and Treeherder) that have
-been just as or more transformational than the changes I can take credit
-for. It would be vain and naive of me to elevate my contributions on a
-taller pedestal and I hope nobody reads this and thinks I'm doing that.</p>
-<p>(On a personal note, numerous people have told me that things like <code>mach</code>
-and the bootstrap tool have transformed the Firefox contribution experience
-for the better. I've also had very senior people tell me that they don't
-understand why these tools are important and/or are skeptical of the need
-for investments in this space. I've found this dichotomy perplexing and
-troubling. Because some of the <em>detractors</em> (for lack of a better word) are
-highly influential and respected, their apparent skepticism sews seeds of
-doubt and causes me to second guess my contributions and world view. This
-feels like a form or variation of imposter syndrome and it is something I
-have struggled with during my time at Mozilla.)</p>
-<p>From my perspective, the previous five or so years in Firefox development
-workflows has been about initiating foundational changes and executing on
-them. When it was introduced, <code>mach</code> was <em>radical</em>. It didn't do much and
-its use was optional. Now almost everyone uses it. Similar stories have
-unfolded for Taskcluster, MozReview, and various other tools and
-platforms. In other words, we laid a foundation and have been steadily
-building upon it for the past several years. That's not to say other
-foundational changes haven't occurred since (they have - the imminent switch
-to Phabricator is a terrific example). But the volume of foundational
-changes has slowed since 2012-2014. (I think this is due to Mozilla
-deciding to invest more in tools as a result of growing pains from
-significant company expansion that began in 2010. With that investment, we
-invested in the bigger ticket long-standing workflow pain points, such as
-CI (Taskcluster), the Firefox build system, Treeherder, and code review.)</p>
-<h2>Workflows Today and in the Future</h2>
-<p>Over the past several years, the size, scope, and complexity of Firefox
-development activities has increased.</p>
-<p>One way to see this is at the source code level. The following chart
-shows the size of the <a href="https://hg.mozilla.org/mozilla-central/">mozilla-central</a>
-version control repository over time.</p>
-<p><img alt="mozilla-central size over time" src="/images/firefox-repo-size-over-time.png" /></p>
-<p>The size increases are obvious. The increases cumulatively represent
-new features, technologies, and workflows. For example, the repository
-contains thousands of <em>Web Platform Tests</em> (WPT) files, a shared test
-suite for web platform implementations, like Gecko and Blink. WPT didn't
-exist a few years ago. Now we have files under source control, tools for
-running those tests, and workflows revolving around changing those tests.
-The incorporation of Rust and components of Servo into Firefox is also
-responsible for significant changes. Firefox features such as Developer
-Tools have been introduced or ballooned in size in recent years. The
-<em>Go Faster</em> project and the move to system add-ons has introduced various
-new workflows and challenges for testing Firefox.</p>
-<p>Many of these changes are building upon the user-facing foundational
-workflow infrastructure that was last significantly changed in 2012-2014.
-This has definitely contributed to some growing pains. For example, there
-are now 92 <code>mach</code> commands instead of like 5. <code>mach help</code> - intended to
-answer <em>what can I do and how should I do it</em> - is overwhelming, especially
-to new users. The repository is around 2 gigabytes of data to clone instead
-of around 500 megabytes. We have 240,000 files in a full checkout instead
-of 70,000 files. There's a <strong>ton</strong> of new pieces floating around. Any
-product manager tasked with user acquisition and retention will tell you
-that increasing the barrier to entry and use will jeopardize these
-outcomes. But with the growth of Firefox's technical underbelly in the
-previous years, we've made it harder to contribute by requiring users to
-download and see a lot more files (version control) and be overwhelmed
-by all the options for actions to take (<code>mach</code> having 92 commands). And
-as the sheer number of components constituting Firefox increases, it
-becomes harder and harder for everyone - not just new contributors - to
-reason about how everything fits together.</p>
-<p>I've been framing this general problem as <em>scaling Firefox development
-workflows</em> and <strong>every time I think about the high-level challenges facing
-Firefox contribution today and in the years ahead, this problem floats
-to the top of my list of concerns</strong>. Yes, we have pressing issues like
-improving the code review experience and making the Firefox build
-system and Taskcluster-based CI fast, efficient, and reliable. But even
-if you make these individual pieces great, there is still a cross-domain
-problem of how all these components weave together. <strong>This is why I think
-it is important to take a wholistic view and treat developer workflow
-as a product.</strong></p>
-<p>When I look at this the way a product manager or designer would, I see a
-few fundamental problems that need addressing.</p>
-<p>First, we're not optimizing for comprehensive end-to-end workflows. By and
-large, we're designing our tools in isolation. We focus more on maximizing
-the individual components instead of maximizing the interaction between
-them. For example, Taskcluster and Treeherder are pretty good in isolation.
-But we're missing features like Treeherder being able to tell me the
-command to run locally to reproduce a failure: I want to see a failure on
-Treeherder and be able to copy and paste commands into my terminal to
-debug the failure. In the case of code review, we've designed two good
-code review tools (MozReview and Phabricator) but we haven't invested in
-making submitting code reviews turn key (the initial system configuration
-is difficult and we still don't have things like automatic bug filing or
-reviewer selection). <strong>We are leaving many workflow optimizations on
-the table by not implementing thoughtful tie-ins and transitions between
-various tools.</strong></p>
-<p>Second, by-and-large we're still optimizing for a single, monolithic user
-segment instead of recognizing and optimizing for different users and
-their workflow requirements. For example, <code>mach help</code> lists 92 commands.
-I don't think any single person cares about all 92 of those commands. The
-average person may only care about 10 or even 20. In terms of user
-interface design, the features and workflow requirements of small user
-segments are polluting the interface for all users and making the entire
-experience complicated and difficult to reason about. As a concrete
-example, why should a system add-on developer or a Firefox Developer Tools
-developer (these people tend to care about testing a standalone Firefox
-add-on) care about Gecko's build system or tests? If you aren't touching
-Gecko or Firefox's <em>chrome</em> code, why should you be exposed to workflows
-and requirements that don't have a major impact on you? Or something more
-extreme, if you are developing a standalone Rust module or Python package
-in mozilla-central, why do you need to care about Firefox at all? (Yes,
-Firefox or another downstream consumer may care about changes to that
-<em>standalone</em> component and you can't ignore those dependencies. But it
-should at least be possible to hide those dependencies.)</p>
-<p>Waving my hands, the solution to these problems is to treat Firefox
-development workflow as a product and to apply the same rigor that we
-use for actual Firefox product development. Give people with a vision
-for the entire workflow the ability to prioritize investment across
-tools and platforms. Give them a process for defining features that
-work across tools. Perform formal user studies. See how people are
-actually using the tools you build. Bring in design and user experience
-experts to help formulate better workflows. Perform user typing so
-different, segmentable workflows can be optimized for. Treat developers
-as you treat users of <em>real</em> products: listen to them. Give developers
-a voice to express frustrations. Let them tell you what they are trying
-to do and what they wish they could do. Integrate this feedback into a
-feature roadmap. Turn common feedback into action items for new features.</p>
-<p>If you think these ideas are silly and it doesn't make sense to apply a
-<em>product mindset</em> to developer workflows and tooling, then you should be
-asking whether product management and all that it entails is also a silly
-idea. If you believe that aspects of product management have beneficial
-outcomes (which most companies do because otherwise there wouldn't be
-product managers), then why <em>wouldn't</em> you want to apply the methods of
-that discipline to developers and development workflows? Developers are
-users too and the fact that they work for the same company that is
-creating the product shouldn't make them immune from the benefits of
-product management.</p>
-<p>If we want to make contributing to Firefox an even better experience for
-Mozilla employees and community contributors, I think we need to take a step
-back and assess the situation as a product manager would. The improvements
-that have been made to the individual pieces constituting Firefox's
-development workflow during my nearly seven years at Mozilla have been
-incredible. But I think in order to achieve the next round of major
-advancements in workflow productivity, we'll need to focus on how all of
-the pieces fit together. And that requires treating the entire workflow
-as a cohesive product.</p>
 
   </div>
 </div>

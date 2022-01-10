@@ -51,6 +51,122 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="bulk-analyze-linux-packages-with-linux-package-analyzer"></a>
+  <h2 class="blog_post_title"><a href="/blog/2022/01/09/bulk-analyze-linux-packages-with-linux-package-analyzer" rel="bookmark" title="Permanent Link to Bulk Analyze Linux Packages with Linux Package Analyzer">Bulk Analyze Linux Packages with Linux Package Analyzer</a></h2>
+  <small>January 09, 2022 at 09:10 PM | categories: 
+
+<a href='/blog/category/packaging'>packaging</a>, <a href='/blog/category/rust'>Rust</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I've frequently wanted to ask random questions about Linux packages and
+binaries:</p>
+<ul>
+<li>Which packages provide a file X?</li>
+<li>Which binaries link against a library X?</li>
+<li>Which libraries/packages define/export a symbol X?</li>
+<li>Which binaries reference an undefined symbol X?</li>
+<li>Which features of ELF are in common use?</li>
+<li>Which x86 instructions are in a binary?</li>
+<li>What are the most common ELF section names and their sizes?</li>
+<li>What are the differences between package X in distributions A and B?</li>
+<li>Which ELF binaries have the most relocations?</li>
+<li>And many more.</li>
+</ul>
+<p>So, I built
+<a href="https://github.com/indygreg/PyOxidizer/tree/main/linux-package-analyzer">Linux Package Analyzer</a>
+to facilitate answering questions like this.</p>
+<p>Linux Package Analyzer is a Rust crate providing the <code>lpa</code> CLI tool. <code>lpa</code> currently
+supports importing Debian and RPM package repositories (the most popular Linux
+packaging formats) into a local SQLite database so subsequent analysis can be
+efficiently performed offline. In essence:</p>
+<ol>
+<li>Run <code>lpa import-debian-repository</code> or <code>lpa import-rpm-repository</code> and point
+   the tool at the base URL of a Linux package repository.</li>
+<li>Package indices are fetched.</li>
+<li>Discovered <code>.deb</code> and <code>.rpm</code> files are downloaded.</li>
+<li>Installed files within each package archive are inspected.</li>
+<li>Binary/ELF files have their executable sections disassembled.</li>
+<li>Results are stored in a local SQLite database for subsequent analysis.</li>
+</ol>
+<p>The LPA-built database currently stores the following:</p>
+<ul>
+<li>Imported packages (name, version, source URL).</li>
+<li>Installed files within each package (path, size).</li>
+<li>ELF file information (parsed fields from header, number of relocations,
+  important metadata from the <code>.dynamic</code> section, etc).</li>
+<li>ELF sections (number, type, flags, address, file offset, etc).</li>
+<li>Dynamic libraries required by ELF files.</li>
+<li>ELF symbols (name, demangled name, type constant, binding, visibility,
+  version string, etc).</li>
+<li>For x86 architectures, counts of unique instructions in each ELF file and
+  counts of instructions referencing specific registers.</li>
+</ul>
+<p>Using a command like <code>lpa import-debian-repository --components main,multiverse,restricted,universe
+--architectures amd64 http://us.archive.ubuntu.com/ubuntu impish</code>, I can import
+the (currently) ~96 GB of package data from 63,720 packages defining Ubuntu 21.10
+to a local ~12 GB SQLite database and answer tons of random questions. Interesting
+insights yielded so far include:</p>
+<ul>
+<li>The entirety of the package ecosystem for amd64 consists of
+  63,720 packages providing 6,704,222 files (168,730 of them ELF binaries)
+  comprising 355,700,362,973 bytes in total.</li>
+<li>Within the 168,730 ELF binaries are 5,286,210 total sections having
+  606,175 distinct names. There are also 116,688,943 symbols
+  in symbol tables (debugging info is not included and local symbols not
+  imported or exported are often not present in symbol tables) across
+  19,085,540 distinct symbol names. The sum of all the unique symbol names
+  is 1,263,441,355 bytes and 4,574,688,289 bytes if you count occurrences
+  across all symbol tables (this might be an over count due to how ELF string
+  tables work).</li>
+<li>The longest demangled ELF symbol is 271,800 characters and is defined in
+  the file <code>usr/lib/x86_64-linux-gnu/libmshr.so.2019.2.0.dev0</code> provided by
+  the <code>libmshr2019.2</code> package.</li>
+<li>The longest non-mangled ELF symbol is 5,321 characters and is defined in
+  multiple files/packages, as it is part of a library provided by GCC.</li>
+<li>Only 145 packages have files with
+  <a href="https://sourceware.org/glibc/wiki/GNU_IFUNC">indirect functions (IFUNCs)</a>.
+  If you discard duplicates (mainly from GCC and glibc), you are left with
+  ~11 packages. This does not appear to be a popular ELF feature!</li>
+<li>With 54,764 references in symbol tables, <code>strlen</code> appears to be the most
+  (recognized) widely used libc symbol. It even bests <code>memcpy</code> (52,726) and
+  <code>free</code> (42,603).</li>
+<li><code>MOV</code> is the most frequent x86 instruction, followed by <code>CALL</code>. (I could
+  write an entire blog post about observations about x86 instruction use.)</li>
+</ul>
+<p>There's a trove of data in the SQLite database and the <code>lpa</code> commands only
+expose a fraction of it. I reckon a lot of interesting tweets, blog posts,
+research papers, and more could be derived from the data that <code>lpa</code> assembles.</p>
+<p><code>lpa</code> does all of its work in-process using pure Rust. The Debian and RPM
+repository interaction is handled via the
+<a href="https://crates.io/crates/debian-packaging">debian-packaging</a> and
+<a href="https://crates.io/crates/rpm-repository">rpm-repository</a> crates (which I
+wrote). ELF file parsing is handled by the (amazing)
+<a href="https://crates.io/crates/object">object</a> crate. And x86 disassembling via
+the <a href="https://crates.io/crates/iced-x86">iced-x86</a> crate. Many tools similar
+to <code>lpa</code> call out to other processes to interface with <code>.deb</code>/.<code>rpm</code> packages,
+parse ELF files, disassemble x86, etc. Doing this in pure Rust makes life so
+much simpler as all the functionality is self-contained and I don't have to
+worry about run-time dependencies for random tools. This means that <code>lpa</code>
+should <em>just work</em> from Windows, macOS, and other non-Linux environments.</p>
+<p>Linux Package Analyzer is very much in its infancy. And I don't really
+have a grand vision for it. (I built it and some of the packaging code it
+is built on) in support of some even grander projects I have cooking.) Please
+file bugs, feature requests, and pull requests
+<a href="https://github.com/indygreg/PyOxidizer">in GitHub</a>. The project is currently
+part of the PyOxidizer repo (because I like monorepos). But I may pull it and
+other os/packaging/toolchain code into a new monorepo since target audiences
+are different.</p>
+<p>I hope others find this tool useful!</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="rust-implementation-of-debian-packaging-primitives"></a>
   <h2 class="blog_post_title"><a href="/blog/2022/01/03/rust-implementation-of-debian-packaging-primitives" rel="bookmark" title="Permanent Link to Rust Implementation of Debian Packaging Primitives">Rust Implementation of Debian Packaging Primitives</a></h2>
   <small>January 03, 2022 at 04:00 PM | categories: 
