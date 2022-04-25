@@ -51,6 +51,397 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing"></a>
+  <h2 class="blog_post_title"><a href="/blog/2022/04/25/expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing" rel="bookmark" title="Permanent Link to Expanding Apple Ecosystem Access with Open Source, Multi Platform Code Signing">Expanding Apple Ecosystem Access with Open Source, Multi Platform Code Signing</a></h2>
+  <small>April 25, 2022 at 08:00 AM | categories: 
+
+<a href='/blog/category/rust'>Rust</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A little over one year ago, I
+<a href="/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing/">announced a project to implement Apple code signing in pure Rust</a>.
+There have been quite a number of developments since that post and I thought
+a blog post was in order. So here we are!</p>
+<p>But first, some background on why we're here.</p>
+<h2>Background</h2>
+<p>(Skip this section if you just want to get to the technical bits.)</p>
+<p>Apple runs some of the largest and most profitable software application
+ecosystems in existence. Gaining access to these ecosystems has traditionally
+required the use of macOS and membership in the Apple Developer Program.</p>
+<p>For the most part this makes sense: if you want to develop applications for
+Apple operating systems you will likely utilize Apple's operating systems
+and Apple's official tooling for development and distribution. Sticking to
+the paved road is a good default!</p>
+<p>But many people want more... flexibility. Open source developers, for example,
+often want to distribute cross-platform applications with minimal effort.
+There are entire programming language ecosystems where the operating system
+you are running on is abstracted away as an implementation detail for many
+applications. <strong>By creating a de facto requirement that macOS, iOS, etc
+development require the direct access to macOS and (often above market priced)
+Apple hardware, the distribution requirements imposed by Apple's software
+ecosystems are effectively exclusionary and prevent interested parties
+from contributing to the ecosystem.</strong></p>
+<p>One of the aspects of software distribution on Apple platforms that trips
+a lot of people up is code signing and notarization. Essentially, you need
+to:</p>
+<ol>
+<li>Embed a cryptographic signature in applications that effectively attests
+   to its authenticity from an Apple Developer Program associated account.
+   (This is signing.)</li>
+<li>Upload your application to Apple so they can inspect it, verify it meets
+   requirements, likely store a copy of it. Apple then issues their own
+   cryptographic signature called a <em>notarization ticket</em> which then needs
+   to be <em>stapled</em>/attached to the application being distributed so Apple
+   operating systems can trust it. (This is notarization.)</li>
+</ol>
+<p>Historically, these steps required Apple proprietary software run exclusively
+from macOS. This means that even if you are in a software ecosystem like Rust,
+Go, or the web platform where you can cross-compile apps without direct access
+to macOS (testing is obviously a different story), you would still need macOS
+somewhere if you wanted to sign and notarize your application. And signing and
+notarization is effectively required on macOS due to default security settings.
+On mobile platforms like iOS, it is impossible to distribute applications that
+aren't signed and notarized unless you are running a jailbreaked device.</p>
+<p>A lot of people (myself included) have grumbled at these requirements.
+Why should I be forced to involve an Apple machine as part of my software
+release process if I don't need macOS to build my application? Why do I have
+to go through a convoluted dance to sign and notarize my application at
+release time - can't it be more streamlined?</p>
+<p>When I looked at this space last year, I saw some obvious inefficiencies
+and room to improve. So as I said then, I <em>foolishly</em> set out to reimplement
+Apple code signing so developers would have more flexibility and opportunity
+for distributing applications to Apple's ecosystems.</p>
+<p><strong>The ultimate goal of this work is to expand Apple ecosystem access to more
+developers.</strong> A year later, I believe I'm delivering a product capable of
+doing this.</p>
+<h2>One Year Later</h2>
+<p><strong>Foremost, I'm excited to announce release of
+<a href="https://github.com/indygreg/PyOxidizer/releases/tag/apple-codesign/0.14.0">rcodesign 0.14.0</a>.
+This is the first time I'm publishing pre-built binaries (Linux, Windows, and macOS)
+of <code>rcodesign</code>. This reflects my confidence in the relative maturity of the
+software.</strong></p>
+<p>In case you are wondering, yes, the macOS <code>rcodesign</code> executable is self-signed:
+it was signed by a GitHub Actions Linux runner using a code signing certificate
+exclusive to a YubiKey. That YubiKey was plugged into a Windows 11 desktop next to
+my desk. The <code>rcodesign</code> executable was not copied between machines as part of the
+signing operation. Read on to learn about the sorcery that made this possible.</p>
+<p>A lot has changed in the <a href="https://github.com/indygreg/PyOxidizer/tree/main/apple-codesign">apple-codesign</a>
+project / Rust crate in the last year! Just look at the
+<a href="https://github.com/indygreg/PyOxidizer/blob/main/apple-codesign/CHANGELOG.rst">changelog</a>!</p>
+<p>The project was renamed from <code>tugger-apple-codesign</code>.</p>
+<p>(If you installed via <code>cargo install</code>, you'll need to
+<code>cargo install --force apple-codesign</code> to force Cargo to overwrite the <code>rcodesign</code>
+executable with one from a different crate.)</p>
+<p>The <code>rcodesign</code> CLI executable is still there and more powerful than ever.
+You can still sign Apple applications from Linux, Windows, macOS, and any other
+platform you can get the Rust program to compile on.</p>
+<p>There is now <a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign.html">Sphinx documentation for the project</a>.
+This is published on readthedocs.io alongside PyOxidizer's documentation (because
+I'm using a monorepo). There's some general documentation in there, such as a
+guide on how to
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_custom_assessment_policies.html">selectively bypass Gatekeeper</a>
+by deploying your own alternative code signing PKI to parallel Apple's. (This
+seems like something many companies would want but for whatever reason I'm
+not aware of anyone doing this - possibly because very few people understand
+how these systems work.)</p>
+<p>There are bug fixes galore. When I look back at the state of <code>rcodesign</code>
+when I first blogged about it, I think of how naive I was. There were a myriad
+of applications that wouldn't pass notarization because of a long tail of bugs.
+There are still known issues. But <strong>I believe many applications will
+successfully sign and notarize now.</strong> I consider failures novel and worthy of
+bug reports - so please <a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_debugging.html">report them</a>!</p>
+<p>Read on to learn about some of the notable improvements in the past year (many
+of them occurring in the last two months).</p>
+<h2>Support for Signing Bundles, DMGs, and <code>.pkg</code> Installers</h2>
+<p>When I announced this project last year, only Mach-O binaries and trivially
+simple <code>.app</code> bundles were signable. And even then there were a ton of subtle
+issues.</p>
+<p><code>rcodesign sign</code> can now sign more complex bundles, including many nested
+bundles. There are reports of iOS app bundles signing correctly! (However, we
+don't yet have good end-user documentation for signing iOS apps. I will gladly
+accept PRs to improve the documentation!)</p>
+<p>The tool also gained support for signing <code>.dmg</code> disk image files and <code>.pkg</code>
+flat package installers.</p>
+<p>Known limitations with signing are now
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_quirks.html">documented</a>
+in the Sphinx docs.</p>
+<p><strong>I believe <code>rcodesign</code> now supports signing all the major file formats used
+for Apple software distribution.</strong> If you find something that doesn't sign
+and it isn't documented as a known issue with an existing GitHub issue tracking
+it, please report it!</p>
+<h2>Support for Notarization on Linux, Windows, and macOS</h2>
+<p>Apple publishes a Java tool named
+<a href="https://help.apple.com/itc/transporteruserguide/">Transporter</a> that enables you
+to upload artifacts to Apple for notarization. They make this tool available for
+Linux, Windows, and of course macOS.</p>
+<p>While this tool isn't open source (as far as I know), usage of this tool enables
+you to notarize from Linux and Windows while still using Apple's official
+tooling for communicating with their servers.</p>
+<p><code>rcodesign</code> now has support for invoking Transporter and uploading artifacts
+to Apple for notarization. We now support notarizing bundles, <code>.dmg</code> disk
+images, and <code>.pkg</code> flat installer packages. I've successfully notarized all
+of these application types from Linux.</p>
+<p>(I'm capable of implementing
+an alternative uploader in pure Rust but without assurances that Apple won't
+bring down the ban hammer for violating terms of use, this is a bridge I'm
+not yet willing to cross. The requirement to use Transporter is literally the
+only thing standing in the way of making <code>rcodesign</code> an all-in-one single
+file executable tool for signing and notarizing Apple software and I <strong>really</strong>
+wish I could deliver this user experience win without reprisal.)</p>
+<p><strong>With support for both signing and notarizing all application types, it is
+now possible to release Apple software without macOS involved in your release
+process.</strong></p>
+<h2>YubiKey Integration</h2>
+<p>I try to use my YubiKeys as much as possible because a secret or private key
+stored on a YubiKey is likely more secure than a secret or private key sitting
+around on a filesystem somewhere. If you hack my machine, you can likely
+gain access to my private keys. But you will need physical access to my
+YubiKey and to compel or coerce me into unlocking it in order to gain access
+to its private keys.</p>
+<p><strong><code>rcodesign</code> now has support for using YubiKeys for signing operations.</strong></p>
+<p>This does require an off-by-default <code>smartcard</code> Cargo feature. So if
+building manually you'll need to e.g.
+<code>cargo install --features smartcard apple-codesign</code>.</p>
+<p>The YubiKey integration comes courtesy of the amazing
+<a href="https://crates.io/crates/yubikey">yubikey</a> Rust crate. This crate will speak
+directly to the smartcard APIs built into macOS and Windows. So if you have an
+<code>rcodesign</code> build with YubiKey support enabled, YubiKeys should
+<em>just work</em>. Try it by plugging in your YubiKey and running
+<code>rcodesign smartcard-scan</code>.</p>
+<p>YubiKey integration has its
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_smartcard.html">own documentation</a>.</p>
+<p>I even implemented some commands to make it easy to manage the code signing
+certificates on your YubiKey. For example, you can run
+<code>rcodesign smartcard-generate-key --smartcard-slot 9c</code> to generate a new private
+key directly on the device and then
+<code>rcodesign generate-certificate-signing-request --smartcard-slot 9c --csr-pem-path csr.pem</code>
+to export that certificate to a Certificate Signing Request (CSR), which you can
+exchange for an Applie-issued signing certificate at developer.apple.com. <strong>This
+means you can easily create code signing certificates whose private key was
+generated directly on the hardware device and can never be exported.</strong>
+Generating keys this way is widely considered to be more secure than storing
+keys in software vaults, like Apple's Keychains.</p>
+<h2>Remote Code Signing</h2>
+<p>The feature I'm most excited about is what I'm calling
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing.html">remote code signing</a>.</p>
+<p>Remote code signing allows you to delegate the low-level cryptographic signature
+operations in code signing to a separate machine.</p>
+<p>It's probably easiest to just demonstrate what it can do.</p>
+<p><strong>Earlier today I signed a macOS universal Mach-O executable from a GitHub-hosted
+Linux GitHub Actions runner using a YubiKey physically attached to the
+Windows 11 machine next to my desk at home. The signed application was not
+copied between machines.</strong></p>
+<p>Here's how I did it.</p>
+<p>I have a GitHub Actions workflow that calls <code>rcodesign sign --remote-signer</code>.
+I manually triggered that workflow and started watching the near real time
+job output with my browser. Here's a screenshot of the job logs:</p>
+<p><img alt="GitHub Actions initiating remote code signing" src="https://raw.githubusercontent.com/indygreg/PyOxidizer/058f718641ad47b39ccf54346f0f0ad6e91bd09b/apple-codesign/docs/apple_codesign_actions_sjs_join.png" /></p>
+<p><code>rcodesign sign --remote-signer</code> prints out some instructions (including a
+wall of base64 encoded data) for what to do next. Importantly, it requests that
+someone else run <code>rcodesign remote-sign</code> to continue the signing process.</p>
+<p>And here's a screenshot of me doing that from the Windows terminal:</p>
+<p><img alt="Windows terminal output from running remote-sign command" src="https://raw.githubusercontent.com/indygreg/PyOxidizer/058f718641ad47b39ccf54346f0f0ad6e91bd09b/apple-codesign/docs/apple_codesign_actions_signer_output.png" /></p>
+<p>This log shows us connecting and authenticating with the YubiKey along
+with some status updates regarding speaking to a remote server.</p>
+<p>Finally, here's a screenshot of the GitHub Actions job output after
+I ran that command on my Windows machine:</p>
+<p><img alt="GitHub Actions initiating machine output" src="https://raw.githubusercontent.com/indygreg/PyOxidizer/058f718641ad47b39ccf54346f0f0ad6e91bd09b/apple-codesign/docs/apple_codesign_actions_initiator_output.png" /></p>
+<p><em>Remote signing</em> enabled me to sign a macOS application from a GitHub Actions
+runner operated by GitHub while using a code signing certificate securely
+stored on my YubiKey plugged into a Windows machine hundreds of kilometers away
+from the GitHub Actions runner. Magic, right?</p>
+<p>What's happening here is the 2 <code>rcodesign</code> processes are communicating
+with each other via websockets bridged by a central relay server.
+(I operate a
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_design.html#default-remote-code-signing-server">default server free of charge</a>.
+The server is open source and a Terraform module is available if you want
+to run your own server with hopefully just a few minutes of effort.)
+When the initiating machine wants to create a signature, it sends a
+message back to the <em>signer</em> requesting a cryptographic signature. The
+signature is then sent back to the initiator, who incorporates it.</p>
+<p><strong>I designed this feature with automated releases from CI systems (like
+GitHub Actions) in mind. I wanted a way where I could streamline the
+code signing and release process of applications without having to give
+a low trust machine in CI ~unlimited access to my private signing key.
+But the more I thought about it the more I realized there are likely
+many other scenarios where this could be useful. Have you ever emailed
+or Dropboxed an application for someone else to sign because you don't
+have an Apple issued code signing certificate? Now you have an alternative
+solution that doesn't require copying files around!</strong> As long as you
+can see the log output from the initiating machine or have that output
+communicated to you (say over a chat application or email), you can
+remotely sign files on another machine!</p>
+<h3>An Aside on the Security of Remote Signing</h3>
+<p>At this point, I'm confident the more security conscious among you have
+been grimacing for a few paragraphs now. Websockets through a central
+server operated by a 3rd party?! Giving remote machines access to perform
+code signing against arbitrary content?! Your fears and skepticism are
+100% justified: I'd be thinking the same thing!</p>
+<p>I fully recognize that a service that facilitates remote code signing makes
+for a very lucrative attack target! If abused, it could be used to coerce
+parties with valid code signing certificates to sign unwanted code, like
+malware. There are many, many, many <em>wrong</em> ways to implement such a feature.
+I pondered for hours about the threat modeling and how to make this feature
+as secure as possible.</p>
+<p><a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_design.html">Remote Code Signing Design and Security Considerations</a>
+captures some of my high level design goals and security assessments.
+And <a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_protocol.html">Remote Code Signing Protocol</a>
+goes into detail about the communications protocol, including the
+crypto (actual cryptography, not the fad) involved. The key takeaways are
+the protocol and server are designed such that a malicious server or
+man-in-the-middle can not forge signature requests. Signing sessions expire
+after a few minutes and 3rd parties (or the server) can't inject malicious
+messages that would result in unwanted signatures. There is an initial
+handshake to derive a session ephemeral shared encryption key and from
+there symmetric encryption keys are used so all meaningful messages between
+peers are end-to-end encrypted. About the worst a malicious server could do
+is conduct a denial of service. This is by design.</p>
+<p>As I argue in <a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_design.html#security-analysis-in-the-bigger-picture">Security Analysis in the Bigger Picture</a>,
+I believe that my implementation of <em>remote signing</em> is <strong>more</strong> secure than
+many common practices because common practices today entail making copies
+of private keys and giving low trust machines (like CI workers) access to
+private keys. Or files are copied around without cryptographic chain-of-custody
+to prove against tampering. Yes, <em>remote signing</em> introduces a vector for remote
+access to <em>use</em> signing keys. But practiced as I intended, <em>remote signing</em> can
+eliminate the need to copy private keys or grant ~unlimited access to them.
+From a threat modeling perspective, I think the net restriction in key
+access makes <em>remote signing</em> more secure than the private key management
+practices by many today.</p>
+<p><strong>All that being said, the giant asterisk here is I implemented my own
+cryptosystem to achieve end-to-end message security. If there are bugs in
+the design or implementation, that cryptosystem could come crashing down,
+bringing defenses against message forgery with it.</strong> At that point, a
+malicious server or privileged network actor could potentially coerce
+someone into signing unwanted software. But this is likely the extent of
+the damage: an offline attack against the signing key should not be
+possible since signing requires presence and since the private key is
+never transmitted over the wire. Even without the end-to-end encryption,
+the system is <em>arguably</em> more secure than leaving your private key
+lingering around as an easily exfiltrated CI secret (or similar).</p>
+<p>(I apologize to every cryptographer I worked with at Mozilla who beat into me
+the commandment that <em>thou shall not roll their own crypto</em>: I have sinned
+and I feel remorseful.) </p>
+<p>Cryptography is hard. And I'm sure I made plenty of subtle mistakes.
+<a href="https://github.com/indygreg/PyOxidizer/issues/552">Issue #552</a> tracks
+getting an audit of this protocol and code performed. And the aforementioned
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_protocol.html">protocol design docs</a>
+call out some of the places where I question decisions I've made.</p>
+<p><strong>If you would be interested in doing a security review on this feature,
+please get in touch on issue #552 or
+<a href="mailto:gregory.szorc@gmail.com">send me an email</a>. If there's one immediate
+outcome I'd like from this blog post it would be for some white hat^Hknight
+to show up and give me peace of mind about the cryptosystem implementation.</strong></p>
+<p><strong>Until then, please assume the end-to-end encryption is completely flawed.</strong>
+Consider asking someone with <em>security</em> or <em>cryptographer</em> in their job title
+for their opinion on whether this feature is safe for you to use. Hopefully
+we'll get a security review done soon and this caveat can go away!</p>
+<p>If you do want to use this feature,
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing.html">Remote Code Signing</a>
+contains some usage documentation, including how to use it with GitHub
+Actions. (I could also use some help productionizing a reusable GitHub Action
+to make this more turnkey! Although I'm hesitant to do it before I know the
+cryptosystem is sound.)</p>
+<p>That was a long introduction to <em>remote code signing</em>. But I couldn't
+in good faith present the feature without addressing the security aspect.
+Hopefully I didn't scare you away! <strong>Traditional / local signing should
+have no security concerns</strong> (beyond the willingness to run software written
+by somebody you probably don't know, of course).</p>
+<h2>Apple Keychain Support</h2>
+<p>As of today's 0.14 release we now have early support for signing with code signing
+certificates stored in Apple Keychains! If you created your Apple code signing
+certificates in Keychain Access or Xcode, this is probably where you code
+signing certificates live.</p>
+<p>I held off implementing this for the longest time because I didn't perceive
+there to be a benefit: if you are on macOS, just use Apple's official tooling.
+But with <code>rcodesign</code> gaining support for remote code signing and some other
+features that could make it a compelling replacement for Apple tooling on
+all platforms, I figured we should provide the feature so we stop discouraging
+people to export private keys from Keychains.</p>
+<p>This integration is very young and there's still a lot that can be done,
+such as automatically using an appropriate signing certificate based on
+what you are signing. Please file feature request issues if there's
+a must-have feature you are missing!</p>
+<h2>Better Debugging of Failures</h2>
+<p>Apple's code signing is complex. It is easy for there to be subtle differences
+between Apple's tooling and <code>rcodesign</code>.</p>
+<p><code>rcodesign</code> now has <code>print-signature-info</code> and <code>diff-signatures</code> commands to
+dump and compare YAML metadata pertinent to code signing to make it easier to
+compare behavior between code signing implementations and even multiple
+signing operations.</p>
+<p>The documentation around
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_debugging.html">debugging and reporting bugs</a>
+now emphasizes using these tools to help identify bugs.</p>
+<h2>A Request For Users and Feedback</h2>
+<p>I now believe <code>rcodesign</code> to be generally usable. I've thrown a lot of
+random software at it and I feel like most of the big bugs and major missing
+features are behind us.</p>
+<p>But I also feel it hasn't yet received wide enough attention to have confidence
+in that assessment.</p>
+<p><strong>If you want to help the development of this tool, the most important
+actions you can take are to attempt signing / notarization operations with it
+and report your results.</strong></p>
+<p>Does <code>rcodesign</code> spark joy? Please leave a comment in the
+<a href="https://github.com/indygreg/PyOxidizer/discussions/556">GitHub discussion for the latest release</a>!</p>
+<p>Does <code>rcodesign</code> not work? I would very much appreciate a bug report!
+Details on how to file good bugs are
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_debugging.html">in the docs</a>.</p>
+<p>Have general feedback? UI is confusing? Documentation is insufficient?
+Leave a comment in the aforementioned discussion. Or
+<a href="https://github.com/indygreg/PyOxidizer/issues/new">create a GitHub issue</a> if
+you think it is actionable. I can't fix what I don't know about!</p>
+<p>Have private feedback? <a href="mailto:gregory.szorc@gmail.com">Send me an email</a>.</p>
+<h2>Conclusion</h2>
+<p>I could write thousands of words about all I learned from hacking on this
+project.</p>
+<p>I've learned way too much about too many standards and specifications in the
+crypto space. RFCs 2986, 3161, 3280, 3281, 3447, 4210, 4519, 5280, 5480,
+5652, 5869, 5915, 5958, and 8017 plus probably a few more. How cryptographic
+primitives are stored and expressed: ASN.1, OIDs, BER, DER, PEM, SPKI,
+PKCS#1, PKCS#8. You can show me the raw parse tree for an ASN.1 data structure
+and I can probably tell you what RFC defines it. I'm not proud of this. But
+I will say actually knowing what every field in an X.509 certificate does
+or the many formats that cryptographic keys are expressed in seems empowering.
+Before, I would just search for the <code>openssl</code> incantation to do something.
+Now, I know which ASN.1 data structures are involved and how to manipulate
+the fields within.</p>
+<p>I've learned way too much around minutia around how Apple code signing
+actually works. The mechanism is way too complex for something in the security
+space. There was at least one high profile Gatekeeper bug in the past year
+allowing improperly signed code to run. I suspect there will be more: the
+surface area to exploit is just too large.</p>
+<p><strong>I think I'm proud of building an open source implementation of Apple's code
+signing. To my knowledge nobody else has done this outside of Apple. At least
+not to the degree I have.</strong> Then factor in that I was able to do this without
+access (or willingness) to look at Apple source code and much of the progress was
+achieved by diffing and comparing results with Apple's tooling. Hours of
+staring at diffoscope and comparing binary data structures. Hours of trying
+to find the magical settings that enabled a SHA-1 or SHA-256 digest to agree.
+It was tedious work for sure. I'll likely never see a financial return on
+the time equivalent it took me to develop this software. But, I suppose I
+can nerd brag that I was able to implement this!</p>
+<p><strong>But the real reward for this work will be if it opens up avenues to more
+(open source) projects distributing to the Apple ecosystems.</strong> This has
+historically been challenging for multiple reasons and many open source
+projects have avoided official / proper distribution channels to avoid the
+pain (or in some cases because of philosophical disagreements with the premise
+of having a walled software garden in the first place). I suspect things
+will only get worse, as I feel it is inevitable Apple clamps down on signing
+and notarization requirements on macOS due to the rising costs of malware
+and ransomware. <strong>So having an alternative, open source, and multi-platform
+implementation of Apple code signing seems like something important that
+should exist in order to provide opportunities to otherwise excluded
+developers. I would be humbled if my work empowers others. And this is
+all the reward I need.</strong></p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="bulk-analyze-linux-packages-with-linux-package-analyzer"></a>
   <h2 class="blog_post_title"><a href="/blog/2022/01/09/bulk-analyze-linux-packages-with-linux-package-analyzer" rel="bookmark" title="Permanent Link to Bulk Analyze Linux Packages with Linux Package Analyzer">Bulk Analyze Linux Packages with Linux Package Analyzer</a></h2>
   <small>January 09, 2022 at 09:10 PM | categories: 
@@ -432,1373 +823,6 @@ Windows/PE signing! I'll probably implement Windows signing in a new crate whene
 I hook up automatic code signing to PyOxidizer, which was the impetus for this work
 (I want to make it possible to build distributable Apple programs without Apple
 hardware, using as many open source Rust components as possible).</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="rust-is-for-professionals"></a>
-  <h2 class="blog_post_title"><a href="/blog/2021/04/13/rust-is-for-professionals" rel="bookmark" title="Permanent Link to Rust is for Professionals">Rust is for Professionals</a></h2>
-  <small>April 13, 2021 at 08:20 AM | categories: 
-
-<a href='/blog/category/programming'>Programming</a>, <a href='/blog/category/rust'>Rust</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>A professional programmer delivers value through the authoring and maintaining
-of software that solves problems. (There are other important ways for
-professional programmers to deliver value but this post is about
-programming.)</p>
-<p>Programmers rely on various tools to author software. Arguably the most
-important and consequential choice of tool is the programming language.</p>
-<p>In this post, I will articulate why I believe Rust is a highly compelling
-choice of a programming language for software professionals. I will state
-my case that Rust disposes software to a lower defect rate, reduces total
-development and deployment costs, and is exceptionally satisfying to use.
-In short, I hope to convince you to learn and deploy Rust.</p>
-<h2>My Background and Disclaimers</h2>
-<p>Before I go too far, I'm targeting this post towards <em>professional programmers</em> -
-people who program (or support programming through roles like management) as
-their primary line of work or who spend sufficient time programming outside of
-work. I consider myself a <em>professional programmer</em> both because I am a full-time
-engineer in the software industry and because I contribute to some significant
-open source projects outside of my day job.</p>
-<p>The statement <em>Rust is for Professionals</em> does not imply any logical variant
-thereof. e.g. I am not implying <em>Rust is not for non-professionals</em>. Rather,
-the subject/thesis merely defines the audience I want to speak to: people who
-spend a lot of time authoring, maintaining, and supporting software and are
-invested in its longer-term outcomes.</p>
-<p>I think opinion pieces about programming languages benefit from knowing
-the author's experience with programming. I first started hacking on code in
-the late 1990's. I've been a full-time software developer since 2007 after
-graduating with a degree in Computer Engineering (after an aborted attempt
-at Biomedical Engineering - hence my affinities for hardware and biological
-sciences). I've programmed in the following languages: C, C++ (only until
-C++11), C#, Erlang, Go, JavaScript, Java, Lua, Perl, PHP, Python, Ruby,
-Rust, shell, SQL, and Verilog. Notably missing from this list is a Lisp and
-a Haskell/Scala type language. Of these languages, I've spent the most time
-with C, C#, JavaScript, Perl, PHP, Python, and Rust.</p>
-<p>I'm not that strong in computer science or language theory: many colleagues
-can talk circles around me when it comes to describing computer science
-and programming language concepts like algorithms, type theory, and common terms
-used to describe languages. (I have failed many technical interviews because of
-my limitations here.) In contrast, I perceive my technical strengths as applying
-an engineering rigor and practicality to problem solving. I care vastly more
-about how/why things work the way they do and the practical consequences of
-decisions/choices we make when it comes to software. I find that I tend to
-think about 2nd and 3rd order effects and broader or longer-term consequences
-more often than others. Some would call this <em>systems engineering</em>.</p>
-<p>I've programmed all kinds of different software. Backend web services,
-desktop applications, web sites, Firefox browser internals, the Mercurial
-version control tool, build systems, system/machine management. Notably missing
-are mobile programming (e.g. iOS/Android) and serious embedded systems (I've
-hacked around with Raspberry Pis and Arduinos, but those seem very friendly
-compared to other embedded devices). My strongest affinity is probably towards
-<em>systems software</em> and general purpose tools: I enjoy building software that
-other people use to build things. <em>Infrastructure</em> if you will.</p>
-<p>Finally, I am expressing my personal opinion in this post. I do not speak for
-any employer, present or former. While I would love to see more Rust at my
-current employer, this post is not an attempt to influence what happens behind
-my employer's walls: there a better ways to conduct successful
-<a href="https://en.wikipedia.org/wiki/Nemawashi">nemawashi / 根回し</a> than a public
-blog post. I am not affiliated with the Rust Project in any capacity
-beyond a very infrequent code contributor and issue filer: I view myself as a
-normal Rust user. I did work at Mozilla - the company who bankrolled most of
-Rust's initial development. I even briefly worked in the same small Vancouver
-office as Graydon Hoare, Rust's primary credited inventor! While I was keen for
-Rust to succeed because it was affiliated with my then employer, I was most
-definitely not a Rust evangelist or fan boy while at Mozilla. I have little
-to personally benefit from this post: I'm writing it because I enjoy writing
-and I believe the message is important.</p>
-<p>With that out of the way, let's talk about Rust!</p>
-<h2>Rust Makes Me Irrationally Giddy</h2>
-<p>When I look back at my professional self when I was in my 20s, I feel like I was
-young and dumb and overly exuberant about computers, technology, new software, and
-the like. An older, more grizzled professional, I now accept the reality that it is
-a miracle computers and software work as well as they do as often as they do. Point
-at any common task on a computer and an iceberg of complexity and nuance lingers
-under the surface. Our industry is abound in the repetition of proven sub-optimal
-ideas. You see practices cargo culted across the decades (like the
-<a href="http://exple.tive.org/blarg/2019/10/23/80x25/">80 character terminal/line width</a> and
-<a href="http://exple.tive.org/blarg/2020/11/26/punching-holes/">null-terminated strings</a>,
-which can both be traced back to Hollerith punchcards from the late 19th century).
-You witness cycles of pendulum swings, the same fads and trends, just with different
-labels (microservices are the new SOA, YAML is the new XML, etc). I can definitely
-relate to people in this industry who want to drop everything and move to a farm or
-something (but I grew up in Indiana and had cows living down the street, so I
-know this lifestyle isn't for me).</p>
-<p><strong>Rust is the first programming language I've encountered in years that makes
-me excited. And not just normal excited: irrationally excited. Like the kind
-of excitement you have for something when you are naive about its limitations
-and don't know any better (like many blockchain/cryptocurrency advocates). I
-feel like the discovery of Rust is transporting me back to my younger self,
-before I discovered the ugly realities of how computers and software work, and
-is giving me hope that better tools, better ways of building software could
-actually exist. To channel my inner Marie Kondo: Rust sparks joy.</strong></p>
-<p>When I started learning Rust in earnest in 2018, I thought this was a fluke. <em>It
-is just the butterflies you get when you think you fall in love,</em> I told myself.
-<em>Give it time: your irrational excitement will fade.</em> But after using Rust for
-~2.5 years now, my positive feelings about it have only grown <em>stronger</em>. There's
-a reason Rust has
-<a href="https://insights.stackoverflow.com/survey/2020#technology-most-loved-dreaded-and-wanted-languages-loved">claimed the top spot in Stack Overflow's most loved languages survey</a>
-for 5 years and running. And not by the skin of its teeth: Rust is blowing
-the competition out of the water. 19% over TypeScript and Python. 23% over Kotlin
-and Go. If this were a Forrester report for a company-offered product, Rust
-would be the <em>clear market leader</em> and marketers and salespeople would be using
-this result to sign up new customers in droves and print money hand over fist.</p>
-<p>Let me tell you why Rust excites me.</p>
-<h2>Rust is Different (In a Good Way)</h2>
-<p>After you've learned enough programming languages, you start to see common
-patterns. Manual versus garbage collected memory management. Control flow
-primitives like <code>if</code>, <code>else</code>, <code>do</code>, <code>while</code>, <code>for</code>, <code>unless</code>. Nullable types.
-Variable declaration syntax. The list goes on.</p>
-<p>To me, Rust introduced a number of new concepts, like <code>match</code> for control
-flow, enums as algebraic types, the borrow checker, the <code>Option</code> and <code>Result</code>
-types/enums and more. There were also behaviors of Rust that were different
-from languages I knew: variables are immutable by default, <code>Result</code> types
-must be checked they aren't an error to avoid a compiler warning, refusing
-to compile if there are detectable memory access issues, and tons more.</p>
-<p>Many of the new concepts weren't novel to Rust. But considering I've had exposure
-to many popular programming languages, the fact many were new to me means these
-aren't common features in <em>mainstream</em> languages. <strong>Learning Rust felt like fresh
-air to me: here was a language designed to be general purpose and make inroads into
-industry adoption while also willing to buck many of the trends of conventional
-language design from the last several decades.</strong></p>
-<p>When going against conventional practice, it is very easy to unintentionally
-alienate yourself from potential users. Design a programming language too unlike
-anything in common use and you are going to have a difficult time attracting
-users. This is a problem with many <em>academic</em>/<em>opinionated</em> programming
-languages (or so I hear). Rust does venture away from the tried and popular.
-And that does contribute to a steeper learning curve. However, there is enough
-familiarity in Rust's core language to give you a foothold when learning Rust.
-(And Rust's <a href="https://www.rust-lang.org/learn">official learning resources</a> are
-terrific.)</p>
-<p>I feel like Rust's language designers set out to take a first principles
-approach to the language using modern ideas and ignoring old, disproven ones,
-realized they needed to ground the language in familiarity to achieve market
-penetration, and produced reasonable compromises to yield something that was
-new and novel but familiar enough to not completely alienate its large
-potential user base.</p>
-<p>If you don't like being exposed to new ideas and ways of working, Rust's
-approach is probably a negative to you. But if you are like me and enjoy
-continuously expanding your knowledge and testing new ideas, Rust's
-novelty and willingness to <em>be different</em> is a much welcomed attribute.</p>
-<h2>Rust: Toolbox Included</h2>
-<p>It used to be that programming languages were just compilers or interpreters.
-In recent years, we've seen more and more programming languages bundled
-with other tools, such as build/packaging tools, code formatters, linters,
-documentation generators, language servers, centralized package repositories,
-and more.</p>
-<p>I'm not sure what spurred this trend (maybe it was Go?), but I think it is
-a good move. Programming languages are ecosystems and the compiler/interpreter
-is just one part of a complex system. If you care about end-user experience
-and adoption (especially if you are a new language), you want an as turnkey
-on-boarding experience as possible. I think that's easier to pull off when
-you offer a cohesive, multi-tool strategy to attract and retain users.</p>
-<p>We refer to programming languages with a comprehensive standard library as
-<em>batteries included</em>. I'm going to refer to programming languages with
-additional included tools beyond the compiler/interpreter as <em>toolbox
-included</em>.</p>
-<p><strong>Rust, is very much a <em>toolbox included</em> language.</strong> (Unless you are installing
-it via your Linux distribution: in that case Linux packagers have likely
-unbundled all the tools into separate packages, making the experience a bit
-more end-user hostile, as Linux packagers tend to do for reasons that
-merit their own blog post. If you want to experience Rust the way its
-maintainers intended - the <em>Director's Cut</em> if you will - install Rust via
-<a href="https://rustup.rs/">rustup</a>.)</p>
-<p>In addition to the Rust compiler (<code>rustc</code>) and the Rust standard library,
-the following components are all officially developed and offered as part
-of the Rust programming language <a href="https://github.com/rust-lang">on GitHub</a>:</p>
-<ul>
-<li>Cargo - Rust's package manager and build system.</li>
-<li>Clippy - A Rust linter.</li>
-<li><a href="https://doc.rust-lang.org/rustdoc/what-is-rustdoc.html">rustdoc</a> -
-  Documentation generator for Rust projects.</li>
-<li>rustfmt - A Rust code formatter.</li>
-<li>rls - A Rust <a href="https://langserver.org/">Language Server Protocol</a> implementation.</li>
-<li><a href="https://crates.io/">crates.io</a> - Rust's official, public package registry.</li>
-<li>rustup - Previously mentioned Rust installer.</li>
-<li><a href="https://github.com/rust-lang/vscode-rust">vscode-rust</a> - Visual Studio Code
-  extension adding support for Rust. (JetBrains has their own high quality
-  extension for their IDEs, which they develop themselves.)</li>
-<li><a href="https://github.com/rust-lang/book">The Rust Programming Language</a> Book</li>
-<li>And many more.</li>
-</ul>
-<p>As an end-user, having all these tools and resources at my fingertips,
-maintained by the official Rust project is an absolute joy.</p>
-<p>For the local tools, <code>rustup</code> ensures they are upgraded as a group, so I don't
-have to worry about managing them. I periodically run <code>rustup update</code> to
-ensure my Rust <em>toolbox</em> is up-to-date and that's all I have to do.</p>
-<p>Contrast with say Node.js, <a href="https://xkcd.com/1987/">Python</a>, and Ruby, where
-the package manager is on a separate release cadence from the core language
-and I have to think about managing multiple tools. (Rust will likely have
-to cross this bridge once there are multiple implementations of Rust or
-multiple popular package managers. But until then, things are very simple.)</p>
-<p>Further contrast with languages like JavaScript/Node.js, Python, and Ruby,
-where tools like a code formatter, linter, and documentation generator
-aren't always developed under the core project umbrella. As an end-user,
-you have to know to seek out these additional value-add tools. Furthermore,
-you have to know which ones to use and how to configure them. The
-fragmentation also tends to yield varying levels of quality and end-user
-experience, to the detriment of end-users. The Rust toolbox, by contrast,
-feels simple and polished.</p>
-<p><strong>Rust's <em>toolbox included</em> approach enables me to follow unified practices
-(arguably best practices) while expending minimal effort.</strong> As a result,
-the following tend to be very similar across nearly every Rust project you'll
-run into:</p>
-<ul>
-<li>Code formatting. (Nearly everyone uses <code>rustfmt</code>.)</li>
-<li>Adherence to common coding and style conventions. (Nearly everyone uses
-  <code>clippy</code>.)</li>
-<li>Project documentation. (Nearly everyone uses <code>rustdoc</code>.)</li>
-</ul>
-<p>Cargo could warrant its own dedicated section. But I'll briefly touch on it
-here.</p>
-<p>Cargo is Rust's official package manager and build system. With <code>cargo</code>, you
-can:</p>
-<ul>
-<li>Create new Rust projects with a common project layout.</li>
-<li>Build projects.</li>
-<li>Run project tests.</li>
-<li>Update project dependencies.</li>
-<li>Generate project documentation (via <code>rustdoc</code>).</li>
-<li>Install other Rust projects from source.</li>
-<li>Publish packages to Rust package registries.</li>
-</ul>
-<p>As a build system, Cargo is generally a breeze to work with. Configuration
-files are TOML. Adding dependencies is often a 1 line addition to a
-<code>Cargo.toml</code> file. Dependencies often <em>just work</em> on the first try. It's
-not like say C/C++, where taking on a new dependency can easily consume
-a day or two to get it integrated in your build system and compatible with
-your source code base. <strong>I can't emphasize enough how much joy it brings
-to be able to leverage an <em>it just works</em> build tool for systems-level
-programming: I'm finding myself doing things in Rust like parsing ELF, PE,
-and Mach-O binaries because it is so easy to integrate low-level functionality
-like this into any Rust program.</strong> Cargo is <em>boring</em>. And when it comes to
-build systems, that's a massive compliment!</p>
-<p>No other language I've used has as comprehensive and powerful of a
-<em>toolbox</em> as Rust does. This <em>toolbox</em> is highly leveraged by the Rust
-community, resulting is remarkable consistency across projects. This
-consistency makes it easier to understand, use, and contribute back to
-other Rust projects. Contrast this with say C/C++, where large code bases
-often employ multiple tools in the same space on different parts of the
-same code base, leading to cognitive dissonance and overhead.</p>
-<p>As a professional programmer, Rust's powerful and friendly <em>toolbox</em>
-enables me to build Rust software more easily than with other languages.
-I spend less time wrangling tools and more time coding. That translates
-to less overhead delivering value through software. Other languages
-would be wise to emulate aspects of Rust's model.</p>
-<h2>Rust is Humane</h2>
-<p>Of all the programming languages I've used, Rust seems to empathize
-with its users the most.</p>
-<p>There's a few facets to this.</p>
-<p>A lot of care seems to have gone into the end-user experience of the
-Rust <em>toolbox</em>.</p>
-<p>The Rust compiler often gives extremely actionable error and warning
-messages. If something is wrong, it tells me why it is wrong, often
-pointing out exactly where in source code the problem resides, drawing
-carets to the source code where things went wrong. In many cases,
-the compiler will emit a suggested fix, which I can incorporate
-automatically by pressing a few keys in my IDE. Contrast this with
-C/C++ and even Go, which tend to have either too-terse-to-be-actionable
-or too-verbose-to-make-sense-of feedback. By comparison, output from
-other compilers often comes across as condescending, as if they are
-saying <em>git gud, idiot</em>. Rust's compiler output tends to come across
-as <em>I'm sorry you had a problem: how can I help?</em> I feel like the
-compiler actually cares about my [valuable] time and satisfaction.
-It wants to keep me in
-<a href="https://en.wikipedia.org/wiki/Flow_(psychology)">flow</a>.</p>
-<p>Then there's <a href="https://github.com/rust-lang/rust-clippy">Clippy</a>, a
-Rust linter maintained as part of the Rust project.</p>
-<p>One thing I love about Clippy is - like the compiler - many of the lints
-contain suggestions, which I can incorporate automatically through my
-IDE. So many other linters just tell you what is wrong and don't seem
-to go the extra mile to be respectful of my time by offering to fix it
-for me.</p>
-<p><strong>Another aspect of Clippy I love is it is like having an invisible Rust
-mentor continuously providing constructive feedback to help me level-up my
-Rust.</strong> I don't know how many times I've written Rust code similarly to how I
-would write code in other languages and Clippy suggests a more <em>Rustic</em>
-solution. Most of the time I'm like <em>oh, I didn't know about that: that's
-a much better pattern/solution than what I wrote!</em></p>
-<p>Do I agree with Clippy all the time? Nope. But I do find its signal to
-noise ratio is exceptionally high compared to other linters I've used.
-And Clippy is trivial to configure and override, so disagreements are
-easy to manage. Like the Rust compiler, I feel that Clippy is respectful
-of my time and has the long term maintainability and correctness of my
-software at heart.</p>
-<p>Then there's the Rust Community - the people behind the core Rust projects.
-<strong>The Rust Community is one of the most professional and welcoming I've
-seen.</strong> Their <a href="https://www.rust-lang.org/policies/code-of-conduct">Code of Conduct</a>
-is sufficiently comprehensive and actionable. They have their vigorous
-debates like any other community. But the conversation is civil. Bad
-apples are discarded when they crop up.</p>
-<p>At a talk I made about PyOxidizer at a Rust meetup a few years back,
-I made a comment in passing about a negative comment I encountered on
-a Rust sub-Reddit. After the talk, a moderator of that sub who was in
-the audience (unbeknownst to me) approached for more information so they
-could investigate, which they did.</p>
-<p>I once tweeted about a somewhat confusing, not-very-actionable compiler
-error I encountered. A few minutes later, some compiler developers were
-conversing in replies. A few hours later, a pull request was created and
-a much better error message was merged in short order. I'm not a special
-one-off here either: I've stumbled across Stack Overflow questions and
-other forums where Rust core developers see that someone is encountering
-a confusing issue, question the process that got them to that point, and
-then make refinements to minimize it from happening in the future. The
-practice is very similar to what empathetic product managers and user
-experience designers do.</p>
-<p>Not many other communities (or companies for that matter) seem to
-demonstrate such a high level of compassion and empathy for their
-users. To be honest, I'm not sure how Rust manages to pull it off,
-as this tends to be very expensive in terms of people time and it can
-be very easy to not prioritize. One thing is for certain: <strong>the Rust Community
-is loaded with empathetic people who care about the well-being of users
-of their products. And it shows from the interaction in forums to
-the software tools they produce. To everyone who has contributed in the
-Rust Community: thank you for all that you have done and for setting an
-example for the rest of us to live up to.</strong></p>
-<h2>Rust is Surprisingly High Level</h2>
-<p>One of the reasons I avoided learning Rust for years is that I perceived
-it was too low level and therefore tedious. Rust was being advertised as
-a <em>systems programming language</em> and you would hear stories of <em>fighting
-the borrow checker</em>. I assumed I'd need to be thinking a lot about memory
-and ownership. I assumed the cost to author and maintain Rust code would be
-high. I thought Rust would be <em>a safer C/C++</em>, with many of the software
-development lifecycle caveats that apply. And for the software I was
-writing at a time, the value proposition of Rust seemed weak. I thought
-a combination of C and say Python was <em>good enough</em>. When I started
-writing <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a>, I initially
-thought only the run-time code calling into the Python interpreter C APIs
-would be written in Rust and the rest would be Python.</p>
-<p>How wrong I was!</p>
-<p><strong>When I actually started coding Rust, I was shocked at how high-level it
-felt.</strong> Now, depending on the space of your software, Rust code can be
-very low-level and tedious (not unlike C/C++). However, <strong>for the
-vast majority of code I author, Rust feels more like Python than C</strong>. And
-even the lower-level code feels much higher level than C or even C++.</p>
-<p>In my mind, <strong>the expressiveness of Rust comes very close to higher-level,
-dynamic languages (like JavaScript, Python, and Ruby) while maintaining
-the raw speed of C/C++ all without sacrificing low-level control for
-cases when you need it. And it does all of this while maintaining strong
-safety guarantees</strong> (unlike say Go, which has the
-<a href="https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/">billion dollar mistake</a>:
-null references).</p>
-<p>I had a mental Venn diagram of the properties of programming languages
-(gc versus non-gc, static versus dynamic typing, compiled versus interpreted,
-etc) and which traits (like execution speed, development time, etc) would
-be possible and Rust invalidated large parts of that model!</p>
-<p><strong>You often don't need to think about memory management in Rust</strong>: once you
-understand the rules the borrow checker enforces, memory is largely something
-that exists but is managed for you by the language, just like in garbage
-collected languages. Of course there are scenarios where you should
-absolutely be thinking about memory and should have a grasp on what Rust
-is doing under the hood. But in my experience, most code can be blissfully
-ignorant of what is actually happening at the memory level. (However,
-awareness of value <em>ownership</em> when programming Rust does add overhead, so
-it's not like the cognitive load required for reasoning about memory
-disappears completely.)</p>
-<p>Rust has both a stack and a heap. But when programming you often don't
-need to distinguish these locations. You can do things in Rust like
-return a reference to a stack allocated value and pass this reference around
-to other functions. This would be a CVE factory in C/C++. But because of
-Rust's borrow checker, this is safe (and a common practice) in Rust.
-It also predisposes the code towards better performance! Often in C/C++
-you will allocate on the heap because you need to return a reference to
-memory and returning a reference to a stack allocated value is extremely
-dangerous. This heap allocation incurs run-time overhead. So Rust allowing
-you to do the fast thing safely is a nice mini win.</p>
-<p>In many statically typed languages, I feel like my programming speed
-is substantially reduced by having to repeatedly spell out or think
-about type names. In C, it feels like I'm always writing type names
-so I can perform casting. Newer versions of C++ and Java have improved
-matters significantly (e.g. the <code>auto</code> keyword). However, I haven't
-programmed them enough recently to know how they compare to Rust on this
-front. All I know is that I'm writing type names a lot less frequently
-in Rust than I thought I would be and that my programming output isn't
-limited by my typing speed as much as it historically was in C/C++.</p>
-<p>Despite being compiled down to assembly and exposing extremely
-low-level control, Rust often feels like a higher-level language. Equivalent
-functionality in Rust is often more concise and/or readable than in C/C++,
-while performing similarly, all while having substantially stronger safety
-guarantees. <strong>As a professional programmer, the value proposition is
-blinding: Rust enables me to do more with less, achieve a lower
-defect rate, and not sacrifice on performance.</strong></p>
-<h2>Correctness, Quality, Execution Speed, and Development Velocity: Pick 4</h2>
-<p>The operation of computers and operating systems is exceptionally complex.</p>
-<p>All programming languages justifiably attempt to abstract away aspects of
-this complexity to make it easier to deliver value through software. For
-example:</p>
-<ul>
-<li>Assembly is hard: here's a higher level language that compiles down to
-  assembly or is implemented in a language that does.</li>
-<li>Managing memory manually is hard: use garbage collection.</li>
-<li>Concurrency is hard: only allow 1 thread to run at a time (JavaScript, Python,
-  etc).</li>
-<li>Text encoding is hard: <em>strings</em> are Unicode/UTF-8.</li>
-<li>Operating systems have different interfaces: here's a pile of abstractions
-  in the standard library for things like I/O, networking, filesystem paths,
-  etc.</li>
-<li>Strong, static typing isn't very flexible and can impose high change costs:
-  use dynamic typing.</li>
-<li>And tons more.</li>
-</ul>
-<p>These abstractions often have undesirable consequences/trade-offs:</p>
-<ul>
-<li>Garbage collection adds run-time overhead (10% is a number that's commonly
-  cited).</li>
-<li>Garbage collection adds random slowdowns/pauses, making it difficult to
-  achieve consistency in long-tail latency optimization (i.e. ensuring
-  consistency in P99.9, P99.99, and beyond percentiles).</li>
-<li>Interpreted languages tend to be slower than compiled languages unless you
-  invest lots of time into a JIT.</li>
-<li>Limiting execution to a single thread limits the ability to harness
-  the full power of modern CPUs, which tend to have several cores.</li>
-<li>Primitives like environment variables, process arguments, and filenames
-  aren't guaranteed to be UTF-8 and coercing them to UTF-8 can be lossy.</li>
-<li>Dynamic typing doesn't catch as many bugs at <em>compile time</em> and you have
-  to be more diligent about guarding against invariants.</li>
-<li>And tons more.</li>
-</ul>
-<p><strong>In other words, there are trade-offs with nearly every decision in programming
-language and [standard] library design. There are usually no obviously
-correct and undesirable consequence-free decisions.</strong></p>
-<p><strong>And we further have to consider the fallibility of people and the inevitability
-that mistakes will be made, that bugs and regressions will be introduced and will
-need addressing. As an industry, we generally accept that mistakes occur and
-bugs are an unavoidable aspect of software development. If new features and
-enhancements are value, bugs and defects are anti-value. Like financial debt,
-existence of bugs and sub-optimal code can be tolerated to varying extents. But
-this is a highly nuanced topic and different people, companies, and projects will
-have different perspectives on it. We can all agree that bugs are an inevitable
-fact of software.</strong></p>
-<p>We also need to confront the reality that as an industry we have
-very little empirical data that says much of significance about topics
-like <a href="https://danluu.com/empirical-pl/">static versus dynamic typing</a>.
-Although we do know some things. As Alex Gaynor informs us in
-<a href="https://alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/">What science can tell us about C and C++'s security</a>,
-the result of ~2/3 of security vulnerabilities being caused by memory
-unsafety seems to reproduce against a sufficiently diverse set of
-projects and companies. That result and the implications of it are
-worth paying attention to!</p>
-<p>With that being said, let's dive into my take on the matter.</p>
-<p><strong>Of all the programming languages I've used, I feel that Rust has the
-strongest disposition towards authoring and maintaining correct, high-quality
-software. It does this by offering a myriad of features that are designed
-to prevent (or at least minimize) defects. In addition, I believe Rust
-shifts the detection of defects to earlier in the software development
-lifecycle, greatly reducing the cost to mitigate defects and therefore
-develop software.</strong></p>
-<p>(As an aside, every time the topic of Rust's safety and correctness comes
-up, random people on the Internet rush to their keyboards to say things
-along the lines of <em>C/C++ and other languages can be made to be just as
-safe as Rust: it's the bad programmers who are using C/C++ wrong.</em> To
-those people: please stop. Your belief implies the infallibility of people
-and machines and that mistakes won't be made. If things like memory unsafety
-bugs in C/C++ could be prevented, industry titans like Apple, Google, and
-Microsoft would have found a way. These companies are likely taking many
-more measures to prevent security vulnerabilities than you are and
-yet the ~2/3 of security vulnerabilities being caused by memory unsafety
-(read: humans and machines failing to reason about run-time behavior)
-result still occurs. <strong>To the wiser among us, I urge you to call out
-perpetrators of this <em>good programmers don't create bugs</em> myth when you see
-it</strong>, just like you would/should if you encounter racist, sexist, or other
-non-inclusive behaviors. The reason is that belief in this myth can lead to
-physical or emotional harm, just like non-inclusive -isms. Security bugs,
-for example, can lead to disclosure of private or sensitive data, which can
-result in real world harm. Think a stalker or abusive former partner
-learning where you now live. Or a memory unsafety error in a medical device
-leading to device malfunction, injuring or killing a patient. Because this
-is a sensitive topic, I want to be clear that I'm not trying to compare the
-relative harms incurred by racism, sexism, other -isms, or the <em>mythical
-perfect programmer</em>. Rather, all I'm saying is each of these surpass
-the minimum threshold of harm incurred that justifies calling out and
-stopping the harmful behavior. I believe that as professionals we have an
-ethical and professional obligation to actively squash the <em>mythical
-perfect programmer</em> fallacy when we encounter it. Debates on the merits
-and limits of tools to prevent/find defects is fine: belief in the <em>perfect
-programmer</em> is not. Sorry for the mini rant: I just get upset by people who
-think software exists in a vacuum and doesn't have real-world implications
-for people's safety.)</p>
-<p>In the sections below, I'll outline some of Rust's features and behaviors
-that support my assertion that Rust is biased towards correct and higher
-quality outcomes and lowers total development cost.</p>
-<h3>The Borrow Checker</h3>
-<p>To the uninitiated, the borrow checker is perhaps Rust's most novel contribution
-to programming. It is a compile time mechanism that enforces various rules about
-how Rust code must behave. Think of these as <em>laws</em> that Rust code must obey.
-But these are more like societal laws, not scientific laws (which are
-irrefutable), as Rust's laws can be broken, often leading to negative
-consequences, just like societal laws.</p>
-<p>Rust's <a href="https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html">ownership</a>
-rules are as follows:</p>
-<ul>
-<li>Each value in Rust has a variable that's called its owner.</li>
-<li>There can only be one owner at a time.</li>
-<li>When the owner goes out of scope, the value will be dropped / released.</li>
-</ul>
-<p>Then there are rules about
-<a href="https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html">references</a>
-(think <em>intelligent pointers</em>) to owned values:</p>
-<ul>
-<li>At any given time, you can have either one mutable reference or any number of
-  immutable references.</li>
-<li>References must always be valid.</li>
-</ul>
-<p>Put together, these rules say:</p>
-<ul>
-<li>There is only a single canonical owner of any given value at any
-  given time. The owner automatically releases/frees the value when it is
-  no longer needed (just like a garbage collected language does when the
-  reference count goes to 0).</li>
-<li>If there are references to an owned value, that reference must be valid
-  (the owned value hasn't been dropped/released) and you can only have
-  either multiple readers or a single writer (not e.g. a reader and a
-  writer).</li>
-</ul>
-<p>The implications of these rules on the behavior of Rust code are significant:</p>
-<ul>
-<li>Use after free isn't something you have to worry about because references
-  can't point to dropped/released values.</li>
-<li>Buffer underruns, overflows, and other illegal memory access can't
-  exist because references must be valid and point to an owned value /
-  memory range.</li>
-<li>Memory level data races are prevented because the <em>single writer or multiple
-  readers</em> rule prevents concurrent reading and writing. (An assertion here
-  is any guards - like locks and mutexes - have appropriate barriers/fences
-  in place to ensure correct behavior in multi-threaded contexts. The ones
-  in the standard library should.)</li>
-</ul>
-<p>I used to think that these rules <em>limited</em> the behavior of Rust code. That
-statement is true. However, as I've thought about it more, I've refined
-my take to be that <strong>ownership and reference rules reinforce properties that
-well-behaved software exhibits.</strong></p>
-<p>If a C/C++ program had illegal memory access, you would say it is <em>buggy</em> and
-the behavior is not <em>correct</em>. If a Java program attempted to mutate a value
-on thread A without a lock or other synchronization primitive and thread B
-raced to read it, leading to data inconsistency, you would also call that a
-<em>bug</em> and <em>incorrect</em> behavior. If a JavaScript/Python/Ruby function were
-changed such that it started mutating a value that should be constant, you
-would call that a <em>bug</em> and <em>incorrect</em> behavior.</p>
-<p><strong>While Rust's ownership and reference rules do limit what software can
-do, the functionality they are limiting is often <em>unsafe</em> or <em>buggy</em>, so
-losing this functionality is often desirable from a quality and correctness
-standpoint. Put another way, Rust's borrow checker eliminates entire
-classes of [common] bugs by preventing patterns that lead to incorrect,
-buggy behavior.</strong></p>
-<p>This. Is. Huge.</p>
-<p><strong>Rust's borrow checker catches bugs for which other languages have no
-automated mechanism or no low cost, low latency mechanism for detecting.</strong>
-There are ways to achieve aspects of what the borrow checker does in other
-languages. But they tend to require contorting your coding style to
-accomplish and/or employing high cost tools (often running asynchronously
-to the compiler) such as {address, memory, thread} sanitizers or fuzzing.
-With Rust, you get this bug detection built into the language and compiler:
-no additional tools needed. (I'm not saying you shouldn't run additional
-tools like sanitizers or fuzz testing against Rust: just that you get a
-significant benefit of these tools for a drastically lower cost since they
-are built in to the core language.)</p>
-<p>Rust's ownership and reference rules help ensure your software is more
-well-behaved and bug-free. But, sometimes those rules are too strict.
-Fortunately, Rust isn't dogmatic about enforcing them. There are legitimate
-cases where you can't work in the confines of these rules.</p>
-<p>Say you want to share a cache between multiple threads. Caches need to be
-both readable and writable by multiple threads. This violates
-the reference rules and maybe the single owner ownership rule, depending on
-how things are implemented. Fortunately, there are primitives in the
-<a href="https://doc.rust-lang.org/std/sync/index.html">std::sync</a> module like
-<a href="https://doc.rust-lang.org/std/sync/struct.RwLock.html">RwLock</a>
-and <a href="https://doc.rust-lang.org/std/sync/struct.Arc.html">Arc</a> (atomically
-reference counted) you can use here. <code>Arc</code> (and its non-threadsafe <code>Rc</code>
-counterpart) give you reference counting, just like a garbage collected
-language. Primitives like <code>RwLock</code> allow you to wrap an inner value
-and temporarily <em>acquire</em> an appropriate reference to it, mutable or
-non-mutable. There's a bit of slight of hand here, but the tricks
-employed enable you to satisfy the ownership and reference rules and
-use common programming techniques and patterns while still having the
-<em>safety</em> and <em>correctness</em> protections the borrow checker enforces.</p>
-<h3>Data Races: What Data Races?</h3>
-<p>Multi-threaded and concurrent programming is hard. Really hard. Like it
-is exceptionally easy to introduce hard-to-diagnose-and-debug bugs hard.</p>
-<p>There are many reasons for this. We can all probably relate to the fact
-that reasoning about multi-threaded code is just hard: instead of 1 call
-stack to reason about there are N. Further complicating matters are that
-many of us don't have a firm grasp on how memory works at a very low level.
-Do you know all the ins and outs on how CPU caches work on the architecture
-you are targeting? Me neither! (But
-<a href="https://software.rajivprab.com/2018/04/29/myths-programmers-believe-about-cpu-caches/">this</a>
-is a very good place to start excavating a rabbit hole.)</p>
-<p>If you are like me, you've spent many years of your professional career
-not having to care about multi-threading or concurrent programming because you
-spend so much time in languages with single threads, are only implementing code
-that runs in single threaded contexts, or you've recognized the reality that
-implementing this code safely and correctly is hard and you've intentionally
-avoided the space or chosen software architectures (like queue-based message
-passing) to minimize risks. Or maybe if you are say a Java programmer you
-sprinkle <code>synchronized</code> everywhere out of precaution or in response to race
-conditions / bugs once they are found. (Everyone's personal experience is
-different, of course.)</p>
-<p>Long story short, <strong>the aforementioned ownership and reference rules enforced
-by the borrow checker eliminate data races.</strong> This was a major <em>oh wow</em>
-moment for me when I learned Rust: I had heard about memory safety but didn't
-realize the same forces behind it were also responsible for making concurrency
-safe!</p>
-<p>This property is referred to as <em>fearless concurrency</em>. I encourage you
-to read Aaron Turon's
-<a href="https://blog.rust-lang.org/2015/04/10/Fearless-Concurrency.html">Fearless Concurrency</a>
-as well as the
-<a href="https://doc.rust-lang.org/book/ch16-00-concurrency.html">Fearless Concurrency</a>
-chapter in the Rust Book as well.</p>
-<h3>Operating Systems Abstractions Ground in Reality</h3>
-<p>Rust is the only programming language I've used that attempts to expose
-operating system primitives like environment variables, command arguments,
-and filesystem paths and doesn't completely mess it up. Truth be told,
-this is kind of a niche topic. But as I help maintain a version control
-tool which needs to care about preserving content identically across
-systems, this topic is near and dear to my heart.</p>
-<p>In POSIX land, primitives like environment variables, command arguments,
-and filesystem paths are <code>char*</code>, or a bag of null-terminated bytes.</p>
-<p>On Windows, these primitives are <code>wchar_t*</code>, or wide bytes.</p>
-<p>On both POSIX and Windows, the encoding of the raw bytes can be... complicated.</p>
-<p>Nearly every programming language / standard library in existence attempts
-to normalize these values to its native string type, which is typically
-Unicode or UTF-8. That's doable and correct a lot of the time. Until it
-isn't.</p>
-<p>Rust, by contrast, has standard library APIs like
-<a href="https://doc.rust-lang.org/stable/std/env/fn.vars.html">std::env::vars()</a>
-that will coerce operating system values to Rust's UTF-8 backed <code>String</code>
-type. But Rust also exposes the
-<a href="https://doc.rust-lang.org/stable/std/ffi/struct.OsString.html">OsString</a>
-type, which represents operating system native strings. And there are
-function variants like
-<a href="https://doc.rust-lang.org/stable/std/env/fn.vars_os.html">std::env::vars_os()</a>
-to access the raw values instead of the UTF-8 normalized ones.</p>
-<p>Rust <a href="https://doc.rust-lang.org/stable/std/path/index.html">paths</a> internally
-are stored as <code>OsString</code>, as that as the value passed to the C API
-to perform filesystem I/O. However, you can coerce paths to <code>String</code>
-easily enough or define paths in terms of <code>String</code> without jumping through
-hoops.</p>
-<p>The point I'm trying to get across is that Rust's abstractions are ground
-in the reality of how computers work. <strong>Given the choice, Rust will rarely
-sacrifice the ability to do something correctly.</strong> In cases like operating
-system interop, Rust gives you the choice of convenience or correctness,
-rather than forcing inconvenience or incorrectness on you, like nearly
-every other language.</p>
-<h3>Encoding and Enforcing Invariants in the Type System</h3>
-<p>Rust <a href="https://doc.rust-lang.org/std/keyword.enum.html">enums</a> are
-<a href="https://en.wikipedia.org/wiki/Algebraic_data_type">algebraic data types</a>.
-Rust enum variants can have values associated with them and Rust enums,
-like structs (Rust's main way to define a type), can have
-functions/methods hung off of them. Rust enums are effectively
-fully-featured, specialized types, where value instances must be a
-certain variant of that enum. <strong>This makes Rust enums much more powerful
-than in other languages where enums simply map to integer values and/or
-can't have associated functions. This power unlocks a lot of possibility
-and harnessed the right way can drastically improve correctness of code
-and lead to fewer defects.</strong></p>
-<p>Programming inevitably needs to deal with invariants, the various
-possibilities that can occur. Programmers will reach for control flow
-operators to handle these: <em>if x do this</em>, <em>else if y do that</em>, <em>switch</em>
-statements, and the like. Handling every possible invariant can be complex,
-especially as software evolves over time and the ground beneath you is
-constantly shifting.</p>
-<p><strong>As you become more familiar with Rust, you'll find yourself encoding
-and enforcing invariants in the type system more and more. And enums
-are likely the main way you accomplish this.</strong></p>
-<p>Let's start with a contrived example. In C/C++, if you had a function
-that accepted either an <code>Apple</code> or an <code>Orange</code> value, you might do
-something like: <code>void eat(Apple* apple, Orange* orange)</code>. Then you'd
-have inline logic like <code>if apple != null</code>. In a dynamically typed
-language, you could pass a single argument, but you'd perform inline
-type comparison. e.g. with Python you'd write <code>if isinstance(fruit, Apple)</code>.</p>
-<p>With Rust, you'd declare and use an enum. e.g.</p>
-<div class="pygments_murphy"><pre><span></span><span class="k">struct</span> <span class="nc">Apple</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
-<span class="k">struct</span> <span class="nc">Orange</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
-
-<span class="k">enum</span> <span class="nc">Fruit</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">Apple</span><span class="p">(</span><span class="n">Apple</span><span class="p">),</span><span class="w"></span>
-<span class="w">    </span><span class="n">Orange</span><span class="p">(</span><span class="n">Orange</span><span class="p">),</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-
-<span class="k">impl</span><span class="w"> </span><span class="n">Fruit</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">fn</span> <span class="nf">eat</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="k">match</span><span class="w"> </span><span class="bp">self</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="n">Self</span>::<span class="n">Apple</span><span class="p">(</span><span class="n">apple</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
-<span class="w">            </span><span class="n">Self</span>::<span class="n">Orange</span><span class="p">(</span><span class="n">orange</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-
-<span class="kd">let</span><span class="w"> </span><span class="n">apple</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Fruit</span>::<span class="n">Apple</span><span class="p">(</span><span class="n">Apple</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">});</span><span class="w"></span>
-<span class="n">apple</span><span class="p">.</span><span class="n">eat</span><span class="p">();</span><span class="w"></span>
-</pre></div>
-
-<p>This (again contrived) example shows how we Rust enum variants can hold
-inner values, how we can define methods on Rust enums (so they behave like
-regular types), and introduces the <code>match</code> control flow operator.</p>
-<p>Quickly, <a href="https://doc.rust-lang.org/book/ch06-02-match.html">match</a> is a
-super powerful operator. It will compare its argument against provided
-patterns and evaluate the arm that matches. Patterns <strong>must</strong> be comprehensive
-or the compiler will error. In the case of enums, if you add a variant - say
-<code>Banana</code> for our <code>Fruit</code> example - and fail to add that variant to existing
-<code>match</code> expressions, you will get compiler errors!</p>
-<p>As you become more proficient with Rust, you'll find yourself moving
-lots of (often redundant) control flow expressions and conditional dispatch
-(<em>if X do this, if Y do that</em>) into enum variants and encoding the dispatched
-actions into that enum/type directly. Conceptually, this is logically
-little different from having a base type or interface or by having a single
-<em>wrapper</em> class holds various possible values. But the guarantees are stronger
-because each distinct possibility is strongly defined as an enum variant.
-And when combined with the <code>match</code> control flow operator, you can have
-the Rust compiler verify that all variants are accounted for every time
-you take conditional action based on the variant.</p>
-<p>The 2 most common enums in Rust are <code>Option</code> and <code>Result</code>. The following
-sections will explain how they work and further demonstrate how invariants
-can be encoded and enforced in Rust's type system.</p>
-<h3><code>Option</code>: A Better Way to Handle Nullability</h3>
-<p>Many programming languages have the concept of
-<a href="https://en.wikipedia.org/wiki/Nullable_type">nullable types</a>: the ability
-for a value to be null or some null-like value. You will often find this
-expressed in languages as <code>null</code>, <code>nil</code>, <code>None</code>, or some variant thereof.</p>
-<p>When programming in these languages, nullable values <strong>must</strong> be accounted
-or it could lead to errors. Languages like C/C++ and Go will attempt to
-to resolve the address behind <code>null</code>/<code>nil</code>, leading to at least a program
-crash and possibly a security vulnerability. Languages like Java and Python
-will raise exceptions (<code>NullPointerException</code> in Java - frequently abbreviated
-<code>NPE</code> because it is so common - and likely <code>TypeError</code> in Python).</p>
-<p>The prevalence of failure to account for nullable values is a major reason
-why null references were coined by their inventor as
-<a href="https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/">the billion dollar mistake</a>.
-(I suspect the real world value is much greater than $1B.)</p>
-<p>Having an easy-to-ignore nullable invariant lingering in type systems seems
-like a massive foot gun to me. And indeed every programmer with sufficient
-experience has likely introduced a bug due to failure to account for null. I
-sure have!</p>
-<p><strong>Rust doesn't have a null value. Therefore no null references and no
-<em>billion dollar mistake</em>. Instead, Rust's standard library has
-<a href="https://doc.rust-lang.org/std/option/index.html">Option<T></a>, an enum
-representing nullable types / values. And <code>Option</code> is vastly superior to
-null values.</strong></p>
-<p><code>Option&lt;T&gt;</code> is an enum with 2 variants, <code>Some(T)</code> or <code>None</code>: an instance of some
-type or <em>nothing</em>. What makes <code>Option</code> different from languages with null
-references is you have to explicitly ask for the inner value: there is no
-automatic dereference. <strong>Rust forces you to confront the reality that a
-value is nullable and by doing so can drastically reduce a very common bug
-class.</strong> I say <em>drastically reduce</em> instead of <em>eliminate</em> because it is
-still possible to shoot yourself in the foot. For example, you can call
-<a href="https://doc.rust-lang.org/std/option/enum.Option.html#method.unwrap">Option.unwrap()</a>
-to obtain the inner value, triggering a panic if the <code>None</code> variant is
-present. Despite the potential for programming errors, this solution is
-strictly better than null references because <code>Option</code> forces you to confront
-the reality of nullability and use of the <em>dangerous</em> access mechanisms is
-relatively easy to audit for. (Clippy has some lints to encourage best
-practices here.)</p>
-<p>The existence of <code>Option&lt;T&gt;</code> means that if you are operating on a non-<code>Option</code>
-value, that value is guaranteed to exist and not be null. If you are operating
-on <code>Option</code>, the fact it is optional is explicitly encoded in the type and you
-know you need to account for it. <strong>If the value passed into a function was once
-always defined and a later refactor changed it to be optional (or vice versa), that
-semantic change is reflected in the type system and Rust forces you to confront
-the implications when that change is made,</strong> not after it was deployed to
-production and you started seeing segfaults, NPEs, and the like.</p>
-<p><strong>After using Rust's <code>Option&lt;T&gt;</code> to express nullability, you will look at
-every other language with null references and bemoan how <em>primitive</em> and
-<em>unsafe</em> it feels by comparison. You will yearn for Rust's safer approach
-biasing towards correctness and higher quality software.</strong> <code>Option&lt;T&gt;</code> is
-massive feature for the professional programmer who cares about these
-traits.</p>
-<h3><code>Result</code>: A Better Way to Handle Errors</h3>
-<p>Different programming languages have different ways of handling errors.
-Returning integers or booleans to express success or failure is common.
-As is throwing and trapping/catching exceptions.</p>
-<p>Like nullability, history has shown us that programmers often fail to
-handle error invariants, with bugs of varying severity ensuing. Even Linux
-filesystems
-<a href="http://research.cs.wisc.edu/wind/Publications/iron-sosp05.pdf">fail</a> to
-<a href="http://usenix.org/legacy/event/fast08/tech/full_papers/gunawi/gunawi_html/index.html">handle</a>
-errors!</p>
-<p><strong>I argue that the traditional programming patterns we use to handle errors bias
-towards buggy outcomes, especially with the <em>return an integer/error value</em>
-approach.</strong> It is easy to forget to check the return value of a function. In
-C/C++, maybe a function once returned nothing (<code>void</code>) and was later refactored
-to return an integer error code. You have to know to audit for existing callers
-when making these changes or updating dependencies. Furthermore, handling errors
-requires effort. That <code>if err != 0</code> or <code>if err != nil</code> pattern gets mighty
-annoying to type all of the time! Plus, you have to know what value to compare
-against: <em>success</em> can often be 0, -1, or 1 or any other arbitrary value.
-<strong>Getting error handling correct 100% of the time is <em>hard</em>. You will fail and
-this will lead to bugs.</strong></p>
-<p><a href="https://doc.rust-lang.org/std/result/index.html">Result<T, E></a> is Rust's
-primary/preferred mechanism for propagating errors and it is different
-from traditional approaches.</p>
-<p>Like <code>Option&lt;T&gt;</code>, <code>Result&lt;T, E&gt;</code> is an enum with 2 variants: <code>Ok(T)</code> and
-<code>Err(E)</code>. That is, a value is either <em>success</em>, wrapping an inner value of
-type <code>T</code> or <em>error</em>, wrapping an inner value of type <code>E</code> describing that
-error.</p>
-<p>Like <code>Option&lt;T&gt;</code>, <code>Result&lt;T, E&gt;</code> forces you to confront the existence of
-invariants. Before operating on the value returned by a function, you need
-to explicitly access it and that forces you to confront that an error could
-have occurred. In addition, the <code>Result</code> type is
-<a href="https://doc.rust-lang.org/std/result/index.html#results-must-be-used">annotated</a>
-and the compiler will emit a warning when you don't check it. Scenarios like
-changing an infallible function returning a type <code>T</code> to fallible returning a
-<code>Result&lt;T, E&gt;</code> will fail to compile (due to typing violations) or make compiler
-warning noise if there are call sites that fail to account for that change.</p>
-<p>In addition to making it more likely that errors are acted upon correctly,
-Rust also contains a
-<a href="https://doc.rust-lang.org/std/result/index.html#the-question-mark-operator-">? operator</a>
-for simplifying handling of errors.</p>
-<p>As I said above, typing patterns like <code>if err != 0</code> or <code>if err != nil</code> can become
-extremely tedious. Your brain knows what it needs to type to handle errors
-but it takes precious seconds to do so, slowing you down. You may have code where
-the majority of the lines are the same error handling boilerplate over and over,
-increasing verbosity and arguably decreasing readability.</p>
-<p>Rust's <code>?</code> operator will <code>return</code> an <code>Err(E)</code> variant or evaluate to the
-inner value from the <code>Ok(T)</code> variant. So you can often add an <code>?</code>
-operator after a function call returning a <code>Result&lt;T, E&gt;</code> to automatically
-propagate an error. Typing a single character is vastly easier and simpler
-than writing explicit control flow for error handling!</p>
-<p>The benefits of <code>?</code> are blatantly apparent when you have functions calling
-into multiple fallible functions. Long functions with multiple <code>if err != 0</code>
-blocks followed by the next logical operation often reduce to a 1-liner. e.g.
-<code>bar(foo()?)?</code> or <code>foo.do_x()?.do_y()?</code>. When I said earlier that Rust feels
-like a higher level language, the <code>?</code> operator is a significant contributor to
-that.</p>
-<p>There are some downsides to <code>Result&lt;T, E&gt;</code> in terms of programming overhead
-and consistency between Rust programs. I'll cover these later in the post.</p>
-<p><strong><code>Result&lt;T, E&gt;</code> biases Rust code towards correctness by forcing programmers
-to confront the reality that an error could exist and should be handled.
-Once you program in Rust, you will look at error handling mechanisms like
-returning an error integer or nullable value, realize how brittle and/or
-tedious they are, and yearn for something better.</strong></p>
-<h3>The <code>unsafe</code> Escape Hatch</h3>
-<p>If some of Rust's limitations are too much for you, Rust has an
-<em>in case of emergency break glass</em> feature called <code>unsafe</code>. This is kind of
-like <em>C mode</em> where you can do things like access and manipulate raw memory
-through pointers. You can <em>cast</em> a value to a pointer and back to a new Rust
-reference/value, effectively short circuiting the borrow checker for that
-particular reference/value.</p>
-<p><strong>A common misconception is <code>unsafe</code> disables the borrow checker and/or loosens
-type checking. This is incorrect: many of those features are still running
-in <code>unsafe</code> code.</strong> However, because Rust can't fully reason about what's
-happening (e.g. it doesn't know who owns a raw memory address and when
-it will be freed), it can't properly enforce all of its rules that guarantee
-safety, leading to, well, <em>unsafety</em>. (See
-<a href="https://doc.rust-lang.org/book/ch19-01-unsafe-rust.html">Unsafe Rust</a> for
-more on this topic.)</p>
-<p><code>unsafe</code> is a necessary evil. In many Rust programs, you won't have to
-ever use it. But if you do have to use it, its presence will draw review
-scrutiny like moths to light. So unlike say C/C++ where practically every
-memory access is a potential security bug and it is effectively impossible
-in many scenarios to comprehensively audit for memory safety (if there were
-there would be no memory safety bugs), using <code>unsafe</code> safely is often viable
-because scrutiny can be concentrated on its relatively few occurrences.
-And more experienced Rust programmers know how to encapsulate <code>unsafe</code> into
-<em>safe</em> wrappers, limiting how much code needs to be audited when code
-around <code>unsafe</code> changes.</p>
-<p>What I've personally been enlightened by is the myriad of operations
-that Rust considers <em>unsafe</em>. As you learn more and more Rust, you'll
-encounter random functions sprinkled across the standard library that
-are <code>unsafe</code> and you'll wonder why. The docs usually tell you and that's
-how you learn something new (and maybe horrifying) about how computers
-actually work.</p>
-<h3>Fearless Refactoring</h3>
-<p>A significant portion of the software development lifecycle is evolving
-existing code. Fixing bugs. Extending existing code with new
-functionality. Refactoring code to fix bugs or prepare for new features.
-Using code in new, unplanned ways.</p>
-<p>In many code bases, the amount of people time spent evolving the code
-dwarfs the time for creating actual greenfield code/features.
-(Unfortunately, quantifying when you are doing <em>evolution</em> versus
-greenfield coding is quite difficult, so both facets often get lumped
-together into simply <em>software development time</em>. But in my mind they are
-discrete - although highly interdependent - units of work and the evolution
-time tends to dwarf the greenfield time on established projects.) <strong>So it
-follows that long-term evolution/maintainability of code bases is more
-important than initial code creation time.</strong></p>
-<p><strong>There is a sufficient body of industry research demonstrating that the
-cost to fix defects rises exponentially as you progress through the
-software development lifecycle</strong> (do a search for say <em>software development
-lifecycle cost of fixing a bug</em>).</p>
-<p>Furthermore, human memory functions not unlike multi-tier caches and your
-ability to recall information will diminish over time. (You probably know
-what you were doing 5 minutes ago, might remember what you were doing at
-this time yesterday, and probably have no clue what you were doing on this
-date 20 years ago.)</p>
-<p><strong>In terms of coding, the best way to address a defect is to not introduce
-it in the first place. If you can't do that, your goal is to detect and
-correct it as early in the development process as possible, as close as
-possible to when the source code creating that defect came into existence.</strong>
-Practically, in order of descending desirability:</p>
-<ol>
-<li>Don't introduce defect (this is impossible because humans are fallible).</li>
-<li>Detect and correct defect as soon as the bad key press occurs (within
-   reason: you don't want the programmer to lose too much flow) (milliseconds
-   later).</li>
-<li>At next build / test time (seconds or minutes later).</li>
-<li>When code is shared with others (maybe you push a branch and CI tells
-   you something is wrong) (minutes to days later).</li>
-<li>During code review (minutes to days later).</li>
-<li>When code is integrated (e.g. merged) (minutes to days later).</li>
-<li>When code is deployed (minutes to days or even months later).</li>
-<li>When a bug is reported long after the code has been deployed (weeks
-   to years later).</li>
-</ol>
-<p>The earlier a defect is caught, the better the chances that the author
-(or other involved parties) have relevant code <em>paged in</em> and can fix it
-with less effort and with lower chances of introducing additional defects.
-For me, authoring new code is relatively easy compared to refactoring old
-code. That's because I have new code fully paged into my brain and I know
-it like the back of my hand. I know where the sharp edges are and how
-you'll get cut if you make certain changes. However, if several months
-pass without revisiting the code, most of that heightened awareness
-evaporates. If I need to change or review that code, my ability to do
-that with a high degree of confidence and efficiency is drastically
-eroded.</p>
-<p>Generally speaking, the earlier a defect is caught, the less damage it can
-do. Ideally, a defect is caught and fixed at local development time, before
-you burden a reviewer with finding it and certainly before it causes harm or
-anti-value after being deployed!</p>
-<p>In addition, compressing the software development lifecycle allows you
-to ship enhancements sooner, which enables you to deliver value sooner.
-This is what we're trying to do as professional programmers after all!</p>
-<p><strong>Because the cost to fix a defect rises exponentially as it moves through
-the software development lifecycle, it follows that you want defect
-detection to occur logarithmically to offset that cost.</strong> That means you
-want as many defects as possible to be caught as early as possible.</p>
-<p><strong>Compared to other programming languages I've used, Rust is exceptional
-at detecting defects earlier in the development lifecycle and as a result
-can drastically lower overall development costs.</strong> Here are the main factors
-contributing to this belief:</p>
-<ul>
-<li>The type system is relatively strong and prevents many classes of bugs.</li>
-<li>The borrow checker and the rules it enforces prevent <em>safety</em> issues
-  at <em>compile</em> time. Some of these violations can be detected by other
-  languages' compilers. However, in many cases sufficient auditing
-  (like {address, memory, thread} sanitizers) is run much less frequently,
-  often only in CI tests, which can be hours or days later.</li>
-<li>Confidence that the above 2 function as advertised.</li>
-<li>Invariants can be encoded and enforced in the type system through features
-  like enums being algebraic data types.</li>
-<li>Variables are immutable by default and must be explicitly annotated
-  as mutable. This forces you to think about where and how data mutation
-  occurs, enabling you to spot issues sooner.</li>
-<li><code>Option&lt;T&gt;</code> significantly curtails the <em>billion dollar mistake</em>.</li>
-<li><code>Result&lt;T, E&gt;</code> forces you to reckon about handling errors.</li>
-</ul>
-<p>The Rust compiler is just exceptional at detecting common defects.</p>
-<p>Did your code refactor introduce a use-after-free or dangling reference?
-Don't worry: the borrow checker will detect that. CVE prevented.</p>
-<p>Did you introduce a race condition by performing a mutation somewhere
-that was previously immutable? The borrow checker will detect that. You
-potentially just saved hours of time debugging a hard-to-reproduce bug.</p>
-<p>Did you add an enum variant but forget to add that variant to a
-<code>match</code> expression? If you avoided using the <em>match all</em> <code>_</code>
-expression, the compiler will tell you match arms aren't exhaustive
-and give you an error.</p>
-<p>Did a value that was previously always defined become nullable? Changing
-the type from <code>T</code> to <code>Option&lt;T&gt;</code> will yield compiler errors due to type
-mismatch.</p>
-<p>Did an <code>Option&lt;T&gt;</code> that was previously always <code>Some(T)</code> suddenly
-become <code>None</code>? Hopefully following Rust best practices mean your code
-will just work. In the worst case you get a panic (with a stack trace).
-But that's on par with say a Java NPE and is strictly better than a
-null dereference that you get with languages like C/C++.</p>
-<p>Did you change or add a function returning <code>Result&lt;T, E&gt;</code> but forget
-to check if that <code>Result</code> is an <code>Ok(T)</code> or <code>Err(E)</code>, the compiler
-will tell you.</p>
-<p>I could go on. Rust is full of little examples like these where the
-core language and standard library nudge you towards working code and
-help detect defects earlier during development, saving vast amounts
-of time and money later.</p>
-<p><strong>The Rust compiler is so good at rooting out problems that many Rust
-programmers have adopted the expression, <em>if it compiles it works</em>. This
-statement is obviously falsifiable. But compared to every other programming
-language I've used, I'm shocked by how often it is true.</strong></p>
-<p>For other programming languages, a working compile is the beginning of your
-verification or debugging journey. For Rust, it often feels like the hard
-part is over and you are almost done. With other languages, you often
-have an indefinite number of iterations to fix <em>language defects</em> (like
-null dereferences or dynamic typing errors) beyond the compile step. You
-need to address these in addition to any <em>logical/intent defects</em> in your
-code. And fixing logical/intent defects could introduce more post-compile
-defects. As a programmer, you just don't know when the process will be
-done. With Rust, the compiler errors tell you exactly what the <em>language
-defects</em> are. So by the time you appease the compiler, you are left with
-just your <em>logical/intent</em> defects. I greatly prefer the Rust workflow
-which separates these because I'm getting clearer feedback on my progress:
-I know that once I've addressed all the <em>language defects</em> the compiler
-complains about that is <em>just</em> a matter of fixing <em>logical/intent</em>
-defects. I know I'm a giant step closer to victory.</p>
-<p><a href="https://hbr.org/2011/05/the-power-of-small-wins">The Progress Principle</a>
-is a psychological observation that people tend to prefer a series of
-more smaller wins over fewer larger wins. And (unexpected) setbacks can
-more than offset the benefits of wins. (The book is an easy read and
-I've found its insights applicable to software development workflows.)
-Whether Rust's language designers realized it or not, Rust's development
-workflow plays into our psychological dispositions as described by <em>The
-Progress Principle</em>: defects (setbacks) tend to occur earlier (at compile
-time), not at unexpected later times (during code review, CI testing,
-deploy, etc) and our progress towards a working solution is composed of
-small wins, such as fixing compiler errors and knowing when you transition
-from <em>language defects</em> into <em>logical/intent</em> defects. For me, this makes
-iterating on Rust more <em>fulfilling</em> and <em>enjoyable</em> than other languages.</p>
-<h2>Rust Makes You a Better Overall Programmer</h2>
-<p>Whether you realize it or not, every programmer has a personal, generalized
-model of how to program, how to reason about code, best practices, and
-what not. When we program, we specialize that model to the language
-and environment/project we're programming for. The mental model that
-each of us has its shaped by our experience: which languages we know,
-which concepts we've been exposed, mistakes we've made, people we've
-worked with and the practices they've instilled.</p>
-<p><strong>If for no other reason, you should learn Rust to expand your generalized
-model of how to program so that you can apply Rust's principles outside
-of Rust.</strong></p>
-<p>Before I learned Rust, I had a mental model of the <em>lifetimes</em> of various
-values/variables/memory and how they would be used. If I were coding C, I
-would attempt to document these in function comments. e.g. if returning a
-pointer, the comment would say how long the memory behind that pointer lives
-or who is responsible for freeing it. So when I encountered Rust's ownership
-and reference rules when learning Rust, they substantially overlapped with
-my personal mental model of how you should reason about memory in order to avoid
-bugs. I distinctly remember reading the Rust Book and thinking <em>wow, this
-seems to be a formalization of some of the concepts and best practices living
-in my head!</em></p>
-<p>After using Rust for several months, I realized that my prior mental
-model around reasoning about <em>safe</em> program behavior was woefully
-incomplete and that Rust's was far superior.</p>
-<p><strong>Rust's <em>different</em> ways of doing things will inevitably force you to
-think about type design, data access patterns, control flow, etc more
-than most other programming languages. In most other languages, it is much
-easier to just write runnable code and defer the complexity around
-ensuring the code is <em>safe</em>/<em>correct</em> and free from certain classes of
-bugs, like memory access violations and race conditions. Rust's ways of
-doing things forces you to confront many of these problems up-front,
-before anything runs.</strong></p>
-<p>Rust's stricter model and way about authoring software eventually percolates
-into your personal generalized model of how to program in <em>any programming
-language</em>. <strong>As you internalize patterns needed to program Rust proficiently,
-you will subconsciously cherry-pick aspects of Rust and apply them when
-programming in other languages, making you a better programmer in those
-languages.</strong></p>
-<p>For example, when you program C/C++, you will realize the minefield of
-memory safety issues that linger in those languages. Many of those mines
-never explode. But knowing Rust and the patterns needed to appease the
-borrow checker and write <em>safe</em> code, you have a better sense of where the
-mines are located, the patterns that lead to them exploding, and you can
-take preemptive steps or apply extra scrutiny to avoid tripping
-them. (If you are like me, you'll reach the conclusion that C/C++ is
-intrinsically unsafe and is beyond saving, vowing to avoid it as much as
-possible because it is just too dangerous to use safely/responsibly.)</p>
-<p>Similarly, when programming in any language, you'll probably think more about
-variable mutability and non-mutability, even if those languages don't have
-the concept of mutability on variables. You'll be more attune to certain
-patterns for mutating data: where mutation occurs, who has a mutable
-reference, when there are both mutable and non-mutable references in
-existence. Again, your knowledge from Rust will subconsciously raise your
-awareness for classes of bugs, making you a better programmer.</p>
-<p>The same thing applies to multi-threaded programming and race conditions.
-After internalizing Rust's model of how to achieve multi-threading safely,
-you will probably not look at multi-threading in other languages the same
-way again. If you are like me, you will be horrified by how the lack of
-Rust's enforced ownership/reference rules predisposes code to so many
-horrible and hard-to-debug bugs. Again, you will probably find yourself
-changing your approach to multi-threading to minimize risk.</p>
-<p>Fun fact: while at Mozilla I heard multiple anecdotes of [very
-intelligent] Firefox developers thinking they had found a bug in Rust's
-borrow checker because they thought it was impossible for a flagged error
-to occur. However, after sufficient investigation the result was always
-(maybe with an exception or two because Mozilla adopted Rust very early)
-that the Rust compiler was correct and the developer's assertions about
-how code could behave was incorrect. In these cases, the Rust compiler
-likely prevented hard-to-debug bugs or even exploitable security
-vulnerabilities. I remember one developer exclaiming that if the
-bug had shipped, it would have taken <em>weeks</em> to debug and would likely
-have gone unfixed for <em>years</em> unless its severity warranted staffing.</p>
-<p><strong>I strongly feel that I am a better programmer overall after learning
-Rust because I find myself applying the [best] practices that Rust enforces
-on me when programming in other languages. For this reason, even if you
-don't plan to use Rust in any serious capacity, I encourage people to learn
-Rust because exposure to its ideas will likely transform the ways you think
-about programming for the better.</strong></p>
-<h2>Rust Downsides and Dispelling Some Rust Myths</h2>
-<p>This post has been rather positive about Rust so far. Rust, like
-everything, is far from perfect and it has its downsides. Professionals
-know the limitations of their tools and you should know some of the
-issues you'll run into when using Rust.</p>
-<p>In addition, Rust is still a relatively young and unpopular programming
-language. Since relatively few people know Rust, there are a handful of
-myths and inaccuracies circling about the language. I'll also dispel some
-of those here.</p>
-<h3>Steeper Learning Curve</h3>
-<p>A common criticism levied against Rust is it is harder to learn than
-other programming languages. I think this is a valid concern. My
-experience is Rust took longer to learn and level-up than other
-languages I've learned recently, notably Go, Kotlin, and Ruby.</p>
-<p>I think the primary reason for this is the borrow checker and the
-rules it enforces. Many programmers have never encountered forced
-following of ownership and reference rules before and this concept is
-completely foreign at first. I liken it to <em>a new way to program</em>.
-If you only have experience with dynamically typed languages that
-will allow you to compile a ham sandwich, there's a good chance you'll
-be frustrated by Rust. Rust will likely challenge your conceptions of
-how programming should work and may frustrate you in the process.</p>
-<p>In addition to the borrow checker itself, there are a myriad of types
-and patterns you'll encounter and eventually need to understand to
-<em>appease</em> the borrow checker.</p>
-<p>Beyond the borrow checker, Rust's standard library is comprehensive and
-offers a lot of types and traits. It will take a while to be exposed
-to many of them and know when/how to use each.</p>
-<p>You will likely be adding 3rd party crates as dependencies to
-your project for common functionality not (yet) in the standard library.
-These expand the scope of concepts you need to learn.</p>
-<p>I hope I'm not scaring anybody away: you can go pretty far in Rust without
-encountering or understanding most of the standard library. That being
-said, every new type, trait, concept, and crate you learn unlocks new
-possibilities and avenues for delivering value through programming. So
-there is an incentive to take the time to learn them sooner than later.</p>
-<p>I learned Rust mostly independently for a personal project. While
-learning resources such as <a href="https://www.rust-lang.org/learn">Learn Rust</a>,
-the <a href="https://cheats.rs/">Rust Language Cheat Sheet</a>, and even Clippy
-are fantastic, in hindsight I probably would have become more proficient
-sooner had I contributed to an existing Rust project and/or had ongoing
-technical collaboration with more experienced Rust developers. This is
-probably no different than any other programming language. But because of
-Rust's steeper learning curve, I think the benefits of peer exposure are
-more significant. That being said, I've heard anecdotes of teams with no
-Rust experience learning Rust together with successful results. So there's
-no formal recipe for success here.</p>
-<p>Finally, despite the steeper learning curve, I'd say the return on
-investment pays off pretty quickly. As I've argued elsewhere in this
-post, the Rust compiler and type system helps prevent many classes of
-bugs. So while it may take longer to initially learn and compose idiomatic
-Rust code, it won't take long for Rust to offset the time that you would
-have spent chasing bugs, performance optimizations, and the like.</p>
-<h3>Rust Moves Too Fast</h3>
-<p>Rust releases a new version every 6 weeks. By contrast, many other
-programming languages release ~yearly. This faster release cadence has
-been a common complaint about Rust.</p>
-<p>Quickly, I think people conflate release cadence with churn and hardship
-from that release cadence. <strong>Generally speaking, release cadence isn't the
-thing you care about: it's how disrupted you are from the releases.</strong> If
-your old release continues to work just as well as the new release,
-release cadence doesn't really matter (many major websites deploy/release
-dozens of times per day and you don't care because you can't tell: you only
-care when the UI or behavior changes). <strong>So the thing most of us care about
-is how frequently Rust releases cause disruption.</strong> And disruption is often
-caused by backwards incompatibility and the introduction of new features,
-which when adopted, force upgrades.</p>
-<p>A few years ago, I think the concern that <em>Rust moves too fast</em> was
-valid: there were significant features in seemingly every release and
-crates were eager to jump on the new features, forcing you to upgrade
-if you wanted to keep your dependency tree up to date. I feel like I
-caught the tail end of this relative chaos in 2018-2019.</p>
-<p>But in the last 18-24 months, things seem to have quieted down. Many
-of the major language features that people were eager to jump on have
-landed. The only ongoing churn I'm aware of in Rust is in the async
-ecosystem, and that seems to be stabilizing. New Rust releases are
-generally pretty quiet in terms of <em>must use</em> features. The last
-<em>milestone</em> release in my mind was 1.45 in July 2020, which stabilized
-procedural macros. The community was pretty quick to jump on that
-feature/release. My Rust projects have targeted 1.45+ for a while now
-with minimal issues.</p>
-<p>9 months with no major disruptions is on par with the release cadence
-of other programming languages.</p>
-<p><strong>In my opinion, the concern that <em>Rust moves too fast</em>, while once valid,
-no longer generally applies.</strong> Pockets of truth for segments of users caring
-about niche and lesser-used features, yes. But nothing that applies to the
-entire Rust ecosystem.</p>
-<h3>Compiling Is Too Slow</h3>
-<p>A lot of people have commented that Rust builds take too long. It is
-true: compiling Rust tends to take longer than C/C++, Go, Java, and
-other languages requiring an ahead-of-time compile step.</p>
-<p>While a lot has been done to make the Rust compiler faster (it feels
-substantially faster than it was a few years ago), it still isn't
-as fast as other languages.</p>
-<p>Not to dismiss the problem, but in a lot of cases, the speed of Rust
-compilation is <em>fast enough</em>. Incremental builds for small libraries
-or programs will take a few hundred milliseconds to a second or two.
-I suspect most of the people complaining about build times today are
-developing very large Rust programs (tens of thousands of lines of
-code and/or hundreds of dependencies).</p>
-<p>A contributing problem to build times is dependency count. The simplicity
-of Cargo makes it very easy to accumulate dependencies in Rust and
-each additional crate will slow your build down. PyOxidizer has
-~400 dependencies at this point in time, for example (I've been
-throwing the kitchen sink at it in terms of features).</p>
-<p>There are a few things under your control to mitigate this problem.</p>
-<p>First, install <a href="https://github.com/mozilla/sccache">sccache</a>, a
-transparent compiler cache. By default it caches to the local
-filesystem. But you can also point it at Redis, Memcached, or blob
-stores in AWS, Azure, or GCP. Firefox's CI uses an S3 backed cache and
-the hit rate (for both Rust and C/C++) is 90-99% on nearly every build.
-For PyOxidizer - a medium sized Rust project - sccache reduces full
-build times from ~53s wall and ~572s CPU to ~32s wall to 225s CPU on
-my 16 core Ryzen 5950X. The wall time savings on a lower CPU core count
-machine are even more significant.</p>
-<p>Speaking of CPU core counts, the second thing you can do is give
-yourself access to more CPU cores. Laptops tend to have at most 4
-CPU cores. Consider buying desktops or moving builds to remote
-machines, often with dozens of CPU cores. This requires spending
-money. But when you factor in people time saved and the cost of
-that time and the value of someone's happiness/satisfaction, it
-can often be justified.</p>
-<p>I'm not trying to dismiss the problems that slow builds can impose,
-but if you want to justify their cost, you can argue that the Rust
-compiler does more at compilation time than other languages and that
-this overhead brings benefits, such as preventing bugs earlier in
-the software development lifecycle.
-<a href="https://en.wikipedia.org/wiki/There_ain%27t_no_such_thing_as_a_free_lunch">There's no such thing as a free lunch</a>
-and Rust's relatively slower builds are a <em>tax</em> you pay for the correctness
-the compiler guarantees. To me, that's a justifiable trade-off.</p>
-<h3>Rust is Too Young or Isn't Production Ready</h3>
-<p>The <em>isn't production ready</em> concern is likely disproven by the
-existence of Rust in production in critical roles at a sufficient
-number of reputable companies. At this point, there are very few
-technical reasons to say Rust isn't production ready. Non-technical reasons
-such as lack of organizational knowledge or a limited talent pool for
-hiring from, yes. But little on the technical front.</p>
-<p>The <em>too young</em> part is ultimately a judgement call for how comfortable
-you are with new technologies.</p>
-<p>I'm generally pretty conservative/skeptical about adopting new technology.
-If you are in this industry long enough you eventually get humbled by your
-exuberance.</p>
-<p>I was probably in the <em>Rust is too young</em> boat as late as 2017, maybe
-2018. While I was cheering on Rust as a Mozillian, I was skeptical it
-was going to take off. Birthing successfully languages is hard. The
-language still seemed to move too fast and have too many missing
-features. Things seemed to stabilize around the 2018 edition. That's
-also when you started commonly hearing of companies adopting Rust. Lots
-of startups at first. Then big companies started joining in.</p>
-<p>Today, companies you have heard of like Amazon, Cloudflare,
-Discord, Dropbox, Facebook, Google, and Microsoft are adopting Rust to
-varying degrees. There are 58,750 published crates on
-<a href="https://crates.io/">crates.io</a>.</p>
-<p>I won't drop names, but I've heard of Rust <em>spreading like wildfire</em> at
-some companies you've heard of. The stories are pretty similar: random
-person or team wants to try Rust. Something small and isolated with a
-minimal blast radius in case of disaster is tried first. Rust is an
-overwhelming success. As more and more people are exposed to Rust, they
-<em>see the light</em>, cries for Rust become louder, and it becomes even more
-widely adopted.</p>
-<h3>The <em>I'm Writing Fewer Bugs</em> Trap</h3>
-<p>When I program in Rust, I strongly feel that my base rate of defect introduction
-is substantially less than other programming languages. I have confidence that
-the Rust compiler coupled with practices like encoding and enforcing invariants
-in the type system leads to fewer defects. In some cases I feel like the surface
-area for bugs is limited to <em>logical defects</em>, which are mis-expressions of the
-human programmer's intent. And since no automated tool can reliably scan for
-<em>human intent</em>, there's no way to prevent <em>logical bugs</em>, and that surface area
-is the best we can ever expect from automated scanning.</p>
-<p>Knowing what tests to write and how much effort to invest in test writing
-is a difficult skill to level up and is full of trade-offs. With Rust, I find
-myself writing fewer tests than in other languages because I have confidence
-that the compiler will detect issues that would otherwise require explicit
-testing.</p>
-<p>I <em>feel</em> that my beliefs and practices are rooted in reality and justifiable. Yet I
-recognize the danger in placing too much faith in my tools, in Rust.</p>
-<p>In theory, Rust alleviates the need for running additional verification
-tools, like {address, memory, thread} sanitizers because the safe subset
-of Rust prevents the issues these tools detect. Many defects caught by
-fuzzing are also similarly prevented by the design of Rust (but not all:
-fuzzing is generally a good idea).</p>
-<p><strong>What I'm trying to say is that it is really easy to fall into a trap where
-you are over-confident about the abilities of Rust to prevent defects and
-you find yourself letting your guard down and not maintaining testing and
-other verification best practices.</strong></p>
-<p>I'm still evolving my beliefs in this area. But my general opinion is that you
-should still run things like {address, memory, thread} sanitizers and fuzzing
-because <code>unsafe</code> likely exists <em>somewhere</em> in the compiled code, as likely does
-C or assembly code. And because a chain is only as strong as its weakest link,
-it only takes <em>any</em> bug to undermine the <em>safety</em> of the entire system.
-So while these additional verification tools likely won't find as many issues
-as they would in <em>unsafe</em> languages, I still think it is a good idea to continue
-to run them against Rust, especially for <em>high value</em> code bases.</p>
-<h3>Error Handling</h3>
-<p><code>Result&lt;T, E&gt;</code> isn't a panacea. Because errors are full on types rather
-than simple primitives like integers, you need to spend effort reasoning
-and coding about how different error types interact. And often you need
-to write a bit of boilerplate code to facilitate that interaction. This
-can cancel out a lot of the efficiency benefits of Rust's <code>?</code> operator
-for handling errors.</p>
-<p>There are a handful of 3rd party Rust crates specializing in error
-handling that you'll likely to encounter. These include
-<a href="https://crates.io/crates/anyhow">anyhow</a>,
-<a href="https://crates.io/crates/error-chain">error-chain</a>,
-<a href="https://docs.rs/failure/0.1.8/failure/">failure</a>, and
-<a href="https://crates.io/crates/thiserror">thiserror</a>.</p>
-<p>Rust's error handling landscape can at times feel fragmented and make
-you yearn for something more defined/opinionated in the standard library.
-The Rust Community recognizes that this is an area that can be improved
-and has <a href="https://blog.rust-lang.org/inside-rust/2020/09/18/error-handling-wg-announcement.html">formed</a>
-an error handling project group to improve this space. So hopefully we see
-some quality of life improvements to error handling in time.</p>
-<h2>Conclusion</h2>
-<p>I am irrationally effusive about Rust. When I see this level of excitement
-in others, I am extremely skeptical. I was skeptical myself when my former
-colleagues at Mozilla were talking up Rust years ago. But having used Rust
-for 2.5 years now and authored tens of thousands of lines of Rust code, the
-initial relationship euphoria has worn off and I am most definitely in love.</p>
-<p><strong>Cynically, Rust has ruined in programming in other languages for me. Less
-cynically, Rust has spoiled me.</strong></p>
-<p>When I look at other languages without the rules enforced by Rust's borrow
-checker, all I see are sharp edges waiting to materialize into bugs.</p>
-<p>When I look at other languages with <em>weaker</em> type systems, I think about
-all the time I spend having to defend against invariants and how much
-cognitive load and programming/review effort I need to incur to maintain
-the baseline of quality that I get with Rust.</p>
-<p>When I look at programming languages like Python, Ruby, and TypeScript
-where you can bolt a type system onto a language that doesn't have it, I
-think <em>why would I want to do that when I can use an even better type
-system while likely achieving much better performance with Rust?</em> (It's
-tempting to reach for a metaphor involving lipstick and pigs.)</p>
-<p>When I look at other languages, I generally see the same pile of decades
-old ideas packaged in different boxes. Some of these ideas are good and
-probably timeless (e.g. functions and variables). Some are demonstrably bad
-and should be largely excised from common use (e.g. null references - the
-<em>billion dollar mistake</em>).</p>
-<p>When I interface with Rust's tooling, I feel like it is respectful of my
-time and has my best interests (producing working software) at heart. I
-feel the maintainers of the tooling care about me.</p>
-<p>When I program in Rust, I feel that I'm producing fewer defects overall.
-The compiler is catching defects that would otherwise be caught later
-in the software development lifecycle, leading to increased software
-development costs.</p>
-<p>When I interact with Rust's community of people, respect and empathy
-abounds.</p>
-<p>Does Rust have its problems and limitations? Of course it does: nothing is
-perfect! But in my opinion, its trade-offs are often strictly better than
-those found in other programming languages I've used.</p>
-<p>At the end of the day, Rust is a programming language and therefore a tool.
-Adept professionals know not to get too attached to your tools: ultimately
-it is the value you deliver, not how you deliver it. (Of course the choice
-of tools can significantly impact the quality and timeline of value
-delivery!) Will my thoughts on Rust and preferred languages change over time
-as the landscape shifts: of course they will! But for the time being, <strong>Rust
-brings so much to the table that its <em>competition</em> lacks that I'm overly
-excited about Rust and its ability to advance the state of
-software/programming and therefore the industry.</strong></p>
-<p>In closing, my current CTO uses the phrase <em>commitment to craft</em> as a desired
-mindset for their technical organization. That phrase translates to various
-themes: higher quality / lower defect rate, build with the long-term in mind,
-implement efficient solutions, etc. <strong>Like an artist reaches for a preferred
-paintbrush or a chef for a preferred knife because their preferred tool enables
-them to better express their craft, I feel that Rust often enables me to better
-express the potential of my professional craft more than other programming languages.
-I strongly feel that Rust predisposes software to higher quality outcomes - both
-in terms of defect rate and run-time efficiency - while also reducing total
-development and execution costs over the entire software development lifecycle.
-That makes Rust my first choice language - my go-to tool - for many new
-projects at this point in time. If you likewise value <em>commitment to craft</em>, I
-urge you to explore Rust so that you too can better harness the potential
-of our programming craft.</strong></p>
-<p>But don't take my word on it, read what
-<a href="https://kerkour.com/blog/rust-in-production-2021/">42 companies using Rust in production</a>
-have to say.</p>
 
   </div>
 </div>
