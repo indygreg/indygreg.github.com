@@ -51,6 +51,187 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="announcing-the-pyoxy-python-runner"></a>
+  <h2 class="blog_post_title"><a href="/blog/2022/05/10/announcing-the-pyoxy-python-runner" rel="bookmark" title="Permanent Link to Announcing the PyOxy Python Runner">Announcing the PyOxy Python Runner</a></h2>
+  <small>May 10, 2022 at 08:00 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>, <a href='/blog/category/pyoxidizer'>PyOxidizer</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>I'm pleased to announce the initial release of
+<a href="https://pyoxidizer.readthedocs.io/en/latest/pyoxy.html">PyOxy</a>.
+Binaries are <a href="https://github.com/indygreg/PyOxidizer/releases/tag/pyoxy%2F0.1.0">available on GitHub</a>.</p>
+<p>(Yes, I used my <a href="/blog/2022/04/25/expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing/">pure Rust Apple code signing implementation</a>
+to remotely sign the macOS binaries from GitHub Actions using a YubiKey
+plugged into my Windows desktop: that experience still feels magical
+to me.)</p>
+<p>PyOxy is all of the following:</p>
+<ul>
+<li>An executable program used for running Python interpreters.</li>
+<li>A single file and highly portable (C)Python distribution.</li>
+<li>An alternative <code>python</code> driver providing more control over the
+  interpreter than what <code>python</code> itself provides.</li>
+<li>A way to make some of PyOxidizer's technology more broadly available without
+  using PyOxidizer.</li>
+</ul>
+<p>Read the following sections for more details.</p>
+<h2><code>pyoxy</code> Acts Like <code>python</code></h2>
+<p>The <code>pyoxy</code> executable has a <code>run-python</code> sub-command that will essentially
+do what <code>python</code> would do::</p>
+<pre><code>$ pyoxy run-python
+Python 3.9.12 (main, May  3 2022, 03:29:54)
+[Clang 14.0.3 ] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt;
+</code></pre>
+<p>A Python REPL. That's familiar!</p>
+<p>You can even pass <code>python</code> arguments to it:</p>
+<pre><code>$ pyoxy run-python -- -c 'print("hello, world")'
+hello, world
+</code></pre>
+<p>When a <code>pyoxy</code> executable is renamed to any filename beginning with <code>python</code>,
+it implicitly behaves like <code>pyoxy run-python --</code>.</p>
+<pre><code>$ mv pyoxy python3.9
+$ ls -al python3.9
+-rwxrwxr-x  1 gps gps 120868856 May 10  2022 python3.9
+
+$ ./python3.9
+Python 3.9.12 (main, May  3 2022, 03:29:54)
+[Clang 14.0.3 ] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt;
+</code></pre>
+<h2>Single File Python Distributions</h2>
+<p>The official <code>pyoxy</code> executables are built with PyOxidizer and leverage the
+Python distributions provided by my
+<a href="https://github.com/indygreg/python-build-standalone/">python-build-standalone</a>
+project. On Linux and macOS, a fully featured Python interpreter and its library
+dependencies are statically linked into <code>pyoxy</code>. The <code>pyoxy</code> executable also embeds
+a copy of the Python standard library and imports it from memory using the
+<a href="https://pyoxidizer.readthedocs.io/en/latest/oxidized_importer.html">oxidized_importer</a>
+Python extension module.</p>
+<p>What this all means is that the official <code>pyoxy</code> executables can function as
+single file CPython distributions! Just download a <code>pyoxy</code> executable, rename it
+to <code>python</code>, <code>python3</code>, <code>python3.9</code>, etc and it should behave just like a normal
+<code>python</code> would!</p>
+<p>Your Python installation has never been so simple. And fast: <code>pyoxy</code> should be
+a few milliseconds faster to initialize a Python interpreter mostly because of
+<code>oxidized_importer</code> and it avoiding filesystem overhead to look for and load
+<code>.py[c]</code> files.</p>
+<h2>Low-Level Control Over the Python Interpreter with YAML</h2>
+<p>The <code>pyoxy run-yaml</code> command is takes the path to a YAML file defining the
+embedded Python interpreter configuration and then launches that Python
+interpreter in-process:</p>
+<pre><code>$ cat &gt; hello_world.yaml &lt;&lt;EOF
+---
+allocator_debug: true
+interpreter_config:
+  run_command: 'print("hello, world")'
+...
+EOF
+
+$ pyoxy run-yaml hello_world.yaml
+hello, world
+</code></pre>
+<p>Under the hood, PyOxy uses the
+<a href="https://docs.rs/pyembed/0.20.0/pyembed/">pyembed</a> Rust crate to manage embedded
+Python interpreters. The YAML document that PyOxy uses is simply deserialized
+into a
+<a href="https://docs.rs/pyembed/0.20.0/pyembed/struct.OxidizedPythonInterpreterConfig.html">pyembed::OxidizedPythonInterpreterConfig</a>
+Rust struct, which <code>pyembed</code> uses to spawn a Python interpreter. This Rust struct
+offers near complete control over how the embedded Python interpreter behaves: it
+even allows you to tweak settings that are impossible to change from environment
+variables or <code>python</code> command arguments! (Beware: this power means you can
+easily cause the interpreter to crash if you feed it a bad configuration!)</p>
+<h2>YAML Based Python Applications</h2>
+<p><code>pyoxy run-yaml</code> ignores all file content before the YAML <code>---</code> start document
+delimiter. This means that on UNIX-like platforms
+you can create <em>executable YAML</em> files defining your Python application. e.g.</p>
+<pre><code>$ mkdir -p myapp
+$ cat &gt; myapp/__main__.py &lt;&lt; EOF
+print("hello from myapp")
+EOF
+
+$ cat &gt; say_hello &lt;&lt;"EOF"
+#!/bin/sh
+"exec" "`dirname $0`/pyoxy" run-yaml "$0" -- "$@"
+---
+interpreter_config:
+  run_module: 'myapp'
+  module_search_paths: ["$ORIGIN"]
+...
+EOF
+
+$ chmod +x say_hello
+
+$ ./hello_world
+hello from myapp
+</code></pre>
+<p>This means that to <em>distribute</em> a Python application, you can drop a copy
+of <code>pyoxy</code> in a directory then define an executable YAML file masquerading
+as a shell script and you can run Python code with as little as two files!</p>
+<h2>The Future of PyOxy</h2>
+<p>PyOxy is very young. I hacked it together on a weekend in September 2021.
+I wanted to shore up some functionality before releasing it then. But I
+got perpetually sidetracked and never did the work. I figured it would be
+better to make a smaller splash with a lesser-baked product now than wait
+even longer. Anyway...</p>
+<p>As part of building
+<a href="https://pyoxidizer.readthedocs.io/en/stable/pyoxidizer.html">PyOxidizer</a> I've
+built some peripheral technology:</p>
+<ul>
+<li>Standalone and highly distributable Python builds via the
+  <a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
+  project.</li>
+<li>The <a href="https://docs.rs/pyembed/0.20.0/pyembed/">pyembed</a> Rust crate for managing
+  an embedded Python interpreter.</li>
+<li>The <a href="https://pyoxidizer.readthedocs.io/en/stable/oxidized_importer.html">oxidized_importer</a>
+  Python package/extension for importing modules from memory, among other
+  things.</li>
+<li>The <a href="https://pyoxidizer.readthedocs.io/en/latest/oxidized_importer_packed_resources.html">Python packed resources</a>
+  data format for representing a collection of Python modules and resource
+  files for efficient loading (by <code>oxidized_importer</code>).</li>
+</ul>
+<p>I conceived PyOxy as a vehicle to enable people to leverage PyOxidizer's
+technology without imposing PyOxidizer onto them. I feel that PyOxidizer's
+broader technology is generally useful and too valuable to be gated behind
+using PyOxidizer.</p>
+<p>PyOxy is only officially released for Linux and macOS for the moment.
+It definitely builds on Windows. However, I want to improve the single file
+executable experience before officially releasing PyOxy on Windows. This
+requires an extensive overhaul to <code>oxidized_importer</code> and the way it
+serializes Python resources to be loaded from memory.</p>
+<p>I'd like to add a sub-command to produce a
+<a href="https://pyoxidizer.readthedocs.io/en/latest/oxidized_importer_packed_resources.html">Python packed resources</a>
+payload. With this, you could bundle/distribute a Python application as
+<code>pyoxy</code> plus a file containing your application's packed resources alongside
+YAML configuring the Python interpreter. Think of this as a more modern and
+faster version of the venerable <code>zipapp</code> approach. This would enable PyOxy to
+satisfy packaging scenarios provided by tools like Shiv, PEX, and XAR.
+However, unlike Shiv and PEX, <code>pyoxy</code> also provides an embedded Python
+interpreter, so applications are much more portable since there isn't
+reliance on the host machine having a Python interpreter installed.</p>
+<p>I'm really keen to see how others want to use <code>pyoxy</code>.</p>
+<p>The YAML based control over the Python interpreter could be super useful for
+testing, benchmarking, and general Python interpreter configuration
+experimentation. It essentially opens the door to things previously only
+possible if you wrote code interfacing with Python's C APIs.</p>
+<p>I can also envision tools that hide the existence of Python wanting to
+leverage the single file Python distribution property of <code>pyoxy</code>. For
+example, tools like Ansible could copy <code>pyoxy</code> to a remote machine to provide
+a well-defined Python execution environment without having to rely on what
+packages are installed. Or <code>pyoxy</code> could be copied into a container or
+other sandboxed/minimal environment to provide a Python interpreter.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing"></a>
   <h2 class="blog_post_title"><a href="/blog/2022/04/25/expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing" rel="bookmark" title="Permanent Link to Expanding Apple Ecosystem Access with Open Source, Multi Platform Code Signing">Expanding Apple Ecosystem Access with Open Source, Multi Platform Code Signing</a></h2>
   <small>April 25, 2022 at 08:00 AM | categories: 
@@ -747,82 +928,6 @@ as they seem to have the most mature solution for large files handling.)</p>
 using Git LFS because Git LFS is most definitely not a magic bullet. If
 you can stomach the short and long term effects of Git LFS adoption, by
 all means, use Git LFS. But please make an informed decision either way.</p>
-
-  </div>
-</div>
-
-
-
-  <hr class="interblog" />
-  
-<div class="blog_post">
-  <a name="pure-rust-implementation-of-apple-code-signing"></a>
-  <h2 class="blog_post_title"><a href="/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing" rel="bookmark" title="Permanent Link to Pure Rust Implementation of Apple Code Signing">Pure Rust Implementation of Apple Code Signing</a></h2>
-  <small>April 14, 2021 at 01:45 PM | categories: 
-
-<a href='/blog/category/pyoxidizer'>PyOxidizer</a>, <a href='/blog/category/rust'>Rust</a>
-</small><p/>
-  <div class="post_prose">
-    
-  <p>A few weeks ago I (foolishly?) set out to implement Apple code signing
-(what Apple's <code>codesign</code> tool does) in pure Rust.</p>
-<p>I wanted to quickly announce on this blog the existence of the project and
-the news that as of a few minutes ago, the <code>tugger-apple-codesign</code> crate
-implementing the code signing functionality is now
-<a href="https://crates.io/crates/tugger-apple-codesign">published on crates.io</a>!</p>
-<p>So, you can now sign Apple binaries and bundles on non-Apple hardware by
-doing something like this:</p>
-<pre><code>$ cargo install tugger-apple-codesign
-$ rcodesign sign /path/to/input /path/to/output
-</code></pre>
-<p>Current features include:</p>
-<ul>
-<li>Robust support for parsing embedded signatures and most related data
-  structures. <code>rcodesign extract</code> can be used to extract various signature
-  data in raw or human readable form.</li>
-<li>Parse and verify RFC 5652 Cryptographic Message Syntax (CMS) signature
-  data.</li>
-<li>Sign binaries. If a code signing certificate key pair is provided,
-  a CMS signature will be created. This includes support for Time-Stamp Protocol
-  (TSP) / RFC 3161 tokens. If no key pair is provided, you get an ad-hoc
-  signature.</li>
-<li>Signing bundles. Nested bundles and binaries will automatically be signed.
-  Non-code resources will be digested and a <code>CodeResources</code> XML file will be
-  produced.</li>
-</ul>
-<p>The most notable missing features are:</p>
-<ul>
-<li>No support for obtaining signing keys from keychains. If you want to sign
-  with a cryptographic key pair, you'll need to point the tool at a PEM encoded
-  key pair and CA chain.</li>
-<li>No support for parsing the Code Signing Requirements language. We can parse the
-  binary encoding produced by <code>csreq -b</code> and convert it back to this DSL. But we
-  don't parse the human friendly language.</li>
-<li>No support for notarization.</li>
-</ul>
-<p>All of these could likely be implemented. However, I am not actively working on
-any of these features. If you would like to contribute support, make noise in
-the <a href="https://github.com/indygreg/PyOxidizer/issues">GitHub issue tracker</a>.</p>
-<p>The Rust API, CLI, and documentation are still a bit rough around the edges. I
-haven't performed thorough QA on aspects of the functionality. However, the
-tool is able to produce signed binaries that Apple's canonical <code>codesign</code> tool
-says are well-formed. So I'm reasonably confident some of the functionality
-works as intended. If you find bugs or missing features, please
-<a href="https://github.com/indygreg/PyOxidizer/issues">report them on GitHub</a>. Or even
-better: submit pull requests!</p>
-<p>As part of this project, I also created and published the
-<a href="https://crates.io/crates/cryptographic-message-syntax">cryptographic-message-syntax</a>
-crate, which is a pure Rust partial implementation of RFC 5652, which defines
-the cryptographic message signing mechanism. This RFC is a bit dated and seems
-to have been superseded by RPKI. So you may want to look elsewhere before
-inventing new signing mechanisms that use this format.</p>
-<p>Finally, it appears the Windows code signing mechanism (Authenticode) also uses
-RFC 5652 (or a variant thereof) for cryptographic signatures. So by implementing
-Apple code signatures, I believe I've done most of the legwork to implement
-Windows/PE signing! I'll probably implement Windows signing in a new crate whenever
-I hook up automatic code signing to PyOxidizer, which was the impetus for this work
-(I want to make it possible to build distributable Apple programs without Apple
-hardware, using as many open source Rust components as possible).</p>
 
   </div>
 </div>
