@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2022-05-10T16:18:28Z</updated>
+  <updated>2022-05-10T16:21:11Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -189,7 +189,9 @@ leverage the single file Python distribution property of <code>pyoxy</code>. For
 example, tools like Ansible could copy <code>pyoxy</code> to a remote machine to provide
 a well-defined Python execution environment without having to rely on what
 packages are installed. Or <code>pyoxy</code> could be copied into a container or
-other sandboxed/minimal environment to provide a Python interpreter.</p>]]></content>
+other sandboxed/minimal environment to provide a Python interpreter.</p>
+<p>And that's PyOxy. I hope you find it useful. Please file any bug reports
+or feature requests in <a href="https://github.com/indygreg/PyOxidizer/issues">PyOxidizer's issue tracker</a>.</p>]]></content>
   </entry>
   <entry>
     <author>
