@@ -10,7 +10,7 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 10 May 2022 16:21:11 GMT</pubDate>
+    <pubDate>Mon, 08 Aug 2022 15:27:14 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -194,6 +194,7 @@ or feature requests in <a href="https://github.com/indygreg/PyOxidizer/issues">P
       <link>http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing</link>
       <pubDate>Wed, 14 Apr 2021 13:45:00 PDT</pubDate>
       <category><![CDATA[PyOxidizer]]></category>
+      <category><![CDATA[Apple]]></category>
       <category><![CDATA[Rust]]></category>
       <guid isPermaLink="true">http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing</guid>
       <description>Pure Rust Implementation of Apple Code Signing</description>

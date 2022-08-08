@@ -51,6 +51,558 @@ href="/blog/feed/atom" />
                 
   
 <div class="blog_post">
+  <a name="achieving-a-completely-open-source-implementation-of-apple-code-signing-and-notarization"></a>
+  <h2 class="blog_post_title"><a href="/blog/2022/08/08/achieving-a-completely-open-source-implementation-of-apple-code-signing-and-notarization" rel="bookmark" title="Permanent Link to Achieving A Completely Open Source Implementation of Apple Code Signing and Notarization">Achieving A Completely Open Source Implementation of Apple Code Signing and Notarization</a></h2>
+  <small>August 08, 2022 at 08:08 AM | categories: 
+
+<a href='/blog/category/apple'>Apple</a>, <a href='/blog/category/rust'>Rust</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>As I've previously blogged in
+<a href="/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing/">Pure Rust Implementation of Apple Code Signing</a>
+(2021-04-14) and
+<a href="/blog/2022/04/25/expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing/">Expanding Apple Ecosystem Access with Open Source, Multi Platform Code signing</a>
+(2022-04-25), I've been hacking on an open source implementation of Apple code
+signing and notarization using the Rust programming language. This takes the form
+of the <code>apple-codesign</code> crate / library and its <code>rcodesign</code> CLI executable.
+(<a href="https://gregoryszorc.com/docs/apple-codesign/stable/">Documentation</a> /
+<a href="https://github.com/indygreg/PyOxidizer/tree/main/apple-codesign">GitHub project</a> /
+<a href="https://crates.io/crates/apple-codesign">crates.io</a>).</p>
+<p>As of that most recent post in April, I was pretty happy with the relative
+stability of the implementation: we were able to sign, notarize, and staple
+Mach-O binaries, directory bundles (<code>.app</code>, <code>.framework</code> bundles, etc), XAR
+archives / flat packages / <code>.pkg</code> installers, and DMG disk images. Except for
+the <a href="https://gregoryszorc.com/docs/apple-codesign/0.17.0/apple_codesign_quirks.html">known limitations</a>,
+if Apple's official <code>codesign</code> and <code>notarytool</code> tools support it, so do we.
+<strong>This allows people to sign, notarize, and release Apple software from non-Apple
+operating systems like Linux and Windows.</strong> This opens up new avenues for
+Apple platform access.</p>
+<p>A major limitation in previous versions of the <code>apple-codesign</code> crate was our
+reliance on Apple's <a href="https://help.apple.com/itc/transporteruserguide/">Transporter</a>
+tool for notarization. Transporter is a Java application made available for macOS,
+Linux, and Windows that speaks to Apple's servers and can upload assets to their
+notarization service. I used this tool at the time because it seemed to
+be officially supported by Apple and the path of least resistance to standing
+up notarization. But Transporter was a bit wonky to use and an extra
+dependency that you needed to install.</p>
+<p>At WWDC 2022, Apple <a href="https://developer.apple.com/videos/play/wwdc2022/10109/">announced</a>
+a new <a href="https://developer.apple.com/documentation/notaryapi">Notary API</a> as
+part of the App Store Connect API. In what felt like a wink directly at me,
+Apple themselves even calls out the possibility for leveraging this API to
+notarize from Linux! I knew as soon as I saw this that it was only a matter
+of time before I would be able to replace Transporter with a pure Rust client
+for the new HTTP API. (I was already thinking about using the unpublished HTTP
+API that <code>notarytool</code> uses. And from the limited reversing notes I have from
+before WWDC it looks like the new official Notary API is very similar - possibly
+identical to - what <code>notarytool</code> uses. So kudos to Apple for opening up this
+access!)</p>
+<p><strong>I'm very excited to announce that we now have a pure Rust implementation
+of a client for Apple's Notary API in the <code>apple-codesign</code> crate. This means we
+can now notarize Apple software from any machine where you can get the Rust
+crate to compile. This means we no longer have a dependency on the 3rd party
+Apple Transporter application. Notarization, like code signing, is 100% open
+source Rust code.</strong></p>
+<p>As excited as I am to announce this new feature, <strong>I'm even more excited that
+it was largely implemented by a contributor, Robin Lambertz /
+<a href="https://github.com/roblabla">@roblabla</a>!</strong> They
+<a href="https://github.com/indygreg/PyOxidizer/issues/591">filed a GitHub feature request</a>
+while WWDC 2022 was still ongoing and then <a href="https://github.com/indygreg/PyOxidizer/pull/593">submitted a PR</a>
+a few days later. It took me a few months to get around to reviewing it
+(I try to avoid computer screens during summers), but it was a fantastic
+PR given the scope of the change. It never ceases to bring joy to me when
+someone randomly contributes greatness to open source.</p>
+<p>So, as of the just-released <a href="https://github.com/indygreg/PyOxidizer/releases/tag/apple-codesign%2F0.17.0">0.17 release</a>
+of the <code>apple-codesign</code> Rust crate and its corresponding <code>rcodesign</code> CLI tool, you can now
+<code>rcodesign notary-submit</code> to speak to Apple's Notary API using a pure Rust client. No
+more requirements on 3rd party, proprietary software. All you need to sign and
+notarize Apple applications is the self-contained <code>rcodesign</code> executable and a Linux,
+Windows, macOS, BSD, etc machine to run it on.</p>
+<p>I'm stoked to finally achieve this milestone! There are probably thousands of
+companies and individuals who have wanted to release Apple software from
+non-macOS operating systems. (The existence and popularity of tools like
+<a href="https://fastlane.tools/">fastlane</a> seems to confirm this.) The historical
+lack of an Apple code signing and notarization solution that worked outside
+macOS has prevented this. Well, that barrier has officially fallen.</p>
+<p>Release notes, documentation, and (self-signed) pre-built executables of the
+<code>rcodesign</code> executable for major platforms are available on the
+<a href="https://github.com/indygreg/PyOxidizer/releases/tag/apple-codesign%2F0.17.0">0.17 release page</a>.</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
+  <a name="expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing"></a>
+  <h2 class="blog_post_title"><a href="/blog/2022/04/25/expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing" rel="bookmark" title="Permanent Link to Expanding Apple Ecosystem Access with Open Source, Multi Platform Code Signing">Expanding Apple Ecosystem Access with Open Source, Multi Platform Code Signing</a></h2>
+  <small>April 25, 2022 at 08:00 AM | categories: 
+
+<a href='/blog/category/apple'>Apple</a>, <a href='/blog/category/rust'>Rust</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A little over one year ago, I
+<a href="/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing/">announced a project to implement Apple code signing in pure Rust</a>.
+There have been quite a number of developments since that post and I thought
+a blog post was in order. So here we are!</p>
+<p>But first, some background on why we're here.</p>
+<h2>Background</h2>
+<p>(Skip this section if you just want to get to the technical bits.)</p>
+<p>Apple runs some of the largest and most profitable software application
+ecosystems in existence. Gaining access to these ecosystems has traditionally
+required the use of macOS and membership in the Apple Developer Program.</p>
+<p>For the most part this makes sense: if you want to develop applications for
+Apple operating systems you will likely utilize Apple's operating systems
+and Apple's official tooling for development and distribution. Sticking to
+the paved road is a good default!</p>
+<p>But many people want more... flexibility. Open source developers, for example,
+often want to distribute cross-platform applications with minimal effort.
+There are entire programming language ecosystems where the operating system
+you are running on is abstracted away as an implementation detail for many
+applications. <strong>By creating a de facto requirement that macOS, iOS, etc
+development require the direct access to macOS and (often above market priced)
+Apple hardware, the distribution requirements imposed by Apple's software
+ecosystems are effectively exclusionary and prevent interested parties
+from contributing to the ecosystem.</strong></p>
+<p>One of the aspects of software distribution on Apple platforms that trips
+a lot of people up is code signing and notarization. Essentially, you need
+to:</p>
+<ol>
+<li>Embed a cryptographic signature in applications that effectively attests
+   to its authenticity from an Apple Developer Program associated account.
+   (This is signing.)</li>
+<li>Upload your application to Apple so they can inspect it, verify it meets
+   requirements, likely store a copy of it. Apple then issues their own
+   cryptographic signature called a <em>notarization ticket</em> which then needs
+   to be <em>stapled</em>/attached to the application being distributed so Apple
+   operating systems can trust it. (This is notarization.)</li>
+</ol>
+<p>Historically, these steps required Apple proprietary software run exclusively
+from macOS. This means that even if you are in a software ecosystem like Rust,
+Go, or the web platform where you can cross-compile apps without direct access
+to macOS (testing is obviously a different story), you would still need macOS
+somewhere if you wanted to sign and notarize your application. And signing and
+notarization is effectively required on macOS due to default security settings.
+On mobile platforms like iOS, it is impossible to distribute applications that
+aren't signed and notarized unless you are running a jailbreaked device.</p>
+<p>A lot of people (myself included) have grumbled at these requirements.
+Why should I be forced to involve an Apple machine as part of my software
+release process if I don't need macOS to build my application? Why do I have
+to go through a convoluted dance to sign and notarize my application at
+release time - can't it be more streamlined?</p>
+<p>When I looked at this space last year, I saw some obvious inefficiencies
+and room to improve. So as I said then, I <em>foolishly</em> set out to reimplement
+Apple code signing so developers would have more flexibility and opportunity
+for distributing applications to Apple's ecosystems.</p>
+<p><strong>The ultimate goal of this work is to expand Apple ecosystem access to more
+developers.</strong> A year later, I believe I'm delivering a product capable of
+doing this.</p>
+<h2>One Year Later</h2>
+<p><strong>Foremost, I'm excited to announce release of
+<a href="https://github.com/indygreg/PyOxidizer/releases/tag/apple-codesign/0.14.0">rcodesign 0.14.0</a>.
+This is the first time I'm publishing pre-built binaries (Linux, Windows, and macOS)
+of <code>rcodesign</code>. This reflects my confidence in the relative maturity of the
+software.</strong></p>
+<p>In case you are wondering, yes, the macOS <code>rcodesign</code> executable is self-signed:
+it was signed by a GitHub Actions Linux runner using a code signing certificate
+exclusive to a YubiKey. That YubiKey was plugged into a Windows 11 desktop next to
+my desk. The <code>rcodesign</code> executable was not copied between machines as part of the
+signing operation. Read on to learn about the sorcery that made this possible.</p>
+<p>A lot has changed in the <a href="https://github.com/indygreg/PyOxidizer/tree/main/apple-codesign">apple-codesign</a>
+project / Rust crate in the last year! Just look at the
+<a href="https://github.com/indygreg/PyOxidizer/blob/main/apple-codesign/CHANGELOG.rst">changelog</a>!</p>
+<p>The project was renamed from <code>tugger-apple-codesign</code>.</p>
+<p>(If you installed via <code>cargo install</code>, you'll need to
+<code>cargo install --force apple-codesign</code> to force Cargo to overwrite the <code>rcodesign</code>
+executable with one from a different crate.)</p>
+<p>The <code>rcodesign</code> CLI executable is still there and more powerful than ever.
+You can still sign Apple applications from Linux, Windows, macOS, and any other
+platform you can get the Rust program to compile on.</p>
+<p>There is now <a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign.html">Sphinx documentation for the project</a>.
+This is published on readthedocs.io alongside PyOxidizer's documentation (because
+I'm using a monorepo). There's some general documentation in there, such as a
+guide on how to
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_custom_assessment_policies.html">selectively bypass Gatekeeper</a>
+by deploying your own alternative code signing PKI to parallel Apple's. (This
+seems like something many companies would want but for whatever reason I'm
+not aware of anyone doing this - possibly because very few people understand
+how these systems work.)</p>
+<p>There are bug fixes galore. When I look back at the state of <code>rcodesign</code>
+when I first blogged about it, I think of how naive I was. There were a myriad
+of applications that wouldn't pass notarization because of a long tail of bugs.
+There are still known issues. But <strong>I believe many applications will
+successfully sign and notarize now.</strong> I consider failures novel and worthy of
+bug reports - so please <a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_debugging.html">report them</a>!</p>
+<p>Read on to learn about some of the notable improvements in the past year (many
+of them occurring in the last two months).</p>
+<h2>Support for Signing Bundles, DMGs, and <code>.pkg</code> Installers</h2>
+<p>When I announced this project last year, only Mach-O binaries and trivially
+simple <code>.app</code> bundles were signable. And even then there were a ton of subtle
+issues.</p>
+<p><code>rcodesign sign</code> can now sign more complex bundles, including many nested
+bundles. There are reports of iOS app bundles signing correctly! (However, we
+don't yet have good end-user documentation for signing iOS apps. I will gladly
+accept PRs to improve the documentation!)</p>
+<p>The tool also gained support for signing <code>.dmg</code> disk image files and <code>.pkg</code>
+flat package installers.</p>
+<p>Known limitations with signing are now
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_quirks.html">documented</a>
+in the Sphinx docs.</p>
+<p><strong>I believe <code>rcodesign</code> now supports signing all the major file formats used
+for Apple software distribution.</strong> If you find something that doesn't sign
+and it isn't documented as a known issue with an existing GitHub issue tracking
+it, please report it!</p>
+<h2>Support for Notarization on Linux, Windows, and macOS</h2>
+<p>Apple publishes a Java tool named
+<a href="https://help.apple.com/itc/transporteruserguide/">Transporter</a> that enables you
+to upload artifacts to Apple for notarization. They make this tool available for
+Linux, Windows, and of course macOS.</p>
+<p>While this tool isn't open source (as far as I know), usage of this tool enables
+you to notarize from Linux and Windows while still using Apple's official
+tooling for communicating with their servers.</p>
+<p><code>rcodesign</code> now has support for invoking Transporter and uploading artifacts
+to Apple for notarization. We now support notarizing bundles, <code>.dmg</code> disk
+images, and <code>.pkg</code> flat installer packages. I've successfully notarized all
+of these application types from Linux.</p>
+<p>(I'm capable of implementing
+an alternative uploader in pure Rust but without assurances that Apple won't
+bring down the ban hammer for violating terms of use, this is a bridge I'm
+not yet willing to cross. The requirement to use Transporter is literally the
+only thing standing in the way of making <code>rcodesign</code> an all-in-one single
+file executable tool for signing and notarizing Apple software and I <strong>really</strong>
+wish I could deliver this user experience win without reprisal.)</p>
+<p><strong>With support for both signing and notarizing all application types, it is
+now possible to release Apple software without macOS involved in your release
+process.</strong></p>
+<h2>YubiKey Integration</h2>
+<p>I try to use my YubiKeys as much as possible because a secret or private key
+stored on a YubiKey is likely more secure than a secret or private key sitting
+around on a filesystem somewhere. If you hack my machine, you can likely
+gain access to my private keys. But you will need physical access to my
+YubiKey and to compel or coerce me into unlocking it in order to gain access
+to its private keys.</p>
+<p><strong><code>rcodesign</code> now has support for using YubiKeys for signing operations.</strong></p>
+<p>This does require an off-by-default <code>smartcard</code> Cargo feature. So if
+building manually you'll need to e.g.
+<code>cargo install --features smartcard apple-codesign</code>.</p>
+<p>The YubiKey integration comes courtesy of the amazing
+<a href="https://crates.io/crates/yubikey">yubikey</a> Rust crate. This crate will speak
+directly to the smartcard APIs built into macOS and Windows. So if you have an
+<code>rcodesign</code> build with YubiKey support enabled, YubiKeys should
+<em>just work</em>. Try it by plugging in your YubiKey and running
+<code>rcodesign smartcard-scan</code>.</p>
+<p>YubiKey integration has its
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_smartcard.html">own documentation</a>.</p>
+<p>I even implemented some commands to make it easy to manage the code signing
+certificates on your YubiKey. For example, you can run
+<code>rcodesign smartcard-generate-key --smartcard-slot 9c</code> to generate a new private
+key directly on the device and then
+<code>rcodesign generate-certificate-signing-request --smartcard-slot 9c --csr-pem-path csr.pem</code>
+to export that certificate to a Certificate Signing Request (CSR), which you can
+exchange for an Applie-issued signing certificate at developer.apple.com. <strong>This
+means you can easily create code signing certificates whose private key was
+generated directly on the hardware device and can never be exported.</strong>
+Generating keys this way is widely considered to be more secure than storing
+keys in software vaults, like Apple's Keychains.</p>
+<h2>Remote Code Signing</h2>
+<p>The feature I'm most excited about is what I'm calling
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing.html">remote code signing</a>.</p>
+<p>Remote code signing allows you to delegate the low-level cryptographic signature
+operations in code signing to a separate machine.</p>
+<p>It's probably easiest to just demonstrate what it can do.</p>
+<p><strong>Earlier today I signed a macOS universal Mach-O executable from a GitHub-hosted
+Linux GitHub Actions runner using a YubiKey physically attached to the
+Windows 11 machine next to my desk at home. The signed application was not
+copied between machines.</strong></p>
+<p>Here's how I did it.</p>
+<p>I have a GitHub Actions workflow that calls <code>rcodesign sign --remote-signer</code>.
+I manually triggered that workflow and started watching the near real time
+job output with my browser. Here's a screenshot of the job logs:</p>
+<p><img alt="GitHub Actions initiating remote code signing" src="https://raw.githubusercontent.com/indygreg/PyOxidizer/058f718641ad47b39ccf54346f0f0ad6e91bd09b/apple-codesign/docs/apple_codesign_actions_sjs_join.png" /></p>
+<p><code>rcodesign sign --remote-signer</code> prints out some instructions (including a
+wall of base64 encoded data) for what to do next. Importantly, it requests that
+someone else run <code>rcodesign remote-sign</code> to continue the signing process.</p>
+<p>And here's a screenshot of me doing that from the Windows terminal:</p>
+<p><img alt="Windows terminal output from running remote-sign command" src="https://raw.githubusercontent.com/indygreg/PyOxidizer/058f718641ad47b39ccf54346f0f0ad6e91bd09b/apple-codesign/docs/apple_codesign_actions_signer_output.png" /></p>
+<p>This log shows us connecting and authenticating with the YubiKey along
+with some status updates regarding speaking to a remote server.</p>
+<p>Finally, here's a screenshot of the GitHub Actions job output after
+I ran that command on my Windows machine:</p>
+<p><img alt="GitHub Actions initiating machine output" src="https://raw.githubusercontent.com/indygreg/PyOxidizer/058f718641ad47b39ccf54346f0f0ad6e91bd09b/apple-codesign/docs/apple_codesign_actions_initiator_output.png" /></p>
+<p><em>Remote signing</em> enabled me to sign a macOS application from a GitHub Actions
+runner operated by GitHub while using a code signing certificate securely
+stored on my YubiKey plugged into a Windows machine hundreds of kilometers away
+from the GitHub Actions runner. Magic, right?</p>
+<p>What's happening here is the 2 <code>rcodesign</code> processes are communicating
+with each other via websockets bridged by a central relay server.
+(I operate a
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_design.html#default-remote-code-signing-server">default server free of charge</a>.
+The server is open source and a Terraform module is available if you want
+to run your own server with hopefully just a few minutes of effort.)
+When the initiating machine wants to create a signature, it sends a
+message back to the <em>signer</em> requesting a cryptographic signature. The
+signature is then sent back to the initiator, who incorporates it.</p>
+<p><strong>I designed this feature with automated releases from CI systems (like
+GitHub Actions) in mind. I wanted a way where I could streamline the
+code signing and release process of applications without having to give
+a low trust machine in CI ~unlimited access to my private signing key.
+But the more I thought about it the more I realized there are likely
+many other scenarios where this could be useful. Have you ever emailed
+or Dropboxed an application for someone else to sign because you don't
+have an Apple issued code signing certificate? Now you have an alternative
+solution that doesn't require copying files around!</strong> As long as you
+can see the log output from the initiating machine or have that output
+communicated to you (say over a chat application or email), you can
+remotely sign files on another machine!</p>
+<h3>An Aside on the Security of Remote Signing</h3>
+<p>At this point, I'm confident the more security conscious among you have
+been grimacing for a few paragraphs now. Websockets through a central
+server operated by a 3rd party?! Giving remote machines access to perform
+code signing against arbitrary content?! Your fears and skepticism are
+100% justified: I'd be thinking the same thing!</p>
+<p>I fully recognize that a service that facilitates remote code signing makes
+for a very lucrative attack target! If abused, it could be used to coerce
+parties with valid code signing certificates to sign unwanted code, like
+malware. There are many, many, many <em>wrong</em> ways to implement such a feature.
+I pondered for hours about the threat modeling and how to make this feature
+as secure as possible.</p>
+<p><a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_design.html">Remote Code Signing Design and Security Considerations</a>
+captures some of my high level design goals and security assessments.
+And <a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_protocol.html">Remote Code Signing Protocol</a>
+goes into detail about the communications protocol, including the
+crypto (actual cryptography, not the fad) involved. The key takeaways are
+the protocol and server are designed such that a malicious server or
+man-in-the-middle can not forge signature requests. Signing sessions expire
+after a few minutes and 3rd parties (or the server) can't inject malicious
+messages that would result in unwanted signatures. There is an initial
+handshake to derive a session ephemeral shared encryption key and from
+there symmetric encryption keys are used so all meaningful messages between
+peers are end-to-end encrypted. About the worst a malicious server could do
+is conduct a denial of service. This is by design.</p>
+<p>As I argue in <a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_design.html#security-analysis-in-the-bigger-picture">Security Analysis in the Bigger Picture</a>,
+I believe that my implementation of <em>remote signing</em> is <strong>more</strong> secure than
+many common practices because common practices today entail making copies
+of private keys and giving low trust machines (like CI workers) access to
+private keys. Or files are copied around without cryptographic chain-of-custody
+to prove against tampering. Yes, <em>remote signing</em> introduces a vector for remote
+access to <em>use</em> signing keys. But practiced as I intended, <em>remote signing</em> can
+eliminate the need to copy private keys or grant ~unlimited access to them.
+From a threat modeling perspective, I think the net restriction in key
+access makes <em>remote signing</em> more secure than the private key management
+practices by many today.</p>
+<p><strong>All that being said, the giant asterisk here is I implemented my own
+cryptosystem to achieve end-to-end message security. If there are bugs in
+the design or implementation, that cryptosystem could come crashing down,
+bringing defenses against message forgery with it.</strong> At that point, a
+malicious server or privileged network actor could potentially coerce
+someone into signing unwanted software. But this is likely the extent of
+the damage: an offline attack against the signing key should not be
+possible since signing requires presence and since the private key is
+never transmitted over the wire. Even without the end-to-end encryption,
+the system is <em>arguably</em> more secure than leaving your private key
+lingering around as an easily exfiltrated CI secret (or similar).</p>
+<p>(I apologize to every cryptographer I worked with at Mozilla who beat into me
+the commandment that <em>thou shall not roll their own crypto</em>: I have sinned
+and I feel remorseful.) </p>
+<p>Cryptography is hard. And I'm sure I made plenty of subtle mistakes.
+<a href="https://github.com/indygreg/PyOxidizer/issues/552">Issue #552</a> tracks
+getting an audit of this protocol and code performed. And the aforementioned
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing_protocol.html">protocol design docs</a>
+call out some of the places where I question decisions I've made.</p>
+<p><strong>If you would be interested in doing a security review on this feature,
+please get in touch on issue #552 or
+<a href="mailto:gregory.szorc@gmail.com">send me an email</a>. If there's one immediate
+outcome I'd like from this blog post it would be for some white hat^Hknight
+to show up and give me peace of mind about the cryptosystem implementation.</strong></p>
+<p><strong>Until then, please assume the end-to-end encryption is completely flawed.</strong>
+Consider asking someone with <em>security</em> or <em>cryptographer</em> in their job title
+for their opinion on whether this feature is safe for you to use. Hopefully
+we'll get a security review done soon and this caveat can go away!</p>
+<p>If you do want to use this feature,
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_remote_signing.html">Remote Code Signing</a>
+contains some usage documentation, including how to use it with GitHub
+Actions. (I could also use some help productionizing a reusable GitHub Action
+to make this more turnkey! Although I'm hesitant to do it before I know the
+cryptosystem is sound.)</p>
+<p>That was a long introduction to <em>remote code signing</em>. But I couldn't
+in good faith present the feature without addressing the security aspect.
+Hopefully I didn't scare you away! <strong>Traditional / local signing should
+have no security concerns</strong> (beyond the willingness to run software written
+by somebody you probably don't know, of course).</p>
+<h2>Apple Keychain Support</h2>
+<p>As of today's 0.14 release we now have early support for signing with code signing
+certificates stored in Apple Keychains! If you created your Apple code signing
+certificates in Keychain Access or Xcode, this is probably where you code
+signing certificates live.</p>
+<p>I held off implementing this for the longest time because I didn't perceive
+there to be a benefit: if you are on macOS, just use Apple's official tooling.
+But with <code>rcodesign</code> gaining support for remote code signing and some other
+features that could make it a compelling replacement for Apple tooling on
+all platforms, I figured we should provide the feature so we stop discouraging
+people to export private keys from Keychains.</p>
+<p>This integration is very young and there's still a lot that can be done,
+such as automatically using an appropriate signing certificate based on
+what you are signing. Please file feature request issues if there's
+a must-have feature you are missing!</p>
+<h2>Better Debugging of Failures</h2>
+<p>Apple's code signing is complex. It is easy for there to be subtle differences
+between Apple's tooling and <code>rcodesign</code>.</p>
+<p><code>rcodesign</code> now has <code>print-signature-info</code> and <code>diff-signatures</code> commands to
+dump and compare YAML metadata pertinent to code signing to make it easier to
+compare behavior between code signing implementations and even multiple
+signing operations.</p>
+<p>The documentation around
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_debugging.html">debugging and reporting bugs</a>
+now emphasizes using these tools to help identify bugs.</p>
+<h2>A Request For Users and Feedback</h2>
+<p>I now believe <code>rcodesign</code> to be generally usable. I've thrown a lot of
+random software at it and I feel like most of the big bugs and major missing
+features are behind us.</p>
+<p>But I also feel it hasn't yet received wide enough attention to have confidence
+in that assessment.</p>
+<p><strong>If you want to help the development of this tool, the most important
+actions you can take are to attempt signing / notarization operations with it
+and report your results.</strong></p>
+<p>Does <code>rcodesign</code> spark joy? Please leave a comment in the
+<a href="https://github.com/indygreg/PyOxidizer/discussions/556">GitHub discussion for the latest release</a>!</p>
+<p>Does <code>rcodesign</code> not work? I would very much appreciate a bug report!
+Details on how to file good bugs are
+<a href="https://pyoxidizer.readthedocs.io/en/latest/apple_codesign_debugging.html">in the docs</a>.</p>
+<p>Have general feedback? UI is confusing? Documentation is insufficient?
+Leave a comment in the aforementioned discussion. Or
+<a href="https://github.com/indygreg/PyOxidizer/issues/new">create a GitHub issue</a> if
+you think it is actionable. I can't fix what I don't know about!</p>
+<p>Have private feedback? <a href="mailto:gregory.szorc@gmail.com">Send me an email</a>.</p>
+<h2>Conclusion</h2>
+<p>I could write thousands of words about all I learned from hacking on this
+project.</p>
+<p>I've learned way too much about too many standards and specifications in the
+crypto space. RFCs 2986, 3161, 3280, 3281, 3447, 4210, 4519, 5280, 5480,
+5652, 5869, 5915, 5958, and 8017 plus probably a few more. How cryptographic
+primitives are stored and expressed: ASN.1, OIDs, BER, DER, PEM, SPKI,
+PKCS#1, PKCS#8. You can show me the raw parse tree for an ASN.1 data structure
+and I can probably tell you what RFC defines it. I'm not proud of this. But
+I will say actually knowing what every field in an X.509 certificate does
+or the many formats that cryptographic keys are expressed in seems empowering.
+Before, I would just search for the <code>openssl</code> incantation to do something.
+Now, I know which ASN.1 data structures are involved and how to manipulate
+the fields within.</p>
+<p>I've learned way too much around minutia around how Apple code signing
+actually works. The mechanism is way too complex for something in the security
+space. There was at least one high profile Gatekeeper bug in the past year
+allowing improperly signed code to run. I suspect there will be more: the
+surface area to exploit is just too large.</p>
+<p><strong>I think I'm proud of building an open source implementation of Apple's code
+signing. To my knowledge nobody else has done this outside of Apple. At least
+not to the degree I have.</strong> Then factor in that I was able to do this without
+access (or willingness) to look at Apple source code and much of the progress was
+achieved by diffing and comparing results with Apple's tooling. Hours of
+staring at diffoscope and comparing binary data structures. Hours of trying
+to find the magical settings that enabled a SHA-1 or SHA-256 digest to agree.
+It was tedious work for sure. I'll likely never see a financial return on
+the time equivalent it took me to develop this software. But, I suppose I
+can nerd brag that I was able to implement this!</p>
+<p><strong>But the real reward for this work will be if it opens up avenues to more
+(open source) projects distributing to the Apple ecosystems.</strong> This has
+historically been challenging for multiple reasons and many open source
+projects have avoided official / proper distribution channels to avoid the
+pain (or in some cases because of philosophical disagreements with the premise
+of having a walled software garden in the first place). I suspect things
+will only get worse, as I feel it is inevitable Apple clamps down on signing
+and notarization requirements on macOS due to the rising costs of malware
+and ransomware. <strong>So having an alternative, open source, and multi-platform
+implementation of Apple code signing seems like something important that
+should exist in order to provide opportunities to otherwise excluded
+developers. I would be humbled if my work empowers others. And this is
+all the reward I need.</strong></p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
+  <a name="pure-rust-implementation-of-apple-code-signing"></a>
+  <h2 class="blog_post_title"><a href="/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing" rel="bookmark" title="Permanent Link to Pure Rust Implementation of Apple Code Signing">Pure Rust Implementation of Apple Code Signing</a></h2>
+  <small>April 14, 2021 at 01:45 PM | categories: 
+
+<a href='/blog/category/pyoxidizer'>PyOxidizer</a>, <a href='/blog/category/apple'>Apple</a>, <a href='/blog/category/rust'>Rust</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>A few weeks ago I (foolishly?) set out to implement Apple code signing
+(what Apple's <code>codesign</code> tool does) in pure Rust.</p>
+<p>I wanted to quickly announce on this blog the existence of the project and
+the news that as of a few minutes ago, the <code>tugger-apple-codesign</code> crate
+implementing the code signing functionality is now
+<a href="https://crates.io/crates/tugger-apple-codesign">published on crates.io</a>!</p>
+<p>So, you can now sign Apple binaries and bundles on non-Apple hardware by
+doing something like this:</p>
+<pre><code>$ cargo install tugger-apple-codesign
+$ rcodesign sign /path/to/input /path/to/output
+</code></pre>
+<p>Current features include:</p>
+<ul>
+<li>Robust support for parsing embedded signatures and most related data
+  structures. <code>rcodesign extract</code> can be used to extract various signature
+  data in raw or human readable form.</li>
+<li>Parse and verify RFC 5652 Cryptographic Message Syntax (CMS) signature
+  data.</li>
+<li>Sign binaries. If a code signing certificate key pair is provided,
+  a CMS signature will be created. This includes support for Time-Stamp Protocol
+  (TSP) / RFC 3161 tokens. If no key pair is provided, you get an ad-hoc
+  signature.</li>
+<li>Signing bundles. Nested bundles and binaries will automatically be signed.
+  Non-code resources will be digested and a <code>CodeResources</code> XML file will be
+  produced.</li>
+</ul>
+<p>The most notable missing features are:</p>
+<ul>
+<li>No support for obtaining signing keys from keychains. If you want to sign
+  with a cryptographic key pair, you'll need to point the tool at a PEM encoded
+  key pair and CA chain.</li>
+<li>No support for parsing the Code Signing Requirements language. We can parse the
+  binary encoding produced by <code>csreq -b</code> and convert it back to this DSL. But we
+  don't parse the human friendly language.</li>
+<li>No support for notarization.</li>
+</ul>
+<p>All of these could likely be implemented. However, I am not actively working on
+any of these features. If you would like to contribute support, make noise in
+the <a href="https://github.com/indygreg/PyOxidizer/issues">GitHub issue tracker</a>.</p>
+<p>The Rust API, CLI, and documentation are still a bit rough around the edges. I
+haven't performed thorough QA on aspects of the functionality. However, the
+tool is able to produce signed binaries that Apple's canonical <code>codesign</code> tool
+says are well-formed. So I'm reasonably confident some of the functionality
+works as intended. If you find bugs or missing features, please
+<a href="https://github.com/indygreg/PyOxidizer/issues">report them on GitHub</a>. Or even
+better: submit pull requests!</p>
+<p>As part of this project, I also created and published the
+<a href="https://crates.io/crates/cryptographic-message-syntax">cryptographic-message-syntax</a>
+crate, which is a pure Rust partial implementation of RFC 5652, which defines
+the cryptographic message signing mechanism. This RFC is a bit dated and seems
+to have been superseded by RPKI. So you may want to look elsewhere before
+inventing new signing mechanisms that use this format.</p>
+<p>Finally, it appears the Windows code signing mechanism (Authenticode) also uses
+RFC 5652 (or a variant thereof) for cryptographic signatures. So by implementing
+Apple code signatures, I believe I've done most of the legwork to implement
+Windows/PE signing! I'll probably implement Windows signing in a new crate whenever
+I hook up automatic code signing to PyOxidizer, which was the impetus for this work
+(I want to make it possible to build distributable Apple programs without Apple
+hardware, using as many open source Rust components as possible).</p>
+
+  </div>
+</div>
+
+
+
+  <hr class="interblog" />
+  
+<div class="blog_post">
   <a name="global-kernel-locks-in-apfs"></a>
   <h2 class="blog_post_title"><a href="/blog/2018/10/29/global-kernel-locks-in-apfs" rel="bookmark" title="Permanent Link to Global Kernel Locks in APFS">Global Kernel Locks in APFS</a></h2>
   <small>October 29, 2018 at 02:20 PM | categories: 

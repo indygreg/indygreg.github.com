@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2022-05-10T16:21:11Z</updated>
+  <updated>2022-08-08T15:27:14Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -204,6 +204,7 @@ or feature requests in <a href="https://github.com/indygreg/PyOxidizer/issues">P
     <updated>2021-04-14T13:45:00Z</updated>
     <published>2021-04-14T13:45:00Z</published>
     <category scheme="http://gregoryszorc.com/blog" term="PyOxidizer" />
+    <category scheme="http://gregoryszorc.com/blog" term="Apple" />
     <category scheme="http://gregoryszorc.com/blog" term="Rust" />
     <summary type="html"><![CDATA[Pure Rust Implementation of Apple Code Signing]]></summary>
     <content type="html" xml:base="http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing"><![CDATA[<p>A few weeks ago I (foolishly?) set out to implement Apple code signing

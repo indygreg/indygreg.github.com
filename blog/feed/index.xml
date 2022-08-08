@@ -10,10 +10,87 @@
     <title>Gregory Szorc's Digital Home</title>
     <link>http://gregoryszorc.com/blog</link>
     <description>Rambling on</description>
-    <pubDate>Tue, 10 May 2022 16:21:11 GMT</pubDate>
+    <pubDate>Mon, 08 Aug 2022 15:27:14 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Achieving A Completely Open Source Implementation of Apple Code Signing and Notarization</title>
+      <link>http://gregoryszorc.com/blog/2022/08/08/achieving-a-completely-open-source-implementation-of-apple-code-signing-and-notarization</link>
+      <pubDate>Mon, 08 Aug 2022 08:08:08 PDT</pubDate>
+      <category><![CDATA[Apple]]></category>
+      <category><![CDATA[Rust]]></category>
+      <guid isPermaLink="true">http://gregoryszorc.com/blog/2022/08/08/achieving-a-completely-open-source-implementation-of-apple-code-signing-and-notarization</guid>
+      <description>Achieving A Completely Open Source Implementation of Apple Code Signing and Notarization</description>
+      <content:encoded><![CDATA[<p>As I've previously blogged in
+<a href="/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing/">Pure Rust Implementation of Apple Code Signing</a>
+(2021-04-14) and
+<a href="/blog/2022/04/25/expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing/">Expanding Apple Ecosystem Access with Open Source, Multi Platform Code signing</a>
+(2022-04-25), I've been hacking on an open source implementation of Apple code
+signing and notarization using the Rust programming language. This takes the form
+of the <code>apple-codesign</code> crate / library and its <code>rcodesign</code> CLI executable.
+(<a href="https://gregoryszorc.com/docs/apple-codesign/stable/">Documentation</a> /
+<a href="https://github.com/indygreg/PyOxidizer/tree/main/apple-codesign">GitHub project</a> /
+<a href="https://crates.io/crates/apple-codesign">crates.io</a>).</p>
+<p>As of that most recent post in April, I was pretty happy with the relative
+stability of the implementation: we were able to sign, notarize, and staple
+Mach-O binaries, directory bundles (<code>.app</code>, <code>.framework</code> bundles, etc), XAR
+archives / flat packages / <code>.pkg</code> installers, and DMG disk images. Except for
+the <a href="https://gregoryszorc.com/docs/apple-codesign/0.17.0/apple_codesign_quirks.html">known limitations</a>,
+if Apple's official <code>codesign</code> and <code>notarytool</code> tools support it, so do we.
+<strong>This allows people to sign, notarize, and release Apple software from non-Apple
+operating systems like Linux and Windows.</strong> This opens up new avenues for
+Apple platform access.</p>
+<p>A major limitation in previous versions of the <code>apple-codesign</code> crate was our
+reliance on Apple's <a href="https://help.apple.com/itc/transporteruserguide/">Transporter</a>
+tool for notarization. Transporter is a Java application made available for macOS,
+Linux, and Windows that speaks to Apple's servers and can upload assets to their
+notarization service. I used this tool at the time because it seemed to
+be officially supported by Apple and the path of least resistance to standing
+up notarization. But Transporter was a bit wonky to use and an extra
+dependency that you needed to install.</p>
+<p>At WWDC 2022, Apple <a href="https://developer.apple.com/videos/play/wwdc2022/10109/">announced</a>
+a new <a href="https://developer.apple.com/documentation/notaryapi">Notary API</a> as
+part of the App Store Connect API. In what felt like a wink directly at me,
+Apple themselves even calls out the possibility for leveraging this API to
+notarize from Linux! I knew as soon as I saw this that it was only a matter
+of time before I would be able to replace Transporter with a pure Rust client
+for the new HTTP API. (I was already thinking about using the unpublished HTTP
+API that <code>notarytool</code> uses. And from the limited reversing notes I have from
+before WWDC it looks like the new official Notary API is very similar - possibly
+identical to - what <code>notarytool</code> uses. So kudos to Apple for opening up this
+access!)</p>
+<p><strong>I'm very excited to announce that we now have a pure Rust implementation
+of a client for Apple's Notary API in the <code>apple-codesign</code> crate. This means we
+can now notarize Apple software from any machine where you can get the Rust
+crate to compile. This means we no longer have a dependency on the 3rd party
+Apple Transporter application. Notarization, like code signing, is 100% open
+source Rust code.</strong></p>
+<p>As excited as I am to announce this new feature, <strong>I'm even more excited that
+it was largely implemented by a contributor, Robin Lambertz /
+<a href="https://github.com/roblabla">@roblabla</a>!</strong> They
+<a href="https://github.com/indygreg/PyOxidizer/issues/591">filed a GitHub feature request</a>
+while WWDC 2022 was still ongoing and then <a href="https://github.com/indygreg/PyOxidizer/pull/593">submitted a PR</a>
+a few days later. It took me a few months to get around to reviewing it
+(I try to avoid computer screens during summers), but it was a fantastic
+PR given the scope of the change. It never ceases to bring joy to me when
+someone randomly contributes greatness to open source.</p>
+<p>So, as of the just-released <a href="https://github.com/indygreg/PyOxidizer/releases/tag/apple-codesign%2F0.17.0">0.17 release</a>
+of the <code>apple-codesign</code> Rust crate and its corresponding <code>rcodesign</code> CLI tool, you can now
+<code>rcodesign notary-submit</code> to speak to Apple's Notary API using a pure Rust client. No
+more requirements on 3rd party, proprietary software. All you need to sign and
+notarize Apple applications is the self-contained <code>rcodesign</code> executable and a Linux,
+Windows, macOS, BSD, etc machine to run it on.</p>
+<p>I'm stoked to finally achieve this milestone! There are probably thousands of
+companies and individuals who have wanted to release Apple software from
+non-macOS operating systems. (The existence and popularity of tools like
+<a href="https://fastlane.tools/">fastlane</a> seems to confirm this.) The historical
+lack of an Apple code signing and notarization solution that worked outside
+macOS has prevented this. Well, that barrier has officially fallen.</p>
+<p>Release notes, documentation, and (self-signed) pre-built executables of the
+<code>rcodesign</code> executable for major platforms are available on the
+<a href="https://github.com/indygreg/PyOxidizer/releases/tag/apple-codesign%2F0.17.0">0.17 release page</a>.</p>]]></content:encoded>
+    </item>
     <item>
       <title>Announcing the PyOxy Python Runner</title>
       <link>http://gregoryszorc.com/blog/2022/05/10/announcing-the-pyoxy-python-runner</link>
@@ -193,6 +270,7 @@ or feature requests in <a href="https://github.com/indygreg/PyOxidizer/issues">P
       <title>Expanding Apple Ecosystem Access with Open Source, Multi Platform Code Signing</title>
       <link>http://gregoryszorc.com/blog/2022/04/25/expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing</link>
       <pubDate>Mon, 25 Apr 2022 08:00:00 PDT</pubDate>
+      <category><![CDATA[Apple]]></category>
       <category><![CDATA[Rust]]></category>
       <guid isPermaLink="true">http://gregoryszorc.com/blog/2022/04/25/expanding-apple-ecosystem-access-with-open-source,-multi-platform-code-signing</guid>
       <description>Expanding Apple Ecosystem Access with Open Source, Multi Platform Code Signing</description>
@@ -866,6 +944,7 @@ all means, use Git LFS. But please make an informed decision either way.</p>]]><
       <link>http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing</link>
       <pubDate>Wed, 14 Apr 2021 13:45:00 PDT</pubDate>
       <category><![CDATA[PyOxidizer]]></category>
+      <category><![CDATA[Apple]]></category>
       <category><![CDATA[Rust]]></category>
       <guid isPermaLink="true">http://gregoryszorc.com/blog/2021/04/14/pure-rust-implementation-of-apple-code-signing</guid>
       <description>Pure Rust Implementation of Apple Code Signing</description>
@@ -3410,124 +3489,6 @@ in your software and environments but the effort to address them may not be wort
 the reward. Computers and software, like life, are full of trade-offs.
 Performance is just one trade-off. Please don't cargo cult my advice without
 measuring and applying critical thinking first.</p>]]></content:encoded>
-    </item>
-    <item>
-      <title>Announcing the 0.9 Release of PyOxidizer</title>
-      <link>http://gregoryszorc.com/blog/2020/10/18/announcing-the-0.9-release-of-pyoxidizer</link>
-      <pubDate>Sun, 18 Oct 2020 22:00:00 PDT</pubDate>
-      <category><![CDATA[Python]]></category>
-      <category><![CDATA[PyOxidizer]]></category>
-      <guid isPermaLink="true">http://gregoryszorc.com/blog/2020/10/18/announcing-the-0.9-release-of-pyoxidizer</guid>
-      <description>Announcing the 0.9 Release of PyOxidizer</description>
-      <content:encoded><![CDATA[<p>I have decided to make up for the 6 month lull between PyOxidizer's
-0.7 and 0.8 releases by releasing
-<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/">PyOxidizer</a> 0.9 just 1 week
-after 0.8!</p>
-<p>The full 0.9 changelog is found
-<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/history.html#version-0-9-0">in the docs</a>.
-First time user? See the
-<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/getting_started.html">Getting Started</a>
-documentation.</p>
-<p>While the 0.9 release is far smaller in terms of features compared to 0.8,
-it is an important release because of progress closing compatibility gaps.</p>
-<h2>Build a <code>python</code> Executable</h2>
-<p>PyOxidizer 0.8 quietly shipped the ability to build executables that
-behave like <code>python</code> executables via enhancements to the configurability of
-embedded Python interpreters.</p>
-<p>PyOxidizer 0.9 made some minor changes to make this scenario work better
-and there is even
-<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/packaging_python_executable.html">official documentation</a>
-on how to achieve this. So now you can emit a <code>python</code> executable next to your
-application's executable. Or you could use PyOxidizer to build a highly portable,
-self-contained <code>python</code> executable and ship your Python scripts next to it,
-using PyOxidizer's <code>python</code> in your <code>#!</code>.</p>
-<h2>Support Packaging Files as Files for Maximum Compatibility</h2>
-<p>There is a long-tail of Python packages that don't <em>just work</em> with
-PyOxidizer. A subset of these packages don't work because of bugs with how
-PyOxidizer attempts to classify files as specific types of Python resources.</p>
-<p>The way that normal Python works is you materialize a bunch of files on
-the filesystem and at run-time the filesystem-based importer <code>stat()</code>s a
-bunch of paths until it finds a candidate file satisfying the <code>import</code>
-request. This works of course. But it is inefficient. Since PyOxidizer has
-awareness of every resource being packaged at build time, it attempts to
-index all known resources and serialize them to an efficient data structure
-so finding and loading a resource can be extremely quick (effectively just a
-hashmap lookup in Rust code to resolve the memory address of data).</p>
-<p>PyOxidizer's approach does work in the majority of cases. But there are
-edge cases. For example, NumPy's binary wheels have installed file paths
-like <code>numpy.libs/libopenblasp-r0-ae94cfde.3.9.dev.so</code>. The <code>numpy.libs</code>
-directory is not a valid Python package directory since it has a <code>.</code> and
-since it doesn't have an <code>__init__.py[c]</code> file. This is a case where
-PyOxidizer's code for turning files into <em>resources</em> is currently confused.</p>
-<p>It is tempting to argue that file layouts like NumPy's are <em>wrong</em>. But
-there doesn't seem to be any formal specification preventing the use of
-such layouts. The arbiter of truth here is what Python packaging tools
-accept and the current code for installing <em>wheels</em> gladly accepts file
-layouts like these. So I've accepted that PyOxidizer is just going to have
-to support edge cases like this. (I've captured more details about this
-particular issue
-<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/technotes.html#ambiguous-file-classification">in the docs</a>).</p>
-<p>Anyway, PyOxidizer 0.9 ships a new, simpler mode for handling files:
-<em>files mode</em>. In <a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/packaging_resources.html#classified-resources-versus-files">files mode</a>,
-PyOxidizer disables its code for <em>classifying</em> files as typed Python
-resources (like module sources and extension modules) and instead treats
-a file as... a file.</p>
-<p>When in files mode, actions that invoke Python packaging tools return
-files objects instead of classified resources. If you then add these files
-for packaging, those files are materialized on the filesystem next to your
-built executable. You can then use Python's standard filesystem importer
-to load these files at run-time.</p>
-<p>This allows you to use PyOxidizer with packages like NumPy that were
-previously incompatible due to bugs with file/resource classification.
-In fact, getting NumPy working with PyOxidizer is
-<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/packaging_additional_files.html#installing-unclassified-files-on-the-filesystem">now in the official documentation</a>!</p>
-<p><em>Files mode</em> is still in its infancy. There exists code for embedding
-files data in the produced executable. I plan to eventually teach PyOxidizer's
-run-time code to extract these embedded files to a temporary directory,
-SquashFS FUSE filesystem, etc. This is the approach that other Python
-packaging tools like PyInstaller and XAR use. While it is less efficient, this
-approach is highly compatible with Python code in the wild since you sidestep
-issues with <code>__file__</code> and other assumptions about installed file layouts. So
-it makes sense for PyOxidizer to provide support for this so you can still
-achieve the friendliness of a self-contained executable without worrying
-about compatibility. Look for improvements to <em>files mode</em> in future releases.</p>
-<p>And to help debug issues with PyOxidizer's file handling and resource
-classification, the new
-<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/managing_projects.html#debugging-resource-scanning-and-identification-with-find-resources">pyoxidizer find-resources</a>
-command can be used to invoke PyOxidizer's code for scanning and classifying
-files. Hopefully this makes it easier to diagnose bugs in this critical
-component of PyOxidizer!</p>
-<h2>Some Important Bug Fixes</h2>
-<p>PyOxidizer 0.8 shipped with some pretty annoying bugs and behavior quirks.</p>
-<p>The ability to set custom <code>sys.path</code> values via Starlark was broken. How I
-managed to ship that, I'm not sure. But it is fixed in 0.9.</p>
-<p>Another bug I can't believe I shipped was
-the <code>PythonExecutable.read_virtualenv()</code> Starlark method being broken due to
-a typo. You can read from virtualenvs again in PyOxidizer 0.9.</p>
-<p>Another important improvement is in the default Python interpreter
-configuration. We now automatically initialize Python's locales configuration
-by default. Without this, the encoding of filesystem paths and <code>sys.argv</code> may
-not have been correct. If someone passed a non-ASCII argument, the Python <code>str</code>
-value was likely mangled. PyOxidizer built binaries should behave reasonably
-by default now. The <a href="https://github.com/indygreg/PyOxidizer/issues/294">issue</a>
-is a good read if the subtle behaviors of how encodings work in Python and on
-different operating systems is interesting to you.</p>
-<h2>Better Binary Portability Documentation</h2>
-<p>The documentation on
-<a href="https://pyoxidizer.readthedocs.io/en/v0.9.0/packaging_binary_compatibility.html">binary portability</a>
-has been overhauled. Hopefully it is much more clear about the capabilities
-of PyOxidizer to produce a binary that <em>just works</em> on other machines.</p>
-<p>I eventually want to get PyOxidizer to a point where users don't have to
-think about binary portability. But until PyOxidizer starts generating
-installers and providing the ability to run builds in deterministic and
-reproducible environments, it is sadly a problem that is being externalized
-to end users.</p>
-<h2>In Conclusion</h2>
-<p>PyOxidizer 0.9 is a small release representing just 1 week of work. But
-it contains some notable features that I wanted to get out the door.</p>
-<p>As always, please report any issues or feedback in the
-<a href="https://github.com/indygreg/PyOxidizer/issues/new">GitHub issue tracker</a>
-or the <a href="https://groups.google.com/forum/#!forum/pyoxidizer-users">users mailing list</a>.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>
