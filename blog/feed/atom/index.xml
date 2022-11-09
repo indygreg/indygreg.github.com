@@ -7,7 +7,7 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2022-08-08T15:27:14Z</updated>
+  <updated>2022-11-09T06:09:29Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
@@ -34,7 +34,7 @@
 signing and notarization using the Rust programming language. This takes the form
 of the <code>apple-codesign</code> crate / library and its <code>rcodesign</code> CLI executable.
 (<a href="https://gregoryszorc.com/docs/apple-codesign/stable/">Documentation</a> /
-<a href="https://github.com/indygreg/PyOxidizer/tree/main/apple-codesign">GitHub project</a> /
+<a href="https://github.com/indygreg/apple-platform-rs/tree/main/apple-codesign">GitHub project</a> /
 <a href="https://crates.io/crates/apple-codesign">crates.io</a>).</p>
 <p>As of that most recent post in April, I was pretty happy with the relative
 stability of the implementation: we were able to sign, notarize, and staple
@@ -355,9 +355,9 @@ it was signed by a GitHub Actions Linux runner using a code signing certificate
 exclusive to a YubiKey. That YubiKey was plugged into a Windows 11 desktop next to
 my desk. The <code>rcodesign</code> executable was not copied between machines as part of the
 signing operation. Read on to learn about the sorcery that made this possible.</p>
-<p>A lot has changed in the <a href="https://github.com/indygreg/PyOxidizer/tree/main/apple-codesign">apple-codesign</a>
+<p>A lot has changed in the <a href="https://github.com/indygreg/apple-platform-rs/tree/main/apple-codesign">apple-codesign</a>
 project / Rust crate in the last year! Just look at the
-<a href="https://github.com/indygreg/PyOxidizer/blob/main/apple-codesign/CHANGELOG.rst">changelog</a>!</p>
+<a href="https://github.com/indygreg/apple-platform-rs/blob/main/apple-codesign/CHANGELOG.rst">changelog</a>!</p>
 <p>The project was renamed from <code>tugger-apple-codesign</code>.</p>
 <p>(If you installed via <code>cargo install</code>, you'll need to
 <code>cargo install --force apple-codesign</code> to force Cargo to overwrite the <code>rcodesign</code>
@@ -1020,13 +1020,13 @@ $ rcodesign sign /path/to/input /path/to/output
 </ul>
 <p>All of these could likely be implemented. However, I am not actively working on
 any of these features. If you would like to contribute support, make noise in
-the <a href="https://github.com/indygreg/PyOxidizer/issues">GitHub issue tracker</a>.</p>
+the <a href="https://github.com/indygreg/apple-platform-rs/issues">GitHub issue tracker</a>.</p>
 <p>The Rust API, CLI, and documentation are still a bit rough around the edges. I
 haven't performed thorough QA on aspects of the functionality. However, the
 tool is able to produce signed binaries that Apple's canonical <code>codesign</code> tool
 says are well-formed. So I'm reasonably confident some of the functionality
 works as intended. If you find bugs or missing features, please
-<a href="https://github.com/indygreg/PyOxidizer/issues">report them on GitHub</a>. Or even
+<a href="https://github.com/indygreg/apple-platform-rs/issues">report them on GitHub</a>. Or even
 better: submit pull requests!</p>
 <p>As part of this project, I also created and published the
 <a href="https://crates.io/crates/cryptographic-message-syntax">cryptographic-message-syntax</a>
