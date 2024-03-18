@@ -7,12 +7,246 @@
   <title type="text">Gregory Szorc's Digital Home</title>
   <subtitle type="text">Rambling on</subtitle>
 
-  <updated>2023-10-30T10:23:04Z</updated>
+  <updated>2024-03-18T03:55:04Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog" />
   <id>http://gregoryszorc.com/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://gregoryszorc.com/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>Gregory Szorc</name>
+      <uri>http://gregoryszorc.com/blog</uri>
+    </author>
+    <title type="html"><![CDATA[My Shifting Open Source Priorities]]></title>
+    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2024/03/17/my-shifting-open-source-priorities" />
+    <id>http://gregoryszorc.com/blog/2024/03/17/my-shifting-open-source-priorities</id>
+    <updated>2024-03-17T21:00:00Z</updated>
+    <published>2024-03-17T21:00:00Z</published>
+    <category scheme="http://gregoryszorc.com/blog" term="Personal" />
+    <category scheme="http://gregoryszorc.com/blog" term="PyOxidizer" />
+    <summary type="html"><![CDATA[My Shifting Open Source Priorities]]></summary>
+    <content type="html" xml:base="http://gregoryszorc.com/blog/2024/03/17/my-shifting-open-source-priorities"><![CDATA[<p>I'm a maintainer of a handful of open source projects, some of which have
+millions of downloads and/or are used in important workloads, including in
+production.</p>
+<p>I have a full time job as a software engineer and my open source work is
+effectively a side job. (Albeit one I try very hard to not let intersect
+with my day job.)</p>
+<p>Historically, my biggest contributions to my open source projects have come
+when I'm not working full time:</p>
+<ul>
+<li><a href="https://github.com/indygreg/python-zstandard">python-zstandard</a> was started
+  when I was on medical leave, recovering from a surgery.</li>
+<li><a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
+  and <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> were mainly built
+  when I was between jobs, after leaving Mozilla.</li>
+<li><a href="https://github.com/indygreg/apple-platform-rs/tree/main/apple-codesign">apple-codesign</a>
+  was built in the height of COVID when I took a voluntary leave of absence
+  from work to reconstitute my mental and physical health.</li>
+</ul>
+<p>When working full time, my time to contribute to open source has been carved out
+of weekday nights and weekends, especially in the winter months. I believe
+that code is an art form and programming a form of creative expression. My open
+source contributions provide a relaxing avenue for me to express my artistic
+creativity, when able.</p>
+<p>My open source contributions reflect my personal priorities of where and what
+to spend my free time on.</p>
+<p>The only constant in life is change.</p>
+<p>In the middle of 2022, I switched job roles and found myself reinvigorated by my
+new role - Infrastructure Performance - which is at the intersection of some of
+my strongest technical and professional skills. I found myself willingly
+pouring more energy and time into my day job. That had the side effect of
+reducing my open source contributions.</p>
+<p>In 2023Q1 I got married. In the months leading up to and after, I chose to
+prioritize spending time with my now wife and all the time commitments that
+entails. This also reduced the amount of time available for open source
+contributions.</p>
+<p>In 2023Q4 I became a father to a beautiful baby girl. While on my employer's
+generous-for-the-United-States fourteen week paternity leave, I somehow found
+some time to contribute to open source. As refreshing as that was, it didn't
+last. My <em>man cave</em> where my desktop computer resides has been converted into
+a nursery. And for the past few months it has been occupied by my mother-in-law,
+who has been generously effectively serving as a live-in nanny. Even when I'm
+able to sit down at my desktop, it's hard to get into a state of flow due to
+the added entropy from the additional three people now living with me.</p>
+<p>After realizing the new normal in 2024Q1, I purchased a <a href="https://www.wahoofitness.com/devices/indoor-cycling/bike-trainers/kickr-move-buy">Wahoo KICKR MOVE</a>
+bicycle trainer and now spend considerable time doing virtual bicycle rides on
+<a href="https://www.zwift.com/">Zwift</a> because its one of the few <em>leisure</em> activities
+I can do at home without drawing scrutiny from my wife and mother-in-law (but
+98% my mother-in-law because I've observed that my wife is effectively
+infallible). I now get excited about virtually summiting famous climbs instead of
+contributing to open source. (Today's was
+<a href="https://pjammcycling.com/climb/40.Mont-Ventoux-Bedoin">Mont Ventoux</a> - an
+absolute beast of a climb that reminded me a lot of my real world ride up
+<a href="https://pjammcycling.com/climb/11.Pikes-Peak">Pike's Peak</a> in 2020.)</p>
+<p>Various changes in the past eighteen or so months have created additional
+time constraints and prioritization changes that have resulted in my open
+source contributions withering.</p>
+<p>In addition, my technical interests have been shifting.</p>
+<p>I've always gravitated to more systems-level areas of computers. My degree
+is in Computer Engineering and I have a stereotypical engineer mindset: I
+have an insatiable curiosity about how things work and interact and I want
+to always be tinkering. I prefer to be closer to hardware instead of abstracted
+far away from it. I enjoy interacting with the building blocks of software
+ecosystems: operating systems, filesystems, runtimes, file formats, compilers,
+etc.</p>
+<p>Historically, my open source contributions to my preferred areas of
+computing were limited. Again, to me open source is an enjoyable form of
+creative expression. That means I do it for <em>fun</em>. Historically, the
+<em>systems-level</em> programming space was limited to languages like C and
+C++, which I consider frustrating and painful to use. If I'm going to subject
+myself to misery when programming, you are going to have to pay me well to
+do it.</p>
+<p>As part of creating PyOxidizer, I learned Rust.</p>
+<p>When I became proficient in Rust, I realized that Rust unlocks all kinds of
+systems-level problems that were effectively off-limits for my open source
+contributions. Would I <a href="/blog/2022/01/03/rust-implementation-of-debian-packaging-primitives/">implement</a>
+Debian packaging primitives in Python? Or a <a href="/blog/2022/01/09/bulk-analyze-linux-packages-with-linux-package-analyzer/">tool</a>
+to bulk analyze Linux packages and peek inside ELF binaries for insights
+about what compiler/linker features are used in the wild in Python/C/C++?
+Not unless you pay me to do it!</p>
+<p>As I learned Rust, I also found myself being drawn away from Python, my
+prior go-to language. As I wrote in <a href="/blog/2021/04/13/rust-is-for-professionals/">Rust is for Professionals</a>,
+Rust feels surprisingly high level. It isn't as terse as Python but it is
+a lot closer than I thought it would be. And Rust gives you vastly stronger
+compile-time guarantees and run-time performance than Python. I felt like
+Rust's tooling ecosystem was supporting me instead of standing in my way. I
+felt that when you consider the overall software development lifecycle - not
+just the edit-build-run loop that people tend to fixate on, likely because
+it is the easiest to measure - Rust was vastly more productive and a joy to
+work with than Python. All those countless hours debugging, fixing, and
+authoring tests for <code>TypeError</code> and <code>ValueError</code> Python exceptions you see
+in production just don't happen with Rust and that time can be better spent
+iterating on core functionality, which is what actually matters. </p>
+<p>On top of the Rust undercurrents, I've also become somewhat disenchanted with
+the Python ecosystem. As I wrote in 2020's <a href="/blog/2020/01/13/mercurial's-journey-to-and-reflections-on-python-3/">Mercurial's Journey to and Reflections on
+Python 3</a>,
+the Python 3 transition was bungled and resulted in years - if not a full
+decade - of lost opportunity. As I wrote in 2020's <a href="/blog/2023/10/30/my-user-experience-porting-off-setup.py/">My User Experience Porting Off
+setup.py</a>, the Python
+packaging story feels as discombobulated and frustrating as ever. PyOxidizer
+additionally brushed up against <a href="/docs/pyoxidizer/0.24.0/pyoxidizer_technotes.html#desired-changes-from-python-to-aid-pyoxidizer">several limitations</a>
+in how Python is designed and implemented, many of which are not trivially
+fixable. As a <em>systems-level guy</em>, I am frequently questioning various aspects
+of the Python ecosystem which I have contrasting opinions on, including the
+importance of correctness and performance.</p>
+<p>Starting in 2021, I started gravitating towards writing more Rust code and solving
+problems in the systems domain that were previously off-limits to me, like Apple
+code signing. Initially the work was in support of PyOxidizer: I was going to
+implement all these packaging primitives in pure Rust and enable people to
+distribute Python applications without requiring access to a Windows or macOS
+machine! Over time, this work consumed me. Apple code signing turned into a major
+time sink because of its complexity and the fact I was having to reverse
+engineer a lot of its internals. But I was having a ton of fun doing it: more
+fun than swimming upstream against decades of encrusted technical debts in the
+Python ecosystem.</p>
+<p>By late 2021, I realized I made a series of <em>mistakes</em> with PyOxidizer.</p>
+<p>I started PyOxidizer as a science experiment to see if it was possible to achieve
+a single file executable Python application without requiring a <em>temporary</em>
+filesystem at run-time. I succeeded. But the cost was compatibility with the
+larger pre-built Python package ecosystem. I built all this complexity into
+PyOxidizer to allow people to tweak how Python resources are packaged so they
+could choose to build a single file application if they wanted. This ballooned
+into a hot mess and was obviously not user-friendly. It violated various
+personal principles about optimizing for end-user experience.</p>
+<p>Armed with knowledge of all the pitfalls, I realized that there was a 90%
+use case for Python application packaging that was simple for end users and
+technically achievable using all the code primitives - like the
+<a href="https://crates.io/crates/pyembed">pyembed Rust crate</a> - that I built out for
+PyOxidizer.</p>
+<p>Thus the <a href="/blog/2022/05/10/announcing-the-pyoxy-python-runner/">PyOxy project</a> was born
+and released in May 2022.</p>
+<p>While I believe PyOxy is already a generally useful primitive to have in the
+Python ecosystem, I had bigger goals in mind.</p>
+<p>My intent with PyOxy was to build in a simplified and opinionated <em>PyOxidizer
+lite</em> mode. The <code>pyoxy</code> executable is already a chameleon: if you rename it to
+<code>python</code> it behaves like a <code>python</code> executable. I wanted to extend this so you
+could do something like <code>pyoxy build-app</code> and it would collect all dependencies,
+assemble a
+<a href="https://gregoryszorc.com/docs/pyoxidizer/0.24.0/oxidized_importer_packed_resources.html">Python packed resources</a>
+blob, and embed that in a copy of the <code>pyoxy</code> binary as an ELF, Mach-O, or PE
+segment. Then at run-time, the variant executable binary would load the application
+configuration and Python resources metadata from its own binary and execute the
+application. Essentially, PyOxy would evolve into a self-packaging Python
+application. I <em>just</em> needed to evolve the Python packed resources format,
+implement a very crude ELF, Mach-O, and PE <em>linker</em> to append resources data to an
+executable, and teach <code>pyembed</code> to read resources data from an ELF, Mach-O, or
+PE segment. All within my sphere of technical competency. And I was excited to
+build it and forever alter people's perceptions of how easy it could be to produce
+a distributable Python application.</p>
+<p>Then the roller coaster of my personal life took over. I felt newly invigorated
+with a new job role. I got engaged and married. I became a father.</p>
+<p>By early 2023, it was clear my ability to contribute to open source would be
+vastly diminished for the foreseeable future. PyOxidizer and PyOxy fell into a
+state of neglect. Weeks went by without me even tinkering on my local computer,
+much less push commits or publish a release. Weeks turned into months. Months
+into quarters. At this point, I haven't pushed a commit to
+<a href="https://github.com/indygreg/PyOxidizer">indygreg/PyOxidizer</a> since January 2023.
+And I'm not sure when I next will, if ever.</p>
+<p>In my limited open source contribution time, I've prioritized other projects
+over PyOxidizer.</p>
+<p><a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
+has gained a life outside PyOxidizer. It is now used by
+<a href="https://github.com/astral-sh/rye">rye</a>, Bazel's
+<a href="https://github.com/bazelbuild/rules_python">rules_python</a>,
+<a href="https://beeware.org/project/projects/tools/briefcase/">briefcase</a>, and a myriad
+of other consumers. The release assets have been downloaded over 23 million
+times and the download rate appears to be accelerating. I still actively
+support python-build-standalone and intend for the project to be actively
+supported for the indefinite future: it has become too important to abandon. I'm
+actively recruiting assistance to help maintain the project and I'm not concerned
+about its future.</p>
+<p>Apple code signing still actively draws my engagement. What I love about the
+project is it either works or it doesn't: there's limited extra features we can
+add to it since Apple mostly dictates the feature set. And I perceive the current
+project to be mostly <em>done</em>.</p>
+<p><a href="https://github.com/indygreg/python-zstandard">python-zstandard</a> is downloaded
+~8 million times per month. The project is long overdue for some modernization.
+I'm sitting on a pile of commits to improve it, but progress has been slow. I
+just learned this weekend that the maintainer of the other popular zstandard
+Python package deleted their GitHub account recently and now users are looking to
+onboard to my package. Nothing quite like unanticipated distractions!</p>
+<p><strong>That's a very long-winded way of saying that PyOxidizer and all the projects under
+its umbrella are effectively in a zombie state.</strong> I'm hesitant to say <em>dead</em> because
+if I suddenly found myself with lots of free time I'd love to brush off the cobwebs
+and bring the projects back to life. But who am I kidding: they are effectively dead
+at the moment because with everything happening in my personal life, I don't see where
+I find the time to resuscitate the project. And that assumes I even want to: again,
+I've become somewhat disenchanted by the state of Python. The main thing that draws
+me to it is the size of the community and the potential for impact. But to realize
+that impact I feel like I'd be pushing Python in directions it isn't well-equipped
+to go in. Quite franky - and, yes, selfishly - I don't want to subject myself to
+the misery unless I'm being well paid to do it. Again, I view my open source
+contributions as a <em>fun</em> outlet for my creative expression and nudging Python
+packaging in directions it is obviously ill-equipped to go in just isn't <em>fun</em>.</p>
+<p><strong>If anyone reading has an interest in taking ownership or maintenance responsibilities
+of PyOxidizer, any projects under its umbrella, or any of my other open source projects,
+I'm receptive to proposals.</strong> Send me an <a href="mailto:gregory.szorc@gmail.com">email</a>
+or create an issue or discussion on GitHub if you want to do it publicly.</p>
+<p>But I'm going to assume that PyOxidizer is going to wither and die - or at least
+incur some massive backwards incompatible breaks if it continues to live. I've already
+filed issues against python-build-standalone - such as
+<a href="https://github.com/indygreg/python-build-standalone/issues/221">removing Windows static builds</a> -
+to make the project easier to support and less work for future maintainers.</p>
+<p>If I have one regret about how this has played out, it is my failure to
+communicate developments in my open source commitments / expectations in a timely manner.
+I knew the future was bleak in early 2023 but didn't publicly say anything.
+I still thought there was a chance that things were going to change and I didn't
+want to make a hard decision prematurely. Writing this post has been on my mind
+since the middle of 2023 but I just couldn't bring myself to write it. And -
+surprise - having a newborn at home is a giant time and mental commitment! I'm
+writing this now because people are (finally!) noticing my lack of contributions to
+PyOxidizer and asking questions. And I'm home alone for a few days and actually
+have time to sit down and compose this post. (Yes, I'm that stretched for time in
+my personal life.)</p>
+<p>In 2023, I struggled with the idea of letting people down by declaring PyOxidizer
+<em>dead</em>. But when I wake up every morning, walk into the nursery, and cause my daughter
+to smile and flail her arms and legs with unbridled excitement when she sees me, I'd
+have it no other way. When it comes to choosing between open source and family, I
+choose family.</p>
+<p>It feels appropriate to end this post with a link to <a href="https://xkcd.com/2347/">XKCD 2347: Dependency</a>.
+But I'm not the <em>random person in Nebraska</em>: I'm a husband and father.</p>]]></content>
+  </entry>
   <entry>
     <author>
       <name>Gregory Szorc</name>
@@ -1495,215 +1729,5 @@ In other words, I can start building a tool that others will want to use.</p>
 the <a href="https://github.com/indygreg/python-build-standalone">python-build-standalone</a>
 and <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> projects on
 GitHub.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>Gregory Szorc</name>
-      <uri>http://gregoryszorc.com/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Faster In-Memory Python Module Importing]]></title>
-    <link rel="alternate" type="text/html" href="http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing" />
-    <id>http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing</id>
-    <updated>2018-12-29T09:00:00Z</updated>
-    <published>2018-12-28T12:40:00Z</published>
-    <category scheme="http://gregoryszorc.com/blog" term="Python" />
-    <category scheme="http://gregoryszorc.com/blog" term="PyOxidizer" />
-    <category scheme="http://gregoryszorc.com/blog" term="Rust" />
-    <summary type="html"><![CDATA[Faster In-Memory Python Module Importing]]></summary>
-    <content type="html" xml:base="http://gregoryszorc.com/blog/2018/12/28/faster-in-memory-python-module-importing"><![CDATA[<p>I <a href="/blog/2018/12/18/distributing-standalone-python-applications/">recently blogged about</a>
-distributing standalone Python applications. In that post, I announced
-<a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a> - a tool which
-leverages Rust to produce standalone executables embedding Python. One of the
-features of PyOxidizer is the ability to import Python modules embedded
-within the binary using zero-copy.</p>
-<p>I also recently blogged about
-<a href="/blog/2018/10/29/global-kernel-locks-in-apfs/">global kernel locks in APFS</a>,
-which make filesystem operations slower on macOS. This was the latest wrinkle in
-a long battle against Python's slow startup times, which I've posted about
-on the official python-dev mailing list
-<a href="https://mail.python.org/pipermail/python-dev/2014-May/134528.html">over</a>
-<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">the</a>
-<a href="https://mail.python.org/pipermail/python-dev/2018-October/155466.html">years</a>.</p>
-<p>Since I announced PyOxidizer a few days ago, I've had some productive holiday
-hacking sessions!</p>
-<p>One of the reached milestones is PyOxidizer now supports macOS.</p>
-<p>With that milestone reached, I thought it would be interesting to compare
-the performance of a PyOxidizer executable versus a standard CPython build.</p>
-<p>I produced a <a href="https://gist.github.com/indygreg/be1c229fa41ced5c76d912f7073f9de6">Python script</a>
-that imports almost the entirety of the Python standard library - at least the
-modules implemented in Python. That's 508 <code>import</code> statements. I then
-executed this script using a typical <code>python3.7</code> binary (with the standard
-library on the filesystem) and PyOxidizer-produced standalone executables
-with a module importer that loads Python modules from memory using zero copy.</p>
-<pre><code># Homebrew installed CPython 3.7.2
-
-# Cold disk cache.
-$ sudo purge
-$ time /usr/local/bin/python3.7 &lt; import_stdlib.py
-real   0m0.694s
-user   0m0.354s
-sys    0m0.121s
-
-# Hot disk cache.
-$ time /usr/local/bin/python3.7 &lt; import_stdlib.py
-real   0m0.319s
-user   0m0.263s
-sys    0m0.050s
-
-# PyOxidizer with non-PGO/non-LTO CPython 3.7.2
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.223s
-user   0m0.201s
-sys    0m0.017s
-
-# PyOxidizer with PGO/non-LTO CPython 3.7.2
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.234s
-user   0m0.210s
-sys    0m0.019
-
-# PyOxidizer with PTO+LTO CPython 3.7.2
-$ sudo purge
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.442s
-user   0m0.252s
-sys    0m0.059s
-
-$ time target/release/pyall &lt; import_stdlib.py
-real   0m0.221s
-user   0m0.197s
-sys    0m0.020s
-</code></pre>
-<p>First, the PyOxidizer times are all relatively similar regardless of whether
-PGO or LTO is used to build CPython. That's not too surprising, as I'm
-exercising a very limited subset of CPython (and I suspect the benefits
-of PGO/LTO aren't as pronounced due to the nature of the CPython API).</p>
-<p>But the bigger result is the obvious speedup with PyOxidizer and its
-in-memory importing: <strong>PyOxidizer can import almost the entirety of the
-Python standard library ~100ms faster - or ~70% of original - than a
-typical standalone CPython install</strong> with a hot disk cache! This comes
-out to ~0.19ms per <code>import</code> statement. If we run <code>purge</code> to clear out
-the disk cache, the performance delta increases to 252ms, or ~64% of
-original. All these numbers are on a 2018 6-core 2.9 GHz i9 MacBook Pro,
-which has a pretty decent SSD.</p>
-<p>And on Linux on an i7-6700K running in a Hyper-V VM:</p>
-<pre><code># pyenv installed CPython 3.7.2
-
-# Cold disk cache.
-$ time ~/.pyenv/versions/3.7.2/bin/python &lt; import_stdlib.py
-real   0m0.405s
-user   0m0.165s
-sys    0m0.065s
-
-# Hot disk cache.
-$ time ~/.pyenv/versions/3.7.2/bin/python &lt; import_stdlib.py
-real   0m0.193s
-user   0m0.161s
-sys    0m0.032s
-
-# PyOxidizer with PGO CPython 3.7.2
-
-# Cold disk cache.
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.227s
-user   0m0.145s
-sys    0m0.016s
-
-# Hot disk cache.
-$ time target/release/pyapp &lt; import_stdlib.py
-real   0m0.152s
-user   0m0.136s
-sys    0m0.016s
-</code></pre>
-<p>On a hot disk cache, the run-time improvement of PyOxidizer is ~41ms, or
-~78% of original. This comes out to ~0.08ms per <code>import</code> statement. When
-flushing caches by writing <code>3</code> to <code>/proc/sys/vm/drop_caches</code>, the delta
-increases to ~178ms, or ~56% of original.</p>
-<p>Using <code>dtruss -c</code> to execute the binaries, the breakdown in system calls
-occurring &gt;10 times is clear:</p>
-<pre><code># CPython standalone
-fstatfs64                                      16
-read_nocancel                                  19
-ioctl                                          20
-getentropy                                     22
-pread                                          26
-fcntl                                          27
-sigaction                                      32
-getdirentries64                                34
-fcntl_nocancel                                106
-mmap                                          114
-close_nocancel                                129
-open_nocancel                                 130
-lseek                                         148
-open                                          168
-close                                         170
-read                                          282
-fstat64                                       403
-stat64                                        833
-
-# PyOxidizer
-lseek                                          10
-read                                           12
-read_nocancel                                  14
-fstat64                                        16
-ioctl                                          22
-munmap                                         31
-stat64                                         33
-sysctl                                         33
-sigaction                                      36
-mmap                                          122
-madvise                                       193
-getentropy                                    315
-</code></pre>
-<p>PyOxidizer avoids hundreds of <code>open()</code>, <code>close()</code>, <code>read()</code>,
-<code>fstat64()</code>, and <code>stat64()</code> calls. And by avoiding these calls,
-PyOxidizer not only avoids the userland-kernel overhead intrinsic to them,
-but also any additional overhead that APFS is imposing via its global
-lock(s).</p>
-<p>(Why the PyOxidizer binary is making hundreds of calls to <code>getentropy()</code>
-I'm not sure. It's definitely coming from Python as a side-effect of a
-module import and it is something I'd like to fix, if possible.)</p>
-<p>With this experiment, we finally have the ability to better isolate the
-impact of filesystem overhead on Python module importing and preliminary
-results indicate that the overhead is not insignificant - at least on the
-tested systems (I'll get data for Windows when PyOxidizer supports it).
-While the test is somewhat contrived (I don't think many applications import
-the entirety of the Python standard library), some Python applications do
-import hundreds of modules. And as I've
-<a href="https://mail.python.org/pipermail/python-dev/2018-May/153296.html">written before</a>,
-milliseconds matter. This is especially true if you are invoking Python
-processes hundreds or thousands of times in a build system, when running
-a test suite, for scripting, etc. Cumulatively you can be importing tens
-of thousands of modules. So I think shaving even fractions of a
-millisecond from module importing is important.</p>
-<p>It's worth noting that in addition to the system call overhead, CPython's
-path-based importer runs
-<a href="https://github.com/python/cpython/blob/804a5d94b6b7f8cb8546112aee2bc3af362f28f5/Lib/importlib/_bootstrap_external.py">substantially more</a>
-Python code
-<a href="https://github.com/indygreg/PyOxidizer/blob/c50e63338abd08ebac86746a33d750756d622edc/pyrepackager/src/memoryimporter.py">than PyOxidizer</a>
-and this likely contributes several milliseconds of overhead as well. Because
-PyOxidizer applications are static, the importer can remain simple (finding a
-module in PyOxidizer is essentially a Rust <code>HashMap&lt;String, Vec&lt;u8&gt;</code> lookup).
-While it might be useful to isolate the filesystem overhead from Python code
-overhead, the thing that end-users care about is overall execution time: they
-don't care where that overhead is coming from. So I think it is fair to compare
-PyOxidizer - with its intrinsically simpler import model - with what Python
-typically does (scan <code>sys.path</code> entries and looking for modules on the
-filesystem).</p>
-<p>Another difference is that PyOxidizer is almost completely statically linked.
-By contrast, a typical CPython install has compiled extension modules as
-standalone shared libraries and these shared libraries often link against
-other shared libraries (such as libssl). From <code>dtruss</code> timing information,
-I don't believe this difference contributes to significant overhead, however.</p>
-<p>Finally, I haven't yet optimized PyOxidizer. I still have a few tricks up
-my sleeve that can likely shave off more overhead from Python startup. But
-so far the results are looking <em>very</em> promising. I dare say they are looking
-promising enough that Python distributions themselves might want to look
-into the area more thoroughly and consider distribution defaults that rely
-less on the every-Python-module-is-a-separate-file model.</p>
-<p>Stay tuned for more <a href="https://github.com/indygreg/PyOxidizer">PyOxidizer</a>
-updates in the near future!</p>
-<p><em>(I updated this post a day after initial publication to add measurements
-for Linux.)</em></p>]]></content>
   </entry>
 </feed>
