@@ -1,0 +1,180 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Pollinating  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20101114
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
+  <title>Gregory Szorc's Digital Home
+  | Transferring Python Build Standalone Stewardship to Astral
+</title>
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/blog/feed" />
+<link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+href="/blog/feed/atom" />
+<link rel="stylesheet" href="/style/style.css" type="text/css" />
+<link rel="stylesheet" href="/css/pygments_murphy.css" type="text/css" />
+
+
+  </head>
+  <body>
+    <div id="wrapper">
+      
+  <div id="menu">
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="/notes">Notes</a></li>
+    <li><a href="/work.html">Work</a></li>
+    <li><a href="/skills.html">Skills</a></li>
+    <li><a href="/thoughts.html">Thoughts</a></li>
+    <li><a href="/resume.pdf">Resume</a></li>
+  </ul>
+</div>
+
+
+      <div id="page">
+        <div id="page-bgtop">
+          <div id="page-bgbtm">
+              <div id="content">
+                
+
+<div class="blog_post">
+  <a name="transferring-python-build-standalone-stewardship-to-astral"></a>
+  <h2 class="blog_post_title"><a href="/blog/2024/12/03/transferring-python-build-standalone-stewardship-to-astral" rel="bookmark" title="Permanent Link to Transferring Python Build Standalone Stewardship to Astral">Transferring Python Build Standalone Stewardship to Astral</a></h2>
+  <small>December 03, 2024 at 11:30 AM | categories: 
+
+<a href='/blog/category/python'>Python</a>
+</small><p/>
+  <div class="post_prose">
+    
+  <p>My <a href="/docs/python-build-standalone/main/">Python Standalone Builds</a> (PBS)
+<a href="https://github.com/indygreg/python-build-standalone">project</a> provides
+self-contained Python distributions that aim to <em>just work</em>.</p>
+<p>PBS Python distributions are used by
+<a href="https://github.com/astral-sh/uv">uv</a>, <a href="https://github.com/astral-sh/rye">Rye</a>,
+<a href="https://github.com/bazelbuild/rules_python">Bazel's rules_python</a>, and
+other tools in the Python ecosystem. The GitHub release artifacts have been
+downloaded over 70,000,000 times.</p>
+<p>With ruff and uv, Charlie Marsh and the folks at <a href="https://astral.sh/">Astral</a>
+have been speedrunning building world class tooling for the Python ecosystem.</p>
+<p>As I wrote in <a href="/blog/2024/03/17/my-shifting-open-source-priorities/">My Shifting Open Source Priorities</a>
+in March 2024, changes in my life have resulted in me paring back my
+open source activities.</p>
+<p>Since that post, uv has exploded onto the scene. There have been over 50
+million downloads of PBS release assets since March.</p>
+<p>Charlie and Astral have stepped up and been outstanding open source
+citizens when it comes to evolving PBS to support their work. When I
+told Charlie I could use assistance supporting PBS, Astral employees
+started contributing to the project. They have built out various
+functionality, including Python 3.13 support (including free-threaded
+builds), turnkey automated release publishing, and debug symbol stripped
+builds to further reduce the download/install size. Multiple Astral
+employees now have GitHub permissions to approve/merge PRs and publish
+releases. All <a href="https://github.com/indygreg/python-build-standalone/releases">releases</a>
+since April have been performed by Astral employees.</p>
+<p>PBS today is effectively an Astral maintained project and has been that
+way for months. As far as I can tell there have been only positive side effects
+of this transition. When I ask myself why I should continue being the GitHub
+maintainer, every answer distills down to personal pride or building a personal
+brand. I need neither.</p>
+<p>I agree with Charlie that formally transferring stewardship of my standalone
+Python builds project to Astral is in the best interest of not only the
+project itself but of the wider Python community.</p>
+<p>On 2024-12-17 I will transfer
+<a href="https://github.com/indygreg/python-build-standalone">indygreg/python-build-standalone</a>
+into the <a href="https://github.com/astral-sh">astral-sh</a> GitHub organization. From
+there, Astral will lead its development and evolution.</p>
+<p>I will retain my GitHub permissions on the project and hope to stay involved
+in its development, if nothing more than a periodic advisor.</p>
+<p>Astral has clearly demonstrated competency for execution and has the needs of
+Python developers at heart. I have no doubt that PBS will thrive under Astral's
+stewardship. I can't wait to see what they do next.</p>
+<p>Astral has <a href="https://astral.sh/blog/python-build-standalone">also blogged</a> about
+this announcement and I encourage interested parties to read it as well.</p>
+
+  </div>
+</div>
+
+
+
+
+              </div>
+              
+          <div id="sidebar">
+          <ul>
+            <li>
+              <h2>Categories</h2>
+              <ul>
+                <li><a href="/blog/category/apple">Apple</a></li>
+                <li><a href="/blog/category/bugzilla">Bugzilla</a></li>
+                <li><a href="/blog/category/ci">CI</a></li>
+                <li><a href="/blog/category/clang">Clang</a></li>
+                <li><a href="/blog/category/docker">Docker</a></li>
+                <li><a href="/blog/category/firefox">Firefox</a></li>
+                <li><a href="/blog/category/git">Git</a></li>
+                <li><a href="/blog/category/javascript">JavaScript</a></li>
+                <li><a href="/blog/category/mercurial">Mercurial</a></li>
+                <li><a href="/blog/category/mozreview">MozReview</a></li>
+                <li><a href="/blog/category/mozilla">Mozilla</a></li>
+                <li><a href="/blog/category/personal">Personal</a></li>
+                <li><a href="/blog/category/programming">Programming</a></li>
+                <li><a href="/blog/category/puppet">Puppet</a></li>
+                <li><a href="/blog/category/pyoxidizer">PyOxidizer</a></li>
+                <li><a href="/blog/category/python">Python</a></li>
+                <li><a href="/blog/category/review-board">Review Board</a></li>
+                <li><a href="/blog/category/rust">Rust</a></li>
+                <li><a href="/blog/category/sync">Sync</a></li>
+                <li><a href="/blog/category/browsers">browsers</a></li>
+                <li><a href="/blog/category/build-system">build system</a></li>
+                <li><a href="/blog/category/code-review">code review</a></li>
+                <li><a href="/blog/category/compilers">compilers</a></li>
+                <li><a href="/blog/category/internet">internet</a></li>
+                <li><a href="/blog/category/logging">logging</a></li>
+                <li><a href="/blog/category/mach">mach</a></li>
+                <li><a href="/blog/category/make">make</a></li>
+                <li><a href="/blog/category/misc">misc</a></li>
+                <li><a href="/blog/category/movies">movies</a></li>
+                <li><a href="/blog/category/packaging">packaging</a></li>
+                <li><a href="/blog/category/pymake">pymake</a></li>
+                <li><a href="/blog/category/security">security</a></li>
+                <li><a href="/blog/category/sysadmin">sysadmin</a></li>
+                <li><a href="/blog/category/testing">testing</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+
+
+              <div style="clear: both;">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+      <div id="footer">
+        
+  <hr/>
+  <p>Copyright (c) 2012- Gregory Szorc. All rights reserved. Design by <a href="http://www.freecsstemplates.org/"> CSS Templates</a>.</p>
+
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+
+
